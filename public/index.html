@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0d6269" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <title>DARC Design Team</title>
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module">
+      try {
+        await import('/app.js?v=1.2.0');
+      } catch (error) {
+        console.error("Critical System Error:", error);
+        document.getElementById('app').innerHTML = `
+          <div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#fafafa;color:#e63946;font-family:'Cairo',sans-serif;direction:rtl;">
+            <div style="background:#fff;padding:40px;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,0.08);max-width:600px;width:90%;text-align:center;">
+              <h2 style="margin-top:0;font-size:24px;">⚠️ خطأ هيكلي في إقلاع النظام</h2>
+              <p style="color:#666;line-height:1.6;margin-bottom:20px;">
+                النظام اكتشف خطأ برمجي (Syntax Error) يمنع الواجهة من التحميل. 
+                بفضل نظام الحماية (Error Boundary)، تم رصد الخطأ بدلاً من ظهور شاشة بيضاء.
+              </p>
+              <pre style="background:#f8f9fa;color:#333;padding:15px;border-radius:8px;text-align:left;direction:ltr;overflow-x:auto;font-family:monospace;font-size:13px;border:1px solid #eee;">${error.stack || error.message}</pre>
+            </div>
+          </div>
+        `;
+      }
+    </script>
+  </body>
+</html>

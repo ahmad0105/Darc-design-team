@@ -1,0 +1,186 @@
+import { Hono } from 'hono';
+import { getDB } from '../../core/db.js';
+import { getCookie, setCookie, deleteCookie } from 'hono/cookie';
+import { verify, sign } from 'hono/jwt';
+import crypto from 'node:crypto';
+import { Buffer } from 'node:buffer';
+import { toCamelCase } from '../../utils/transformers.js';
+import { invalidateUsersCache } from '../../core/cache.js';
+
+const app = new Hono();
+
+app.use('*', async (c, next) => {
+  c.set('supabase', getDB(c.env));
+  await next();
+});
+
+async function verifyPassword(password, stored) {
+  if (!stored || !stored.includes(':')) return false;
+  const [salt, digest] = stored.split(':');
+  return new Promise((resolve) => {
+    crypto.scrypt(password, salt, 64, (err, derivedKey) => {
+      if (err) resolve(false);
+      else {
+        const computed = derivedKey.toString('hex');
+        const left = Buffer.from(computed, 'hex');
+        const right = Buffer.from(digest, 'hex');
+        if (left.length !== right.length) resolve(false);
+        else resolve(crypto.timingSafeEqual(left, right));
+      }
+    });
+  });
+}
+
+async function hashPassword(password) {
+  const salt = crypto.randomBytes(16).toString('hex');
+  return new Promise((resolve, reject) => {
+    crypto.scrypt(password, salt, 64, (err, derivedKey) => {
+      if (err) reject(err);
+      else resolve(`${salt}:${derivedKey.toString('hex')}`);
+    });
+  });
+}
+
+// Helper: get userId from JWT cookie (for routes that bypass global auth middleware)
+async function getUserIdFromCookie(c) {
+  const token = getCookie(c, 'darc_session');
+  if (!token) return null;
+  try {
+    const payload = await verify(token, c.env.JWT_SECRET, 'HS256');
+    return payload.userId;
+  } catch {
+    return null;
+  }
+}
+
+app.post('/forgot-password', async (c) => {
+  const body = await c.req.json();
+  const supabase = c.get('supabase');
+  const email = String(body.email || '').trim().toLowerCase();
+  if (!email) return c.json({ error: 'البريد الإلكتروني مطلوب' }, 400);
+
+  const { data: user } = await supabase.from('users').select('id, custom_fields').eq('email', email).eq('status', 'active').single();
+  
+  if (user) {
+    const resetToken = crypto.randomBytes(24).toString('hex');
+    const resetExpiresAt = new Date(Date.now() + 3600000).toISOString();
+    const newFields = { ...(user.custom_fields || {}), resetToken, resetExpiresAt };
+    await supabase.from('users').update({ custom_fields: newFields }).eq('id', user.id);
+  }
+  return c.json({ ok: true, message: 'إذا كان البريد مسجلاً لدينا، ستصلك رسالة قريباً.' });
+});
+
+app.post('/reset-password', async (c) => {
+  const body = await c.req.json();
+  const supabase = c.get('supabase');
+  const token = String(body.token || '');
+  const newPassword = String(body.newPassword || '');
+  if (newPassword.length < 10) return c.json({ error: 'كلمة المرور يجب أن تكون 10 أحرف على الأقل.' }, 400);
+
+  const { data: user } = await supabase.from('users').select('id, role_id, custom_fields').eq('custom_fields->>resetToken', token).single();
+  if (!user || new Date(user.custom_fields.resetExpiresAt) < new Date()) {
+    return c.json({ error: 'الرابط منتهي الصلاحية أو غير صحيح.' }, 400);
+  }
+
+  const newFields = { ...user.custom_fields };
+  delete newFields.resetToken;
+  delete newFields.resetExpiresAt;
+
+  const hashedNew = await hashPassword(newPassword);
+  await supabase.from('users').update({ password_hash: hashedNew, custom_fields: newFields }).eq('id', user.id);
+  invalidateUsersCache();
+
+  // Issue session cookie so user is logged in automatically after reset
+  const payload = { userId: user.id, roleId: user.role_id, exp: Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60 };
+  const sessionToken = await sign(payload, c.env.JWT_SECRET);
+  setCookie(c, 'darc_session', sessionToken, { path: '/', secure: c.req.url.startsWith('https://'), httpOnly: true, sameSite: 'Lax', maxAge: 604800 });
+
+  return c.json({ ok: true });
+});
+
+app.post('/logout-all', async (c) => {
+  deleteCookie(c, 'darc_session', { path: '/', secure: c.req.url.startsWith('https://'), sameSite: 'Lax' });
+  return c.json({ ok: true });
+});
+
+app.post('/change-password', async (c) => {
+  // /api/auth/* bypasses global JWT middleware, so we read JWT manually
+  const userId = c.get('userId') || await getUserIdFromCookie(c);
+  if (!userId) return c.json({ error: 'غير مصرح.' }, 401);
+
+  const supabase = c.get('supabase');
+  const body = await c.req.json();
+  const oldPassword = String(body.oldPassword || '');
+  const newPassword = String(body.newPassword || '');
+  if (newPassword.length < 10) return c.json({ error: 'كلمة المرور يجب أن تكون 10 أحرف على الأقل.' }, 400);
+
+  const { data: user } = await supabase.from('users').select('password_hash').eq('id', userId).single();
+  if (!user) return c.json({ error: 'المستخدم غير موجود.' }, 404);
+
+  const isValid = await verifyPassword(oldPassword, user.password_hash);
+  if (!isValid) return c.json({ error: 'كلمة المرور الحالية غير صحيحة.' }, 400);
+
+  const hashedNew = await hashPassword(newPassword);
+  const { error } = await supabase.from('users').update({ password_hash: hashedNew, updated_at: new Date().toISOString() }).eq('id', userId);
+  if (error) throw error;
+  invalidateUsersCache();
+  return c.json({ ok: true });
+});
+
+app.post('/activate', async (c) => {
+  const body = await c.req.json();
+  const token = String(body.token || '').trim();
+  const password = String(body.password || '');
+  const supabase = c.get('supabase');
+
+  if (!token) {
+    return c.json({ error: 'رمز التفعيل مطلوب.' }, 400);
+  }
+  if (password.length < 10) {
+    return c.json({ error: 'كلمة المرور يجب ألا تقل عن 10 أحرف' }, 400);
+  }
+
+  // Strictly verify token & expiration
+  const { data: user, error: findErr } = await supabase
+    .from('users')
+    .select('id, name, name_en, email, role_id, status, invite_token, invite_expires_at')
+    .eq('invite_token', token)
+    .single();
+
+  if (findErr || !user) {
+    return c.json({ error: 'رمز التفعيل غير صالح أو تم استخدامه مسبقاً.' }, 400);
+  }
+
+  if (user.invite_expires_at && new Date(user.invite_expires_at) < new Date()) {
+    return c.json({ error: 'انتهت صلاحية رابط التفعيل. يرجى طلب دعوة جديدة.' }, 400);
+  }
+
+  const hashedNew = await hashPassword(password);
+  const { data: updatedUser, error: updateErr } = await supabase
+    .from('users')
+    .update({
+      password_hash: hashedNew,
+      status: 'active',
+      invite_token: null,
+      invite_expires_at: null,
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', user.id)
+    .select('id, name, name_en, email, role_id, status, avatar_color')
+    .single();
+
+  if (updateErr) {
+    return c.json({ error: 'فشل تفعيل الحساب: ' + updateErr.message }, 500);
+  }
+
+  invalidateUsersCache();
+
+  // Issue session cookie so user is logged in
+  const payload = { userId: updatedUser.id, roleId: updatedUser.role_id, exp: Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60 };
+  const sessionToken = await sign(payload, c.env.JWT_SECRET);
+  setCookie(c, 'darc_session', sessionToken, { path: '/', secure: c.req.url.startsWith('https://'), httpOnly: true, sameSite: 'Lax', maxAge: 604800 });
+
+  return c.json({ ok: true, user: toCamelCase(updatedUser) });
+});
+
+export default app;

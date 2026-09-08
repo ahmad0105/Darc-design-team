@@ -1,0 +1,28 @@
+[build]
+  publish = "public"
+
+# Proxy /api requests to Cloudflare Workers backend (or backend URL)
+# This eliminates CORS issues and third-party cookie blocks completely!
+[[redirects]]
+  from = "/api/*"
+  to = "https://darc-cloud-backend.ahmadalhashmi.workers.dev/api/:splat"
+  status = 200
+
+# Single Page Application (SPA) routing fallback rule
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Security and Cache Headers
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "SAMEORIGIN"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
