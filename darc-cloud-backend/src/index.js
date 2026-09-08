@@ -145,9 +145,11 @@ app.post('/api/auth/logout', async (c) => {
   return c.json({ success: true });
 });
 
+app.get('/api/health', (c) => c.json({ ok: true, status: 'healthy', env: 'production' }));
+
 // JWT Guard
 app.use('/api/*', async (c, next) => {
-  if (c.req.path.startsWith('/api/auth')) return next();
+  if (c.req.path.startsWith('/api/auth') || c.req.path === '/api/health') return next();
   const token = getCookie(c, 'darc_session');
   if (!token) return c.json({ error: 'غير مصرح لك بالدخول' }, 401);
   try {

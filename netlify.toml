@@ -5,7 +5,7 @@
 # This eliminates CORS issues and third-party cookie blocks completely!
 [[redirects]]
   from = "/api/*"
-  to = "https://darc-cloud-backend.ahmadalhashmi.workers.dev/api/:splat"
+  to = "https://darc-cloud-backend.ahmad-hashmi-c.workers.dev/api/:splat"
   status = 200
 
 # Single Page Application (SPA) routing fallback rule
