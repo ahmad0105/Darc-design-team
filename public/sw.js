@@ -1,5 +1,5 @@
-// DARC Design Team — Service Worker (Offline-First Cache v1.7)
-const CACHE_NAME = 'darc-cache-v1.7';
+// DARC Design Team — Service Worker (Offline-First Cache v1.8)
+const CACHE_NAME = 'darc-cache-v1.8';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -89,7 +89,7 @@ self.addEventListener('fetch', (event) => {
               });
             }
             if (url.hostname.includes('fonts.gstatic.com')) {
-              return new Response('', { status: 200, headers: { 'Content-Type': 'font/woff2' } });
+              return typeof Response.error === 'function' ? Response.error() : new Response(null, { status: 504, statusText: 'Font Unavailable' });
             }
             return new Response('', { status: 504, statusText: 'Gateway Timeout' });
           });
