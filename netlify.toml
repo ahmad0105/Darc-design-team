@@ -1,0 +1,10 @@
+# Netlify configuration – عدّل القيم حسب الحاجة
+[build]
+  command = "npm run build"
+  publish = "public"
+
+# إعدادات إعادة توجيه للـ Cloudflare Workers (إن وجدت)
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

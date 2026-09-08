@@ -1,0 +1,47 @@
+# ---- ملفات بيئة سرية ----
+.dev.vars
+darc-cloud-backend/.env
+darc-cloud-backend/.dev.vars
+
+# ---- ملفات بيئة محلية ----
+*.local
+.env.local
+.env.production
+
+# ---- مكتبات node ----
+node_modules/
+
+# ---- مخرجات البناء ----
+dist/
+build/
+public/build/
+
+# ---- سجلات تشغيل ----
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ---- ملفات نظام macOS ----
+.DS_Store
+
+# ---- ملفات wrangler (Cloudflare) ----
+.wrangler/
+
+# ---- ملفات IDE / محررات ----
+.idea/
+.vscode/
+*.sublime-project
+
+# ---- ملفات اختبار/تجربة شخصية (اختياري) ----
+manual_test.js
+test_*.js
+test-*.html
+test_output.log
+
+# ---- قاعدة البيانات / بيانات مشروع محلية ----
+data/
+*.sql
+
+# ---- أي ملفات أخرى غير ضرورية للنسخة العامة ----
+# (أضف هنا ما تراه غير مهم للنشر)
