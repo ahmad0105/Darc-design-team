@@ -8,12 +8,27 @@ export function renderLogin(errorMessage = '', mode = 'login', isSuccess = false
   
   let formContent = '';
   const messageHtml = errorMessage ? `<div class="login-demo" style="border-color:${isSuccess ? '#cce3e0' : 'var(--red-soft)'};background:${isSuccess ? '#f0f9f7' : 'var(--red-soft)'};color:${isSuccess ? 'var(--teal)' : 'var(--red)'};margin-top:0;margin-bottom:15px">${icon(isSuccess ? 'check' : 'alert', 15)}<span>${esc(errorMessage)}</span></div>` : '';
+  const savedEmail = (typeof localStorage !== 'undefined' ? localStorage.getItem('darc_last_email') : '') || '';
 
   if (mode === 'login') {
     formContent = `
       <form id="login-form">
-        <div class="field"><label for="login-email">${t('emailAddress')}</label><input id="login-email" name="email" type="email" autocomplete="username" placeholder="name@darc.com" required /></div>
-        <div class="field"><div style="display:flex;justify-content:space-between"><label for="login-password">${t('password')}</label><a href="#" data-action="goto-forgot" style="font-size:12px;color:var(--blue);text-decoration:none">${choose('نسيت كلمة المرور؟', 'Forgot password?')}</a></div><input id="login-password" name="password" type="password" autocomplete="current-password" placeholder="••••••••••" required /></div>
+        <div class="field">
+          <label for="login-email">${t('emailAddress')}</label>
+          <input id="login-email" name="email" type="email" autocomplete="username" placeholder="name@darc.com" value="${esc(savedEmail)}" required />
+        </div>
+        <div class="field">
+          <div style="display:flex;justify-content:space-between">
+            <label for="login-password">${t('password')}</label>
+            <a href="#" data-action="goto-forgot" style="font-size:12px;color:var(--blue);text-decoration:none">${choose('نسيت كلمة المرور؟', 'Forgot password?')}</a>
+          </div>
+          <div style="position:relative;display:flex;align-items:center;">
+            <input id="login-password" name="password" type="password" autocomplete="current-password" placeholder="••••••••••" style="width:100%;padding-inline-end:40px;" required />
+            <button type="button" data-action="toggle-login-password" style="position:absolute;inset-inline-end:10px;background:none;border:none;color:var(--ink-soft);cursor:pointer;padding:4px;display:flex;align-items:center;justify-content:center;" title="${choose('إظهار/إخفاء كلمة المرور', 'Show/Hide password')}">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+        </div>
         ${messageHtml}
         <button class="btn btn-primary btn-block" type="submit">${icon('arrowLeft', 16)} ${t('login')}</button>
       </form>
@@ -22,7 +37,7 @@ export function renderLogin(errorMessage = '', mode = 'login', isSuccess = false
   } else if (mode === 'forgot') {
     formContent = `
       <form id="forgot-form">
-        <div class="field"><label for="login-email">${t('emailAddress')}</label><input id="login-email" name="email" type="email" placeholder="name@darc.com" required /></div>
+        <div class="field"><label for="login-email">${t('emailAddress')}</label><input id="login-email" name="email" type="email" placeholder="name@darc.com" value="${esc(savedEmail)}" required /></div>
         ${messageHtml}
         <button class="btn btn-primary btn-block" type="submit">${choose('إرسال رابط الاستعادة', 'Send reset link')}</button>
         <div style="text-align:center;margin-top:15px"><a href="#" data-action="goto-login" style="font-size:13px;color:var(--ink-soft)">${choose('العودة لتسجيل الدخول', 'Back to login')}</a></div>
@@ -58,13 +73,26 @@ export function renderLogin(errorMessage = '', mode = 'login', isSuccess = false
       </div>
     </div>`;
 
+  document.querySelector('[data-action="toggle-login-password"]')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    const passInput = document.getElementById('login-password');
+    if (!passInput) return;
+    const isPass = passInput.type === 'password';
+    passInput.type = isPass ? 'text' : 'password';
+    e.currentTarget.style.color = isPass ? 'var(--teal)' : 'var(--ink-soft)';
+  });
+
   document.getElementById('login-form')?.addEventListener('submit', async (event) => {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
+    const email = String(form.get('email') || '').trim();
+    const password = String(form.get('password') || '');
     const button = event.currentTarget.querySelector('button[type="submit"]');
     button.disabled = true;
+    button.innerHTML = `<span>${choose('جاري تسجيل الدخول...', 'Signing in...')}</span>`;
     try {
-      await api('/api/auth/login', { method: 'POST', body: JSON.stringify({ email: form.get('email'), password: form.get('password') }) });
+      await api('/api/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) });
+      if (typeof localStorage !== 'undefined') localStorage.setItem('darc_last_email', email);
       await loadData();
     } catch (error) {
       console.error("Login Error:", error);

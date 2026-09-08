@@ -433,8 +433,14 @@ a { color: inherit; text-decoration: none; }
 .column-dot.green { background: var(--mint-strong); }
 .board-count { min-width: 21px; padding: 3px 6px; border-radius: 7px; color: var(--muted); background: #e9efed; text-align: center; font-size: 9px; font-weight: 900; }
 .board-cards { display: grid; gap: 8px; }
-.task-card { padding: 13px; border: 1px solid #e5ecea; border-radius: 13px; background: #fff; box-shadow: 0 3px 10px rgba(30, 65, 65, .035); cursor: pointer; user-select: none; -webkit-user-select: none; touch-action: pan-y; }
-.task-card:hover { border-color: #cde4df; }
+.task-card { padding: 13px; border: 1px solid #e5ecea; border-radius: 13px; background: #fff; box-shadow: 0 3px 10px rgba(30, 65, 65, .035); cursor: pointer; user-select: none; -webkit-user-select: none; touch-action: pan-y; transition: transform 0.15s ease, box-shadow 0.15s ease; }
+.task-card:hover { border-color: #cde4df; transform: translateY(-1px); box-shadow: 0 5px 15px rgba(30, 65, 65, .06); }
+@keyframes dropPop {
+  0% { transform: scale(0.96); background: rgba(13, 98, 105, 0.08); border-color: var(--teal); }
+  60% { transform: scale(1.02); background: rgba(13, 98, 105, 0.03); }
+  100% { transform: scale(1); background: #fff; }
+}
+.task-card.just-dropped { animation: dropPop 0.35s cubic-bezier(0.2, 0.8, 0.2, 1); }
 .task-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
 .task-code { color: var(--muted); font-size: 9px; font-weight: 900; }
 .task-card h4 { margin: 10px 0 6px; font-size: 11px; line-height: 1.6; }

@@ -1155,6 +1155,14 @@ export async function uploadTaskFiles(files, taskId) {
   try {
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
+      if (!file.size || file.size === 0) {
+        showToast(choose(`الملف "${file.name}" فارغ لا يحتوي على بيانات.`, `File "${file.name}" is empty.`), true);
+        continue;
+      }
+      if (file.size > 2 * 1024 * 1024 * 1024) {
+        showToast(choose(`حجم الملف "${file.name}" يتجاوز الحد الأقصى (2GB).`, `File "${file.name}" exceeds 2GB limit.`), true);
+        continue;
+      }
       const lastDot = file.name.lastIndexOf('.');
       const ext = lastDot !== -1 ? file.name.substring(lastDot).toLowerCase() : '';
       const baseName = lastDot !== -1 ? file.name.substring(0, lastDot) : file.name;

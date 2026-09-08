@@ -200,6 +200,11 @@ async function handleTaskDrop(column, clientY, explicitTaskId = null) {
 
   // Re-render board immediately (instant UI response)
   renderView();
+  const droppedCardEl = document.querySelector(`.task-card[data-task-id="${taskId}"]`);
+  if (droppedCardEl) {
+    droppedCardEl.classList.add('just-dropped');
+    setTimeout(() => droppedCardEl.classList.remove('just-dropped'), 400);
+  }
 
   // Debounce & Queue batch reorder API sync to consolidate rapid consecutive drops
   if (window._reorderSyncTimer) clearTimeout(window._reorderSyncTimer);
