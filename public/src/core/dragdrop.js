@@ -111,13 +111,11 @@ document.addEventListener('dragleave', (event) => {
   }
 });
 
-document.addEventListener('drop', async (event) => {
-  const column = event.target.closest('.board-column');
+async function handleTaskDrop(column, clientY, explicitTaskId = null) {
   if (!column) {
     removePlaceholder();
     return;
   }
-  event.preventDefault();
   column.classList.remove('drag-over');
 
   const cardsContainer = column.querySelector('.board-cards');
@@ -126,19 +124,19 @@ document.addEventListener('drop', async (event) => {
   let insertBeforeTaskId = null;
   if (placeholder && placeholder.parentNode === cardsContainer) {
     const nextEl = placeholder.nextElementSibling;
-    if (nextEl && nextEl.classList.contains('task-card') && nextEl.dataset.taskId !== activeDraggedTaskId) {
+    if (nextEl && nextEl.classList.contains('task-card') && nextEl.dataset.taskId !== (explicitTaskId || activeDraggedTaskId)) {
       insertBeforeTaskId = nextEl.dataset.taskId;
     }
   } else if (cardsContainer) {
-    const nextCard = getDropTargetCard(cardsContainer, event.clientY);
-    if (nextCard && nextCard.dataset.taskId !== activeDraggedTaskId) {
+    const nextCard = getDropTargetCard(cardsContainer, clientY);
+    if (nextCard && nextCard.dataset.taskId !== (explicitTaskId || activeDraggedTaskId)) {
       insertBeforeTaskId = nextCard.dataset.taskId;
     }
   }
 
   removePlaceholder();
 
-  const taskId = activeDraggedTaskId || event.dataTransfer.getData('text/plain');
+  const taskId = explicitTaskId || activeDraggedTaskId;
   activeDraggedTaskId = null;
 
   const newStatus = column.dataset.status;
@@ -227,4 +225,87 @@ document.addEventListener('drop', async (event) => {
       showToast(choose('فشل حفظ الترتيب الجديد في الخادم.', 'Failed to save task order to server.'), true);
     });
   }, 150);
+}
+
+document.addEventListener('drop', async (event) => {
+  const column = event.target.closest('.board-column');
+  event.preventDefault();
+  const taskId = activeDraggedTaskId || (event.dataTransfer ? event.dataTransfer.getData('text/plain') : null);
+  await handleTaskDrop(column, event.clientY, taskId);
+});
+
+// Touch Drag & Drop Support for Mobile / iPad
+let touchCard = null;
+let touchStartX = 0;
+let touchStartY = 0;
+let isTouchDragging = false;
+
+document.addEventListener('touchstart', (e) => {
+  const card = e.target.closest('.task-card');
+  if (!card) return;
+  touchCard = card;
+  const touch = e.touches[0];
+  touchStartX = touch.clientX;
+  touchStartY = touch.clientY;
+  isTouchDragging = false;
+}, { passive: true });
+
+document.addEventListener('touchmove', (e) => {
+  if (!touchCard) return;
+  const touch = e.touches[0];
+  const deltaX = Math.abs(touch.clientX - touchStartX);
+  const deltaY = Math.abs(touch.clientY - touchStartY);
+
+  if (!isTouchDragging && (deltaX > 15 || deltaY > 15)) {
+    isTouchDragging = true;
+    activeDraggedTaskId = touchCard.dataset.taskId;
+    touchCard.classList.add('is-dragging');
+    touchCard.style.opacity = '0.4';
+  }
+
+  if (isTouchDragging) {
+    if (e.cancelable) e.preventDefault();
+    const elUnder = document.elementFromPoint(touch.clientX, touch.clientY);
+    const column = elUnder?.closest('.board-column');
+    document.querySelectorAll('.board-column').forEach(col => col.classList.toggle('drag-over', col === column));
+
+    if (column) {
+      const cardsContainer = column.querySelector('.board-cards');
+      if (cardsContainer) {
+        const ph = getOrCreatePlaceholder();
+        const nextCard = getDropTargetCard(cardsContainer, touch.clientY);
+        if (nextCard) {
+          if (ph.nextSibling !== nextCard) cardsContainer.insertBefore(ph, nextCard);
+        } else {
+          if (!cardsContainer.contains(ph) || cardsContainer.lastElementChild !== ph) {
+            cardsContainer.appendChild(ph);
+          }
+        }
+      }
+    }
+  }
+}, { passive: false });
+
+document.addEventListener('touchend', async (e) => {
+  if (!touchCard) return;
+  if (isTouchDragging) {
+    touchCard.style.opacity = '1';
+    touchCard.classList.remove('is-dragging');
+    document.querySelectorAll('.board-column').forEach(col => col.classList.remove('drag-over'));
+
+    const touch = e.changedTouches[0];
+    const elUnder = document.elementFromPoint(touch.clientX, touch.clientY);
+    const column = elUnder?.closest('.board-column') || (placeholder && placeholder.closest('.board-column'));
+    const draggedId = activeDraggedTaskId;
+    activeDraggedTaskId = null;
+
+    if (column) {
+      await handleTaskDrop(column, touch.clientY, draggedId);
+    } else {
+      removePlaceholder();
+    }
+  }
+  touchCard = null;
+  isTouchDragging = false;
+  activeDraggedTaskId = null;
 });

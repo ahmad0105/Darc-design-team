@@ -21,7 +21,12 @@ export async function api(path, options = {}) {
   }
 
   options.credentials = 'include';
-  const response = await fetch(API_BASE + path, { ...options, headers });
+  let response;
+  try {
+    response = await fetch(API_BASE + path, { ...options, headers });
+  } catch (networkError) {
+    throw new Error('تعذر الاتصال بالخادم، يرجى التحقق من اتصال الإنترنت.');
+  }
   
   if (response.status === 304) {
     return null; // HTTP 304 Not Modified: Data is identical, 0 bytes transferred

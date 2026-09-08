@@ -1483,7 +1483,7 @@ export async function init() {
       setInterval(async () => {
         // Pause polling when browser tab is in background to save battery and network
         if (typeof document !== 'undefined' && document.hidden) return;
-        if (state.data && state.view) {
+        if (state.data?.user && state.view && state.view !== 'login') {
           try {
             await loadData(true); // Silent ETag refresh
           } catch (e) {
@@ -1495,7 +1495,7 @@ export async function init() {
       // Refresh immediately when user returns to tab
       if (typeof document !== 'undefined') {
         document.addEventListener('visibilitychange', () => {
-          if (!document.hidden && state.data && state.view) {
+          if (!document.hidden && state.data?.user && state.view && state.view !== 'login') {
             loadData(true).catch(() => {});
           }
         });

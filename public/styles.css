@@ -433,7 +433,7 @@ a { color: inherit; text-decoration: none; }
 .column-dot.green { background: var(--mint-strong); }
 .board-count { min-width: 21px; padding: 3px 6px; border-radius: 7px; color: var(--muted); background: #e9efed; text-align: center; font-size: 9px; font-weight: 900; }
 .board-cards { display: grid; gap: 8px; }
-.task-card { padding: 13px; border: 1px solid #e5ecea; border-radius: 13px; background: #fff; box-shadow: 0 3px 10px rgba(30, 65, 65, .035); cursor: pointer; }
+.task-card { padding: 13px; border: 1px solid #e5ecea; border-radius: 13px; background: #fff; box-shadow: 0 3px 10px rgba(30, 65, 65, .035); cursor: pointer; user-select: none; -webkit-user-select: none; touch-action: pan-y; }
 .task-card:hover { border-color: #cde4df; }
 .task-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
 .task-code { color: var(--muted); font-size: 9px; font-weight: 900; }
