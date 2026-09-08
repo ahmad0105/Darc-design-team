@@ -42,3 +42,16 @@ darc-cloud-backend/test-*.js
 
 # Local uploads & DB
 data/
+
+.dev.vars
+
+darc-cloud-backend/.env
+
+node_modules/
+
+.dev.vars
+darc-cloud-backend/.env
+node_modules/
+.dev.vars
+darc-cloud-backend/.env
+node_modules/
