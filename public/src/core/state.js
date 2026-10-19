@@ -9,6 +9,7 @@ export const state = {
   searches: { projects: '', tasks: '', templates: '', documents: '' },
   taskFilter: 'all',
   taskProjectFilter: 'all',
+  taskPriorityFilter: 'all',
   docTaskFilter: 'all',
   docProjectFilter: 'all',
   sidebarOpen: false,

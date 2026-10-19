@@ -285,8 +285,20 @@ export async function handleClick(event) {
     if (pMenu) pMenu.style.display = 'none';
   }
 
-  if (target.dataset.view) { switchView(target.dataset.view); return; }
-  if (action === 'toggle-theme') { state.theme = state.theme === 'dark' ? 'light' : 'dark'; window.localStorage.setItem('darc-theme', state.theme); document.documentElement.dataset.theme = state.theme; renderApp(); return; }
+  if (action === 'toggle-theme') {
+    state.theme = state.theme === 'dark' ? 'light' : 'dark';
+    window.localStorage.setItem('darc-theme', state.theme);
+    document.documentElement.dataset.theme = state.theme;
+    if (state.data) {
+      renderApp();
+    } else {
+      const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+      if (hash.get('activate')) renderActivation(hash.get('activate'));
+      else if (hash.get('reset')) renderResetPassword(hash.get('reset'));
+      else renderLogin('', document.getElementById('forgot-form') ? 'forgot' : 'login');
+    }
+    return;
+  }
   if (action === 'toggle-lang') {
     state.lang = state.lang === 'ar' ? 'en' : 'ar';
     window.localStorage.setItem('darc-locale', state.lang);
@@ -777,6 +789,12 @@ export async function handleChange(event) {
 
   if (event.target.dataset.action === 'task-project-filter') {
     state.taskProjectFilter = event.target.value;
+    renderView();
+    return;
+  }
+
+  if (event.target.dataset.action === 'task-priority-filter') {
+    state.taskPriorityFilter = event.target.value;
     renderView();
     return;
   }
