@@ -1,7 +1,39 @@
-
 import { state } from './state.js';
 import { api } from './api.js';
-import { saveOfflineBootstrap, getOfflineBootstrap } from './offline.js';
+import { saveOfflineBootstrap, getOfflineBootstrap, getOfflineBootstrapAsync, getPendingMutations, isOnline } from './offline.js';
+
+export function renderSyncIndicator() {
+  const pending = getPendingMutations();
+  const count = pending.length;
+  const online = isOnline();
+
+  if (!online) {
+    return `<button class="btn btn-sm btn-ghost offline-indicator-pill" data-action="manual-sync" style="font-size:11px;font-weight:700;color:var(--amber-strong);border:1px solid rgba(245,158,11,0.3);background:rgba(245,158,11,0.08);padding:3px 9px;border-radius:20px;display:inline-flex;align-items:center;gap:5px;cursor:pointer;" title="${choose('وضع عدم الاتصال — كافة العمليات محفوظة محلياً وستُرفع تلقائياً', 'Offline Mode — all actions stored locally and will auto-sync')}">
+      <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--amber-strong);box-shadow:0 0 6px var(--amber-strong);"></span>
+      <span>${choose('أوفلاين', 'Offline')}</span>
+      ${count > 0 ? `<span class="sync-count-chip" style="background:var(--amber-strong);color:#fff;border-radius:10px;padding:1px 5px;font-size:10px;">${count}</span>` : ''}
+    </button>`;
+  }
+  if (count > 0) {
+    return `<button class="btn btn-sm btn-ghost offline-indicator-pill" data-action="manual-sync" style="font-size:11px;font-weight:700;color:var(--teal-strong);border:1px solid rgba(20,184,166,0.3);background:rgba(20,184,166,0.08);padding:3px 9px;border-radius:20px;display:inline-flex;align-items:center;gap:5px;cursor:pointer;" title="${choose('انقر للمزامنة الفورية مع السيرفر', 'Click to sync now with server')}">
+      <span class="sync-spinner" style="display:inline-block;">🔄</span>
+      <span>${choose('مزامنة معلقة', 'Pending Sync')}</span>
+      <span class="sync-count-chip" style="background:var(--teal-strong);color:#fff;border-radius:10px;padding:1px 5px;font-size:10px;">${count}</span>
+    </button>`;
+  }
+  return '';
+}
+
+if (typeof window !== 'undefined' && !window._darcSyncIndicatorBound) {
+  window._darcSyncIndicatorBound = true;
+  const updateIndicator = () => {
+    const el = document.getElementById('sync-status-indicator');
+    if (el) el.innerHTML = renderSyncIndicator();
+  };
+  window.addEventListener('darc:queue-change', updateIndicator);
+  window.addEventListener('online', updateIndicator);
+  window.addEventListener('offline', updateIndicator);
+}
 
 export function navItem(view, label, iconName) {
   const active = state.view === view || (view === 'projects' && state.view === 'project-detail');
@@ -50,7 +82,7 @@ export function renderApp() {
         <header class="topbar">
           <div class="topbar-left"><button class="icon-button mobile-menu" data-action="toggle-sidebar" aria-label="Menu">${icon('menu', 18)}</button><div><div class="topbar-kicker">DARC / ${t('workspace')}</div><div class="topbar-title">${esc(currentViewTitle())}</div></div></div>
           <div class="topbar-right">
-            ${state.isOffline ? `<span class="badge badge-amber" style="font-size:10px;padding:3px 8px;cursor:pointer;" title="${choose('وضع عدم الاتصال — يمكنك الاستمرار بالعمل وسيتم الرفع تلقائياً عند عودة النت', 'Offline Mode — changes will auto-sync on reconnect')}">📡 ${choose('أوفلاين', 'Offline')}</span>` : ''}
+            <span id="sync-status-indicator">${renderSyncIndicator()}</span>
             <button class="topbar-search-trigger" data-action="open-omnisearch" title="${choose('بحث شامل وسريع', 'Omnisearch')}">
               ${icon('search', 14)}
               <span>${choose('بحث شامل...', 'Search...')}</span>
@@ -159,7 +191,7 @@ export async function loadData(silent = false) {
       state.data = payload; 
     }
   } catch (error) {
-    const cachedData = getOfflineBootstrap();
+    const cachedData = await getOfflineBootstrapAsync();
     if (cachedData) {
       state.data = cachedData;
       state.isOffline = true;

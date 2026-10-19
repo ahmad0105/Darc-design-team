@@ -65,6 +65,7 @@ export function taskCard(task) {
     <div class="task-card-top">
       <span class="task-code">${esc(task.templateId ? task.templateId.replace('tpl-', '#') : '#CUSTOM')}</span>
       <div style="display:flex;align-items:center;gap:6px;">
+        ${task._isOfflinePending ? `<span class="badge badge-amber" style="font-size:9px;padding:1px 5px;" title="${choose('بانتظار المزامنة مع السيرفر', 'Pending cloud sync')}">⏳ ${choose('معلقة', 'Pending')}</span>` : ''}
         ${commentCount > 0 ? `<span style="font-size:10px;color:var(--muted);display:inline-flex;align-items:center;gap:2px;" title="${commentCount} ${choose('تعليقات', 'comments')}">💬 ${commentCount}</span>` : ''}
         ${docCount > 0 ? `<span style="font-size:10px;color:var(--muted);display:inline-flex;align-items:center;gap:2px;" title="${docCount} ${choose('مرفقات', 'attachments')}">📎 ${docCount}</span>` : ''}
         ${overdueBadge}

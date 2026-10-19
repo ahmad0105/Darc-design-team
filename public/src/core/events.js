@@ -450,7 +450,7 @@ export async function handleClick(event) {
     
     try {
       await api(`/api/projects/${target.dataset.projectId}`, { method: 'DELETE' });
-      await refreshView(true); // Silently sync real data from server
+      if (typeof navigator !== 'undefined' && navigator.onLine) await refreshView(true);
       showToast(choose('تم حذف المشروع بنجاح.', 'Project deleted successfully.'));
     } catch (error) { 
       // Revert if failed
@@ -470,7 +470,7 @@ export async function handleClick(event) {
     showToast(choose('جاري حذف المهمة...', 'Deleting task...'));
     try {
       await api(`/api/tasks/${taskId}`, { method: 'DELETE' });
-      await refreshView(true);
+      if (typeof navigator !== 'undefined' && navigator.onLine) await refreshView(true);
       showToast(choose('تم حذف المهمة بنجاح.', 'Task deleted successfully.'));
     } catch (error) {
       state.data.tasks = originalTasks;
@@ -529,6 +529,27 @@ export async function handleClick(event) {
       showToast(choose('تم حذف التعليق بنجاح.', 'Comment deleted successfully.'));
     } catch (err) {
       showToast(err.message, true);
+    }
+    return;
+  }
+  if (action === 'manual-sync') {
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      showToast(choose('أنت في وضع عدم الاتصال حالياً. كافة العمليات محفوظة محلياً وستُرفع تلقائياً عند عودة النت 📡', 'You are currently offline. Changes are saved locally and will auto-sync on reconnect 📡'), false);
+      return;
+    }
+    const { getPendingMutations, syncPendingMutations } = await import('./offline.js');
+    const pending = getPendingMutations();
+    if (!pending.length) {
+      showToast(choose('جميع البيانات متزامنة ومحدثة بالكامل مع الخادم السحابي ✔️', 'All data is completely synchronized with cloud server ✔️'), false);
+      return;
+    }
+    showToast(choose(`جاري مزامنة ${pending.length} عمليات معلقة مع السيرفر...`, `Syncing ${pending.length} pending actions with server...`), false);
+    const res = await syncPendingMutations(api);
+    if (res.synced > 0) {
+      showToast(choose(`تمت مزامنة ${res.synced} عمليات بنجاح! 🚀`, `Successfully synced ${res.synced} actions! 🚀`), false);
+      await loadData();
+    } else if (res.failed > 0) {
+      showToast(choose(`فشلت مزامنة ${res.failed} عمليات، يرجى المحاولة لاحقاً.`, `Failed to sync ${res.failed} actions, please try again.`), true);
     }
     return;
   }
@@ -1171,6 +1192,10 @@ export function updateFloatingUploadWidget({
 
 export async function uploadTaskFiles(files, taskId) {
   if (!files || !files.length || !taskId) return;
+  if (typeof navigator !== 'undefined' && !navigator.onLine) {
+    showToast(choose('لا يمكن رفع المخططات والملفات أثناء وضع عدم الاتصال. يرجى الاتصال بالإنترنت أولاً.', 'Cannot upload drawings or files while offline. Please connect to the internet first.'), true);
+    return;
+  }
   const task = state.data?.tasks?.find(t => t.id === taskId);
   const project = task ? state.data?.projects?.find(p => p.id === task.projectId) : null;
   const taskDocs = state.data?.documents ? state.data.documents.filter(d => d.taskId === taskId && !d.deletedAt) : [];
@@ -1539,6 +1564,13 @@ export async function init() {
   } catch (e) {}
 
   try { 
+    // Replay any pending mutations from previous offline sessions before loading fresh bootstrap
+    if (typeof navigator !== 'undefined' && navigator.onLine) {
+      const { getPendingMutations, syncPendingMutations } = await import('./offline.js');
+      if (getPendingMutations().length > 0) {
+        await syncPendingMutations(api);
+      }
+    }
     await loadData(); 
     
     // Start Smart Live Sync (Background Polling with Visibility Guard)

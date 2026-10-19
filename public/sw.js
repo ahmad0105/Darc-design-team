@@ -1,11 +1,29 @@
-// DARC Design Team — Service Worker (Offline-First Cache v2.4)
-const CACHE_NAME = 'darc-cache-v2.4';
+// DARC Design Team — Service Worker (Offline-First Cache v3.0)
+const CACHE_NAME = 'darc-cache-v3.0';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
   '/styles.css',
   '/app.js',
-  '/manifest.json'
+  '/manifest.json',
+  '/src/core/state.js',
+  '/src/core/api.js',
+  '/src/core/offline.js',
+  '/src/core/realtime.js',
+  '/src/core/router.js',
+  '/src/core/events.js',
+  '/src/core/utils.js',
+  '/src/core/dragdrop.js',
+  '/src/shared/ui.js',
+  '/src/features/auth/auth.js',
+  '/src/features/dashboard/dashboard.js',
+  '/src/features/dashboard/omnisearch.js',
+  '/src/features/projects/projects.js',
+  '/src/features/tasks/tasks.js',
+  '/src/features/documents/documents.js',
+  '/src/features/templates/templates.js',
+  '/src/features/settings/settings.js',
+  '/src/features/notifications/notifications.js'
 ];
 
 self.addEventListener('install', (event) => {

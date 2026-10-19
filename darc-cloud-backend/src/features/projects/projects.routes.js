@@ -40,6 +40,15 @@ app.post('/', async (c) => {
 
   const body = await c.req.json();
   const managerId = body.managerId || userId;
+
+  // Support idempotent offline sync with pre-assigned project ID
+  const providedId = (body.id && typeof body.id === 'string' && /^prj_[a-zA-Z0-9_-]{6,36}$/.test(body.id)) ? body.id : null;
+  if (providedId) {
+    const { data: existing } = await supabase.from('projects').select('*').eq('id', providedId).single();
+    if (existing) {
+      return c.json({ project: toCamelCase(existing), idempotent: true }, 200);
+    }
+  }
   
   let code = body.code ? body.code.trim() : null;
   if (!code) {
@@ -47,6 +56,7 @@ app.post('/', async (c) => {
   }
 
   const projectData = {
+    ...(providedId ? { id: providedId } : {}),
     code,
     name_ar: String(body.nameAr || body.name || '').trim(),
     name_en: String(body.nameEn || body.name || '').trim(),

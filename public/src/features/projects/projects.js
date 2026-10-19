@@ -260,7 +260,10 @@ export function projectCard(project) {
           <h3 class="project-card-title" title="${esc(choose(project.nameAr, project.nameEn))}">${esc(choose(project.nameAr, project.nameEn))}</h3>
         </div>
       </div>
-      <span class="status-badge ${esc(project.health)}" style="flex-shrink:0;align-self:flex-start;">${esc(statusText(project.health))}</span>
+      <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;align-self:flex-start;">
+        ${project._isOfflinePending ? `<span class="badge badge-amber" style="font-size:9px;padding:1px 5px;" title="${choose('بانتظار المزامنة مع السيرفر', 'Pending cloud sync')}">⏳ ${choose('معلقة', 'Pending')}</span>` : ''}
+        <span class="status-badge ${esc(project.health)}">${esc(statusText(project.health))}</span>
+      </div>
     </div>
     
     <p class="project-card-desc" title="${esc(descText || '')}">

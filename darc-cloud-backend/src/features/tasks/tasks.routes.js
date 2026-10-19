@@ -86,6 +86,15 @@ app.post('/', async (c) => {
   
   if (!titleAr) return c.json({ error: 'اسم المهمة مطلوب' }, 400);
 
+  // Support idempotent offline sync with pre-assigned ID
+  const providedId = (body.id && typeof body.id === 'string' && /^tsk_[a-zA-Z0-9_-]{6,36}$/.test(body.id)) ? body.id : null;
+  if (providedId) {
+    const { data: existing } = await supabase.from('tasks').select('*').eq('id', providedId).single();
+    if (existing) {
+      return c.json({ task: toCamelCase(existing), idempotent: true }, 200);
+    }
+  }
+
   const status = ['not_started', 'in_progress', 'review', 'approval', 'done', 'blocked', 'canceled'].includes(body.status) ? body.status : 'not_started';
   
   // Reversible auto-progress mapping
@@ -100,6 +109,7 @@ app.post('/', async (c) => {
   });
 
   const taskData = {
+    ...(providedId ? { id: providedId } : {}),
     project_id: projectId,
     title_ar: titleAr,
     title_en: titleEn,
@@ -315,9 +325,27 @@ app.post('/:id/comments', async (c) => {
   const content = String(body.content || '').trim();
   if (!content) return c.json({ error: 'التعليق فارغ' }, 400);
 
+  // Support idempotent offline sync with pre-assigned comment ID
+  const providedCommentId = (body.id && typeof body.id === 'string' && /^cmt_[a-zA-Z0-9_-]{6,36}$/.test(body.id)) ? body.id : null;
+  if (providedCommentId) {
+    const { data: existing } = await supabase
+      .from('comments')
+      .select(`*, user:user_id(id, name, name_en, email, avatar_color)`)
+      .eq('id', providedCommentId)
+      .single();
+    if (existing) {
+      return c.json({ comment: toCamelCase(existing), idempotent: true }, 200);
+    }
+  }
+
   const { data: comment, error } = await supabase
     .from('comments')
-    .insert([{ task_id: taskId, user_id: userId, content }])
+    .insert([{
+      ...(providedCommentId ? { id: providedCommentId } : {}),
+      task_id: taskId,
+      user_id: userId,
+      content
+    }])
     .select(`*, user:user_id(id, name, name_en, email, avatar_color)`)
     .single();
 
