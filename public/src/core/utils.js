@@ -73,7 +73,8 @@ export function avatar(user, extra = '') {
   const color = /^#[0-9a-f]{6}$/i.test(safe.avatarColor || '') ? safe.avatarColor : '#0d6269';
   const title = esc(choose(safe.name, safe.nameEn || safe.name));
   if (safe.avatarUrl) {
-    return `<span class="avatar ${extra}" style="background:transparent;padding:0;overflow:hidden;border:1px solid rgba(255,255,255,0.15);display:inline-flex;align-items:center;justify-content:center;" title="${title}"><img src="${esc(safe.avatarUrl)}" alt="${title}" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;" onerror="this.parentElement.style.background='${color}';this.parentElement.innerHTML='${esc(initials(safe))}';" /></span>`;
+    const safeInitials = esc(initials(safe)).replace(/['"\\]/g, '');
+    return `<span class="avatar ${extra}" style="background:transparent;padding:0;overflow:hidden;border:1px solid rgba(255,255,255,0.15);display:inline-flex;align-items:center;justify-content:center;" title="${title}"><img src="${esc(safe.avatarUrl)}" alt="${title}" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;" onerror="this.parentElement.style.background='${color}';this.parentElement.textContent='${safeInitials}';" /></span>`;
   }
   return `<span class="avatar ${extra}" style="background:${color}" title="${title}">${esc(initials(safe))}</span>`;
 }

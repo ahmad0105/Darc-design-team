@@ -32,7 +32,12 @@ app.get('/:id', async (c) => {
   }
   
   if (doc.disk_filename && doc.disk_filename.startsWith('http')) {
-    return c.redirect(doc.disk_filename);
+    try {
+      const u = new URL(doc.disk_filename);
+      if (u.hostname.endsWith('google.com') || u.hostname.endsWith('googleusercontent.com')) {
+        return c.redirect(doc.disk_filename);
+      }
+    } catch {}
   }
   return c.json({ ok: true, document: doc });
 });

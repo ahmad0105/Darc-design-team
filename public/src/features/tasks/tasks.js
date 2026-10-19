@@ -1028,9 +1028,12 @@ export function openDocumentPreviewModal(docId) {
     if (match && match[1]) driveId = match[1];
   }
 
-  const embedUrl = driveId ? `https://drive.google.com/file/d/${driveId}/preview` : url;
-  const externalViewUrl = driveId ? `https://drive.google.com/file/d/${driveId}/view?usp=drivesdk` : (url.startsWith('http') ? url : `${window.location.origin}${url}`);
-  const downloadUrl = `/api/documents/${doc.id}`;
+  const rawEmbed = driveId ? `https://drive.google.com/file/d/${encodeURIComponent(driveId)}/preview` : url;
+  const isSafeProtocol = /^(https?:\/\/|\/)/i.test(rawEmbed);
+  const embedUrl = isSafeProtocol ? rawEmbed : 'about:blank';
+  const rawExternal = driveId ? `https://drive.google.com/file/d/${encodeURIComponent(driveId)}/view?usp=drivesdk` : (url.startsWith('http') ? url : `${window.location.origin}${url}`);
+  const externalViewUrl = /^(https?:\/\/|\/)/i.test(rawExternal) ? rawExternal : '#';
+  const downloadUrl = `/api/documents/${encodeURIComponent(doc.id)}`;
 
   const isImage = /\.(jpe?g|png|gif|webp|svg|heic)$/i.test(doc.originalName) || (doc.mimeType && doc.mimeType.startsWith('image/'));
   const fileSize = doc.size > 1024 * 1024 ? (doc.size / (1024 * 1024)).toFixed(1) + ' MB' : Math.round((doc.size || 0) / 1024) + ' KB';
@@ -1061,13 +1064,13 @@ export function openDocumentPreviewModal(docId) {
           </div>
         </div>
         <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
-          <button type="button" class="btn btn-soft btn-sm" data-action="copy-doc-link" data-doc-id="${doc.id}" style="display:flex;align-items:center;gap:6px;" title="${choose('نسخ رابط المشاركة', 'Copy share link')}">
+          <button type="button" class="btn btn-soft btn-sm" data-action="copy-doc-link" data-doc-id="${esc(doc.id)}" style="display:flex;align-items:center;gap:6px;" title="${choose('نسخ رابط المشاركة', 'Copy share link')}">
             ${icon('link', 13)} <span class="hide-mobile">${choose('نسخ الرابط', 'Copy Link')}</span>
           </button>
-          <a href="${externalViewUrl}" target="_blank" rel="noopener noreferrer" class="btn btn-soft btn-sm" style="text-decoration:none;display:flex;align-items:center;gap:6px;" title="${choose('فتح في Google Drive', 'Open in Google Drive')}">
+          <a href="${esc(externalViewUrl)}" target="_blank" rel="noopener noreferrer" class="btn btn-soft btn-sm" style="text-decoration:none;display:flex;align-items:center;gap:6px;" title="${choose('فتح في Google Drive', 'Open in Google Drive')}">
             ${icon('globe', 13)} <span class="hide-mobile">${choose('فتح في Drive', 'Open in Drive')}</span>
           </a>
-          <a href="${downloadUrl}" target="_blank" download class="btn btn-primary btn-sm" style="text-decoration:none;display:flex;align-items:center;gap:6px;" title="${choose('تحميل المخطط', 'Download')}">
+          <a href="${esc(downloadUrl)}" target="_blank" download class="btn btn-primary btn-sm" style="text-decoration:none;display:flex;align-items:center;gap:6px;" title="${choose('تحميل المخطط', 'Download')}">
             ${icon('download', 13)} <span class="hide-mobile">${choose('تحميل', 'Download')}</span>
           </a>
           <button type="button" class="btn btn-ghost btn-sm" id="close-preview-modal-btn" style="padding:6px;min-width:0;margin-inline-start:4px;" title="${choose('إغلاق', 'Close')}">${icon('close', 18)}</button>
@@ -1076,10 +1079,10 @@ export function openDocumentPreviewModal(docId) {
       <div style="flex:1;position:relative;background:#1a1a1a;overflow:hidden;display:flex;align-items:center;justify-content:center;">
         ${!driveId && isImage ? `
           <div style="width:100%;height:100%;overflow:auto;display:flex;align-items:center;justify-content:center;padding:15px;">
-            <img src="${embedUrl}" alt="${esc(doc.originalName)}" style="max-width:100%;max-height:100%;object-fit:contain;border-radius:4px;box-shadow:0 4px 20px rgba(0,0,0,0.5);" onerror="this.onerror=null;this.src='${downloadUrl}';" />
+            <img src="${esc(embedUrl)}" alt="${esc(doc.originalName)}" style="max-width:100%;max-height:100%;object-fit:contain;border-radius:4px;box-shadow:0 4px 20px rgba(0,0,0,0.5);" onerror="this.onerror=null;this.src='${esc(downloadUrl)}';" />
           </div>
         ` : `
-          <iframe src="${embedUrl}" style="width:100%;height:100%;border:none;background:#fff;" allow="autoplay" loading="lazy"></iframe>
+          <iframe src="${esc(embedUrl)}" style="width:100%;height:100%;border:none;background:#fff;" allow="autoplay" loading="lazy"></iframe>
         `}
       </div>
     </div>

@@ -6,6 +6,7 @@ import crypto from 'node:crypto';
 import { Buffer } from 'node:buffer';
 import { toCamelCase } from '../../utils/transformers.js';
 import { invalidateUsersCache, setUserTokenVersion } from '../../core/cache.js';
+import { authRateLimiter } from '../../core/rate-limit.js';
 
 const app = new Hono();
 
@@ -53,7 +54,7 @@ async function getUserIdFromCookie(c) {
   }
 }
 
-app.post('/forgot-password', async (c) => {
+app.post('/forgot-password', authRateLimiter(), async (c) => {
   const body = await c.req.json();
   const supabase = c.get('supabase');
   const email = String(body.email || '').trim().toLowerCase();
@@ -70,7 +71,7 @@ app.post('/forgot-password', async (c) => {
   return c.json({ ok: true, message: 'إذا كان البريد مسجلاً لدينا، ستصلك رسالة قريباً.' });
 });
 
-app.post('/reset-password', async (c) => {
+app.post('/reset-password', authRateLimiter(), async (c) => {
   const body = await c.req.json();
   const supabase = c.get('supabase');
   const token = String(body.token || '');
@@ -157,7 +158,7 @@ app.post('/change-password', async (c) => {
   return c.json({ ok: true });
 });
 
-app.post('/activate', async (c) => {
+app.post('/activate', authRateLimiter(), async (c) => {
   const body = await c.req.json();
   const token = String(body.token || '').trim();
   const password = String(body.password || '');
