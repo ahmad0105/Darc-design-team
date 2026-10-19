@@ -4,7 +4,8 @@ const ALLOWED_ORIGINS = [
   'http://localhost:4318',
   'http://127.0.0.1:4318',
   'http://localhost:8787',
-  'http://127.0.0.1:8787'
+  'http://127.0.0.1:8787',
+  'https://darc-design-team.netlify.app'
 ];
 
 /**
@@ -93,8 +94,9 @@ export function csrfGuardMiddleware() {
         ALLOWED_ORIGINS.includes(origin) ||
         origin.startsWith('http://localhost:') ||
         origin.startsWith('http://127.0.0.1:') ||
-        origin.endsWith('.darc.local') ||
-        origin.includes('netlify.app');
+        origin === 'https://darc-design-team.netlify.app' ||
+        origin.endsWith('.darc-design-team.netlify.app') ||
+        origin.endsWith('.darc.local');
 
       if (!isAllowed) {
         return c.json(

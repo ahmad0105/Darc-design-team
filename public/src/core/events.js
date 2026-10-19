@@ -1244,6 +1244,12 @@ export async function uploadTaskFiles(files, taskId) {
         showToast(choose(`حجم الملف "${file.name}" يتجاوز الحد الأقصى (2GB).`, `File "${file.name}" exceeds 2GB limit.`), true);
         continue;
       }
+      const rawExt = file.name.split('.').pop()?.toLowerCase() || '';
+      const dangerousExts = ['exe', 'bat', 'cmd', 'sh', 'bash', 'ps1', 'vbs', 'js', 'mjs', 'cjs', 'py', 'php', 'phtml', 'html', 'htm', 'jar', 'msi', 'dll', 'com', 'scr', 'hta', 'svg', 'apk'];
+      if (dangerousExts.includes(rawExt) || file.type === 'image/svg+xml') {
+        showToast(choose(`صيغة الملف "${file.name}" غير مسموح بها لأسباب أمنية.`, `File type for "${file.name}" is not permitted for security reasons.`), true);
+        continue;
+      }
       const lastDot = file.name.lastIndexOf('.');
       const ext = lastDot !== -1 ? file.name.substring(lastDot).toLowerCase() : '';
       const baseName = lastDot !== -1 ? file.name.substring(0, lastDot) : file.name;

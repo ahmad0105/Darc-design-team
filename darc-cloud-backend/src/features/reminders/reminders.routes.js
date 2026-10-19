@@ -87,6 +87,11 @@ app.get('/', async (c) => {
 
   let query = supabase.from('reminders').select('*');
   if (taskId) {
+    const { data: task } = await supabase.from('tasks').select('id, project_id, custom_fields').eq('id', taskId).single();
+    if (!task) return c.json({ reminders: [] });
+    if (!(await isProjectVisible(supabase, userId, roleId, task.project_id))) {
+      return c.json({ error: 'غير مصرح لك بعرض تذكيرات هذه المهمة.' }, 403);
+    }
     query = query.eq('task_id', taskId);
   } else {
     query = query.eq('user_id', userId).is('sent_at', null);

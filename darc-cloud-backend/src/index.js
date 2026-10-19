@@ -36,23 +36,30 @@ app.use('*', correlationIdMiddleware());
 // 2. Security Headers (nosniff, SAMEORIGIN, HSTS)
 app.use('*', securityHeadersMiddleware());
 
-// 3. CORS
-const ALLOWED_ORIGINS = ['http://localhost:4318', 'http://127.0.0.1:4318', 'http://localhost:8787', 'http://127.0.0.1:8787'];
+// 3. CORS Guard: Strictly allow only authorized domains
+const ALLOWED_ORIGINS = [
+  'http://localhost:4318',
+  'http://127.0.0.1:4318',
+  'http://localhost:8787',
+  'http://127.0.0.1:8787',
+  'https://darc-design-team.netlify.app'
+];
 app.use('*', cors({
   origin: (origin) => {
     if (!origin) return 'http://localhost:4318';
     if (
       ALLOWED_ORIGINS.includes(origin) || 
       origin.endsWith('.darc.local') || 
-      origin.endsWith('.netlify.app') ||
-      origin.includes('netlify.app') ||
-      origin.startsWith('http://localhost:')
+      origin === 'https://darc-design-team.netlify.app' ||
+      origin.endsWith('.darc-design-team.netlify.app') ||
+      origin.startsWith('http://localhost:') ||
+      origin.startsWith('http://127.0.0.1:')
     ) return origin;
-    return origin; // Allow configured frontend domain
+    return null; // Explicitly reject unauthorized third-party origins
   },
   credentials: true,
   allowMethods: ['GET', 'HEAD', 'PUT', 'POST', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowHeaders: ['Content-Type', 'Authorization', 'Cookie', 'x-session-url', 'content-range', 'x-doc-meta', 'X-File-Name', 'If-None-Match', 'X-Request-Id'],
+  allowHeaders: ['Content-Type', 'Authorization', 'Cookie', 'x-session-url', 'content-range', 'x-doc-meta', 'X-File-Name', 'If-None-Match', 'X-Request-Id', 'X-Offline-Replay', 'X-Offline-Id', 'X-Idempotency-Key'],
   exposeHeaders: ['Set-Cookie', 'ETag', 'X-Request-Id']
 }));
 

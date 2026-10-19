@@ -149,12 +149,17 @@ app.get('/', async (c) => {
       const visibleIds = userProjects.map(p => p.id);
 
       if (visibleIds.length > 0) {
-        [tasksRes, docsRes, membersRes, commentsRes] = await Promise.all([
+        [tasksRes, docsRes, membersRes] = await Promise.all([
           supabase.from('active_tasks').select(TASK_COLUMNS).in('project_id', visibleIds),
           supabase.from('documents').select(DOCUMENT_COLUMNS).in('project_id', visibleIds).is('deleted_at', null),
-          supabase.from('project_members').select(MEMBER_COLUMNS).in('project_id', visibleIds),
-          supabase.from('comments').select(COMMENT_COLUMNS).is('deleted_at', null)
+          supabase.from('project_members').select(MEMBER_COLUMNS).in('project_id', visibleIds)
         ]);
+        const visibleTaskIds = (tasksRes?.data || []).map(t => t.id);
+        if (visibleTaskIds.length > 0) {
+          commentsRes = await supabase.from('comments').select(COMMENT_COLUMNS).in('task_id', visibleTaskIds).is('deleted_at', null);
+        } else {
+          commentsRes = { data: [] };
+        }
       } else {
         tasksRes = { data: [] }; docsRes = { data: [] }; membersRes = { data: [] }; commentsRes = { data: [] };
       }

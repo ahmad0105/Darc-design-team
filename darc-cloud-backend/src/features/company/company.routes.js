@@ -34,8 +34,10 @@ app.patch('/', async (c) => {
     if (rawLogo.length > 4 * 1024 * 1024) {
       return c.json({ error: 'حجم ملف الشعار يتجاوز الحد المسموح (3MB)' }, 400);
     }
-    if (rawLogo && !rawLogo.startsWith('data:image/') && !rawLogo.startsWith('https://')) {
-      return c.json({ error: 'نوع ملف الشعار غير مدعوم' }, 400);
+    const isSafeRaster = /^data:image\/(png|jpeg|jpg|webp|gif);base64,/i.test(rawLogo);
+    const isHttps = rawLogo.startsWith('https://');
+    if (rawLogo && !isSafeRaster && !isHttps) {
+      return c.json({ error: 'نوع ملف الشعار غير مدعوم. يرجى استخدام PNG أو JPEG أو WebP أو رابط آمن.' }, 400);
     }
     updates.logo_url = rawLogo;
   }

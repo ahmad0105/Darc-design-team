@@ -426,7 +426,7 @@ export async function syncPendingMutations(apiFunction) {
       await apiFunction(item.path, opts);
       syncedCount++;
     } catch (err) {
-      console.error(`[Offline Sync] Failed to replay mutation ${item.id} (${item.path}):`, err.message);
+      console.error('[Offline Sync] Failed to replay mutation:', item.id, item.path, err.message);
       // Keep in failed items if network failed, drop if permanent validation error
       if (err.message && err.message.includes('تعذر الاتصال')) {
         failedItems.push(item);

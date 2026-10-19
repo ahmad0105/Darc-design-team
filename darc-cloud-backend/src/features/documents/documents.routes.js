@@ -11,6 +11,35 @@ import { hasPermission, isProjectVisible } from '../../utils/permissions.js';
 import { toCamelCase } from '../../utils/transformers.js';
 import { generateSecureId } from '../../core/security.js';
 
+const DANGEROUS_EXTENSIONS = new Set([
+  'exe', 'bat', 'cmd', 'sh', 'bash', 'ps1', 'vbs', 'js', 'mjs', 'cjs',
+  'py', 'php', 'phtml', 'php3', 'php4', 'php5', 'phps', 'html', 'htm',
+  'xhtml', 'jar', 'msi', 'dll', 'com', 'scr', 'hta', 'svg', 'apk', 'app',
+  'deb', 'rpm', 'vbe', 'wsf', 'wsh'
+]);
+
+export function isDangerousFile(filename, mimeType = '') {
+  if (!filename || typeof filename !== 'string') return true;
+  const parts = filename.toLowerCase().trim().split('.');
+  if (parts.length >= 2) {
+    for (const part of parts.slice(1)) {
+      if (DANGEROUS_EXTENSIONS.has(part)) return true;
+    }
+  }
+  const lowMime = (mimeType || '').toLowerCase();
+  if (
+    lowMime.includes('javascript') ||
+    lowMime.includes('html') ||
+    lowMime.includes('svg+xml') ||
+    lowMime.includes('x-msdownload') ||
+    lowMime.includes('x-sh') ||
+    lowMime.includes('x-php')
+  ) {
+    return true;
+  }
+  return false;
+}
+
 const app = new Hono();
 
 app.use('*', async (c, next) => {
@@ -54,6 +83,10 @@ app.post('/session', async (c) => {
     return c.json({ error: 'غير مصرح لك برفع مستندات لهذا المشروع' }, 403);
   }
 
+  if (isDangerousFile(compiledName, mimeType)) {
+    return c.json({ error: 'صيغة الملف غير مسموح برفعها لأسباب أمنية.' }, 400);
+  }
+
   const origin = c.req.header('origin') || 'http://127.0.0.1:8787';
 
   try {
@@ -85,6 +118,10 @@ app.post('/finalize', async (c) => {
 
   if (projectId && !(await hasPermission(supabase, userId, roleId, 'edit_tasks', projectId))) {
     return c.json({ error: 'غير مصرح لك برفع مستندات لهذا المشروع' }, 403);
+  }
+
+  if (isDangerousFile(compiledName, mimeType)) {
+    return c.json({ error: 'صيغة الملف غير مسموح برفعها لأسباب أمنية.' }, 400);
   }
 
   try {
@@ -172,6 +209,10 @@ app.put('/chunk', async (c) => {
         return c.json({ error: 'غير مصرح لك برفع مستندات لهذا المشروع' }, 403);
       }
 
+      if (isDangerousFile(docMeta.compiledName || driveData.name, docMeta.mimeType)) {
+        return c.json({ error: 'صيغة الملف غير مسموح برفعها لأسباب أمنية.' }, 400);
+      }
+
       const driveResult = await finalizeGoogleDrivePermissions(c.env, driveData.id);
       const docId = generateSecureId('doc_');
 
@@ -220,6 +261,10 @@ app.post('/', async (c) => {
   const compiledName = body['compiledName'] || file?.name || 'document';
   
   if (!file) return c.json({ error: 'لم يتم إرفاق ملف' }, 400);
+
+  if (isDangerousFile(compiledName || file?.name, file?.type)) {
+    return c.json({ error: 'صيغة الملف غير مسموح برفعها لأسباب أمنية.' }, 400);
+  }
 
   if (projectId && !(await hasPermission(supabase, userId, roleId, 'edit_tasks', projectId))) {
     return c.json({ error: 'غير مصرح لك برفع مستندات لهذا المشروع' }, 403);

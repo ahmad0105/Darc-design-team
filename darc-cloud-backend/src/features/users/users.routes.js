@@ -83,8 +83,10 @@ app.patch('/me', async (c) => {
     if (body.avatarUrl.length > 3.5 * 1024 * 1024) {
       return c.json({ error: 'حجم الصورة يتجاوز الحد الأقصى المسموح به (2MB)' }, 400);
     }
-    if (body.avatarUrl && !body.avatarUrl.startsWith('data:image/') && !body.avatarUrl.startsWith('https://')) {
-      return c.json({ error: 'نوع ملف الصورة غير مدعوم' }, 400);
+    const isSafeRaster = /^data:image\/(png|jpeg|jpg|webp|gif);base64,/i.test(body.avatarUrl);
+    const isHttps = body.avatarUrl.startsWith('https://');
+    if (body.avatarUrl && !isSafeRaster && !isHttps) {
+      return c.json({ error: 'نوع ملف الصورة غير مدعوم. يرجى استخدام PNG أو JPEG أو WebP أو رابط آمن.' }, 400);
     }
     customFields.avatarUrl = body.avatarUrl;
     updates.avatar_url = body.avatarUrl;

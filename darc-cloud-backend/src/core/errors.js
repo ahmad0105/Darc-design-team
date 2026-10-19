@@ -23,7 +23,7 @@ export function createErrorHandler() {
     const isOperational = err.isOperational || (status < 500);
 
     // Operational logging with correlation ID for full traceability
-    console.error(`💥 [DARC Error] [${requestId}] [${status}]:`, err.message || err);
+    console.error('[DARC Error]', requestId, status, err.message || err);
 
     const message = isOperational
       ? (err.message || 'حدث خطأ أثناء معالجة الطلب.')
