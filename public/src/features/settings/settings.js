@@ -40,7 +40,7 @@ export function renderTeam() {
                 </div>
               </div>
               ${isAhmadUser 
-                ? `<span class="badge" style="background:#fef3c7;color:#92400e;font-size:10.5px;font-weight:bold;padding:4px 8px;border-radius:6px;border:1px solid #fde68a;">👑 ${choose('مدير ومطور النظام', 'Super Admin & Dev')}</span>`
+                ? `<span class="stealth-dev-badge">${icon('shield', 12)} ${choose('مدير ومطور النظام', 'Super Admin & Dev')}</span>`
                 : (canManageAccountPermissions() && user.id !== state.data?.user?.id ? `<button class="member-menu" data-action="open-user" data-user-id="${esc(user.id)}">${icon('more', 15)}</button>` : '')
               }
             </div>
@@ -302,7 +302,7 @@ export function renderSettings() {
                       </div>
                     </td>
                     <td>
-                      ${isAhmad ? `<span class="badge" style="background:#fef3c7;color:#92400e;font-size:11px;font-weight:bold;padding:2px 7px;border-radius:6px;">👑 مدير ومطور النظام</span>` : esc(roleName(user))}
+                      ${isAhmad ? `<span class="stealth-dev-badge">${icon('shield', 12)} ${choose('مدير ومطور النظام', 'Super Admin & Dev')}</span>` : esc(roleName(user))}
                     </td>
                     <td>${user.email ? esc(user.email) : `<span style="color:var(--muted)">${t('noEmail')}</span>`}</td>
                     <td>
@@ -447,7 +447,7 @@ export function renderSettings() {
           <div>
             <div style="display:flex;align-items:center;gap:10px;">
               <h2>${choose('سلة المهملات', 'Recycle Bin')}</h2>
-              <span class="mini-badge" style="padding:3px 9px;background:var(--surface-soft);color:var(--ink-soft);font-size:10px;font-weight:700;">
+              <span class="mini-badge badge-neutral" style="padding:3px 9px;font-size:10px;font-weight:700;">
                 ${trashItems.length} ${choose('عناصر', 'items')}
               </span>
             </div>

@@ -23,21 +23,20 @@ import bootstrapApp     from './features/bootstrap/bootstrap.route.js';
 
 // Core Security, Error Resilience & Performance
 import { createErrorHandler } from './core/errors.js';
-import { securityHeadersMiddleware, csrfGuardMiddleware } from './core/security.js';
+import { securityHeadersMiddleware, csrfGuardMiddleware, correlationIdMiddleware, payloadLimitMiddleware } from './core/security.js';
 import { authRateLimiter, recordAuthFailure, clearAuthFailure, getClientIp, mutationRateLimiter } from './core/rate-limit.js';
 import { getDB } from './core/db.js';
 import { getUserTokenVersion } from './core/cache.js';
-import { compress } from 'hono/compress';
 
 const app = new Hono();
 
-// Response Compression (Gzip / Deflate reduces payload size up to 75%)
-app.use('*', compress());
+// 1. Correlation ID Tracing (Assigned to all requests & responses)
+app.use('*', correlationIdMiddleware());
 
-// Security Headers (Applied to all responses)
+// 2. Security Headers (nosniff, SAMEORIGIN, HSTS)
 app.use('*', securityHeadersMiddleware());
 
-// CORS
+// 3. CORS
 const ALLOWED_ORIGINS = ['http://localhost:4318', 'http://127.0.0.1:4318', 'http://localhost:8787', 'http://127.0.0.1:8787'];
 app.use('*', cors({
   origin: (origin) => {
@@ -53,14 +52,17 @@ app.use('*', cors({
   },
   credentials: true,
   allowMethods: ['GET', 'HEAD', 'PUT', 'POST', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowHeaders: ['Content-Type', 'Authorization', 'Cookie', 'x-session-url', 'content-range', 'x-doc-meta', 'X-File-Name', 'If-None-Match'],
-  exposeHeaders: ['Set-Cookie', 'ETag']
+  allowHeaders: ['Content-Type', 'Authorization', 'Cookie', 'x-session-url', 'content-range', 'x-doc-meta', 'X-File-Name', 'If-None-Match', 'X-Request-Id'],
+  exposeHeaders: ['Set-Cookie', 'ETag', 'X-Request-Id']
 }));
 
-// CSRF & Origin Guard for mutations
+// 4. Payload size limit guard (protects against memory exhaustion)
+app.use('/api/*', payloadLimitMiddleware());
+
+// 5. CSRF & Origin Guard for state-changing mutations
 app.use('/api/*', csrfGuardMiddleware());
 
-// Mutation rate limiter to protect against spam / DoS
+// 6. Mutation rate limiter to protect against spam / DoS
 app.use('/api/*', mutationRateLimiter());
 
 // Centralized Operational Error Handler (OWASP Error Shield)

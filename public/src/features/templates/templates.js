@@ -49,7 +49,7 @@ export function renderTemplates() {
       <p>${t('standardLibrarySub')}</p>
     </div>
     <div class="page-actions">
-      <span class="mini-badge" style="padding:9px 11px;color:var(--teal);background:var(--mint);font-weight:700;">${sortedTemplates.length} ${t('templatesCount')}</span>
+      <span class="mini-badge badge-pulse" style="padding:7px 12px;font-weight:700;">${sortedTemplates.length} ${t('templatesCount')}</span>
       ${can('manage_templates') ? `<button class="btn btn-primary" data-action="new-template" style="margin-${state.lang === 'ar' ? 'right' : 'left'}:10px">${icon('plus', 15)} ${choose('إضافة قالب', 'Add Template')}</button>` : ''}
     </div>
   </div>
@@ -94,7 +94,7 @@ export function renderTemplates() {
                   <strong>${esc(choose(template.nameAr, template.nameEn))}</strong>
                   <span>${esc(state.lang === 'ar' ? template.nameEn : template.nameAr)}</span>
                 </div>
-                <span class="mini-badge" style="background:var(--surface-soft);color:var(--teal);border:1px solid var(--line);font-size:11px;font-weight:600;padding:2px 8px;border-radius:6px;margin-inline-start:auto;">${esc(template.typeAr || 'مخطط')}</span>
+                <span class="badge badge-teal" style="font-size:10.5px;font-weight:600;padding:2px 8px;border-radius:6px;margin-inline-start:auto;">${esc(template.typeAr || 'مخطط')}</span>
                 <button class="btn btn-secondary btn-sm" data-action="use-template" data-template-id="${esc(template.id)}" title="${t('useTemplate')}" style="padding:3px 8px;font-size:11px;margin-inline-start:6px;display:inline-flex;align-items:center;gap:4px;border-radius:6px;">
                   ${icon('plus', 12)}
                   <span>${t('useTemplate')}</span>

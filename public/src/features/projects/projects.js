@@ -630,7 +630,7 @@ export function renderProjectDetail() {
                 ${drawingTasks.map((task) => `
                   <tr data-action="open-task" data-task-id="${esc(task.id)}" style="cursor:pointer;" title="${choose('انقر لعرض وتعديل المهمة ورفع المخططات', 'Click to open task and manage files')}">
                     <td><span class="table-title">${esc(choose(task.titleAr, task.titleEn))}</span><span class="table-sub">${esc(task.templateId || 'CUSTOM')}</span></td>
-                    <td><span class="mini-badge" style="background:var(--blue-soft);color:var(--blue);font-size:10px;">${esc(choose(task.typeAr, task.typeEn) || choose('مخطط', 'Drawing'))}</span></td>
+                    <td><span class="mini-badge badge-blue" style="font-size:10px;padding:3px 8px;">${esc(choose(task.typeAr, task.typeEn) || choose('مخطط', 'Drawing'))}</span></td>
                     <td><span class="status-badge ${esc(task.status)}">${esc(statusText(task.status))}</span></td>
                     <td>
                       <div style="display:flex;align-items:center;gap:6px;">

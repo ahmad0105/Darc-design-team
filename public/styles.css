@@ -398,7 +398,7 @@ a { color: inherit; text-decoration: none; }
 .attention-icon.amber { color: var(--amber); background: var(--amber-soft); }
 .attention-icon.blue { color: var(--blue); background: var(--blue-soft); }
 .attention-copy { min-width: 0; }
-.attention-copy strong, .attention-copy span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.attention-copy strong, .attention-copy span:not(.badge):not(.mini-badge):not(.role-badge):not(.role-system-badge):not(.stealth-dev-badge):not(.type-pill) { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .attention-copy strong { font-size: 10px; }
 .attention-copy span { margin-top: 4px; color: var(--muted); font-size: 9px; }
 .empty { display: grid; place-items: center; min-height: 125px; padding: 20px; color: var(--muted); text-align: center; font-size: 11px; line-height: 1.8; }
@@ -410,7 +410,7 @@ a { color: inherit; text-decoration: none; }
 .team-row:last-child { border-bottom: 0; }
 .team-member { display: flex; align-items: center; gap: 9px; min-width: 0; }
 .team-member-copy { min-width: 0; }
-.team-member-copy strong, .team-member-copy span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.team-member-copy strong, .team-member-copy span:not(.badge):not(.mini-badge):not(.role-badge):not(.role-system-badge):not(.stealth-dev-badge):not(.type-pill) { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .team-member-copy strong { font-size: 10px; color: var(--ink); }
 .team-member-copy span { margin-top: 3px; color: var(--muted); font-size: 9px; }
 .team-stat { color: var(--ink-soft); font-size: 10px; }
@@ -428,19 +428,61 @@ a { color: inherit; text-decoration: none; }
 .pulse-bar.current { background: var(--teal); }
 .pulse-col span { color: var(--muted); font-size: 9px; }
 
-.status-badge, .priority-badge, .mini-badge { display: inline-flex; align-items: center; justify-content: center; gap: 5px; white-space: nowrap; border-radius: 99px; font-size: 9px; font-weight: 900; }
-.status-badge { padding: 6px 9px; }
+/* --- Unified Badge System --- */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.3;
+  white-space: nowrap;
+  background: var(--surface-soft);
+  color: var(--ink-soft);
+  border: 1px solid var(--line);
+  transition: all 0.18s ease;
+}
+
+.status-badge, .priority-badge, .mini-badge { display: inline-flex; align-items: center; justify-content: center; gap: 5px; white-space: nowrap; border-radius: 99px; font-size: 9.5px; font-weight: 700; line-height: 1.3; }
+.status-badge { padding: 6px 9px; font-weight: 900; }
 .status-badge.on_track, .status-badge.done { color: #177f73; background: #e3f6f0; }
 .status-badge.at_risk, .status-badge.review, .status-badge.approval { color: #9b6827; background: #fff1da; }
 .status-badge.off_track, .status-badge.blocked { color: #b05249; background: #ffebea; }
 .status-badge.in_progress { color: #436d9e; background: #e9f1fb; }
 .status-badge.not_started, .status-badge.on_hold, .status-badge.planning { color: #687c80; background: #eef2f1; }
 .status-badge.completed { color: #177f73; background: #e3f6f0; }
-.priority-badge { padding: 4px 7px; }
+.priority-badge { padding: 4px 7px; font-weight: 900; }
 .priority-badge.urgent { color: var(--red); background: var(--red-soft); }
 .priority-badge.high { color: #a16a25; background: var(--amber-soft); }
 .priority-badge.medium { color: var(--blue); background: var(--blue-soft); }
 .priority-badge.low { color: var(--ink-soft); background: #eef2f1; }
+
+/* Semantic Badge Variants */
+.badge-teal, .badge-pulse { background: var(--mint); color: var(--teal); border: 1px solid rgba(22, 178, 144, 0.2); }
+.badge-blue, .badge-info { background: var(--blue-soft); color: var(--blue); border: 1px solid rgba(59, 130, 246, 0.2); }
+.badge-amber, .badge-warning { background: var(--amber-soft); color: var(--amber); border: 1px solid rgba(245, 158, 11, 0.25); }
+.badge-red, .badge-attention { background: var(--red-soft); color: var(--red); border: 1px solid rgba(239, 68, 68, 0.2); }
+.badge-neutral { background: var(--surface-soft); color: var(--ink-soft); border: 1px solid var(--line); }
+
+/* Developer & Super Admin Stealth Badge */
+.stealth-dev-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: #92400e;
+  background: #fef3c7;
+  border: 1px solid #fde68a;
+  white-space: nowrap;
+  box-shadow: 0 1px 3px rgba(146, 64, 14, 0.08);
+}
 
 .view-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; padding: 8px; border: 1px solid var(--line); border-radius: 14px; background: #fff; }
 .view-toolbar-start, .view-toolbar-end { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
@@ -571,7 +613,7 @@ a { color: inherit; text-decoration: none; }
 .template-item:hover { border-color: #cde4df; background: #fbfefd; }
 .template-number { width: 30px; height: 30px; display: grid; place-items: center; flex: none; border-radius: 9px; color: var(--teal); background: #eaf7f4; font-size: 10px; font-weight: 900; }
 .template-copy { min-width: 0; flex: 1; }
-.template-copy strong, .template-copy span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.template-copy strong, .template-copy span:not(.badge):not(.mini-badge):not(.role-badge):not(.role-system-badge):not(.stealth-dev-badge):not(.type-pill) { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .template-copy strong { font-size: 10px; }
 .template-copy span { margin-top: 4px; color: var(--muted); font-size: 9px; direction: ltr; text-align: right; }
 .template-weight { color: var(--muted); font-size: 9px; }
@@ -584,7 +626,7 @@ a { color: inherit; text-decoration: none; }
 .member-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
 .member-card-person { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .member-card-person-copy { min-width: 0; }
-.member-card-person-copy strong, .member-card-person-copy span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.member-card-person-copy strong, .member-card-person-copy span:not(.badge):not(.mini-badge):not(.role-badge):not(.role-system-badge):not(.stealth-dev-badge):not(.type-pill) { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .member-card-person-copy strong { font-size: 11px; }
 .member-card-person-copy span { margin-top: 4px; color: var(--muted); font-size: 9px; }
 .member-menu { width: 27px; height: 27px; display: grid; place-items: center; border: 0; border-radius: 8px; color: var(--muted); background: transparent; }
@@ -1399,9 +1441,39 @@ body:has(#floating-upload-manager) .toast-stack { bottom: 230px; }
   color: var(--mint-strong);
 }
 
-[data-theme="dark"] .mini-badge {
-  background: var(--surface-soft) !important;
-  color: var(--ink-soft) !important;
+/* --- Semantic Badges in Dark Mode --- */
+[data-theme="dark"] .badge-teal,
+[data-theme="dark"] .badge-pulse {
+  background: rgba(22, 178, 144, 0.16);
+  color: var(--mint-strong);
+  border-color: rgba(45, 212, 191, 0.25);
+}
+[data-theme="dark"] .badge-blue,
+[data-theme="dark"] .badge-info {
+  background: rgba(37, 99, 235, 0.16);
+  color: #93c5fd;
+  border-color: rgba(147, 197, 253, 0.28);
+}
+[data-theme="dark"] .badge-amber,
+[data-theme="dark"] .badge-warning {
+  background: rgba(245, 158, 11, 0.16);
+  color: #fbbf24;
+  border-color: rgba(251, 191, 36, 0.28);
+}
+[data-theme="dark"] .badge-red,
+[data-theme="dark"] .badge-attention {
+  background: rgba(239, 68, 68, 0.16);
+  color: #f87171;
+  border-color: rgba(248, 113, 113, 0.28);
+}
+[data-theme="dark"] .badge-neutral {
+  background: var(--surface-soft);
+  color: var(--ink-soft);
+  border-color: var(--line);
+}
+[data-theme="dark"] .mini-badge:not([class*="badge-"]) {
+  background: var(--surface-soft);
+  color: var(--ink-soft);
 }
 
 [data-theme="dark"] .audit-row {

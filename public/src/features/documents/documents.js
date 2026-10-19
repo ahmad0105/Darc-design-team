@@ -34,7 +34,7 @@ export function renderDocuments() {
         <p class="intro">${choose('استعراض وتحميل ومعاينة كافة المخططات والمستندات المرفوعة في جميع المشاريع.', 'Browse, preview, and download all architectural blueprints and documents uploaded across projects.')}</p>
       </div>
       <div style="display:flex;align-items:center;gap:10px;">
-        <span class="mini-badge" style="padding:6px 12px;background:var(--teal-soft);color:var(--teal);font-weight:700;font-size:12px;">
+        <span class="mini-badge badge-pulse" style="padding:6px 12px;font-weight:700;font-size:12px;">
           ${filteredDocs.length} ${choose('ملف', 'files')} (${totalSizeFormatted})
         </span>
       </div>
@@ -103,7 +103,7 @@ export function renderDocuments() {
                     </div>
                   </td>
                   <td>
-                    ${proj ? `<span class="badge" style="background:var(--surface-soft);border:1px solid var(--line);font-size:11px;cursor:pointer;" data-action="open-project" data-project-id="${esc(proj.id)}">${esc(proj.code)}</span>` : '—'}
+                    ${proj ? `<span class="badge badge-neutral" style="font-size:11px;cursor:pointer;" data-action="open-project" data-project-id="${esc(proj.id)}">${esc(proj.code)}</span>` : '—'}
                   </td>
                   <td>
                     ${task ? `<span style="font-size:12px;color:var(--ink);cursor:pointer;" data-action="open-task" data-task-id="${esc(task.id)}">${esc(choose(task.titleAr, task.titleEn))}</span>` : '—'}

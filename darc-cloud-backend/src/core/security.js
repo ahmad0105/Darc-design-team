@@ -27,6 +27,53 @@ export function securityHeadersMiddleware() {
 }
 
 /**
+ * Correlation ID Middleware (Request Tracing)
+ * Attaches unique X-Request-Id to request context and outgoing response headers.
+ */
+export function correlationIdMiddleware() {
+  return async (c, next) => {
+    let requestId = c.req.header('x-request-id');
+    if (!requestId) {
+      if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+        requestId = 'req_' + crypto.randomUUID().replace(/-/g, '').slice(0, 16);
+      } else {
+        requestId = 'req_' + Math.random().toString(36).substr(2, 12);
+      }
+    }
+    c.set('requestId', requestId);
+    c.res.headers.set('X-Request-Id', requestId);
+    await next();
+    c.res.headers.set('X-Request-Id', requestId);
+  };
+}
+
+/**
+ * Payload Limit Middleware
+ * Protects against memory exhaustion and oversized payloads (default 2.5MB).
+ */
+export function payloadLimitMiddleware(maxBytes = 2.5 * 1024 * 1024) {
+  return async (c, next) => {
+    const method = c.req.method;
+    if (['GET', 'HEAD', 'OPTIONS'].includes(method)) {
+      return next();
+    }
+    // Skip chunked file uploads that handle streaming
+    const contentRange = c.req.header('content-range');
+    if (contentRange || c.req.path.includes('/documents/upload')) {
+      return next();
+    }
+    const len = c.req.header('content-length');
+    if (len && parseInt(len, 10) > maxBytes) {
+      return c.json({
+        error: 'حجم البيانات المرسلة كبير جداً ويتجاوز الحد الأقصى المسموح به (2.5MB).',
+        code: 'PAYLOAD_TOO_LARGE'
+      }, 413);
+    }
+    await next();
+  };
+}
+
+/**
  * Origin / CSRF Shield for state-changing requests (POST, PUT, PATCH, DELETE).
  * Ensures requests originate only from approved web domains.
  */
@@ -73,4 +120,3 @@ export function generateSecureId(prefix = 'id_') {
   }
   return prefix + Math.random().toString(36).substr(2, 9);
 }
-

@@ -91,28 +91,32 @@ app.get('/', async (c) => {
 
     let roles, templates, activeUsers, company, projectsRes, tasksRes, docsRes, membersRes, commentsRes, auditRes, notifRes;
 
+    const PROJECT_COLUMNS = 'id, code, name_ar, name_en, client_ar, client_en, description_ar, description_en, lifecycle, health, start_date, due_date, manager_id, progress, progress_mode, demo, custom_fields, created_at, updated_at';
+    const TASK_COLUMNS = 'id, project_id, code, title_ar, title_en, description_ar, description_en, status, priority, category_ar, category_en, weight, progress, assignee_id, reviewer_id, start_date, due_date, template_id, custom_fields, created_at, updated_at';
+    const MEMBER_COLUMNS = 'project_id, user_id, role_id';
+    const NOTIFICATION_COLUMNS = 'id, user_id, type, content, task_id, project_id, read, created_at';
     const DOCUMENT_COLUMNS = 'id, project_id, task_id, uploader_id, original_name, disk_filename, mime_type, size, status, created_at, deleted_at';
     const COMMENT_COLUMNS = 'id, task_id, user_id, content, created_at, updated_at, deleted_at';
 
-    // Single-batch parallel execution (eliminates sequential round-trips)
+    // Single-batch parallel execution (eliminates sequential round-trips & lean projections)
     if (isGlobalAdmin) {
       [roles, templates, activeUsers, company, projectsRes, tasksRes, docsRes, membersRes, commentsRes, auditRes, notifRes] = await Promise.all([
         getCachedRoles(supabase),
         getCachedTemplates(supabase),
         getCachedUsers(supabase),
         getCachedCompany(supabase),
-        supabase.from('active_projects').select('*'),
-        supabase.from('active_tasks').select('*'),
+        supabase.from('active_projects').select(PROJECT_COLUMNS),
+        supabase.from('active_tasks').select(TASK_COLUMNS),
         supabase.from('documents').select(DOCUMENT_COLUMNS).is('deleted_at', null),
-        supabase.from('project_members').select('*'),
+        supabase.from('project_members').select(MEMBER_COLUMNS),
         supabase.from('comments').select(COMMENT_COLUMNS).is('deleted_at', null),
         supabase.from('audit_logs').select('id, user_id, action, entity_type, entity_id, details, created_at').order('created_at', { ascending: false }).limit(30),
-        supabase.from('notifications').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(25)
+        supabase.from('notifications').select(NOTIFICATION_COLUMNS).eq('user_id', userId).order('created_at', { ascending: false }).limit(25)
       ]);
     } else {
-      const initialProjReq = supabase.from('active_projects').select('*, project_members!inner(user_id)').eq('project_members.user_id', userId);
+      const initialProjReq = supabase.from('active_projects').select(`${PROJECT_COLUMNS}, project_members!inner(user_id)`).eq('project_members.user_id', userId);
       const auditLogsReq = supabase.from('audit_logs').select('id, user_id, action, entity_type, entity_id, details, created_at').eq('user_id', userId).order('created_at', { ascending: false }).limit(15);
-      const notifReq = supabase.from('notifications').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(25);
+      const notifReq = supabase.from('notifications').select(NOTIFICATION_COLUMNS).eq('user_id', userId).order('created_at', { ascending: false }).limit(25);
 
       const [r, t, u, comp, userProjRes, auditLogsRes, nr] = await Promise.all([
         getCachedRoles(supabase),
@@ -137,7 +141,7 @@ app.get('/', async (c) => {
       let userProjects = (userProjRes.data || []).map(p => { const copy = { ...p }; delete copy.project_members; return copy; });
       
       if (canViewAll) {
-        const { data: allProj } = await supabase.from('active_projects').select('*');
+        const { data: allProj } = await supabase.from('active_projects').select(PROJECT_COLUMNS);
         if (allProj) userProjects = allProj;
       }
       
@@ -146,9 +150,9 @@ app.get('/', async (c) => {
 
       if (visibleIds.length > 0) {
         [tasksRes, docsRes, membersRes, commentsRes] = await Promise.all([
-          supabase.from('active_tasks').select('*').in('project_id', visibleIds),
+          supabase.from('active_tasks').select(TASK_COLUMNS).in('project_id', visibleIds),
           supabase.from('documents').select(DOCUMENT_COLUMNS).in('project_id', visibleIds).is('deleted_at', null),
-          supabase.from('project_members').select('*').in('project_id', visibleIds),
+          supabase.from('project_members').select(MEMBER_COLUMNS).in('project_id', visibleIds),
           supabase.from('comments').select(COMMENT_COLUMNS).is('deleted_at', null)
         ]);
       } else {
