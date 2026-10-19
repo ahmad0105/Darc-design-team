@@ -4,19 +4,52 @@ export function renderLoading() {
   document.getElementById('app').innerHTML = `<div class="loading"><div class="loading-mark"><div class="loading-spinner"></div><span>${choose('جاري تجهيز مساحة العمل...', 'Preparing your workspace...')}</span></div></div>`;
 }
 
-export function closeModal() { 
-  document.getElementById('modal-root').innerHTML = ''; 
+let isClosingModal = false;
+
+export function closeModal(immediate = false) { 
   const previewOverlay = document.getElementById('preview-modal-overlay');
   if (previewOverlay) {
     previewOverlay.style.display = 'none';
     previewOverlay.innerHTML = '';
   }
-  document.body.style.overflow = '';
+
+  const modalRoot = document.getElementById('modal-root');
+  if (!modalRoot || !modalRoot.hasChildNodes()) {
+    document.body.style.overflow = '';
+    return;
+  }
+
+  if (immediate) {
+    modalRoot.innerHTML = '';
+    document.body.style.overflow = '';
+    isClosingModal = false;
+    return;
+  }
+
+  if (isClosingModal) return;
+  isClosingModal = true;
+
+  const backdrop = modalRoot.querySelector('.modal-backdrop');
+  const modal = modalRoot.querySelector('.modal');
+
+  if (backdrop && modal) {
+    backdrop.classList.add('is-closing');
+    modal.classList.add('is-closing');
+    setTimeout(() => {
+      modalRoot.innerHTML = '';
+      document.body.style.overflow = '';
+      isClosingModal = false;
+    }, 150);
+  } else {
+    modalRoot.innerHTML = '';
+    document.body.style.overflow = '';
+    isClosingModal = false;
+  }
 }
 
 export function modalShell(title, subtitle, body, id = '', extraClass = '') {
   document.body.style.overflow = 'hidden';
-  return `<div class="modal-backdrop"><div class="modal ${extraClass}" data-modal="${id}"><div class="modal-head"><div><h2>${esc(title)}</h2><p>${esc(subtitle || '')}</p></div><button class="modal-close" type="button" data-action="close-modal">${icon('close', 15)}</button></div>${body}</div></div>`;
+  return `<div class="modal-backdrop"><div class="modal ${extraClass}" data-modal="${id}"><div class="modal-head"><div><h2>${esc(title)}</h2><p>${esc(subtitle || '')}</p></div><button class="modal-close" type="button" data-action="close-modal" aria-label="${choose('إغلاق', 'Close')}">${icon('close', 15)}</button></div>${body}</div></div>`;
 }
 
 export function showToast(message, isError = false) {

@@ -59,14 +59,12 @@ document.addEventListener('dragstart', (event) => {
     event.dataTransfer.effectAllowed = 'move';
     try { event.dataTransfer.setData('text/plain', activeDraggedTaskId); } catch(e) {}
     card.classList.add('is-dragging');
-    setTimeout(() => { if (card) card.style.opacity = '0.35'; }, 0);
   }
 });
 
 document.addEventListener('dragend', (event) => {
   const card = event.target.closest('.task-card');
   if (card) {
-    card.style.opacity = '1';
     card.classList.remove('is-dragging');
   }
   activeDraggedTaskId = null;

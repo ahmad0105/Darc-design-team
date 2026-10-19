@@ -380,6 +380,67 @@ export function renderTasks() {
   return `<div class="page-head"><div><p class="eyebrow">${choose('حركة التنفيذ', 'EXECUTION')}</p><h1>${t('myTasks')}</h1><p>${choose('نظّم العمل حسب الحالة، الموعد، والمسؤولية.', 'Organize work by status, deadline, and ownership.')}</p></div><div class="page-actions">${can('create_tasks') ? `<button class="btn btn-primary" data-action="new-task">${icon('plus', 15)} ${t('addTask')}</button>` : ''}</div></div><div class="view-toolbar"><div class="view-toolbar-start"><div class="search-box">${icon('search', 15)}<input data-search="tasks" value="${esc(state.searches.tasks)}" placeholder="${t('search')}" /></div>${tabs.map(([key, label]) => `<button class="filter-tab ${state.taskFilter === key ? 'active' : ''}" data-action="task-filter" data-filter="${key}">${label}</button>`).join('')}</div><div class="view-toolbar-end" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">${renderTaskSortSelect(currentSort, 'sort-my-tasks')}<select class="filter-select" data-action="task-priority-filter"><option value="all">${choose('كل الأولويات', 'All Priorities')}</option><option value="urgent" ${state.taskPriorityFilter === 'urgent' ? 'selected' : ''}>🔥 ${choose('عاجلة', 'Urgent')}</option><option value="high" ${state.taskPriorityFilter === 'high' ? 'selected' : ''}>⚡ ${choose('عالية', 'High')}</option><option value="medium" ${state.taskPriorityFilter === 'medium' ? 'selected' : ''}>🔹 ${choose('متوسطة', 'Medium')}</option><option value="low" ${state.taskPriorityFilter === 'low' ? 'selected' : ''}>☕ ${choose('منخفضة', 'Low')}</option></select><select class="filter-select" data-action="task-project-filter"><option value="all">${t('all')} ${t('projects')}</option>${state.data.projects.map((project) => `<option value="${esc(project.id)}" ${state.taskProjectFilter === project.id ? 'selected' : ''}>${esc(choose(project.nameAr, project.nameEn))}</option>`).join('')}</select></div></div>${tasks.length ? renderBoard(tasks, currentSort) : `<section class="panel"><div class="empty">${icon('checklist', 18)}<span>${t('noTasks')}</span></div></section>`}`;
 }
 
+export function formatRemindAtDate(isoStr) {
+  if (!isoStr) return '—';
+  try {
+    const d = new Date(isoStr);
+    if (isNaN(d.getTime())) return isoStr;
+    return new Intl.DateTimeFormat(state.lang === 'ar' ? 'ar-SA' : 'en-US', {
+      year: 'numeric', month: 'short', day: 'numeric',
+      hour: '2-digit', minute: '2-digit'
+    }).format(d);
+  } catch (e) {
+    return isoStr;
+  }
+}
+
+export function buildAssigneeChipsHtml(selectedUserIds = [], selectedExternals = []) {
+  const users = state.data?.users || [];
+  let html = '';
+
+  selectedUserIds.forEach(uid => {
+    const u = users.find(x => x.id === uid) || { name: uid, id: uid };
+    html += `
+      <span class="chip-item" style="display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:2px 8px 2px 6px;font-size:11px;color:var(--ink);">
+        ${avatar(u, 'mini-avatar')}
+        <span style="font-weight:500;">${esc(choose(u.name, u.nameEn || u.name))}</span>
+        <button type="button" class="btn-remove-chip-user" data-uid="${esc(uid)}" style="border:none;background:none;cursor:pointer;color:var(--muted);padding:0 2px;font-size:13px;line-height:1;" title="${choose('إزالة', 'Remove')}">×</button>
+      </span>
+    `;
+  });
+
+  selectedExternals.forEach(ext => {
+    html += `
+      <span class="chip-item" style="display:inline-flex;align-items:center;gap:5px;background:var(--teal-soft);border:1px solid var(--teal);border-radius:16px;padding:2px 8px 2px 6px;font-size:11px;color:var(--teal);">
+        <span>🌐</span>
+        <span style="font-weight:600;">${esc(ext)}</span>
+        <span style="font-size:9px;background:var(--teal);color:#fff;border-radius:8px;padding:1px 4px;">${choose('خارجي', 'Ext')}</span>
+        <button type="button" class="btn-remove-chip-ext" data-ext="${esc(ext)}" style="border:none;background:none;cursor:pointer;color:var(--teal);padding:0 2px;font-size:13px;line-height:1;" title="${choose('إزالة', 'Remove')}">×</button>
+      </span>
+    `;
+  });
+
+  return html;
+}
+
+export function buildRemindersListHtml(activeReminders = []) {
+  if (!activeReminders.length) {
+    return `<div style="font-size:11px;color:var(--muted);padding:6px;text-align:center;">${choose('لا توجد مواعيد تذكير مجدولة لهذه المهمة', 'No scheduled reminders for this task')}</div>`;
+  }
+  return activeReminders.map((r, idx) => `
+    <div class="reminder-card-row" data-idx="${idx}" style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:var(--surface);border:1px solid var(--border);border-radius:8px;font-size:12px;">
+      <div style="display:flex;align-items:center;gap:8px;overflow:hidden;">
+        <span style="color:var(--teal);font-size:14px;">⏰</span>
+        <strong style="color:var(--ink);">${esc(formatRemindAtDate(r.remindAt))}</strong>
+        ${r.noteAr ? `<span style="color:var(--muted);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${esc(r.noteAr)}">(${esc(r.noteAr)})</span>` : ''}
+      </div>
+      <button type="button" class="btn-delete-reminder" data-idx="${idx}" data-rem-id="${esc(r.id || '')}" style="border:none;background:none;cursor:pointer;color:var(--red);padding:2px 6px;border-radius:4px;display:flex;align-items:center;transition:opacity 0.15s;" title="${choose('حذف التذكير', 'Delete reminder')}">
+        ${icon('trash', 13)}
+      </button>
+    </div>
+  `).join('');
+}
+
 export function openTaskModal(task = null, presetTemplateId = null, presetProjectId = null) {
   const template = state.data.templates.find((item) => item.id === (presetTemplateId || task?.templateId));
   const projectId = task?.projectId || presetProjectId || state.activeProjectId || state.data.projects[0]?.id || '';
@@ -402,6 +463,10 @@ export function openTaskModal(task = null, presetTemplateId = null, presetProjec
   }
 
   const currentProgress = task?.progress !== undefined ? task.progress : (task?.status === 'done' ? 100 : (task?.status === 'review' || task?.status === 'approval' ? 80 : (task?.status === 'in_progress' ? 50 : 0)));
+
+  const hasChips = additionalAssigneeIds.length > 0 || externalAssigneesList.length > 0;
+  const initialChipsHtml = hasChips ? buildAssigneeChipsHtml(additionalAssigneeIds, externalAssigneesList) : '';
+  const initialRemindersHtml = buildRemindersListHtml(taskReminders);
 
   const taskForm = `<form id="task-form" data-task-id="${esc(task?.id || '')}">
     <input type="hidden" name="projectId" value="${esc(projectId)}" />
@@ -453,8 +518,9 @@ export function openTaskModal(task = null, presetTemplateId = null, presetProjec
           <span style="font-size:10px;color:var(--muted);font-weight:normal;">${choose('اختر من الفريق أو اكتب اسماً خارجياً واضغط إضافة', 'Pick team members or type external name')}</span>
         </label>
 
-        <!-- الشارات المحددة حالياً -->
-        <div id="assignees-chips-container" style="display:none;flex-wrap:wrap;gap:6px;min-height:36px;padding:6px;background:var(--surface-soft);border:1px solid var(--line);border-radius:8px;margin-bottom:6px;align-items:center;">
+        <!-- الشارات المحددة حالياً (Pre-rendered for zero layout shift) -->
+        <div id="assignees-chips-container" style="display:${hasChips ? 'flex' : 'none'};flex-wrap:wrap;gap:6px;min-height:36px;padding:6px;background:var(--surface-soft);border:1px solid var(--line);border-radius:8px;margin-bottom:6px;align-items:center;">
+          ${initialChipsHtml}
         </div>
 
         <!-- حقل البحث والإضافة السريعة -->
@@ -504,8 +570,9 @@ export function openTaskModal(task = null, presetTemplateId = null, presetProjec
           <span style="font-size:10px;color:var(--muted);font-weight:normal;">${choose('يمكنك إضافة أكثر من موعد تذكير وحذف ما تشاء', 'Add multiple reminders and delete any')}</span>
         </label>
 
-        <!-- قائمة التذكيرات المضافة -->
+        <!-- قائمة التذكيرات المضافة (Pre-rendered for zero layout shift) -->
         <div id="task-reminders-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px;">
+          ${initialRemindersHtml}
         </div>
 
         <!-- صف إضافة تذكير جديد -->
@@ -548,12 +615,12 @@ export function openTaskModal(task = null, presetTemplateId = null, presetProjec
   if (task) {
     extraClass = 'modal-lg';
     modalBody = `
-      <div class="task-modal-layout" style="display:flex;gap:30px;flex-wrap:wrap;align-items:flex-start;">
-        <div style="flex:1;min-width:320px;">
+      <div class="task-modal-layout">
+        <div class="task-modal-col task-modal-main">
           <h3 style="margin:0 0 15px;font-size:14px;">${choose('تفاصيل المهمة', 'Task Details')}</h3>
           ${taskForm}
         </div>
-        <div style="flex:1;min-width:320px;display:flex;flex-direction:column;gap:30px;box-sizing:border-box;border-inline-start:1px solid var(--line);padding-inline-start:24px;">
+        <div class="task-modal-col task-modal-side">
           <div class="task-documents-section">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
               <h3 style="margin:0;font-size:14px;display:flex;align-items:center;gap:6px;">
@@ -663,40 +730,14 @@ export function initTaskModalWidgets(task) {
 
   function renderChips() {
     if (!chipsContainer) return;
-    const users = state.data?.users || [];
-    let html = '';
-
     if (selectedUserIds.length === 0 && selectedExternals.length === 0) {
       chipsContainer.style.display = 'none';
       chipsContainer.innerHTML = '';
       syncAssigneeInputs();
       return;
     }
-
     chipsContainer.style.display = 'flex';
-    selectedUserIds.forEach(uid => {
-      const u = users.find(x => x.id === uid) || { name: uid, id: uid };
-      html += `
-        <span class="chip-item" style="display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:2px 8px 2px 6px;font-size:11px;color:var(--ink);">
-          ${avatar(u, 'mini-avatar')}
-          <span style="font-weight:500;">${esc(choose(u.name, u.nameEn || u.name))}</span>
-          <button type="button" class="btn-remove-chip-user" data-uid="${esc(uid)}" style="border:none;background:none;cursor:pointer;color:var(--muted);padding:0 2px;font-size:13px;line-height:1;" title="${choose('إزالة', 'Remove')}">×</button>
-        </span>
-      `;
-    });
-
-    selectedExternals.forEach(ext => {
-      html += `
-        <span class="chip-item" style="display:inline-flex;align-items:center;gap:5px;background:var(--teal-soft);border:1px solid var(--teal);border-radius:16px;padding:2px 8px 2px 6px;font-size:11px;color:var(--teal);">
-          <span>🌐</span>
-          <span style="font-weight:600;">${esc(ext)}</span>
-          <span style="font-size:9px;background:var(--teal);color:#fff;border-radius:8px;padding:1px 4px;">${choose('خارجي', 'Ext')}</span>
-          <button type="button" class="btn-remove-chip-ext" data-ext="${esc(ext)}" style="border:none;background:none;cursor:pointer;color:var(--teal);padding:0 2px;font-size:13px;line-height:1;" title="${choose('إزالة', 'Remove')}">×</button>
-        </span>
-      `;
-    });
-
-    chipsContainer.innerHTML = html;
+    chipsContainer.innerHTML = buildAssigneeChipsHtml(selectedUserIds, selectedExternals);
     syncAssigneeInputs();
   }
 
@@ -752,7 +793,8 @@ export function initTaskModalWidgets(task) {
     dropdown.style.display = 'block';
   }
 
-  renderChips();
+  // Pre-rendered chips already present; sync inputs
+  syncAssigneeInputs();
 
   if (searchInput) {
     searchInput.addEventListener('focus', () => {
@@ -824,7 +866,6 @@ export function initTaskModalWidgets(task) {
         }
         renderChips();
         renderDropdown(searchInput?.value || '');
-
       }
     });
   }
@@ -866,44 +907,11 @@ export function initTaskModalWidgets(task) {
   }
   if (!Array.isArray(activeReminders)) activeReminders = [];
 
-  function formatRemindAt(isoStr) {
-    if (!isoStr) return '—';
-    try {
-      const d = new Date(isoStr);
-      if (isNaN(d.getTime())) return isoStr;
-      return new Intl.DateTimeFormat(state.lang === 'ar' ? 'ar-SA' : 'en-US', {
-        year: 'numeric', month: 'short', day: 'numeric',
-        hour: '2-digit', minute: '2-digit'
-      }).format(d);
-    } catch (e) {
-      return isoStr;
-    }
-  }
-
   function renderReminders() {
     if (!remindersListEl) return;
     if (remindersInput) remindersInput.value = JSON.stringify(activeReminders);
-
-    if (activeReminders.length === 0) {
-      remindersListEl.innerHTML = `<div style="font-size:11px;color:var(--muted);padding:6px;text-align:center;">${choose('لا توجد مواعيد تذكير مجدولة لهذه المهمة', 'No scheduled reminders for this task')}</div>`;
-      return;
-    }
-
-    remindersListEl.innerHTML = activeReminders.map((r, idx) => `
-      <div class="reminder-card-row" data-idx="${idx}" style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:var(--surface);border:1px solid var(--border);border-radius:8px;font-size:12px;">
-        <div style="display:flex;align-items:center;gap:8px;overflow:hidden;">
-          <span style="color:var(--teal);font-size:14px;">⏰</span>
-          <strong style="color:var(--ink);">${esc(formatRemindAt(r.remindAt))}</strong>
-          ${r.noteAr ? `<span style="color:var(--muted);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${esc(r.noteAr)}">(${esc(r.noteAr)})</span>` : ''}
-        </div>
-        <button type="button" class="btn-delete-reminder" data-idx="${idx}" data-rem-id="${esc(r.id || '')}" style="border:none;background:none;cursor:pointer;color:var(--red);padding:2px 6px;border-radius:4px;display:flex;align-items:center;transition:opacity 0.15s;" title="${choose('حذف التذكير', 'Delete reminder')}">
-          ${icon('trash', 13)}
-        </button>
-      </div>
-    `).join('');
+    remindersListEl.innerHTML = buildRemindersListHtml(activeReminders);
   }
-
-  renderReminders();
 
   if (btnAddReminder) {
     btnAddReminder.addEventListener('click', () => {
@@ -943,7 +951,8 @@ export function initTaskModalWidgets(task) {
       }
     });
   }
-  document.addEventListener('mousedown', (e) => {
+
+  modalRoot.addEventListener('mousedown', (e) => {
     if (
       dropdown?.contains(e.target) ||
       searchInput?.contains(e.target) ||

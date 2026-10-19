@@ -1,6 +1,6 @@
-// Dynamically match current hostname (localhost vs 127.0.0.1) so origin and API match 100% to prevent Cross-Site Cookie rejection
+// Dynamically match current hostname/port or use proxy
 export const API_BASE = (typeof window !== 'undefined' && (window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost'))
-  ? `${window.location.protocol}//${window.location.hostname}:8787`
+  ? (window.location.port === '8787' ? `${window.location.protocol}//${window.location.hostname}:8787` : (window.__API_BASE__ !== undefined ? window.__API_BASE__ : ''))
   : (typeof window !== 'undefined' && window.__API_BASE__ ? window.__API_BASE__ : '');
 
 let _lastBootstrapEtag = null;
