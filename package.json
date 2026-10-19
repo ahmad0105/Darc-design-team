@@ -1,0 +1,13 @@
+{
+  "name": "darc-design-team-portal",
+  "version": "1.0.0",
+  "private": true,
+  "description": "DARC Design Team construction project operations dashboard",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

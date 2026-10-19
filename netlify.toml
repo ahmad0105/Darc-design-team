@@ -1,10 +1,52 @@
-# Netlify configuration – عدّل القيم حسب الحاجة
 [build]
-  command = "npm run build"
   publish = "public"
 
-# إعدادات إعادة توجيه للـ Cloudflare Workers (إن وجدت)
+# Proxy /api requests to Cloudflare Workers backend (or backend URL)
+# This eliminates CORS issues and third-party cookie blocks completely!
+[[redirects]]
+  from = "/api/*"
+  to = "https://darc-cloud-backend.ahmad-hashmi-c.workers.dev/api/:splat"
+  status = 200
+
+# Single Page Application (SPA) routing fallback rule
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
+
+# Security and Performance Headers
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "SAMEORIGIN"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+
+# Service Worker should never be cached permanently
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
+
+# HTML entry point: validate freshness to avoid stale UI versions
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+# Static JS & CSS: fast stale-while-revalidate caching
+[[headers]]
+  for = "/styles.css"
+  [headers.values]
+    Cache-Control = "public, max-age=86400, stale-while-revalidate=604800"
+
+[[headers]]
+  for = "/app.js"
+  [headers.values]
+    Cache-Control = "public, max-age=86400, stale-while-revalidate=604800"
+
+[[headers]]
+  for = "/src/*"
+  [headers.values]
+    Cache-Control = "public, max-age=86400, stale-while-revalidate=604800"
