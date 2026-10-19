@@ -10,6 +10,26 @@ export function invalidateBootstrapEtag() {
 }
 
 export async function api(path, options = {}) {
+  const isMutation = ['POST', 'PATCH', 'PUT', 'DELETE'].includes(options.method);
+  const isAuth = path.startsWith('/api/auth');
+
+  // Check if browser is actively offline before hitting network for mutations
+  if (typeof navigator !== 'undefined' && !navigator.onLine && isMutation && !isAuth) {
+    const { enqueueOfflineMutation } = await import('./offline.js');
+    const { showToast, choose } = await import('./utils.js');
+    let parsedBody = null;
+    try {
+      parsedBody = options.body ? (typeof options.body === 'string' ? JSON.parse(options.body) : options.body) : null;
+    } catch {}
+    const item = enqueueOfflineMutation({
+      path,
+      method: options.method,
+      body: parsedBody
+    });
+    showToast(choose('أنت في وضع عدم الاتصال: تم حفظ العملية محلياً وستُرفع تلقائياً عند عودة النت 📡', 'Offline mode: action saved locally and will auto-sync on reconnect 📡'), false);
+    return { ok: true, queued: true, offline: true, id: item?.id };
+  }
+
   const headers = {
     ...(options.body ? { 'Content-Type': 'application/json' } : {}),
     ...(options.headers || {})
@@ -25,6 +45,21 @@ export async function api(path, options = {}) {
   try {
     response = await fetch(API_BASE + path, { ...options, headers });
   } catch (networkError) {
+    if (isMutation && !isAuth) {
+      const { enqueueOfflineMutation } = await import('./offline.js');
+      const { showToast, choose } = await import('./utils.js');
+      let parsedBody = null;
+      try {
+        parsedBody = options.body ? (typeof options.body === 'string' ? JSON.parse(options.body) : options.body) : null;
+      } catch {}
+      const item = enqueueOfflineMutation({
+        path,
+        method: options.method,
+        body: parsedBody
+      });
+      showToast(choose('تعذر الاتصال بالخادم: تم حفظ العملية في قائمة الانتظار للمزامنة التلقائية 📡', 'Connection lost: action queued for automatic sync 📡'), false);
+      return { ok: true, queued: true, offline: true, id: item?.id };
+    }
     throw new Error('تعذر الاتصال بالخادم، يرجى التحقق من اتصال الإنترنت.');
   }
   

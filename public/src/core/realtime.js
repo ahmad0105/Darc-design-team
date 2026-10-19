@@ -34,17 +34,33 @@ export function initRealtimeConnection() {
   }
 
   // Network online/offline status monitoring
-  window.addEventListener('online', () => {
-    triggerImmediateSync('online');
-    if (typeof showToast === 'function') {
-      showToast('تمت استعادة الاتصال بالإنترنت', false);
+  window.addEventListener('online', async () => {
+    state.isOffline = false;
+    const { syncPendingMutations } = await import('./offline.js');
+    const { api } = await import('./api.js');
+    const { showToast, choose } = await import('./utils.js');
+    
+    // 1. Replay any pending offline operations
+    const syncRes = await syncPendingMutations(api);
+    if (syncRes && syncRes.synced > 0) {
+      showToast(choose(
+        `تمت استعادة الاتصال ومزامنة ${syncRes.synced} عمليات معلقة بنجاح! 🚀`,
+        `Internet restored! Synced ${syncRes.synced} pending actions successfully! 🚀`
+      ), false);
+    } else {
+      showToast(choose('تمت استعادة الاتصال بالإنترنت', 'Internet connection restored'), false);
     }
+
+    // 2. Fetch fresh synchronized state from server
+    triggerImmediateSync('online');
   });
 
-  window.addEventListener('offline', () => {
-    if (typeof showToast === 'function') {
-      showToast('أنت في وضع عدم الاتصال بالإنترنت (Offline Mode)', true);
-    }
+  window.addEventListener('offline', async () => {
+    state.isOffline = true;
+    const { showToast, choose } = await import('./utils.js');
+    const { renderApp } = await import('./router.js');
+    renderApp();
+    showToast(choose('أنت في وضع عدم الاتصال (Offline Mode) — يمكنك مواصلة العمل وسيتم الرفع فور عودة الإنترنت', 'Offline Mode — you can continue working, changes will auto-sync on reconnect'), true);
   });
 }
 

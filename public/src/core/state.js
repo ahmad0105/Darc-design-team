@@ -13,5 +13,6 @@ export const state = {
   docTaskFilter: 'all',
   docProjectFilter: 'all',
   sidebarOpen: false,
+  isOffline: typeof navigator !== 'undefined' ? !navigator.onLine : false,
   data: null
 };

@@ -1,6 +1,7 @@
 
 import { state } from './state.js';
 import { api } from './api.js';
+import { saveOfflineBootstrap, getOfflineBootstrap } from './offline.js';
 
 export function navItem(view, label, iconName) {
   const active = state.view === view || (view === 'projects' && state.view === 'project-detail');
@@ -49,6 +50,7 @@ export function renderApp() {
         <header class="topbar">
           <div class="topbar-left"><button class="icon-button mobile-menu" data-action="toggle-sidebar" aria-label="Menu">${icon('menu', 18)}</button><div><div class="topbar-kicker">DARC / ${t('workspace')}</div><div class="topbar-title">${esc(currentViewTitle())}</div></div></div>
           <div class="topbar-right">
+            ${state.isOffline ? `<span class="badge badge-amber" style="font-size:10px;padding:3px 8px;cursor:pointer;" title="${choose('وضع عدم الاتصال — يمكنك الاستمرار بالعمل وسيتم الرفع تلقائياً عند عودة النت', 'Offline Mode — changes will auto-sync on reconnect')}">📡 ${choose('أوفلاين', 'Offline')}</span>` : ''}
             <button class="topbar-search-trigger" data-action="open-omnisearch" title="${choose('بحث شامل وسريع', 'Omnisearch')}">
               ${icon('search', 14)}
               <span>${choose('بحث شامل...', 'Search...')}</span>
@@ -133,22 +135,39 @@ export async function refreshView(silent = false) { try { await loadData(silent)
 
 
 export async function loadData(silent = false) {
-  const payload = await api('/api/bootstrap');
-  if (payload === null) {
-    // HTTP 304 Not Modified: Cache is completely identical, 0ms CPU & 0 DOM ops!
-    return;
-  }
-  
-  // Prevent DOM thrashing: Only re-render if data actually changed
-  const isDataChanged = !state.data || JSON.stringify(state.data) !== JSON.stringify(payload);
-  
-  if (isDataChanged) {
-    state.data = payload;
-    const hasOpenModal = Boolean(document.getElementById('modal-root')?.children?.length);
-    if (!silent && !hasOpenModal) renderApp();
-    else renderView();
-  } else {
-    // Just update state silently without re-rendering the DOM
-    state.data = payload; 
+  try {
+    const payload = await api('/api/bootstrap');
+    if (payload === null) {
+      // HTTP 304 Not Modified: Cache is completely identical, 0ms CPU & 0 DOM ops!
+      return;
+    }
+    
+    // Save to offline storage for instant access when offline
+    saveOfflineBootstrap(payload);
+    state.isOffline = false;
+    
+    // Prevent DOM thrashing: Only re-render if data actually changed
+    const isDataChanged = !state.data || JSON.stringify(state.data) !== JSON.stringify(payload);
+    
+    if (isDataChanged) {
+      state.data = payload;
+      const hasOpenModal = Boolean(document.getElementById('modal-root')?.children?.length);
+      if (!silent && !hasOpenModal) renderApp();
+      else renderView();
+    } else {
+      // Just update state silently without re-rendering the DOM
+      state.data = payload; 
+    }
+  } catch (error) {
+    const cachedData = getOfflineBootstrap();
+    if (cachedData) {
+      state.data = cachedData;
+      state.isOffline = true;
+      const hasOpenModal = Boolean(document.getElementById('modal-root')?.children?.length);
+      if (!silent && !hasOpenModal) renderApp();
+      else renderView();
+      return;
+    }
+    throw error;
   }
 }

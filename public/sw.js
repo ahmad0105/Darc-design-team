@@ -1,5 +1,5 @@
-// DARC Design Team — Service Worker (Offline-First Cache v2.3)
-const CACHE_NAME = 'darc-cache-v2.3';
+// DARC Design Team — Service Worker (Offline-First Cache v2.4)
+const CACHE_NAME = 'darc-cache-v2.4';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -39,17 +39,25 @@ self.addEventListener('fetch', (event) => {
     url.hostname.includes('fonts.googleapis.com') ||
     url.hostname.includes('fonts.gstatic.com')
   ) {
-    // For API requests, try network first, fallback to cached data if offline
+    // For API requests, try network first, save to cache on success, fallback to cached data if offline
     if (url.pathname.startsWith('/api/')) {
       event.respondWith(
-        fetch(event.request).catch(async () => {
-          const cachedResponse = await caches.match(event.request);
-          if (cachedResponse) return cachedResponse;
-          return new Response(JSON.stringify({ error: 'أنت غير متصل بالإنترنت حالياً (وضع عدم الاتصال)' }), {
-            status: 503,
-            headers: { 'Content-Type': 'application/json' }
-          });
-        })
+        fetch(event.request)
+          .then((networkResponse) => {
+            if (networkResponse && networkResponse.status === 200) {
+              const responseToCache = networkResponse.clone();
+              caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseToCache));
+            }
+            return networkResponse;
+          })
+          .catch(async () => {
+            const cachedResponse = await caches.match(event.request);
+            if (cachedResponse) return cachedResponse;
+            return new Response(JSON.stringify({ error: 'أنت غير متصل بالإنترنت حالياً (وضع عدم الاتصال)' }), {
+              status: 503,
+              headers: { 'Content-Type': 'application/json' }
+            });
+          })
       );
       return;
     }
