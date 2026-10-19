@@ -21,7 +21,8 @@ import templatesApp     from './features/templates/templates.routes.js';
 import trashApp         from './features/trash/trash.routes.js';
 import bootstrapApp     from './features/bootstrap/bootstrap.route.js';
 
-// Core Security & Performance
+// Core Security, Error Resilience & Performance
+import { createErrorHandler } from './core/errors.js';
 import { securityHeadersMiddleware, csrfGuardMiddleware } from './core/security.js';
 import { authRateLimiter, recordAuthFailure, clearAuthFailure, getClientIp, mutationRateLimiter } from './core/rate-limit.js';
 import { getDB } from './core/db.js';
@@ -62,11 +63,8 @@ app.use('/api/*', csrfGuardMiddleware());
 // Mutation rate limiter to protect against spam / DoS
 app.use('/api/*', mutationRateLimiter());
 
-// Global error handler
-app.onError((err, c) => {
-  console.error('[DARC] Global Error:', err.message);
-  return c.json({ error: err.message || 'Internal Server Error' }, 500);
-});
+// Centralized Operational Error Handler (OWASP Error Shield)
+app.onError(createErrorHandler());
 
 // Shared utilities
 const JSONB_PASSTHROUGH_KEYS = ['custom_fields', 'permissions', 'details'];
