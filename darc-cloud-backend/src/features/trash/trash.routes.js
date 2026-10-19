@@ -19,16 +19,36 @@ app.get('/', async (c) => {
   }
 
   const [projRes, taskRes] = await Promise.all([
-    supabase.from('projects').select('id, name_ar, name_en, code, deleted_at').not('deleted_at', 'is', null),
-    supabase.from('tasks').select('id, title_ar, title_en, project_id, deleted_at').not('deleted_at', 'is', null)
+    supabase.from('projects').select('id, name_ar, name_en, code, deleted_at').not('deleted_at', 'is', null).order('deleted_at', { ascending: false }),
+    supabase.from('tasks').select('id, title_ar, title_en, project_id, deleted_at').not('deleted_at', 'is', null).order('deleted_at', { ascending: false })
   ]);
 
-  const pList = (projRes.data || []).map(p => ({ ...p, type: 'project' }));
-  const tList = (taskRes.data || []).map(t => ({ ...t, type: 'task' }));
+  const pList = (projRes.data || []).map(p => ({
+    id: p.id,
+    name: p.name_ar || p.name_en || p.code || 'مشروع محذوف',
+    name_ar: p.name_ar,
+    name_en: p.name_en,
+    code: p.code,
+    deleted_at: p.deleted_at,
+    type: 'project'
+  }));
+
+  const tList = (taskRes.data || []).map(t => ({
+    id: t.id,
+    name: t.title_ar || t.title_en || 'مهمة محذوفة',
+    title_ar: t.title_ar,
+    title_en: t.title_en,
+    name_ar: t.title_ar,
+    name_en: t.title_en,
+    project_id: t.project_id,
+    deleted_at: t.deleted_at,
+    type: 'task'
+  }));
+
   return c.json({
     trash: toCamelCase([...pList, ...tList]),
-    projects: toCamelCase(projRes.data || []),
-    tasks: toCamelCase(taskRes.data || [])
+    projects: toCamelCase(pList),
+    tasks: toCamelCase(tList)
   });
 });
 

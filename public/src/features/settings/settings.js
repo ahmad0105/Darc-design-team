@@ -104,18 +104,29 @@ export function renderSettings() {
           </div>
         </div>
 
-        <div style="display:flex;align-items:center;gap:20px;padding:18px;background:var(--surface-soft);border:1px solid var(--line);border-radius:12px;margin-bottom:24px;">
-          <div id="profile-avatar-preview" style="position:relative;width:72px;height:72px;border-radius:999px;overflow:hidden;box-shadow:var(--shadow-sm);flex-shrink:0;">
-            ${avatar(currentUser, 'avatar-xl')}
+        <div class="profile-avatar-card">
+          <div class="avatar-upload-trigger" id="profile-avatar-preview" data-action="trigger-avatar-upload" role="button" tabindex="0" title="${choose('انقر لرفع صورة شخصية جديدة', 'Click to upload a new profile picture')}">
+            <div class="avatar-upload-circle">
+              ${currentUser.avatarUrl
+                ? `<img src="${esc(currentUser.avatarUrl)}" alt="Avatar" class="avatar-upload-img" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" /><div class="avatar-upload-fallback" style="display:none;background:${/^#[0-9a-f]{6}$/i.test(currentUser.avatarColor || '') ? currentUser.avatarColor : '#0d6269'};">${esc(initials(currentUser))}</div>`
+                : `<div class="avatar-upload-fallback" style="background:${/^#[0-9a-f]{6}$/i.test(currentUser.avatarColor || '') ? currentUser.avatarColor : '#0d6269'};">${esc(initials(currentUser))}</div>`
+              }
+              <div class="avatar-upload-overlay">
+                ${icon('upload', 18)}
+                <span>${choose('تغيير', 'Change')}</span>
+              </div>
+            </div>
           </div>
-          <div>
-            <h3 style="margin:0 0 6px 0;font-size:16px;">${esc(choose(currentUser.name, currentUser.nameEn || currentUser.name))}</h3>
-            <p style="margin:0 0 10px 0;font-size:13px;color:var(--muted);">${esc(choose(currentUser.jobTitleAr || '', currentUser.jobTitleEn || currentUser.jobTitleAr || ''))} · <span class="status-badge done">${esc(roleName(currentUser))}</span></p>
-            <input type="file" id="user-avatar-file-input" accept="image/*" style="display:none;" />
-            <button type="button" class="btn btn-soft btn-sm" onclick="document.getElementById('user-avatar-file-input').click()">
-              ${icon('upload', 14)} ${choose('رفع صورة جديدة', 'Upload new avatar')}
-            </button>
-            <span style="font-size:11px;color:var(--muted);margin-inline-start:10px;">${choose('يدعم JPG, PNG, WebP', 'Supports JPG, PNG, WebP')}</span>
+          <div class="profile-avatar-meta">
+            <h3 class="profile-user-name">${esc(choose(currentUser.name, currentUser.nameEn || currentUser.name))}</h3>
+            <p class="profile-user-role">${esc(choose(currentUser.jobTitleAr || '', currentUser.jobTitleEn || currentUser.jobTitleAr || ''))} · <span class="status-badge done">${esc(roleName(currentUser))}</span></p>
+            <div class="profile-upload-actions">
+              <input type="file" id="user-avatar-file-input" accept="image/jpeg,image/png,image/webp" style="display:none;" />
+              <button type="button" class="btn btn-soft btn-sm" data-action="trigger-avatar-upload">
+                ${icon('upload', 14)} ${choose('رفع صورة جديدة', 'Upload new avatar')}
+              </button>
+              <span class="upload-hint">${choose('يدعم JPG, PNG, WebP (حد أقصى 2MB)', 'Supports JPG, PNG, WebP (Max 2MB)')}</span>
+            </div>
           </div>
         </div>
 
@@ -165,21 +176,29 @@ export function renderSettings() {
         <h2>${t('company')}</h2>
         <p>${choose('هوية مساحة العمل وشعار الشركة واللغة الافتراضية.', 'Workspace identity, company logo, and default language.')}</p>
         
-        <div class="company-preview" style="display:flex;align-items:center;gap:16px;padding:16px;background:var(--surface-soft);border:1px solid var(--line);border-radius:12px;margin-bottom:20px;">
-          <div id="company-logo-preview" style="width:64px;height:64px;border-radius:12px;background:var(--surface);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;overflow:hidden;box-shadow:var(--shadow-sm);flex-shrink:0;">
-            ${comp.logoUrl 
-              ? `<img src="${esc(comp.logoUrl)}" alt="Logo" style="width:100%;height:100%;object-fit:contain;" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" /><span class="brand-mark" style="display:none;">${icon('building', 24)}</span>`
-              : `<span class="brand-mark">${icon('building', 24)}</span>`
-            }
+        <div class="company-preview">
+          <div class="logo-upload-trigger" id="company-logo-preview" data-action="trigger-company-logo-upload" role="button" tabindex="0" title="${choose('انقر لرفع وتعديل شعار الشركة', 'Click to upload and change company logo')}">
+            <div class="logo-upload-box">
+              ${comp.logoUrl 
+                ? `<img src="${esc(comp.logoUrl)}" alt="Logo" class="logo-upload-img" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" /><span class="brand-mark" style="display:none;">${icon('building', 24)}</span>`
+                : `<span class="brand-mark">${icon('building', 24)}</span>`
+              }
+              <div class="logo-upload-overlay">
+                ${icon('upload', 16)}
+                <span>${choose('تعديل', 'Edit')}</span>
+              </div>
+            </div>
           </div>
-          <div>
-            <strong style="display:block;font-size:16px;margin-bottom:4px;">${esc(comp.name || 'DARC Design Team')}</strong>
-            <span style="display:block;font-size:12px;color:var(--muted);margin-bottom:8px;">${choose('العربية افتراضيًا · دعم الإنجليزية · توقيت الرياض', 'Arabic default · English support · Riyadh timezone')}</span>
-            <input type="file" id="company-logo-file-input" accept="image/*" style="display:none;" />
-            <button type="button" class="btn btn-soft btn-sm" onclick="document.getElementById('company-logo-file-input').click()">
-              ${icon('upload', 14)} ${choose('رفع وتعديل الشعار', 'Upload & Change Logo')}
-            </button>
-            <span style="font-size:11px;color:var(--muted);margin-inline-start:10px;">${choose('يدعم PNG, SVG, JPG', 'Supports PNG, SVG, JPG')}</span>
+          <div class="company-preview-meta">
+            <strong class="company-name">${esc(comp.name || 'DARC Design Team')}</strong>
+            <span class="company-sub">${choose('العربية افتراضيًا · دعم الإنجليزية · توقيت الرياض', 'Arabic default · English support · Riyadh timezone')}</span>
+            <div class="company-upload-actions">
+              <input type="file" id="company-logo-file-input" accept="image/png,image/jpeg,image/webp,image/svg+xml" style="display:none;" />
+              <button type="button" class="btn btn-soft btn-sm" data-action="trigger-company-logo-upload">
+                ${icon('upload', 14)} ${choose('رفع وتعديل الشعار', 'Upload & Change Logo')}
+              </button>
+              <span class="upload-hint">${choose('يدعم PNG, SVG, JPG (حد أقصى 2MB)', 'Supports PNG, SVG, JPG (Max 2MB)')}</span>
+            </div>
           </div>
         </div>
 
@@ -316,13 +335,128 @@ export function renderSettings() {
 
   // ROLES SECTION (Admin only)
   if (state.settingsSection === 'roles' && userIsAdmin) {
-    content = `<section class="setting-section"><div class="panel-head"><div><h2>${t('roles')}</h2><p>${t('manageOnlyAdmin')}</p></div><button class="btn btn-primary btn-sm" data-action="new-role">${icon('plus', 14)} ${t('addRole')}</button></div><div class="role-list">${(state.data?.roles || []).map((role) => `<div class="role-row"><div class="role-copy"><strong>${esc(choose(role.nameAr, role.nameEn))} ${role.builtIn ? `<span class="mini-badge" style="padding:4px 6px;margin-right:5px;color:var(--blue);background:var(--blue-soft)">${t('builtIn')}</span>` : ''}</strong><span>${esc(choose(role.descriptionAr, role.descriptionEn))}</span><small>${role.permissions.includes('*') ? choose('صلاحية كاملة', 'Full access') : `${role.permissions.length} ${t('permissionCount')}`}</small></div><div class="role-actions"><button class="btn btn-soft btn-sm" data-action="open-role" data-role-id="${esc(role.id)}">${icon('edit', 13)} ${t('edit')}</button>${!role.builtIn ? `<button class="btn btn-danger btn-sm" data-action="delete-role" data-role-id="${esc(role.id)}">${icon('trash', 13)}</button>` : ''}</div></div>`).join('')}</div></section>`;
+    content = `
+      <section class="setting-section">
+        <div class="panel-head">
+          <div>
+            <h2>${t('roles')}</h2>
+            <p>${t('manageOnlyAdmin')}</p>
+          </div>
+          <button class="btn btn-primary btn-sm" data-action="new-role">${icon('plus', 14)} ${t('addRole')}</button>
+        </div>
+        <div class="role-list">
+          ${(state.data?.roles || []).map((role) => `
+            <div class="role-row">
+              <div class="role-copy">
+                <div class="role-title-row">
+                  <strong class="role-name">${esc(choose(role.nameAr, role.nameEn))}</strong>
+                  ${role.builtIn ? `<span class="role-system-badge">${icon('shield', 11)} ${t('builtIn')}</span>` : ''}
+                </div>
+                <p class="role-desc">${esc(choose(role.descriptionAr, role.descriptionEn))}</p>
+                <div class="role-meta">${role.permissions.includes('*') ? choose('صلاحية كاملة', 'Full access') : `${role.permissions.length} ${t('permissionCount')}`}</div>
+              </div>
+              <div class="role-actions">
+                <button class="btn btn-soft btn-sm" data-action="open-role" data-role-id="${esc(role.id)}">${icon('edit', 13)} ${t('edit')}</button>
+                ${!role.builtIn ? `<button class="btn btn-danger btn-sm" data-action="delete-role" data-role-id="${esc(role.id)}">${icon('trash', 13)}</button>` : ''}
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </section>
+    `;
   }
 
   // TRASH SECTION (Admin only)
   if (state.settingsSection === 'trash' && userIsAdmin) {
-    const listHtml = state.trash && state.trash.length ? `<div class="table-wrap"><table class="data-table"><thead><tr><th>${choose('الاسم', 'Name')}</th><th>${choose('النوع', 'Type')}</th><th>${choose('تاريخ الحذف', 'Deleted At')}</th><th></th></tr></thead><tbody>${state.trash.map((item) => `<tr><td><strong>${esc(item.name)}</strong></td><td>${esc(item.type)}</td><td>${dateLabel(item.deletedAt, true)}</td><td style="text-align:${state.lang==='ar'?'left':'right'}"><button class="btn btn-ghost btn-sm" data-action="restore-item" data-type="${item.type}" data-id="${item.id}">${icon('arrow', 13)} ${choose('استعادة', 'Restore')}</button></td></tr>`).join('')}</tbody></table></div>` : `<div class="empty">${choose('السلة فارغة.', 'Trash is empty.')}</div>`;
-    content = `<section class="setting-section"><div class="panel-head"><div><h2>${choose('سلة المهملات', 'Trash')}</h2><p>${choose('استعادة البيانات المحذوفة.', 'Restore deleted data.')}</p></div></div>${listHtml}</section>`;
+    const trashItems = state.trash || [];
+    const listHtml = trashItems.length ? `
+      <div class="trash-notice-banner">
+        <div class="trash-notice-icon">${icon('info', 16)}</div>
+        <div class="trash-notice-text">
+          <strong>${choose('سلة المحذوفات المركزية المحمية', 'Central Protected Trash Bin')}</strong>
+          <p>${choose('تحتفظ المنصة بالعناصر المحذوفة لمدة 30 يومًا قبل الحذف التلقائي. استعادة أي مشروع تسترجع تلقائيًا كافة مهامه ومخططاته المرتبطة به.', 'Items are retained for 30 days before permanent purging. Restoring a project automatically recovers all its associated tasks and drawings.')}</p>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>${choose('الاسم / العنوان', 'Name / Title')}</th>
+              <th>${choose('النوع', 'Type')}</th>
+              <th>${choose('المشروع التابع له', 'Project')}</th>
+              <th>${choose('تاريخ الحذف', 'Deleted At')}</th>
+              <th style="text-align:${state.lang === 'ar' ? 'left' : 'right'}">${choose('الإجراء', 'Action')}</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${trashItems.map((item) => {
+              const isProject = item.type === 'project';
+              const displayName = choose(item.nameAr || item.titleAr, item.nameEn || item.titleEn) || item.name || item.title || item.code || choose('عنصر محذوف', 'Deleted item');
+              const parentProject = !isProject && item.projectId ? (state.data?.projects || []).find(p => p.id === item.projectId) : null;
+              const parentName = parentProject ? choose(parentProject.nameAr, parentProject.nameEn || parentProject.nameAr) : (item.projectId || '—');
+              return `
+                <tr class="trash-row">
+                  <td>
+                    <div class="trash-item-cell">
+                      <div class="trash-item-icon ${isProject ? 'is-project' : 'is-task'}">
+                        ${icon(isProject ? 'building' : 'checklist', 14)}
+                      </div>
+                      <div>
+                        <strong class="trash-item-title">${esc(displayName)}</strong>
+                        ${item.code ? `<span class="trash-item-code">${esc(item.code)}</span>` : ''}
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="type-pill ${isProject ? 'type-project' : 'type-task'}">
+                      ${isProject ? icon('building', 11) : icon('checklist', 11)}
+                      ${isProject ? choose('مشروع', 'Project') : choose('مهمة', 'Task')}
+                    </span>
+                  </td>
+                  <td>
+                    <span class="trash-parent-badge">
+                      ${isProject ? choose('مشروع رئيسي', 'Primary Project') : (parentProject ? `${icon('building', 11)} ${esc(parentName)}` : '—')}
+                    </span>
+                  </td>
+                  <td>
+                    <span class="trash-date" title="${esc(item.deletedAt || '')}">
+                      ${dateLabel(item.deletedAt, true)}
+                    </span>
+                  </td>
+                  <td style="text-align:${state.lang === 'ar' ? 'left' : 'right'}">
+                    <button class="btn btn-soft btn-sm restore-btn" data-action="restore-item" data-type="${esc(item.type)}" data-id="${esc(item.id)}" title="${choose('استعادة العنصر وإعادته لمكانه الأصلي', 'Restore item to original location')}">
+                      ${icon(state.lang === 'ar' ? 'arrow' : 'arrowLeft', 12)} ${choose('استعادة', 'Restore')}
+                    </button>
+                  </td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    ` : `
+      <div class="empty">
+        ${icon('trash', 24)}
+        <span>${choose('سلة المهملات فارغة، لا توجد عناصر محذوفة حالياً.', 'Trash is empty, no deleted items found.')}</span>
+      </div>
+    `;
+
+    content = `
+      <section class="setting-section">
+        <div class="panel-head">
+          <div>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <h2>${choose('سلة المهملات', 'Recycle Bin')}</h2>
+              <span class="mini-badge" style="padding:3px 9px;background:var(--surface-soft);color:var(--ink-soft);font-size:10px;font-weight:700;">
+                ${trashItems.length} ${choose('عناصر', 'items')}
+              </span>
+            </div>
+            <p>${choose('استعراض واستعادة المشاريع والمهام المحذوفة مؤقتاً.', 'Review and restore temporarily deleted projects and tasks.')}</p>
+          </div>
+        </div>
+        ${listHtml}
+      </section>
+    `;
   }
 
   // AUDIT SECTION (Admin only)

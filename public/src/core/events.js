@@ -1,7 +1,7 @@
 
 import { state } from './state.js';
 import { api, API_BASE } from './api.js';
-import { switchView, refreshView, renderView } from './router.js';
+import { switchView, refreshView, renderView, renderApp } from './router.js';
 import { openOmnisearch, closeOmnisearch, openShortcutsCheatsheet } from '../features/dashboard/omnisearch.js';
 import { playSuccessChime } from './utils.js';
 import { setSavedTaskSort } from '../features/tasks/tasks.js';
@@ -279,6 +279,18 @@ export async function handleClick(event) {
   const target = event.target.closest('[data-action], [data-view]');
   if (!target) return;
   const action = target.dataset.action;
+
+  if (action === 'trigger-avatar-upload') {
+    const input = document.getElementById('user-avatar-file-input');
+    if (input) input.click();
+    return;
+  }
+
+  if (action === 'trigger-company-logo-upload') {
+    const input = document.getElementById('company-logo-file-input');
+    if (input) input.click();
+    return;
+  }
   
   if (target.classList.contains('menu-item')) {
     const pMenu = target.closest('.dropdown-menu');
@@ -828,8 +840,18 @@ export async function handleChange(event) {
   if (event.target.id === 'user-avatar-file-input') {
     const file = event.target.files?.[0];
     if (!file) return;
+    if (file.size > 2.5 * 1024 * 1024) {
+      showToast(choose('حجم الصورة كبير جداً، الحد الأقصى المسموح به هو 2 ميغابايت.', 'Image is too large. Maximum allowed size is 2MB.'), true);
+      event.target.value = '';
+      return;
+    }
+    if (!file.type.startsWith('image/')) {
+      showToast(choose('يرجى اختيار ملف صورة صالح (JPG, PNG, WebP).', 'Please select a valid image file (JPG, PNG, WebP).'), true);
+      event.target.value = '';
+      return;
+    }
     try {
-      showToast(choose('جاري معالجة ورفع الصورة الشخصية...', 'Uploading avatar...'));
+      showToast(choose('جاري معالجة ورفع صورتك الشخصية...', 'Processing & uploading avatar...'));
       const dataUrl = await fileToDataUrl(file, 256, 256);
       const res = await api('/api/users/me', { method: 'PATCH', body: JSON.stringify({ avatarUrl: dataUrl }) });
       if (res.user) {
@@ -837,9 +859,12 @@ export async function handleChange(event) {
         const idx = (state.data.users || []).findIndex(u => u.id === state.data.user.id);
         if (idx !== -1) state.data.users[idx] = { ...state.data.users[idx], ...res.user };
       }
-      renderView();
-      showToast(choose('تم تحديث صورتك الشخصية بنجاح!', 'Avatar updated successfully!'));
+      event.target.value = '';
+      renderApp();
+      playSuccessChime();
+      showToast(choose('تم تحديث صورتك الشخصية وتثبيتها بنجاح!', 'Avatar updated successfully!'));
     } catch (err) {
+      event.target.value = '';
       showToast(err.message, true);
     }
     return;
@@ -848,6 +873,16 @@ export async function handleChange(event) {
   if (event.target.id === 'company-logo-file-input') {
     const file = event.target.files?.[0];
     if (!file) return;
+    if (file.size > 3 * 1024 * 1024) {
+      showToast(choose('حجم الشعار كبير جداً، الحد الأقصى هو 3 ميغابايت.', 'Logo is too large. Maximum allowed size is 3MB.'), true);
+      event.target.value = '';
+      return;
+    }
+    if (!file.type.startsWith('image/')) {
+      showToast(choose('يرجى اختيار ملف صورة أو شعار صالح.', 'Please select a valid logo image file.'), true);
+      event.target.value = '';
+      return;
+    }
     try {
       showToast(choose('جاري معالجة ورفع شعار الشركة...', 'Uploading company logo...'));
       const dataUrl = await fileToDataUrl(file, 400, 400);
@@ -855,9 +890,12 @@ export async function handleChange(event) {
       if (res.company) {
         state.data.company = { ...state.data.company, ...res.company };
       }
-      renderView();
-      showToast(choose('تم تحديث وتثبيت شعار الشركة بنجاح!', 'Company logo updated successfully!'));
+      event.target.value = '';
+      renderApp();
+      playSuccessChime();
+      showToast(choose('تم تحديث وتثبيت شعار مساحة العمل بنجاح!', 'Company logo updated successfully!'));
     } catch (err) {
+      event.target.value = '';
       showToast(err.message, true);
     }
     return;

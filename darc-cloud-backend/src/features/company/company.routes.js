@@ -26,8 +26,18 @@ app.patch('/', async (c) => {
     name_en: body.nameEn !== undefined ? body.nameEn : (body.name_en !== undefined ? body.name_en : current.name_en),
     updated_at: new Date().toISOString()
   };
-  if (body.logoUrl !== undefined || body.logo_url !== undefined) {
-    updates.logo_url = body.logoUrl !== undefined ? body.logoUrl : body.logo_url;
+  const rawLogo = body.logoUrl !== undefined ? body.logoUrl : body.logo_url;
+  if (rawLogo !== undefined) {
+    if (typeof rawLogo !== 'string') {
+      return c.json({ error: 'صيغة رابط شعار الشركة غير صالحة' }, 400);
+    }
+    if (rawLogo.length > 4 * 1024 * 1024) {
+      return c.json({ error: 'حجم ملف الشعار يتجاوز الحد المسموح (3MB)' }, 400);
+    }
+    if (rawLogo && !rawLogo.startsWith('data:image/') && !rawLogo.startsWith('https://')) {
+      return c.json({ error: 'نوع ملف الشعار غير مدعوم' }, 400);
+    }
+    updates.logo_url = rawLogo;
   }
 
   try {

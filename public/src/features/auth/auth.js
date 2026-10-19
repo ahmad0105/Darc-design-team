@@ -144,6 +144,7 @@ function startRateLimitCountdown(buttonEl, seconds = 60) {
 }
 
 export function renderLogin(errorMessage = '', mode = 'login', isSuccess = false) {
+  document.body.classList.remove('in-app');
   document.documentElement.lang = state.lang;
   document.documentElement.dir = state.lang === 'ar' ? 'rtl' : 'ltr';
   document.documentElement.dataset.theme = state.theme || 'light';

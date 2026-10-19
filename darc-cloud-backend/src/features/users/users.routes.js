@@ -59,13 +59,33 @@ app.patch('/me', async (c) => {
   const updates = {
     updated_at: new Date().toISOString()
   };
-  if (body.nameAr !== undefined || body.name !== undefined) updates.name = body.nameAr || body.name;
-  if (body.nameEn !== undefined) updates.name_en = body.nameEn;
-  if (body.jobTitleAr !== undefined) updates.job_title_ar = body.jobTitleAr;
-  if (body.jobTitleEn !== undefined) updates.job_title_en = body.jobTitleEn;
-  if (body.avatarColor !== undefined) updates.avatar_color = body.avatarColor;
+  if (body.nameAr !== undefined || body.name !== undefined) {
+    const raw = String(body.nameAr || body.name || '').trim();
+    if (raw) updates.name = raw.slice(0, 100);
+  }
+  if (body.nameEn !== undefined) {
+    updates.name_en = String(body.nameEn || '').trim().slice(0, 100);
+  }
+  if (body.jobTitleAr !== undefined) {
+    updates.job_title_ar = String(body.jobTitleAr || '').trim().slice(0, 100);
+  }
+  if (body.jobTitleEn !== undefined) {
+    updates.job_title_en = String(body.jobTitleEn || '').trim().slice(0, 100);
+  }
+  if (body.avatarColor !== undefined && /^#[0-9a-f]{6}$/i.test(body.avatarColor)) {
+    updates.avatar_color = body.avatarColor;
+  }
 
   if (body.avatarUrl !== undefined) {
+    if (typeof body.avatarUrl !== 'string') {
+      return c.json({ error: 'صيغة رابط الصورة الشخصية غير صالحة' }, 400);
+    }
+    if (body.avatarUrl.length > 3.5 * 1024 * 1024) {
+      return c.json({ error: 'حجم الصورة يتجاوز الحد الأقصى المسموح به (2MB)' }, 400);
+    }
+    if (body.avatarUrl && !body.avatarUrl.startsWith('data:image/') && !body.avatarUrl.startsWith('https://')) {
+      return c.json({ error: 'نوع ملف الصورة غير مدعوم' }, 400);
+    }
     customFields.avatarUrl = body.avatarUrl;
     updates.avatar_url = body.avatarUrl;
   }

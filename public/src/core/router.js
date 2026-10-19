@@ -8,6 +8,7 @@ export function navItem(view, label, iconName) {
 }
 
 export function renderApp() {
+  document.body.classList.add('in-app');
   document.documentElement.lang = state.lang;
   document.documentElement.dir = state.lang === 'ar' ? 'rtl' : 'ltr';
   const notifications = state.data?.notifications || [];
