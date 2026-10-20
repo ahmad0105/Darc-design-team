@@ -1,5 +1,5 @@
-// DARC Design Team — Service Worker (Offline-First Cache v3.1)
-const CACHE_NAME = 'darc-cache-v3.1';
+// DARC Design Team — Service Worker (Offline-First Cache v3.2)
+const CACHE_NAME = 'darc-cache-v3.2';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -29,7 +29,7 @@ const STATIC_ASSETS = [
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(STATIC_ASSETS);
+      return cache.addAll(STATIC_ASSETS.map((url) => new Request(url, { cache: 'reload' })));
     }).then(() => self.skipWaiting())
   );
 });
