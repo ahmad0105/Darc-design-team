@@ -30,7 +30,7 @@ export async function getUserTokenVersion(supabase, userId) {
     const ver = Number(data?.custom_fields?.tokenVersion || 1);
     _userTokenVersions.set(userId, ver);
     return ver;
-  } catch {
+  } catch (e) {
     return 1;
   }
 }

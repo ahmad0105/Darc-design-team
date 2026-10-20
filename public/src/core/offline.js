@@ -27,7 +27,7 @@ function getIDB() {
         };
         req.onsuccess = () => resolve(req.result);
         req.onerror = () => resolve(null);
-      } catch {
+      } catch (e) {
         resolve(null);
       }
     });
@@ -45,7 +45,7 @@ async function idbGet(key) {
       const req = store.get(key);
       req.onsuccess = () => resolve(req.result || null);
       req.onerror = () => resolve(null);
-    } catch {
+    } catch (e) {
       resolve(null);
     }
   });
@@ -61,7 +61,7 @@ async function idbSet(key, val) {
       const req = store.put(val, key);
       req.onsuccess = () => resolve(true);
       req.onerror = () => resolve(false);
-    } catch {
+    } catch (e) {
       resolve(false);
     }
   });
@@ -77,7 +77,7 @@ async function idbDelete(key) {
       const req = store.delete(key);
       req.onsuccess = () => resolve(true);
       req.onerror = () => resolve(false);
-    } catch {
+    } catch (e) {
       resolve(false);
     }
   });
@@ -132,7 +132,7 @@ export function getOfflineBootstrap() {
         const record = JSON.parse(raw);
         if (record?.data) return record.data;
       }
-    } catch {}
+    } catch (e) {}
   }
   return null;
 }
@@ -155,7 +155,7 @@ export async function clearOfflineBootstrap() {
     try {
       localStorage.removeItem(STORAGE_BOOTSTRAP_KEY);
       localStorage.removeItem(STORAGE_QUEUE_KEY);
-    } catch {}
+    } catch (e) {}
   }
   await Promise.all([
     idbDelete(STORAGE_BOOTSTRAP_KEY),
@@ -250,7 +250,7 @@ export function getPendingMutations() {
   try {
     const raw = localStorage.getItem(STORAGE_QUEUE_KEY);
     return raw ? JSON.parse(raw) : [];
-  } catch {
+  } catch (e) {
     return [];
   }
 }

@@ -23,7 +23,7 @@ export async function api(path, options = {}) {
   if (isMutation && options.body) {
     try {
       parsedBody = typeof options.body === 'string' ? JSON.parse(options.body) : options.body;
-    } catch {}
+    } catch (e) {}
   }
 
   // Pre-assign deterministic prefixed ID if creating task, project, or comment

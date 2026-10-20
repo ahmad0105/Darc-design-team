@@ -49,7 +49,7 @@ async function getUserIdFromCookie(c) {
   try {
     const payload = await verify(token, c.env.JWT_SECRET, 'HS256');
     return payload.userId;
-  } catch {
+  } catch (e) {
     return null;
   }
 }

@@ -358,7 +358,7 @@ export async function handleClick(event) {
     await api('/api/auth/logout', { method: 'POST' }).catch(() => {});
     try {
       if (typeof clearOfflineBootstrap === 'function') await clearOfflineBootstrap();
-    } catch {}
+    } catch (e) {}
     invalidateBootstrapEtag();
     state.data = null;
     state.view = 'login';
@@ -374,7 +374,7 @@ export async function handleClick(event) {
     await api('/api/auth/logout-all', { method: 'POST' }).catch(() => {});
     try {
       if (typeof clearOfflineBootstrap === 'function') await clearOfflineBootstrap();
-    } catch {}
+    } catch (e) {}
     invalidateBootstrapEtag();
     state.data = null;
     state.view = 'login';
@@ -1120,7 +1120,7 @@ function uploadChunkXHR({ url, chunk, contentRange, headers = {}, onProgress }) 
         },
         responseText: xhr.responseText,
         json: () => {
-          try { return JSON.parse(xhr.responseText); } catch { return {}; }
+          try { return JSON.parse(xhr.responseText); } catch (e) { return {}; }
         }
       });
     };
@@ -1744,7 +1744,7 @@ export async function init() {
         });
       }
     }
-  } catch { 
+  } catch (e) { 
     if (typeof window !== 'undefined') {
       if (window.history && window.history.replaceState) {
         window.history.replaceState(null, '', '#login');

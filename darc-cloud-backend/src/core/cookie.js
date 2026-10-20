@@ -15,7 +15,7 @@ export function isSecureRequest(c) {
   try {
     const url = new URL(c.req.url);
     if (url.hostname !== '127.0.0.1' && url.hostname !== 'localhost') return true;
-  } catch {}
+  } catch (e) {}
   
   return false;
 }

@@ -67,7 +67,7 @@ app.get('/:id', async (c) => {
       if (u.hostname.endsWith('google.com') || u.hostname.endsWith('googleusercontent.com')) {
         return c.redirect(doc.disk_filename);
       }
-    } catch {}
+    } catch (e) {}
   }
   return c.json({ ok: true, document: doc });
 });

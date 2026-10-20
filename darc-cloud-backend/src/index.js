@@ -237,7 +237,7 @@ app.use('/api/*', async (c, next) => {
         } else {
           updateActiveTask().catch(() => {});
         }
-      } catch {
+      } catch (e) {
         updateActiveTask().catch(() => {});
       }
     }
