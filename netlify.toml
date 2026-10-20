@@ -1,8 +1,5 @@
 [build]
-  publish = "dist"
-
-[build.environment]
-  NODE_VERSION = "22"
+  publish = "public"
 
 # Proxy /api requests to Cloudflare Workers backend (or backend URL)
 # This eliminates CORS issues and third-party cookie blocks completely!
