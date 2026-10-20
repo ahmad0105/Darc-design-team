@@ -2,6 +2,7 @@
   "name": "darc-design-team-portal",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "description": "DARC Design Team construction project operations dashboard",
   "scripts": {
     "dev": "vite",
@@ -13,6 +14,7 @@
     "node": ">=20"
   },
   "devDependencies": {
-    "vite": "^8.3.4"
+    "vite": "^8.3.4",
+    "wrangler": "^4.151.3"
   }
 }
