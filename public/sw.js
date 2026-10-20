@@ -51,10 +51,10 @@ self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
   if (url.pathname.startsWith('/api/')) return;
 
-  // 1. FOR JAVASCRIPT ES MODULES: Use Network-First with Cache Fallback
+  // 1. FOR HTML & JAVASCRIPT ES MODULES: Use Network-First with Cache Fallback
   // Prevents version skew and module export mismatches between interdependent source files
-  const isCodeModule = url.pathname.endsWith('.js') || url.pathname.startsWith('/src/');
-  if (isCodeModule) {
+  const isCodeOrDoc = url.pathname === '/' || url.pathname.endsWith('.html') || url.pathname.endsWith('.js') || url.pathname.startsWith('/src/');
+  if (isCodeOrDoc) {
     event.respondWith(
       fetch(event.request)
         .then((networkResponse) => {
