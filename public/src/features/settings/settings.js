@@ -475,7 +475,7 @@ export function renderSettings() {
                       </span>
                     </td>
                     <td>
-                      ${item.status ? statusBadge(item.status) : `<span style="color:var(--muted)">—</span>`}
+                      ${item.status ? `<span class="status-badge ${esc(item.status)}">${esc(statusText(item.status))}</span>` : `<span style="color:var(--muted)">—</span>`}
                     </td>
                     <td>
                       <span class="trash-date" title="${esc(item.deletedAt || '')}">

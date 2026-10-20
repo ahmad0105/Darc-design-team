@@ -27,6 +27,14 @@ app.post('/:type/:id', async (c) => {
     invalidateBootstrapCache();
     return c.json({ ok: true });
   } else if (type === 'task') {
+    const { data: task } = await supabase.from('tasks').select('project_id').eq('id', id).single();
+    if (task && task.project_id) {
+      // Ensure parent project is active if it was deleted
+      const { data: proj } = await supabase.from('projects').select('deleted_at').eq('id', task.project_id).single();
+      if (proj && proj.deleted_at) {
+        await supabase.from('projects').update({ lifecycle: 'active', deleted_at: null, updated_at: now }).eq('id', task.project_id);
+      }
+    }
     const { error: tErr } = await supabase.from('tasks').update({ deleted_at: null, status: 'not_started', updated_at: now }).eq('id', id);
     if (tErr) throw tErr;
     invalidateBootstrapCache();

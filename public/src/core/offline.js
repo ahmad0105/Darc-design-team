@@ -442,9 +442,10 @@ export async function syncPendingMutations(apiFunction) {
   console.log(`[Offline Sync] Replaying ${queue.length} pending mutations...`);
 
   let syncedCount = 0;
-  const failedItems = [];
+  let stoppedDueToNetwork = false;
 
-  for (const item of queue) {
+  for (let i = 0; i < queue.length; i++) {
+    const item = queue[i];
     try {
       const opts = {
         method: item.method,
@@ -457,20 +458,31 @@ export async function syncPendingMutations(apiFunction) {
       if (item.body) {
         opts.body = typeof item.body === 'string' ? item.body : JSON.stringify(item.body);
       }
-      await apiFunction(item.path, opts);
-      syncedCount++;
+      const res = await apiFunction(item.path, opts);
+      if (res && res.error && !res.ok) {
+        // Validation / business error: drop poison pill so queue isn't blocked
+        console.warn('[Offline Sync] Dropping unprocessable mutation:', item.id, res.error);
+      } else {
+        syncedCount++;
+      }
     } catch (err) {
       console.error('[Offline Sync] Failed to replay mutation:', item.id, item.path, err.message);
-      // Keep in failed items if network failed, drop if permanent validation error
-      if (err.message && err.message.includes('تعذر الاتصال')) {
-        failedItems.push(item);
+      const isNetError = (typeof navigator !== 'undefined' && !navigator.onLine) ||
+                         (err.message && (err.message.includes('تعذر الاتصال') || err.message.includes('fetch') || err.message.includes('NetworkError') || err.name === 'TypeError'));
+      if (isNetError) {
+        // Network dropped mid-replay: preserve this item AND all subsequent items in FIFO order
+        const remaining = queue.slice(i);
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem(STORAGE_QUEUE_KEY, JSON.stringify(remaining));
+        }
+        stoppedDueToNetwork = true;
+        break;
       }
+      // If 4xx client validation or server rejection, drop the poison pill
     }
   }
 
-  if (failedItems.length > 0) {
-    localStorage.setItem(STORAGE_QUEUE_KEY, JSON.stringify(failedItems));
-  } else {
+  if (!stoppedDueToNetwork) {
     clearPendingMutations();
   }
 
@@ -479,6 +491,6 @@ export async function syncPendingMutations(apiFunction) {
   return {
     total: queue.length,
     synced: syncedCount,
-    failed: failedItems.length
+    failed: stoppedDueToNetwork ? (queue.length - syncedCount) : 0
   };
 }

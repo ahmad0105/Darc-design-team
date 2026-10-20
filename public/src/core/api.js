@@ -12,6 +12,7 @@ export function invalidateBootstrapEtag() {
 export async function api(path, options = {}) {
   const isMutation = ['POST', 'PATCH', 'PUT', 'DELETE'].includes(options.method);
   const isAuth = path.startsWith('/api/auth');
+  const isReplay = Boolean(options.headers && (options.headers['X-Offline-Replay'] === 'true' || options.headers['X-Offline-Replay'] === true));
 
   let parsedBody = null;
   if (isMutation && options.body) {
@@ -21,7 +22,7 @@ export async function api(path, options = {}) {
   }
 
   // Pre-assign deterministic prefixed ID if creating task, project, or comment
-  if (options.method === 'POST' && parsedBody && typeof parsedBody === 'object') {
+  if (options.method === 'POST' && parsedBody && typeof parsedBody === 'object' && !isReplay) {
     const { generatePrefixedId } = await import('./offline.js');
     if (path === '/api/tasks' && !parsedBody.id) {
       parsedBody.id = generatePrefixedId('tsk');
@@ -37,6 +38,9 @@ export async function api(path, options = {}) {
 
   // Check if browser is actively offline before hitting network for mutations
   if (typeof navigator !== 'undefined' && !navigator.onLine && isMutation && !isAuth) {
+    if (isReplay) {
+      throw new Error('تعذر الاتصال بالخادم، ما زال النظام دون اتصال.');
+    }
     const { enqueueOfflineMutation, simulateOfflineMutation } = await import('./offline.js');
     const { state } = await import('./state.js');
     const { showToast, choose } = await import('./utils.js');
@@ -65,7 +69,7 @@ export async function api(path, options = {}) {
   try {
     response = await fetch(API_BASE + path, { ...options, headers });
   } catch (networkError) {
-    if (isMutation && !isAuth) {
+    if (isMutation && !isAuth && !isReplay) {
       const { enqueueOfflineMutation, simulateOfflineMutation } = await import('./offline.js');
       const { state } = await import('./state.js');
       const { showToast, choose } = await import('./utils.js');

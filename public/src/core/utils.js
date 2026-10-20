@@ -210,6 +210,11 @@ export function statusText(key) {
   return { not_started: t('notStarted'), in_progress: t('inProgress'), review: t('review'), approval: t('approval'), done: t('done'), blocked: t('blocked'), canceled: t('canceled'), planning: t('planning'), active: t('active'), on_hold: t('onHold'), completed: t('completed'), archived: t('archived'), on_track: t('onTrack'), at_risk: t('atRisk'), off_track: t('offTrack') }[key] || key;
 }
 
+export function statusBadge(status) {
+  if (!status) return `<span style="color:var(--muted)">—</span>`;
+  return `<span class="status-badge ${esc(status)}">${esc(statusText(status))}</span>`;
+}
+
 export function priorityText(key) { return { low: t('low'), medium: t('medium'), high: t('high'), urgent: t('urgent') }[key] || key; }
 
 export function roleFor(userOrId) {

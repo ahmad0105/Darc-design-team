@@ -328,7 +328,7 @@ export async function handleClick(event) {
   if (action === 'logout') {
     await api('/api/auth/logout', { method: 'POST' }).catch(() => {});
     try {
-      const { clearOfflineBootstrap } = await import('./offline.js?v=3.3');
+      const { clearOfflineBootstrap } = await import('./offline.js?v=3.4');
       if (typeof clearOfflineBootstrap === 'function') await clearOfflineBootstrap();
     } catch {}
     invalidateBootstrapEtag();
@@ -339,7 +339,7 @@ export async function handleClick(event) {
   if (action === 'logout-all') {
     await api('/api/auth/logout-all', { method: 'POST' }).catch(() => {});
     try {
-      const { clearOfflineBootstrap } = await import('./offline.js?v=3.3');
+      const { clearOfflineBootstrap } = await import('./offline.js?v=3.4');
       if (typeof clearOfflineBootstrap === 'function') await clearOfflineBootstrap();
     } catch {}
     invalidateBootstrapEtag();
@@ -470,6 +470,7 @@ export async function handleClick(event) {
     
     try {
       await api(`/api/projects/${target.dataset.projectId}`, { method: 'DELETE' });
+      state.trashLoaded = false;
       if (typeof navigator !== 'undefined' && navigator.onLine) await refreshView(true);
       showToast(choose('تم حذف المشروع بنجاح.', 'Project deleted successfully.'));
     } catch (error) { 
@@ -490,6 +491,7 @@ export async function handleClick(event) {
     showToast(choose('جاري حذف المهمة...', 'Deleting task...'));
     try {
       await api(`/api/tasks/${taskId}`, { method: 'DELETE' });
+      state.trashLoaded = false;
       if (typeof navigator !== 'undefined' && navigator.onLine) await refreshView(true);
       showToast(choose('تم حذف المهمة بنجاح.', 'Task deleted successfully.'));
     } catch (error) {
@@ -689,7 +691,11 @@ export async function handleClick(event) {
   if (action === 'settings-section') { 
     state.settingsSection = target.dataset.section; 
     if (state.settingsSection === 'trash') {
-      try { const data = await api('/api/trash'); state.trash = Array.isArray(data) ? data : (data.trash || [...(data.projects || []).map(p => ({...p, type:'project'})), ...(data.tasks || []).map(t => ({...t, type:'task'}))]); } catch(e) { console.error(e); }
+      try {
+        const data = await api('/api/trash');
+        state.trash = Array.isArray(data) ? data : (data.trash || [...(data.projects || []).map(p => ({...p, type:'project'})), ...(data.tasks || []).map(t => ({...t, type:'task'}))]);
+        state.trashLoaded = true;
+      } catch(e) { console.error(e); }
     }
     renderView(); 
     return; 
