@@ -35,18 +35,18 @@
   [headers.values]
     Cache-Control = "public, max-age=0, must-revalidate"
 
-# Static JS & CSS: fast stale-while-revalidate caching
+# Static JS & CSS: Must revalidate to ensure immediate updates across all devices
 [[headers]]
   for = "/styles.css"
   [headers.values]
-    Cache-Control = "public, max-age=86400, stale-while-revalidate=604800"
+    Cache-Control = "no-cache, must-revalidate"
 
 [[headers]]
   for = "/app.js"
   [headers.values]
-    Cache-Control = "public, max-age=86400, stale-while-revalidate=604800"
+    Cache-Control = "no-cache, must-revalidate"
 
 [[headers]]
   for = "/src/*"
   [headers.values]
-    Cache-Control = "public, max-age=86400, stale-while-revalidate=604800"
+    Cache-Control = "no-cache, must-revalidate"
