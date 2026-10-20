@@ -598,7 +598,7 @@ export function openTaskModal(task = null, presetTemplateId = null, presetProjec
     </div>
     <div class="modal-actions" style="display:flex;align-items:center;justify-content:space-between;width:100%;flex-wrap:wrap;gap:10px;">
       <div>
-        ${task && (can('edit_tasks') || isAdmin() || task.assigneeId === state.data?.user?.id) ? `
+        ${task && (can('delete_tasks') || isAdmin()) ? `
           <button type="button" class="btn btn-ghost" data-action="delete-task" data-task-id="${esc(task.id)}" style="color:var(--red);display:inline-flex;align-items:center;gap:6px;" title="${choose('حذف المهمة ونقلها لسلة المهملات', 'Delete task and move to trash')}">
             ${icon('trash', 14)} ${choose('حذف المهمة', 'Delete Task')}
           </button>
@@ -1012,14 +1012,16 @@ export function renderTaskDocuments(task) {
       <div style="display:flex;align-items:center;gap:4px;">
         <button class="btn btn-ghost btn-sm" data-action="copy-doc-link" data-doc-id="${doc.id}" style="padding:4px;min-width:0;height:auto;color:var(--brand-teal);" title="${choose('نسخ رابط المشاركة', 'Copy share link')}">${icon('link', 14)}</button>
         <button class="btn btn-ghost btn-sm" data-action="preview-doc" data-doc-id="${doc.id}" style="padding:4px;min-width:0;height:auto;color:var(--brand-teal);" title="${choose('معاينة المخطط في نافذة منبثقة', 'Preview in popup modal')}">${icon('eye', 14)}</button>
-        <select class="doc-status-select" data-doc-id="${doc.id}" style="font-size:11px;padding:2px 4px;border-radius:4px;border:1px solid var(--line);background:var(--surface);color:var(--ink);">
-          <option value="draft" ${doc.status === 'draft' ? 'selected' : ''}>${choose('مسودة', 'Draft')}</option>
-          <option value="review" ${doc.status === 'review' ? 'selected' : ''}>${choose('مراجعة', 'Review')}</option>
-          <option value="approved" ${doc.status === 'approved' ? 'selected' : ''}>${choose('معتمد', 'Approved')}</option>
-          <option value="superseded" ${doc.status === 'superseded' ? 'selected' : ''}>${choose('ملغى', 'Superseded')}</option>
-        </select>
-        <button class="btn btn-ghost btn-sm" data-action="rename-doc" data-doc-id="${doc.id}" style="padding:4px;min-width:0;height:auto;" title="${choose('إعادة تسمية', 'Rename')}">${icon('edit', 14)}</button>
-        <button class="btn btn-ghost btn-sm" data-action="delete-doc" data-doc-id="${doc.id}" style="padding:4px;min-width:0;height:auto;color:var(--red);" title="${choose('حذف', 'Delete')}">${icon('trash', 14)}</button>
+        ${(can('review_tasks') || can('approve_tasks') || can('upload_documents') || isAdmin()) ? `
+          <select class="doc-status-select" data-doc-id="${doc.id}" style="font-size:11px;padding:2px 4px;border-radius:4px;border:1px solid var(--line);background:var(--surface);color:var(--ink);">
+            <option value="draft" ${doc.status === 'draft' ? 'selected' : ''}>${choose('مسودة', 'Draft')}</option>
+            ${(can('review_tasks') || isAdmin()) ? `<option value="review" ${doc.status === 'review' ? 'selected' : ''}>${choose('مراجعة', 'Review')}</option>` : ''}
+            ${(can('approve_tasks') || isAdmin()) ? `<option value="approved" ${doc.status === 'approved' ? 'selected' : ''}>${choose('معتمد', 'Approved')}</option>` : ''}
+            <option value="superseded" ${doc.status === 'superseded' ? 'selected' : ''}>${choose('ملغى', 'Superseded')}</option>
+          </select>
+        ` : ''}
+        ${(can('upload_documents') || isAdmin()) ? `<button class="btn btn-ghost btn-sm" data-action="rename-doc" data-doc-id="${doc.id}" style="padding:4px;min-width:0;height:auto;" title="${choose('إعادة تسمية', 'Rename')}">${icon('edit', 14)}</button>` : ''}
+        ${(can('delete_documents') || isAdmin()) ? `<button class="btn btn-ghost btn-sm" data-action="delete-doc" data-doc-id="${doc.id}" style="padding:4px;min-width:0;height:auto;color:var(--red);" title="${choose('حذف', 'Delete')}">${icon('trash', 14)}</button>` : ''}
       </div>
     </div>
   `).join('')}</div>`;

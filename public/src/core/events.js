@@ -1,7 +1,7 @@
 
 import { state } from './state.js';
 import { api, API_BASE, invalidateBootstrapEtag } from './api.js';
-import { switchView, refreshView, renderView, renderApp } from './router.js';
+import { switchView, refreshView, renderView, renderApp, canAccessView, getFirstAllowedView } from './router.js';
 import { openOmnisearch, closeOmnisearch, openShortcutsCheatsheet } from '../features/dashboard/omnisearch.js';
 import { playSuccessChime } from './utils.js';
 import { setSavedTaskSort } from '../features/tasks/tasks.js';
@@ -333,7 +333,7 @@ export async function handleClick(event) {
   if (action === 'logout') {
     await api('/api/auth/logout', { method: 'POST' }).catch(() => {});
     try {
-      const { clearOfflineBootstrap } = await import('./offline.js?v=3.5');
+      const { clearOfflineBootstrap } = await import('./offline.js?v=3.6');
       if (typeof clearOfflineBootstrap === 'function') await clearOfflineBootstrap();
     } catch {}
     invalidateBootstrapEtag();
@@ -344,7 +344,7 @@ export async function handleClick(event) {
   if (action === 'logout-all') {
     await api('/api/auth/logout-all', { method: 'POST' }).catch(() => {});
     try {
-      const { clearOfflineBootstrap } = await import('./offline.js?v=3.5');
+      const { clearOfflineBootstrap } = await import('./offline.js?v=3.6');
       if (typeof clearOfflineBootstrap === 'function') await clearOfflineBootstrap();
     } catch {}
     invalidateBootstrapEtag();
@@ -1622,7 +1622,7 @@ export async function init() {
       const [viewPart, queryPart] = rawHash.split('?');
       const validViews = ['dashboard', 'projects', 'tasks', 'documents', 'templates', 'team', 'reports', 'settings', 'project-detail'];
       if (validViews.includes(viewPart)) {
-        state.view = viewPart;
+        state.view = canAccessView(viewPart) ? viewPart : getFirstAllowedView();
         if (queryPart) {
           const q = new URLSearchParams(queryPart);
           if (q.get('id')) state.activeProjectId = q.get('id');
@@ -1633,7 +1633,7 @@ export async function init() {
       const saved = sessionStorage.getItem('darc_last_route');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (parsed.view) state.view = parsed.view;
+        if (parsed.view) state.view = canAccessView(parsed.view) ? parsed.view : getFirstAllowedView();
         if (parsed.activeProjectId) state.activeProjectId = parsed.activeProjectId;
         if (parsed.projectTab) state.projectTab = parsed.projectTab;
       }
@@ -1707,6 +1707,10 @@ if (typeof window !== 'undefined' && !window._hashChangeListenerSet) {
     }
     const validViews = ['dashboard', 'projects', 'tasks', 'documents', 'templates', 'team', 'reports', 'settings', 'project-detail'];
     if (validViews.includes(viewPart)) {
+      if (!canAccessView(viewPart)) {
+        switchView(getFirstAllowedView());
+        return;
+      }
       let pid = state.activeProjectId;
       if (queryPart) {
         const q = new URLSearchParams(queryPart);

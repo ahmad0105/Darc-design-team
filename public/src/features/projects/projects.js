@@ -691,14 +691,14 @@ export function renderProjectDetail() {
       <div class="project-hero-score">
         <strong>${project.progress}%</strong>
         <span>${t('weightedProgress')}</span>
-        ${can('edit_projects') ? `
+        ${(can('edit_projects') || can('create_projects') || can('delete_projects') || can('view_reports') || isAdmin()) ? `
           <div style="position:relative;margin-top:11px;width:100%">
             <button class="btn btn-soft btn-sm" data-action="toggle-project-menu" style="width:100%">${icon('more', 15)} ${choose('خيارات', 'Options')}</button>
             <div id="project-menu" class="dropdown-menu" style="display:none;position:absolute;top:100%;${state.lang === 'ar' ? 'left:0' : 'right:0'};background:var(--surface);border:1px solid var(--line);border-radius:8px;box-shadow:0 10px 30px rgba(0,0,0,0.1);z-index:100;min-width:180px;padding:5px;margin-top:5px;text-align:start">
-              <button class="menu-item" data-action="edit-project" data-project-id="${esc(project.id)}" style="display:flex;align-items:center;gap:8px;width:100%;padding:8px 12px;border:0;background:0;cursor:pointer;font-size:13px">${icon('edit', 14)} ${t('edit')}</button>
-              ${can('create_projects') ? `<button class="menu-item" data-action="clone-project" data-project-id="${esc(project.id)}" style="display:flex;align-items:center;gap:8px;width:100%;padding:8px 12px;border:0;background:0;cursor:pointer;font-size:13px">${icon('document', 14)} ${choose('استنساخ المشروع', 'Clone Project')}</button>` : ''}
-              <button class="menu-item" data-action="export-project" data-project-id="${esc(project.id)}" style="display:flex;align-items:center;gap:8px;width:100%;padding:8px 12px;border:0;background:0;cursor:pointer;font-size:13px">${icon('document', 14)} ${choose('تصدير التقرير (Excel)', 'Export Report (Excel)')}</button>
-              <button class="menu-item" data-action="delete-project" data-project-id="${esc(project.id)}" style="display:flex;align-items:center;gap:8px;width:100%;padding:8px 12px;border:0;background:0;cursor:pointer;font-size:13px;color:var(--red)">${icon('trash', 14)} ${choose('حذف المشروع', 'Delete Project')}</button>
+              ${(can('edit_projects') || isAdmin()) ? `<button class="menu-item" data-action="edit-project" data-project-id="${esc(project.id)}" style="display:flex;align-items:center;gap:8px;width:100%;padding:8px 12px;border:0;background:0;cursor:pointer;font-size:13px">${icon('edit', 14)} ${t('edit')}</button>` : ''}
+              ${(can('create_projects') || isAdmin()) ? `<button class="menu-item" data-action="clone-project" data-project-id="${esc(project.id)}" style="display:flex;align-items:center;gap:8px;width:100%;padding:8px 12px;border:0;background:0;cursor:pointer;font-size:13px">${icon('document', 14)} ${choose('استنساخ المشروع', 'Clone Project')}</button>` : ''}
+              ${(can('view_reports') || isAdmin()) ? `<button class="menu-item" data-action="export-project" data-project-id="${esc(project.id)}" style="display:flex;align-items:center;gap:8px;width:100%;padding:8px 12px;border:0;background:0;cursor:pointer;font-size:13px">${icon('document', 14)} ${choose('تصدير التقرير (Excel)', 'Export Report (Excel)')}</button>` : ''}
+              ${(can('delete_projects') || isAdmin()) ? `<button class="menu-item" data-action="delete-project" data-project-id="${esc(project.id)}" style="display:flex;align-items:center;gap:8px;width:100%;padding:8px 12px;border:0;background:0;cursor:pointer;font-size:13px;color:var(--red)">${icon('trash', 14)} ${choose('حذف المشروع', 'Delete Project')}</button>` : ''}
             </div>
           </div>
         ` : ''}

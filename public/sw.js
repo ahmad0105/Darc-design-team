@@ -1,5 +1,5 @@
-// DARC Design Team — Service Worker (Offline-First Cache v3.5)
-const CACHE_NAME = 'darc-cache-v3.5';
+// DARC Design Team — Service Worker (Offline-First Cache v3.6)
+const CACHE_NAME = 'darc-cache-v3.6';
 const STATIC_ASSETS = [
   '/',
   '/index.html',

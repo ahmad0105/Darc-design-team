@@ -3,6 +3,9 @@ import { api } from '../../core/api.js';
 import { getActiveCalendarSystem } from '../../core/utils.js';
 
 export function renderTeam() {
+  if (!isAdmin() && !can('manage_users')) {
+    return `<section class="panel"><div class="empty">${icon('alert', 18)}<span>${choose('غير مصرح لك بعرض هذه الصفحة.', 'You are not authorized to view this page.')}</span></div></section>`;
+  }
   const currentUserId = state.data?.user?.id;
   let users = (state.data?.users || []).filter((user) => user.status !== 'inactive');
   
@@ -22,7 +25,7 @@ export function renderTeam() {
         <p>${choose('كل عضو يعرف دوره، مسؤولياته، وما يحتاج إغلاقه بعد ذلك.', 'Every member has a clear role, responsibility, and next action.')}</p>
       </div>
       <div class="page-actions">
-        ${isAdmin() ? `<button class="btn btn-primary" data-action="new-user">${icon('plus', 15)} ${t('addMember')}</button>` : ''}
+        ${(isAdmin() || can('manage_users')) ? `<button class="btn btn-primary" data-action="new-user">${icon('plus', 15)} ${t('addMember')}</button>` : ''}
       </div>
     </div>
     <div class="team-grid">
@@ -105,7 +108,7 @@ export function renderSettings() {
   // Admins or authorized roles also get Company, Roles, Accounts, Trash, Audit
   const sections = [
     ['profile', choose('الملف الشخصي', 'Profile')],
-    ...(userIsAdmin ? [['company', t('company')]] : []),
+    ...(userIsAdmin || can('manage_settings') ? [['company', t('company')]] : []),
     ...(userIsAdmin || can('manage_roles') ? [['roles', t('roles')]] : []),
     ...(canAccessAccounts ? [['accounts', t('accounts')]] : []),
     ['security', choose('الأمان', 'Security')],
@@ -195,8 +198,8 @@ export function renderSettings() {
     `;
   }
 
-  // COMPANY SECTION (Admin only)
-  if (state.settingsSection === 'company' && userIsAdmin) {
+  // COMPANY SECTION (Admin or manage_settings)
+  if (state.settingsSection === 'company' && (userIsAdmin || can('manage_settings'))) {
     const comp = state.data?.company || {};
     content = `
       <section class="setting-section">
@@ -372,16 +375,16 @@ export function renderSettings() {
     `;
   }
 
-  // ROLES SECTION (Admin only)
-  if (state.settingsSection === 'roles' && userIsAdmin) {
+  // ROLES SECTION (Admin or manage_roles)
+  if (state.settingsSection === 'roles' && (userIsAdmin || can('manage_roles'))) {
     content = `
       <section class="setting-section">
         <div class="panel-head">
           <div>
             <h2>${t('roles')}</h2>
-            <p>${t('manageOnlyAdmin')}</p>
+            <p>${choose('إدارة الأدوار وصلاحيات الوصول للنظام.', 'Manage roles and access permissions across the system.')}</p>
           </div>
-          <button class="btn btn-primary btn-sm" data-action="new-role">${icon('plus', 14)} ${t('addRole')}</button>
+          ${(userIsAdmin || can('manage_roles')) ? `<button class="btn btn-primary btn-sm" data-action="new-role">${icon('plus', 14)} ${t('addRole')}</button>` : ''}
         </div>
         <div class="role-list">
           ${(state.data?.roles || []).map((role) => `
@@ -405,8 +408,8 @@ export function renderSettings() {
     `;
   }
 
-  // TRASH SECTION (Admin only)
-  if (state.settingsSection === 'trash' && userIsAdmin) {
+  // TRASH SECTION (Admin or manage_trash)
+  if (state.settingsSection === 'trash' && (userIsAdmin || can('manage_trash'))) {
     if (!state.trashLoaded && !state._trashFetching) {
       state._trashFetching = true;
       import('../../core/api.js').then(({ api }) => api('/api/trash')).then(data => {
@@ -575,8 +578,8 @@ export function renderSettings() {
     `;
   }
 
-  // AUDIT SECTION (Admin only)
-  if (state.settingsSection === 'audit' && userIsAdmin) {
+  // AUDIT SECTION (Admin or view_audit_logs)
+  if (state.settingsSection === 'audit' && (userIsAdmin || can('view_audit_logs'))) {
     content = `<section class="setting-section"><div class="panel-head"><div><h2>${t('audit')}</h2><p>${choose('سجل غير قابل للتجاهل للعمليات الإدارية وتغييرات العمل.', 'A reviewable history of administrative and work changes.')}</p></div></div>${state.data?.auditLogs?.length ? `<div class="audit-list">${state.data.auditLogs.map((log) => `<div class="audit-row"><span class="audit-dot"></span><div class="audit-copy"><strong>${esc(log.user ? choose(log.user.name, log.user.nameEn || log.user.name) : 'DARC')} · ${esc(log.action)}</strong><span>${esc(log.entityType)} · ${dateLabel(log.createdAt, true)}</span></div></div>`).join('')}</div>` : `<div class="empty">${choose('سيظهر سجل العمليات بعد أول تعديل.', 'The audit trail will appear after the first change.')}</div>`}</section>`;
   }
 

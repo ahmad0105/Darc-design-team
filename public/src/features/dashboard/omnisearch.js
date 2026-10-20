@@ -1,8 +1,8 @@
 import { state } from '../../core/state.js';
-import { choose, esc, icon, t, dateLabel, roleName } from '../../core/utils.js';
+import { choose, esc, icon, t, dateLabel, roleName, can, isAdmin } from '../../core/utils.js';
 import { openTaskModal } from '../tasks/tasks.js';
 import { openProjectModal } from '../projects/projects.js';
-import { switchView } from '../../core/router.js';
+import { switchView, canAccessView } from '../../core/router.js';
 import { modalShell } from '../../shared/ui.js';
 
 const isMac = typeof navigator !== 'undefined' && /Mac|iPod|iPhone|iPad/.test(navigator.platform);
@@ -143,8 +143,9 @@ export function renderOmnisearchResults(rawQuery) {
   const activePrj = (state.data?.projects || []).find(p => p.id === (state.activeProjectId || state.lastActiveProjectId)) || (state.data?.projects || [])[0];
   const prjName = activePrj ? choose(activePrj.nameAr, activePrj.nameEn) : '';
 
-  const actions = [
-    { 
+  const actions = [];
+  if (can('create_tasks') || isAdmin()) {
+    actions.push({ 
       type: 'action', 
       id: 'new-task', 
       targetProjectId: activePrj?.id,
@@ -152,24 +153,26 @@ export function renderOmnisearchResults(rawQuery) {
       sub: activePrj ? choose(`في مشروع: ${prjName}`, `In project: ${prjName}`) : choose('إجراء سريع', 'Quick action'), 
       icon: 'plus', 
       keywords: 'new task مهمة إضافة عمل جديد' 
-    },
-    { 
+    });
+  }
+  if (can('create_projects') || isAdmin()) {
+    actions.push({ 
       type: 'action', 
       id: 'new-project', 
       title: choose('إنشاء مشروع جديد', 'Create new project'), 
       sub: choose('إجراء سريع', 'Quick action'), 
       icon: 'building', 
       keywords: 'new project مشروع إنشاء جديد' 
-    },
-    { 
-      type: 'action', 
-      id: 'cheatsheet', 
-      title: choose('عرض دليل اختصارات لوحة المفاتيح', 'View keyboard shortcuts guide'), 
-      sub: choose('مساعدة', 'Help'), 
-      icon: 'sparkles', 
-      keywords: 'shortcuts اختصارات كيبورد مساعدة' 
-    }
-  ];
+    });
+  }
+  actions.push({ 
+    type: 'action', 
+    id: 'cheatsheet', 
+    title: choose('عرض دليل اختصارات لوحة المفاتيح', 'View keyboard shortcuts guide'), 
+    sub: choose('مساعدة', 'Help'), 
+    icon: 'sparkles', 
+    keywords: 'shortcuts اختصارات كيبورد مساعدة' 
+  });
 
   actions.forEach(act => {
     if (!q || act.keywords.includes(q) || act.title.toLowerCase().includes(q)) {
@@ -177,53 +180,59 @@ export function renderOmnisearchResults(rawQuery) {
     }
   });
 
-  // 2. Projects
-  const projects = state.data?.projects || [];
-  projects.forEach(p => {
-    const match = !q || `${p.nameAr} ${p.nameEn} ${p.code} ${p.clientAr} ${p.clientEn}`.toLowerCase().includes(q);
-    if (match) {
-      results.push({
-        type: 'project',
-        id: p.id,
-        title: choose(p.nameAr, p.nameEn),
-        sub: `${p.code} · ${choose(p.clientAr, p.clientEn) || ''}`,
-        badge: `${p.progress}%`,
-        icon: 'building'
-      });
-    }
-  });
+  // 2. Projects (Only if permitted)
+  if (can('view_projects') || isAdmin()) {
+    const projects = state.data?.projects || [];
+    projects.forEach(p => {
+      const match = !q || `${p.nameAr} ${p.nameEn} ${p.code} ${p.clientAr} ${p.clientEn}`.toLowerCase().includes(q);
+      if (match) {
+        results.push({
+          type: 'project',
+          id: p.id,
+          title: choose(p.nameAr, p.nameEn),
+          sub: `${p.code} · ${choose(p.clientAr, p.clientEn) || ''}`,
+          badge: `${p.progress}%`,
+          icon: 'building'
+        });
+      }
+    });
+  }
 
-  // 3. Tasks
-  const tasks = state.data?.tasks || [];
-  tasks.forEach(t => {
-    const match = !q || `${t.titleAr} ${t.titleEn} ${t.categoryAr} ${t.categoryEn}`.toLowerCase().includes(q);
-    if (match) {
-      results.push({
-        type: 'task',
-        id: t.id,
-        title: choose(t.titleAr, t.titleEn),
-        sub: t.dueDate ? `📅 ${dateLabel(t.dueDate)}` : (choose(t.categoryAr, t.categoryEn) || ''),
-        badge: `${t.progress}%`,
-        icon: 'checklist'
-      });
-    }
-  });
+  // 3. Tasks (Only if permitted)
+  if (canAccessView('tasks')) {
+    const tasks = state.data?.tasks || [];
+    tasks.forEach(t => {
+      const match = !q || `${t.titleAr} ${t.titleEn} ${t.categoryAr} ${t.categoryEn}`.toLowerCase().includes(q);
+      if (match) {
+        results.push({
+          type: 'task',
+          id: t.id,
+          title: choose(t.titleAr, t.titleEn),
+          sub: t.dueDate ? `📅 ${dateLabel(t.dueDate)}` : (choose(t.categoryAr, t.categoryEn) || ''),
+          badge: `${t.progress}%`,
+          icon: 'checklist'
+        });
+      }
+    });
+  }
 
-  // 4. Team Members
-  const users = state.data?.users || [];
-  users.forEach(u => {
-    const match = !q || `${u.name} ${u.nameEn} ${u.email} ${u.jobTitleAr}`.toLowerCase().includes(q);
-    if (match) {
-      results.push({
-        type: 'user',
-        id: u.id,
-        title: choose(u.name, u.nameEn || u.name),
-        sub: u.email || '',
-        badge: roleName(u),
-        icon: 'user'
-      });
-    }
-  });
+  // 4. Team Members (Only if permitted)
+  if (isAdmin() || can('manage_users')) {
+    const users = state.data?.users || [];
+    users.forEach(u => {
+      const match = !q || `${u.name} ${u.nameEn} ${u.email} ${u.jobTitleAr}`.toLowerCase().includes(q);
+      if (match) {
+        results.push({
+          type: 'user',
+          id: u.id,
+          title: choose(u.name, u.nameEn || u.name),
+          sub: u.email || '',
+          badge: roleName(u),
+          icon: 'user'
+        });
+      }
+    });
+  }
 
   // Cap results at 15 for top performance
   currentResults = results.slice(0, 15);
