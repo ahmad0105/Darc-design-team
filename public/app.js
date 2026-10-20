@@ -4,6 +4,13 @@ import { state } from './src/core/state.js';
 import { api } from './src/core/api.js';
 
 document.documentElement.dataset.theme = state.theme;
+document.documentElement.lang = state.lang;
+document.documentElement.dir = state.lang === 'ar' ? 'rtl' : 'ltr';
+if (state.lang === 'en') {
+  document.body.classList.add('is-ltr');
+} else {
+  document.body.classList.remove('is-ltr');
+}
 
 import * as UI from './src/shared/ui.js';
 Object.assign(window, UI);

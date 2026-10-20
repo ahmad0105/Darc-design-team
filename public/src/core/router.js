@@ -84,6 +84,7 @@ export function renderApp() {
   }
 
   document.body.classList.add('in-app');
+  document.body.classList.toggle('is-ltr', state.lang === 'en');
   document.documentElement.lang = state.lang;
   document.documentElement.dir = state.lang === 'ar' ? 'rtl' : 'ltr';
   const notifications = state.data?.notifications || [];

@@ -27,6 +27,7 @@ export function icon(name, size = 18) {
     plus: '<path d="M12 5v14M5 12h14"/>',
     search: '<circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/>',
     arrow: '<path d="M5 12h14M13 6l6 6-6 6"/>',
+    arrowRight: '<path d="M5 12h14M13 6l6 6-6 6"/>',
     arrowLeft: '<path d="M19 12H5M11 18l-6-6 6-6"/>',
     calendar: '<rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
     clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',

@@ -314,11 +314,26 @@ export async function handleClick(event) {
   if (action === 'toggle-lang') {
     state.lang = state.lang === 'ar' ? 'en' : 'ar';
     window.localStorage.setItem('darc-locale', state.lang);
+    document.documentElement.lang = state.lang;
+    document.documentElement.dir = state.lang === 'ar' ? 'rtl' : 'ltr';
+    document.body.classList.toggle('is-ltr', state.lang === 'en');
     if (state.data) { renderApp(); } else {
       const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''));
       if (hash.get('activate')) renderActivation(hash.get('activate'));
       else if (hash.get('reset')) renderResetPassword(hash.get('reset'));
       else renderLogin('', document.getElementById('forgot-form') ? 'forgot' : 'login');
+    }
+    return;
+  }
+  if (action === 'quick-fill-login') {
+    const btn = target.closest('[data-action="quick-fill-login"]');
+    const emailInput = document.getElementById('login-email');
+    const passInput = document.getElementById('login-password');
+    if (emailInput && btn?.dataset?.email) {
+      emailInput.value = btn.dataset.email;
+    }
+    if (passInput && btn?.dataset?.pass) {
+      passInput.value = btn.dataset.pass;
     }
     return;
   }
