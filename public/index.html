@@ -13,9 +13,12 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&family=Tajawal:wght@400;500;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="/styles.css?v=3.8.2" />
+    <link rel="stylesheet" href="/styles.css" />
+
+    <!-- Pre-Flight: Storage Guard, Theme Pre-Paint & Silent Auto-Healing -->
     <script>
       (function() {
+        // 1. Safe Theme & Locale Pre-Paint
         try {
           var savedLocale = localStorage.getItem('darc-locale');
           if (savedLocale === 'en') {
@@ -27,202 +30,108 @@
             document.documentElement.dataset.theme = savedTheme;
           }
         } catch (e) {}
+
+        // 2. Silent Auto-Healing Boundary for Stale Module Cache
+        window.__darc_heal_active = false;
+        function triggerAutoHeal(reason) {
+          if (window.__darc_heal_active) return;
+          var LAST_HEAL_KEY = 'darc_last_heal_ts';
+          var now = Date.now();
+          var lastHeal = 0;
+          try { lastHeal = Number(sessionStorage.getItem(LAST_HEAL_KEY) || 0); } catch (e) {}
+          
+          // Auto-heal once silently if occurred more than 10 seconds ago
+          if (now - lastHeal > 10000) {
+            window.__darc_heal_active = true;
+            try { sessionStorage.setItem(LAST_HEAL_KEY, String(now)); } catch (e) {}
+            console.warn('[DARC Auto-Heal] Stale cache detected (' + reason + '). Purging caches and auto-reloading silently...');
+            
+            var purgePromises = [];
+            if ('caches' in window) {
+              purgePromises.push(caches.keys().then(function(keys) {
+                return Promise.all(keys.map(function(k) { return caches.delete(k); }));
+              }).catch(function() {}));
+            }
+            if ('serviceWorker' in navigator) {
+              purgePromises.push(navigator.serviceWorker.getRegistrations().then(function(regs) {
+                return Promise.all(regs.map(function(r) { return r.unregister(); }));
+              }).catch(function() {}));
+            }
+            try {
+              localStorage.removeItem('darc_offline_bootstrap');
+              localStorage.removeItem('darc_offline_queue');
+            } catch (e) {}
+
+            Promise.all(purgePromises).finally(function() {
+              window.location.reload(true);
+            });
+            return true;
+          }
+          return false;
+        }
+
+        window.addEventListener('error', function(event) {
+          var msg = String(event?.message || event?.error?.message || '');
+          if (
+            msg.indexOf('does not provide an export named') !== -1 ||
+            msg.indexOf('Failed to fetch dynamically imported module') !== -1 ||
+            msg.indexOf('Loading chunk') !== -1
+          ) {
+            triggerAutoHeal(msg);
+          }
+        });
+
+        window.addEventListener('unhandledrejection', function(event) {
+          var reason = String(event?.reason?.message || event?.reason || '');
+          if (
+            reason.indexOf('does not provide an export named') !== -1 ||
+            reason.indexOf('Failed to fetch dynamically imported module') !== -1 ||
+            reason.indexOf('Loading chunk') !== -1
+          ) {
+            triggerAutoHeal(reason);
+          }
+        });
       })();
     </script>
   </head>
   <body>
+    <!-- Fallback Screen when JavaScript is Blocked / Disabled -->
+    <noscript>
+      <div style="position:fixed;inset:0;background:#0f172a;color:#f8fafc;display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;z-index:999999;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;text-align:center;">
+        <div style="background:#1e293b;border:1px solid #334155;border-radius:20px;max-width:540px;width:100%;padding:40px 32px;box-shadow:0 25px 50px -12px rgba(0,0,0,0.5);">
+          
+          <div style="width:64px;height:64px;border-radius:18px;background:#0d6269;color:#ffffff;display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:bold;margin:0 auto 24px;">
+            D
+          </div>
+
+          <div style="display:inline-block;background:rgba(239,68,68,0.15);color:#fca5a5;padding:6px 14px;border-radius:999px;font-size:13px;font-weight:600;margin-bottom:16px;border:1px solid rgba(239,68,68,0.3);">
+            ⚠️ يتطلب تفعيل JavaScript | JavaScript Required
+          </div>
+
+          <h1 style="font-size:22px;font-weight:700;margin:0 0 12px;color:#f8fafc;">
+            مرحباً بك في منصة DARC
+          </h1>
+          <p style="font-size:14px;color:#94a3b8;line-height:1.7;margin:0 0 24px;direction:rtl;">
+            يبدو أن ميزة <strong>JavaScript معطلة</strong> في متصفحك أو تم حظرها بواسطة أحد الإضافات. للوصول إلى مساحة العمل والمشاريع، يُرجى تمكين JavaScript في إعدادات المتصفح ثم تحديث الصفحة.
+          </p>
+
+          <div style="background:#0f172a;border:1px solid #334155;border-radius:12px;padding:16px;margin-bottom:24px;text-align:start;direction:ltr;">
+            <p style="font-size:13px;color:#cbd5e1;line-height:1.6;margin:0;">
+              <strong>DARC Design Team Workspace</strong> requires JavaScript to safely authenticate and manage operations. Please allow JavaScript in your browser settings to proceed.
+            </p>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <a href="." style="display:block;background:#0d6269;color:#ffffff;text-decoration:none;padding:12px 20px;border-radius:10px;font-size:14px;font-weight:600;transition:background 0.2s;">
+              🔄 تحديث الصفحة بعد التفعيل (Reload Page)
+            </a>
+          </div>
+
+        </div>
+      </div>
+    </noscript>
+
     <div id="app"></div>
-    <script type="module">
-      const APP_VERSION = 'v3.8.2';
-
-      (async function boot() {
-        try {
-          await import(`/app.js?v=${APP_VERSION}`);
-        } catch (error) {
-        console.error("Critical System Startup Error:", error);
-
-        const errorMsg = String(error?.message || error || 'Unknown startup error');
-        const isStaleModuleError = errorMsg.includes('does not provide an export named') || 
-                                   errorMsg.includes('Failed to fetch dynamically imported module') ||
-                                   errorMsg.includes('SyntaxError');
-
-        // Self-Healing Auto-Recovery: if a stale module cache is detected, clear caches and reload once automatically
-        if (isStaleModuleError && !sessionStorage.getItem('darc_auto_heal_tried')) {
-          sessionStorage.setItem('darc_auto_heal_tried', 'true');
-          console.warn("[DARC Auto-Heal] Stale module cache detected. Purging cache and auto-reloading...");
-          if ('caches' in window) {
-            try {
-              const keys = await caches.keys();
-              await Promise.all(keys.map(k => caches.delete(k)));
-            } catch (e) {}
-          }
-          if ('serviceWorker' in navigator) {
-            try {
-              const regs = await navigator.serviceWorker.getRegistrations();
-              await Promise.all(regs.map(r => r.unregister()));
-            } catch (e) {}
-          }
-          location.reload(true);
-        } else {
-          // Render Comprehensive English / Bilingual Diagnostic Screen
-          const timestamp = new Date().toISOString();
-          const localTime = new Date().toLocaleString();
-          const userAgent = navigator.userAgent;
-          const currentUrl = window.location.href;
-          const isOnline = navigator.onLine ? 'Connected (Online)' : 'Disconnected (Offline)';
-          const swActive = navigator.serviceWorker?.controller ? 'Active (Controller Registered)' : 'Inactive';
-
-          const diagnosticReport = {
-            application: "DARC Design Team Workspace",
-            version: APP_VERSION,
-            timestampUtc: timestamp,
-            timestampLocal: localTime,
-            url: currentUrl,
-            errorName: error?.name || 'StartupError',
-            errorMessage: errorMsg,
-            isStaleCacheError: isStaleModuleError,
-            onlineStatus: isOnline,
-            serviceWorker: swActive,
-            userAgent: userAgent,
-            stack: error?.stack || 'No stack trace available'
-          };
-
-          window.__DARC_DIAGNOSTICS__ = diagnosticReport;
-
-          document.body.dir = 'ltr';
-          document.body.style.margin = '0';
-          document.body.style.background = '#0f172a';
-          document.body.style.color = '#f8fafc';
-          document.body.style.fontFamily = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
-
-          document.getElementById('app').innerHTML = `
-            <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px 16px;box-sizing:border-box;">
-              <div style="background:#1e293b;border:1px solid #334155;border-radius:16px;box-shadow:0 25px 50px -12px rgba(0,0,0,0.5);max-width:860px;width:100%;overflow:hidden;">
-                
-                <!-- Header Banner -->
-                <div style="background:linear-gradient(135deg, #0d9488 0%, #0f766e 100%);padding:24px 32px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;">
-                  <div style="display:flex;align-items:center;gap:14px;">
-                    <div style="width:44px;height:44px;border-radius:10px;background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;font-size:24px;">
-                      ⚠️
-                    </div>
-                    <div>
-                      <h1 style="margin:0;font-size:20px;font-weight:700;color:#ffffff;letter-spacing:-0.02em;">
-                        Application Boot Diagnostic
-                      </h1>
-                      <span style="font-size:13px;color:rgba(255,255,255,0.85);font-family:'Cairo',sans-serif;direction:rtl;">
-                        تشخيص وفحص إقلاع النظام وحماية الذاكرة المؤقتة
-                      </span>
-                    </div>
-                  </div>
-                  <span style="background:rgba(0,0,0,0.25);color:#5eead4;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;font-family:monospace;">
-                    ${APP_VERSION}
-                  </span>
-                </div>
-
-                <!-- Main Content Area -->
-                <div style="padding:32px;">
-                  
-                  <!-- Cause Explanation Card -->
-                  <div style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:12px;padding:18px 20px;margin-bottom:24px;">
-                    <div style="display:flex;align-items:flex-start;gap:12px;">
-                      <span style="font-size:20px;line-height:1;">🔍</span>
-                      <div>
-                        <strong style="display:block;font-size:14px;color:#fca5a5;margin-bottom:4px;">
-                          ${isStaleModuleError ? 'Root Cause: Stale ES Module Cache Skew' : 'Root Cause: Critical Script Execution Error'}
-                        </strong>
-                        <p style="margin:0;font-size:13px;color:#cbd5e1;line-height:1.6;">
-                          ${isStaleModuleError 
-                            ? 'Your browser or Service Worker retained an older cached copy of a module that is missing newly deployed exports. Purging the local cache will immediately resolve this conflict.' 
-                            : 'An unhandled exception interrupted the initialization phase. Review the diagnostic breakdown below.'}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- Action Buttons -->
-                  <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:28px;">
-                    <button id="btn-force-reload" style="cursor:pointer;background:#0d9488;color:#ffffff;border:none;padding:11px 22px;border-radius:8px;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:8px;transition:background 0.15s ease;">
-                      🔄 Clear Cache & Force Reload
-                    </button>
-                    <button id="btn-copy-diag" style="cursor:pointer;background:#334155;color:#f8fafc;border:1px solid #475569;padding:11px 18px;border-radius:8px;font-size:13px;font-weight:500;display:inline-flex;align-items:center;gap:8px;">
-                      📋 Copy Diagnostics Report
-                    </button>
-                  </div>
-
-                  <!-- System & Environment Information Table -->
-                  <h3 style="margin:0 0 12px 0;font-size:13px;text-transform:uppercase;letter-spacing:0.05em;color:#94a3b8;font-weight:700;">
-                    Environment & Diagnostic Metadata
-                  </h3>
-                  <div style="background:#0f172a;border:1px solid #334155;border-radius:10px;padding:14px 18px;margin-bottom:24px;font-size:12px;font-family:monospace;display:grid;grid-template-columns:repeat(auto-fit, minmax(260px, 1fr));gap:12px;">
-                    <div><span style="color:#64748b;">Timestamp:</span> <span style="color:#e2e8f0;">${localTime}</span></div>
-                    <div><span style="color:#64748b;">Network Status:</span> <span style="color:#10b981;">${isOnline}</span></div>
-                    <div><span style="color:#64748b;">Service Worker:</span> <span style="color:#e2e8f0;">${swActive}</span></div>
-                    <div><span style="color:#64748b;">Error Type:</span> <span style="color:#f87171;">${diagnosticReport.errorName}</span></div>
-                    <div style="grid-column: 1 / -1;"><span style="color:#64748b;">URL:</span> <span style="color:#93c5fd;word-break:break-all;">${currentUrl}</span></div>
-                  </div>
-
-                  <!-- Error Message & Stack Trace Section -->
-                  <h3 style="margin:0 0 12px 0;font-size:13px;text-transform:uppercase;letter-spacing:0.05em;color:#94a3b8;font-weight:700;">
-                    Exception Details & Stack Trace
-                  </h3>
-                  <div style="background:#020617;border:1px solid #1e293b;border-radius:10px;padding:16px;overflow-x:auto;">
-                    <div style="color:#ef4444;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;margin-bottom:8px;">
-                      ${diagnosticReport.errorMessage}
-                    </div>
-                    <pre style="margin:0;color:#94a3b8;font-family:'JetBrains Mono',monospace;font-size:11px;line-height:1.6;white-space:pre-wrap;word-break:break-all;">${diagnosticReport.stack}</pre>
-                  </div>
-
-                </div>
-
-                <!-- Footer -->
-                <div style="background:#0f172a;border-top:1px solid #334155;padding:14px 32px;display:flex;justify-content:space-between;align-items:center;font-size:12px;color:#64748b;">
-                  <span>DARC Design Team Engineering System</span>
-                  <span>Fault Containment & Recovery v3.8</span>
-                </div>
-
-              </div>
-            </div>
-          `;
-
-          // Hook Action Handlers
-          document.getElementById('btn-force-reload')?.addEventListener('click', async () => {
-            const btn = document.getElementById('btn-force-reload');
-            if (btn) btn.innerText = 'Purging Caches...';
-            if ('caches' in window) {
-              try {
-                const keys = await caches.keys();
-                await Promise.all(keys.map(k => caches.delete(k)));
-              } catch (e) {}
-            }
-            if ('serviceWorker' in navigator) {
-              try {
-                const regs = await navigator.serviceWorker.getRegistrations();
-                await Promise.all(regs.map(r => r.unregister()));
-              } catch (e) {}
-            }
-            try {
-              localStorage.removeItem('darc_offline_bootstrap');
-              sessionStorage.clear();
-            } catch (e) {}
-            location.reload(true);
-          });
-
-          document.getElementById('btn-copy-diag')?.addEventListener('click', () => {
-            const btn = document.getElementById('btn-copy-diag');
-            const text = JSON.stringify(window.__DARC_DIAGNOSTICS__, null, 2);
-            navigator.clipboard.writeText(text).then(() => {
-              if (btn) {
-                const prev = btn.innerText;
-                btn.innerText = '✅ Copied to Clipboard!';
-                setTimeout(() => { btn.innerText = prev; }, 2000);
-              }
-            }).catch(() => {
-              alert(text);
-            });
-          });
-        }
-      }
-    })();
-    </script>
+    <script type="module" src="/app.js"></script>
   </body>
 </html>

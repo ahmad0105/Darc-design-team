@@ -5,7 +5,7 @@ import { switchView, refreshView, renderView, renderApp, canAccessView, getFirst
 import { openOmnisearch, closeOmnisearch, openShortcutsCheatsheet } from '../features/dashboard/omnisearch.js';
 import { playSuccessChime } from './utils.js';
 import { setSavedTaskSort, openDocumentPreviewModal, renderTaskDocuments } from '../features/tasks/tasks.js';
-import { clearOfflineBootstrap, getPendingMutations, syncPendingMutations } from './offline.js';
+import { getPendingMutations, syncPendingMutations } from './offline.js';
 
 export async function handleSubmit(event) {
   const form = event.target;
@@ -357,8 +357,14 @@ export async function handleClick(event) {
   if (action === 'logout') {
     await api('/api/auth/logout', { method: 'POST' }).catch(() => {});
     try {
-      if (typeof clearOfflineBootstrap === 'function') await clearOfflineBootstrap();
-    } catch (e) {}
+      const off = await import('./offline.js');
+      if (off && typeof off.clearOfflineBootstrap === 'function') await off.clearOfflineBootstrap();
+    } catch (e) {
+      try {
+        localStorage.removeItem('darc_offline_bootstrap');
+        localStorage.removeItem('darc_offline_queue');
+      } catch (err) {}
+    }
     invalidateBootstrapEtag();
     state.data = null;
     state.view = 'login';
@@ -373,8 +379,14 @@ export async function handleClick(event) {
   if (action === 'logout-all') {
     await api('/api/auth/logout-all', { method: 'POST' }).catch(() => {});
     try {
-      if (typeof clearOfflineBootstrap === 'function') await clearOfflineBootstrap();
-    } catch (e) {}
+      const off = await import('./offline.js');
+      if (off && typeof off.clearOfflineBootstrap === 'function') await off.clearOfflineBootstrap();
+    } catch (e) {
+      try {
+        localStorage.removeItem('darc_offline_bootstrap');
+        localStorage.removeItem('darc_offline_queue');
+      } catch (err) {}
+    }
     invalidateBootstrapEtag();
     state.data = null;
     state.view = 'login';

@@ -1,0 +1,11 @@
+{
+  "name": "DARC Design Team",
+  "short_name": "DARC",
+  "description": "Project operations & architectural deliverable management workspace",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0d6269",
+  "theme_color": "#0d6269",
+  "dir": "rtl",
+  "lang": "ar"
+}

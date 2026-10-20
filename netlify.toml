@@ -1,5 +1,6 @@
 [build]
-  publish = "public"
+  command = "npm run build"
+  publish = "dist"
 
 # Proxy /api requests to Cloudflare Workers backend (or backend URL)
 # This eliminates CORS issues and third-party cookie blocks completely!
@@ -35,18 +36,8 @@
   [headers.values]
     Cache-Control = "public, max-age=0, must-revalidate"
 
-# Static JS & CSS: Must revalidate to ensure immediate updates across all devices
+# Content-Hashed Assets: Can be safely cached permanently
 [[headers]]
-  for = "/styles.css"
+  for = "/assets/*"
   [headers.values]
-    Cache-Control = "no-cache, must-revalidate"
-
-[[headers]]
-  for = "/app.js"
-  [headers.values]
-    Cache-Control = "no-cache, must-revalidate"
-
-[[headers]]
-  for = "/src/*"
-  [headers.values]
-    Cache-Control = "no-cache, must-revalidate"
+    Cache-Control = "public, max-age=31536000, immutable"
