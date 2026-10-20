@@ -1,7 +1,6 @@
 
 import { state } from './state.js';
 import { api, API_BASE, invalidateBootstrapEtag } from './api.js';
-import { clearOfflineBootstrap } from './offline.js';
 import { switchView, refreshView, renderView, renderApp } from './router.js';
 import { openOmnisearch, closeOmnisearch, openShortcutsCheatsheet } from '../features/dashboard/omnisearch.js';
 import { playSuccessChime } from './utils.js';
@@ -328,7 +327,10 @@ export async function handleClick(event) {
   if (action === 'toggle-sidebar') { state.sidebarOpen = !state.sidebarOpen; document.querySelector('.sidebar')?.classList.toggle('open', state.sidebarOpen); return; }
   if (action === 'logout') {
     await api('/api/auth/logout', { method: 'POST' }).catch(() => {});
-    await clearOfflineBootstrap();
+    try {
+      const { clearOfflineBootstrap } = await import('./offline.js?v=3.3');
+      if (typeof clearOfflineBootstrap === 'function') await clearOfflineBootstrap();
+    } catch {}
     invalidateBootstrapEtag();
     state.data = null;
     renderLogin();
@@ -336,7 +338,10 @@ export async function handleClick(event) {
   }
   if (action === 'logout-all') {
     await api('/api/auth/logout-all', { method: 'POST' }).catch(() => {});
-    await clearOfflineBootstrap();
+    try {
+      const { clearOfflineBootstrap } = await import('./offline.js?v=3.3');
+      if (typeof clearOfflineBootstrap === 'function') await clearOfflineBootstrap();
+    } catch {}
     invalidateBootstrapEtag();
     state.data = null;
     renderLogin();
