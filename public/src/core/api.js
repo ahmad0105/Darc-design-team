@@ -1,3 +1,7 @@
+import { state } from './state.js';
+import { generatePrefixedId, enqueueOfflineMutation, simulateOfflineMutation } from './offline.js';
+import { showToast, choose } from './utils.js';
+
 // Dynamically match current hostname/port or use proxy
 export const API_BASE = (typeof window !== 'undefined' && (window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost'))
   ? (window.location.port === '8787' ? `${window.location.protocol}//${window.location.hostname}:8787` : (window.__API_BASE__ !== undefined ? window.__API_BASE__ : ''))
@@ -23,7 +27,6 @@ export async function api(path, options = {}) {
 
   // Pre-assign deterministic prefixed ID if creating task, project, or comment
   if (options.method === 'POST' && parsedBody && typeof parsedBody === 'object' && !isReplay) {
-    const { generatePrefixedId } = await import('./offline.js');
     if (path === '/api/tasks' && !parsedBody.id) {
       parsedBody.id = generatePrefixedId('tsk');
       options.body = JSON.stringify(parsedBody);
@@ -41,9 +44,6 @@ export async function api(path, options = {}) {
     if (isReplay) {
       throw new Error('تعذر الاتصال بالخادم، ما زال النظام دون اتصال.');
     }
-    const { enqueueOfflineMutation, simulateOfflineMutation } = await import('./offline.js');
-    const { state } = await import('./state.js');
-    const { showToast, choose } = await import('./utils.js');
     const item = enqueueOfflineMutation({
       path,
       method: options.method,
@@ -70,9 +70,6 @@ export async function api(path, options = {}) {
     response = await fetch(API_BASE + path, { ...options, headers });
   } catch (networkError) {
     if (isMutation && !isAuth && !isReplay) {
-      const { enqueueOfflineMutation, simulateOfflineMutation } = await import('./offline.js');
-      const { state } = await import('./state.js');
-      const { showToast, choose } = await import('./utils.js');
       const item = enqueueOfflineMutation({
         path,
         method: options.method,
@@ -100,7 +97,6 @@ export async function api(path, options = {}) {
     if (response.status === 401) {
       _lastBootstrapEtag = null;
       if (path !== '/api/auth/login') {
-        const { state } = await import('./state.js');
         if (state.data) state.data.user = null;
         if (typeof window !== 'undefined') {
           if (window.location.hash !== '#login') {

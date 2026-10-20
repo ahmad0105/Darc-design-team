@@ -5,9 +5,10 @@ import { getTaskStatusStyle } from '../../core/utils.js';
 
 export function renderTaskAssignees(task) {
   const users = state.data?.users || [];
-  const primaryUser = task.assignee || users.find(u => u.id === task.assigneeId);
+  const userMap = state._userMap || new Map(users.map(u => [u.id, u]));
+  const primaryUser = task.assignee || userMap.get(task.assigneeId);
   const additionalIds = task.customFields?.additionalAssignees || task.customFields?.additional_assignees || [];
-  const additionalUsers = additionalIds.map(id => users.find(u => u.id === id)).filter(Boolean);
+  const additionalUsers = additionalIds.map(id => userMap.get(id)).filter(Boolean);
   const externalNames = task.customFields?.externalAssignees || task.customFields?.external_assignees || [];
 
   let html = '<div class="task-assignees-wrap" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">';
@@ -50,8 +51,8 @@ export function taskCard(task) {
     ? `<span class="overdue-tag" style="display:inline-flex;align-items:center;gap:3px;color:var(--red);background:var(--red-soft);padding:2px 6px;border-radius:4px;font-size:10px;font-weight:600;">${icon('alert', 11)} ${t('overdue')}</span>`
     : '';
 
-  const commentCount = (state.data?.comments || []).filter(c => c.taskId === task.id).length;
-  const docCount = (state.data?.documents || []).filter(d => d.taskId === task.id).length;
+  const commentCount = state._commentCounts ? (state._commentCounts[task.id] || 0) : (state.data?.comments || []).filter(c => c.taskId === task.id).length;
+  const docCount = state._docCounts ? (state._docCounts[task.id] || 0) : (state.data?.documents || []).filter(d => d.taskId === task.id).length;
 
   const barColor = task.progress === 100
     ? 'var(--mint-strong)'
@@ -199,6 +200,20 @@ export function sortTasks(tasks = [], mode = getSavedTaskSort()) {
 }
 
 export function renderBoard(tasks, sortMode = getSavedTaskSort()) {
+  // Pre-index users, comment counts, and document counts for fast O(1) card rendering
+  const users = state.data?.users || [];
+  state._userMap = new Map(users.map(u => [u.id, u]));
+  const commentCounts = {};
+  for (const c of (state.data?.comments || [])) {
+    if (c.taskId) commentCounts[c.taskId] = (commentCounts[c.taskId] || 0) + 1;
+  }
+  const docCounts = {};
+  for (const d of (state.data?.documents || [])) {
+    if (d.taskId) docCounts[d.taskId] = (docCounts[d.taskId] || 0) + 1;
+  }
+  state._commentCounts = commentCounts;
+  state._docCounts = docCounts;
+
   const columns = [
     { key: 'not_started', dot: '', label: t('notStarted') },
     { key: 'in_progress', dot: 'blue', label: t('inProgress') },

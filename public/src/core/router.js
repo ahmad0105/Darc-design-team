@@ -163,12 +163,23 @@ export function switchView(view, projectId = undefined) {
   state.sidebarOpen = false;
   document.querySelector('.sidebar')?.classList.remove('open');
 
+  // Instant 0ms visual feedback on navigation buttons
+  document.querySelectorAll('.nav-item').forEach((btn) => {
+    const v = btn.dataset.view;
+    const isActive = v === view || (v === 'projects' && view === 'project-detail');
+    btn.classList.toggle('active', isActive);
+  });
+
+  const titleEl = document.querySelector('.topbar-title');
+  if (titleEl) titleEl.textContent = currentViewTitle();
+
   try {
     let hashStr = view;
     if (view === 'project-detail' && state.activeProjectId) {
       hashStr = `project-detail?id=${encodeURIComponent(state.activeProjectId)}${state.projectTab ? `&tab=${encodeURIComponent(state.projectTab)}` : ''}`;
     }
     if (typeof window !== 'undefined' && window.location.hash.replace(/^#/, '') !== hashStr) {
+      window._isInternalNav = true;
       window.location.hash = hashStr;
     }
     if (typeof sessionStorage !== 'undefined') {
@@ -180,23 +191,12 @@ export function switchView(view, projectId = undefined) {
     }
   } catch (e) {}
 
-  document.querySelectorAll('.nav-item').forEach((btn) => {
-    const v = btn.dataset.view;
-    const isActive = v === view || (v === 'projects' && view === 'project-detail');
-    btn.classList.toggle('active', isActive);
+  requestAnimationFrame(() => {
+    renderView();
   });
-
-  const titleEl = document.querySelector('.topbar-title');
-  if (titleEl) titleEl.textContent = currentViewTitle();
-
-  renderView();
 }
 
 export async function refreshView(silent = false) { try { await loadData(silent); } catch (error) { showToast(error.message, true); } }
-
-
-
-
 
 export async function loadData(silent = false) {
   try {
@@ -206,12 +206,20 @@ export async function loadData(silent = false) {
       return;
     }
     
-    // Save to offline storage for instant access when offline
+    // Save to offline storage non-blockingly for instant access when offline
     saveOfflineBootstrap(payload);
     state.isOffline = false;
     
-    // Prevent DOM thrashing: Only re-render if data actually changed
-    const isDataChanged = !state.data || JSON.stringify(state.data) !== JSON.stringify(payload);
+    // Prevent DOM thrashing: Fast shallow comparison instead of expensive synchronous JSON.stringify
+    const isDataChanged = !state.data || 
+      state.data.updatedAt !== payload.updatedAt ||
+      state.data.projects?.length !== payload.projects?.length ||
+      state.data.tasks?.length !== payload.tasks?.length ||
+      state.data.comments?.length !== payload.comments?.length ||
+      state.data.documents?.length !== payload.documents?.length ||
+      state.data.users?.length !== payload.users?.length ||
+      state.data.auditLogs?.length !== payload.auditLogs?.length ||
+      state.data.notifications?.length !== payload.notifications?.length;
     
     if (isDataChanged) {
       state.data = payload;
@@ -219,14 +227,17 @@ export async function loadData(silent = false) {
         state.view = getFirstAllowedView();
       }
       const hasOpenModal = Boolean(document.getElementById('modal-root')?.children?.length);
-      if (!silent && !hasOpenModal) renderApp();
-      else renderView();
+      if (!silent && !hasOpenModal) {
+        requestAnimationFrame(() => renderApp());
+      } else {
+        requestAnimationFrame(() => renderView());
+      }
     } else {
       // Just update state silently without re-rendering the DOM
       state.data = payload; 
       if (!canAccessView(state.view)) {
         state.view = getFirstAllowedView();
-        renderView();
+        requestAnimationFrame(() => renderView());
       }
     }
   } catch (error) {

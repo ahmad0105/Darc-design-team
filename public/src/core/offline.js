@@ -93,23 +93,29 @@ export function isOnline() {
 /**
  * Persists bootstrap payload into IndexedDB (primary) and localStorage (fast synchronous fallback).
  */
-export async function saveOfflineBootstrap(data) {
+export function saveOfflineBootstrap(data) {
   if (!data) return;
   const record = {
     timestamp: Date.now(),
     data
   };
 
-  // 1. Asynchronously persist to IndexedDB (handles hundreds of MBs smoothly)
+  // 1. Asynchronously persist to IndexedDB (handles hundreds of MBs smoothly without blocking UI)
   idbSet(STORAGE_BOOTSTRAP_KEY, record).catch(() => {});
 
-  // 2. Persist to localStorage if quota permits (0ms synchronous read on first render)
+  // 2. Persist to localStorage in background idle time so main-thread UI clicks are never blocked
   if (typeof localStorage !== 'undefined') {
-    try {
-      localStorage.setItem(STORAGE_BOOTSTRAP_KEY, JSON.stringify(record));
-    } catch (err) {
-      // If payload exceeds 5MB, localStorage fails gracefully while IndexedDB retains the data
-      console.warn('[Offline] localStorage quota exceeded, relying on IndexedDB:', err.message);
+    const persistLocalStorage = () => {
+      try {
+        localStorage.setItem(STORAGE_BOOTSTRAP_KEY, JSON.stringify(record));
+      } catch (err) {
+        console.warn('[Offline] localStorage quota exceeded, relying on IndexedDB:', err.message);
+      }
+    };
+    if (typeof requestIdleCallback === 'function') {
+      requestIdleCallback(persistLocalStorage, { timeout: 2000 });
+    } else {
+      setTimeout(persistLocalStorage, 50);
     }
   }
 }

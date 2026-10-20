@@ -4,7 +4,8 @@ import { api, API_BASE, invalidateBootstrapEtag } from './api.js';
 import { switchView, refreshView, renderView, renderApp, canAccessView, getFirstAllowedView } from './router.js';
 import { openOmnisearch, closeOmnisearch, openShortcutsCheatsheet } from '../features/dashboard/omnisearch.js';
 import { playSuccessChime } from './utils.js';
-import { setSavedTaskSort } from '../features/tasks/tasks.js';
+import { setSavedTaskSort, openDocumentPreviewModal, renderTaskDocuments } from '../features/tasks/tasks.js';
+import { clearOfflineBootstrap, getPendingMutations, syncPendingMutations } from './offline.js';
 
 export async function handleSubmit(event) {
   const form = event.target;
@@ -306,14 +307,8 @@ export async function handleClick(event) {
     state.theme = state.theme === 'dark' ? 'light' : 'dark';
     window.localStorage.setItem('darc-theme', state.theme);
     document.documentElement.dataset.theme = state.theme;
-    if (state.data) {
-      renderApp();
-    } else {
-      const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''));
-      if (hash.get('activate')) renderActivation(hash.get('activate'));
-      else if (hash.get('reset')) renderResetPassword(hash.get('reset'));
-      else renderLogin('', document.getElementById('forgot-form') ? 'forgot' : 'login');
-    }
+    const themeBtn = document.querySelector('[data-action="toggle-theme"]');
+    if (themeBtn) themeBtn.textContent = state.theme === 'dark' ? '☀️' : '🌙';
     return;
   }
   if (action === 'toggle-lang') {
@@ -333,7 +328,6 @@ export async function handleClick(event) {
   if (action === 'logout') {
     await api('/api/auth/logout', { method: 'POST' }).catch(() => {});
     try {
-      const { clearOfflineBootstrap } = await import('./offline.js?v=3.6');
       if (typeof clearOfflineBootstrap === 'function') await clearOfflineBootstrap();
     } catch {}
     invalidateBootstrapEtag();
@@ -344,7 +338,6 @@ export async function handleClick(event) {
   if (action === 'logout-all') {
     await api('/api/auth/logout-all', { method: 'POST' }).catch(() => {});
     try {
-      const { clearOfflineBootstrap } = await import('./offline.js?v=3.6');
       if (typeof clearOfflineBootstrap === 'function') await clearOfflineBootstrap();
     } catch {}
     invalidateBootstrapEtag();
@@ -365,7 +358,6 @@ export async function handleClick(event) {
   if (action === 'preview-doc') {
     const docId = target.dataset.docId || target.closest('[data-doc-id]')?.dataset.docId;
     if (docId) {
-      const { openDocumentPreviewModal } = await import('../features/tasks/tasks.js');
       openDocumentPreviewModal(docId);
     }
     return;
@@ -429,7 +421,6 @@ export async function handleClick(event) {
       if (task) {
         const list = document.getElementById('task-documents-list');
         if (list) {
-          const { renderTaskDocuments } = await import('../features/tasks/tasks.js');
           list.innerHTML = renderTaskDocuments(task);
         }
       }
@@ -453,7 +444,6 @@ export async function handleClick(event) {
         if (task) {
           const list = document.getElementById('task-documents-list');
           if (list) {
-            const { renderTaskDocuments } = await import('../features/tasks/tasks.js');
             list.innerHTML = renderTaskDocuments(task);
           }
         }
@@ -564,7 +554,6 @@ export async function handleClick(event) {
       showToast(choose('أنت في وضع عدم الاتصال حالياً. كافة العمليات محفوظة محلياً وستُرفع تلقائياً عند عودة النت 📡', 'You are currently offline. Changes are saved locally and will auto-sync on reconnect 📡'), false);
       return;
     }
-    const { getPendingMutations, syncPendingMutations } = await import('./offline.js');
     const pending = getPendingMutations();
     if (!pending.length) {
       showToast(choose('جميع البيانات متزامنة ومحدثة بالكامل مع الخادم السحابي ✔️', 'All data is completely synchronized with cloud server ✔️'), false);
@@ -614,12 +603,12 @@ export async function handleClick(event) {
     const memberId = target.dataset.memberId;
     state.projectMemberFilter = state.projectMemberFilter === memberId ? null : memberId;
     state.projectTab = 'tasks';
-    renderView();
+    requestAnimationFrame(() => renderView());
     return;
   }
   if (action === 'clear-member-filter') {
     state.projectMemberFilter = null;
-    renderView();
+    requestAnimationFrame(() => renderView());
     return;
   }
   if (action === 'back-to-projects') { 
@@ -627,34 +616,48 @@ export async function handleClick(event) {
     switchView('projects', null); 
     return; 
   }
-  if (action === 'project-tab') { state.projectTab = target.dataset.tab; renderView(); return; }
+  if (action === 'project-tab') {
+    state.projectTab = target.dataset.tab;
+    target.closest('.detail-tabs')?.querySelectorAll('.detail-tab').forEach(b => b.classList.toggle('active', b === target));
+    requestAnimationFrame(() => renderView());
+    return;
+  }
   if (action === 'toggle-timeline-view') {
     state.timelineView = target.dataset.viewMode || 'gantt';
-    renderView();
+    requestAnimationFrame(() => renderView());
     return;
   }
   if (action === 'prev-calendar-month') {
     const d = state.calendarDate ? new Date(state.calendarDate) : new Date();
     d.setMonth(d.getMonth() - 1);
     state.calendarDate = d;
-    renderView();
+    requestAnimationFrame(() => renderView());
     return;
   }
   if (action === 'next-calendar-month') {
     const d = state.calendarDate ? new Date(state.calendarDate) : new Date();
     d.setMonth(d.getMonth() + 1);
     state.calendarDate = d;
-    renderView();
+    requestAnimationFrame(() => renderView());
     return;
   }
   if (action === 'today-calendar-month') {
     state.calendarDate = new Date();
-    renderView();
+    requestAnimationFrame(() => renderView());
     return;
   }
   if (action === 'open-task') { const task = state.data.tasks.find((item) => item.id === target.dataset.taskId); if (task) openTaskModal(task); return; }
-  if (action === 'task-filter') { state.taskFilter = target.dataset.filter; renderView(); return; }
-  if (action === 'template-category') { state.templateCategory = target.dataset.category; renderView(); return; }
+  if (action === 'task-filter') {
+    state.taskFilter = target.dataset.filter;
+    target.closest('.view-toolbar-start')?.querySelectorAll('.filter-tab').forEach(b => b.classList.toggle('active', b === target));
+    requestAnimationFrame(() => renderView());
+    return;
+  }
+  if (action === 'template-category') {
+    state.templateCategory = target.dataset.category;
+    requestAnimationFrame(() => renderView());
+    return;
+  }
   if (action === 'use-template') { if (!state.data.projects.length) return showToast(t('noProjects'), true); openTaskModal(null, target.dataset.templateId, state.activeProjectId); return; }
   if (action === 'open-user') { const user = state.data.users.find((item) => item.id === target.dataset.userId); if (user) openUserModal(user); return; }
   if (action === 'impersonate-user') {
@@ -695,14 +698,15 @@ export async function handleClick(event) {
   }
   if (action === 'settings-section') { 
     state.settingsSection = target.dataset.section; 
-    if (state.settingsSection === 'trash') {
-      try {
-        const data = await api('/api/trash');
+    target.closest('.settings-nav')?.querySelectorAll('.settings-nav-item').forEach(b => b.classList.toggle('active', b === target));
+    if (state.settingsSection === 'trash' && !state.trashLoaded) {
+      api('/api/trash').then(data => {
         state.trash = Array.isArray(data) ? data : (data.trash || [...(data.projects || []).map(p => ({...p, type:'project'})), ...(data.tasks || []).map(t => ({...t, type:'task'}))]);
         state.trashLoaded = true;
-      } catch(e) { console.error(e); }
+        renderView();
+      }).catch(e => console.error(e));
     }
-    renderView(); 
+    requestAnimationFrame(() => renderView()); 
     return; 
   }
   if (action === 'restore-item') {
@@ -716,7 +720,7 @@ export async function handleClick(event) {
   }
   if (action === 'filter-trash') {
     state.trashFilter = target.dataset.filter;
-    renderView();
+    requestAnimationFrame(() => renderView());
     return;
   }
   if (action === 'purge-trash-item') {
@@ -1538,7 +1542,6 @@ export async function uploadTaskFiles(files, taskId) {
     const updatedTask = state.data?.tasks?.find(t => t.id === taskId);
     const docListEl = document.getElementById('task-documents-list');
     if (docListEl && updatedTask) {
-      const { renderTaskDocuments } = await import('../features/tasks/tasks.js');
       docListEl.innerHTML = renderTaskDocuments(updatedTask);
     }
     
@@ -1643,7 +1646,6 @@ export async function init() {
   try { 
     // Replay any pending mutations from previous offline sessions before loading fresh bootstrap
     if (typeof navigator !== 'undefined' && navigator.onLine) {
-      const { getPendingMutations, syncPendingMutations } = await import('./offline.js');
       if (getPendingMutations().length > 0) {
         await syncPendingMutations(api);
       }
@@ -1686,6 +1688,10 @@ export async function init() {
 if (typeof window !== 'undefined' && !window._hashChangeListenerSet) {
   window._hashChangeListenerSet = true;
   window.addEventListener('hashchange', () => {
+    if (window._isInternalNav) {
+      window._isInternalNav = false;
+      return;
+    }
     const rawHash = window.location.hash.replace(/^#/, '');
     if (!rawHash) return;
     const [viewPart, queryPart] = rawHash.split('?');
