@@ -154,7 +154,9 @@ export async function getCachedUsers(supabase) {
         job_title_ar: u.job_title_ar || '',
         job_title_en: u.job_title_en || '',
         specialty: u.specialty || u.custom_fields?.specialty || '',
-        avatar_url: u.avatar_url || u.custom_fields?.avatarUrl || null
+        avatar_url: u.avatar_url || u.custom_fields?.avatarUrl || null,
+        last_login_at: u.last_login_at || u.custom_fields?.lastLoginAt || null,
+        last_active_at: u.last_active_at || u.custom_fields?.lastActiveAt || null
       }));
     } catch (e) {
       console.warn('[Cache] getCachedUsers error:', e.message);

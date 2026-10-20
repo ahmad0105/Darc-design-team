@@ -65,26 +65,53 @@ export function renderAuditForProject(projectId) {
   return `<div class="audit-list">${logs.map((log) => `<div class="audit-row"><span class="audit-dot"></span><div class="audit-copy"><strong>${esc(log.user ? choose(log.user.name, log.user.nameEn || log.user.name) : 'DARC')} · ${esc(log.action)}</strong><span>${esc(log.entityType)} · ${dateLabel(log.createdAt, true)}</span></div></div>`).join('')}</div>`;
 }
 
+export function renderUserActivityCell(user) {
+  const lastActive = user.lastActiveAt || user.customFields?.lastActiveAt;
+  const lastLogin = user.lastLoginAt || user.customFields?.lastLoginAt;
+
+  if (!lastActive && !lastLogin) {
+    return `<span class="activity-never">${choose('لم يسجل دخول بعد', 'Never logged in')}</span>`;
+  }
+
+  const now = Date.now();
+  const activeTime = lastActive ? new Date(lastActive).getTime() : 0;
+  const isMe = user.id === state.data?.user?.id;
+  const diffMinutes = isMe ? 0 : (activeTime && !isNaN(activeTime) ? Math.floor((now - activeTime) / 60000) : 999999);
+  const isOnline = diffMinutes >= 0 && diffMinutes <= 5;
+
+  let activityPill = '';
+  if (isOnline) {
+    activityPill = `<span class="activity-pill online"><span class="activity-dot online"></span> ${choose('نشط الآن', 'Online')}</span>`;
+  } else if (diffMinutes < 60) {
+    activityPill = `<span class="activity-pill recent"><span class="activity-dot recent"></span> ${choose(`منذ ${diffMinutes} دقيقة`, `${diffMinutes}m ago`)}</span>`;
+  } else if (diffMinutes < 24 * 60) {
+    const hours = Math.floor(diffMinutes / 60);
+    activityPill = `<span class="activity-pill idle"><span class="activity-dot idle"></span> ${choose(`منذ ${hours} ساعة`, `${hours}h ago`)}</span>`;
+  } else if (activeTime > 0) {
+    activityPill = `<span class="activity-pill idle"><span class="activity-dot idle"></span> ${dateLabel(lastActive, false)}</span>`;
+  }
+
+  const loginText = lastLogin ? `<span class="activity-sub" title="${esc(lastLogin)}">${choose('دخول:', 'Login:')} ${dateLabel(lastLogin, true)}</span>` : '';
+
+  return `<div class="activity-wrapper">${activityPill}${loginText}</div>`;
+}
+
 export function renderSettings() {
   const currentUserId = state.data?.user?.id;
   const userIsAdmin = isAdmin();
+  const canAccessAccounts = userIsAdmin || can('manage_users') || can('view_user_activity');
 
   // Settings tabs: All users can access Profile and Security
-  // Admins also get Company, Roles, Accounts, Trash, Audit
-  const sections = userIsAdmin
-    ? [
-        ['profile', choose('الملف الشخصي', 'Profile')],
-        ['company', t('company')],
-        ['roles', t('roles')],
-        ['accounts', t('accounts')],
-        ['security', choose('الأمان', 'Security')],
-        ['trash', choose('سلة المهملات', 'Trash')],
-        ['audit', t('audit')]
-      ]
-    : [
-        ['profile', choose('الملف الشخصي', 'Profile')],
-        ['security', choose('الأمان', 'Security')]
-      ];
+  // Admins or authorized roles also get Company, Roles, Accounts, Trash, Audit
+  const sections = [
+    ['profile', choose('الملف الشخصي', 'Profile')],
+    ...(userIsAdmin ? [['company', t('company')]] : []),
+    ...(userIsAdmin || can('manage_roles') ? [['roles', t('roles')]] : []),
+    ...(canAccessAccounts ? [['accounts', t('accounts')]] : []),
+    ['security', choose('الأمان', 'Security')],
+    ...(userIsAdmin || can('manage_trash') ? [['trash', choose('سلة المهملات', 'Trash')]] : []),
+    ...(userIsAdmin || can('view_audit_logs') ? [['audit', t('audit')]] : [])
+  ];
 
   if (!sections.some(([k]) => k === state.settingsSection)) {
     state.settingsSection = 'profile';
@@ -259,8 +286,12 @@ export function renderSettings() {
     `;
   }
 
-  // ACCOUNTS SECTION (Admin only)
-  if (state.settingsSection === 'accounts' && userIsAdmin) {
+  // ACCOUNTS SECTION (Admin or users with manage_users / view_user_activity)
+  if (state.settingsSection === 'accounts' && canAccessAccounts) {
+    const canSeeActivity = isAdmin() || can('view_user_activity');
+    const canManageUsers = isAdmin() || can('manage_users');
+    const canManageExisting = isAdmin() || can('manage_existing_account_permissions') || can('manage_users');
+    const canImpersonate = isAdmin();
     let accountsList = (state.data?.users || []);
     // Stealth Super Admin: Ahmad is completely invisible to any other user
     if (currentUserId !== 'usr_ahmad') {
@@ -274,7 +305,7 @@ export function renderSettings() {
             <h2>${t('accounts')}</h2>
             <p>${choose('الحسابات الحالية وصلاحية كل عضو. يمكنك إضافة أو تعديل أو تعطيل الحسابات من هنا.', 'Current accounts and each member’s access. Add, edit, or deactivate them here.')}</p>
           </div>
-          <button class="btn btn-primary btn-sm" data-action="new-user">${icon('plus', 14)} ${t('addMember')}</button>
+          ${canManageUsers ? `<button class="btn btn-primary btn-sm" data-action="new-user">${icon('plus', 14)} ${t('addMember')}</button>` : ''}
         </div>
         <div class="table-wrap">
           <table class="data-table">
@@ -284,7 +315,8 @@ export function renderSettings() {
                 <th>${t('role')}</th>
                 <th>${t('email')}</th>
                 <th>${t('accountStatus')}</th>
-                <th></th>
+                ${canSeeActivity ? `<th>${choose('آخر ظهور ونشاط', 'Last Seen & Activity')}</th>` : ''}
+                ${canManageExisting ? '<th></th>' : ''}
               </tr>
             </thead>
             <tbody>
@@ -308,21 +340,28 @@ export function renderSettings() {
                     <td>
                       <span class="status-badge ${user.status === 'active' ? 'done' : 'not_started'}">${user.status === 'active' ? t('activeAccount') : t('pendingAccount')}</span>
                     </td>
-                    <td>
-                      <div class="role-actions">
-                        ${isAhmad ? `
-                          <button class="btn btn-soft btn-sm" data-action="open-user" data-user-id="${esc(user.id)}">${t('edit')}</button>
-                        ` : `
-                          <button class="btn btn-soft btn-sm" data-action="open-user" data-user-id="${esc(user.id)}">${t('edit')}</button>
-                          ${user.id !== state.data?.user?.id ? `
-                            <button class="btn btn-soft btn-sm" data-action="force-password-user" data-user-id="${esc(user.id)}" title="${user.status === 'pending' ? choose('تفعيل الحساب يدوياً', 'Activate manually') : choose('تغيير كلمة المرور', 'Change password')}">${icon(user.status === 'pending' ? 'check' : 'settings', 13)}</button>
-                            <button class="btn btn-soft btn-sm" data-action="impersonate-user" data-user-id="${esc(user.id)}" title="دخول كـ هذا الحساب">${icon('user', 13)}</button>
-                          ` : ''}
-                          ${user.id !== state.data?.user?.id && user.email ? `<button class="btn btn-ghost btn-sm" data-action="invite-user" data-user-id="${esc(user.id)}">${icon('send', 13)}</button>` : ''}
-                          ${user.id !== state.data?.user?.id ? `<button class="btn btn-danger btn-sm" data-action="deactivate-user" data-user-id="${esc(user.id)}">${icon('trash', 13)}</button>` : ''}
-                        `}
-                      </div>
-                    </td>
+                    ${canSeeActivity ? `
+                      <td>
+                        ${renderUserActivityCell(user)}
+                      </td>
+                    ` : ''}
+                    ${canManageExisting ? `
+                      <td>
+                        <div class="role-actions">
+                          ${isAhmad ? `
+                            <button class="btn btn-soft btn-sm" data-action="open-user" data-user-id="${esc(user.id)}">${t('edit')}</button>
+                          ` : `
+                            <button class="btn btn-soft btn-sm" data-action="open-user" data-user-id="${esc(user.id)}">${t('edit')}</button>
+                            ${user.id !== state.data?.user?.id ? `
+                              <button class="btn btn-soft btn-sm" data-action="force-password-user" data-user-id="${esc(user.id)}" title="${user.status === 'pending' ? choose('تفعيل الحساب يدوياً', 'Activate manually') : choose('تغيير كلمة المرور', 'Change password')}">${icon(user.status === 'pending' ? 'check' : 'settings', 13)}</button>
+                              ${canImpersonate ? `<button class="btn btn-soft btn-sm" data-action="impersonate-user" data-user-id="${esc(user.id)}" title="دخول كـ هذا الحساب">${icon('user', 13)}</button>` : ''}
+                            ` : ''}
+                            ${user.id !== state.data?.user?.id && user.email ? `<button class="btn btn-ghost btn-sm" data-action="invite-user" data-user-id="${esc(user.id)}">${icon('send', 13)}</button>` : ''}
+                            ${user.id !== state.data?.user?.id ? `<button class="btn btn-danger btn-sm" data-action="deactivate-user" data-user-id="${esc(user.id)}">${icon('trash', 13)}</button>` : ''}
+                          `}
+                        </div>
+                      </td>
+                    ` : ''}
                   </tr>
                 `;
               }).join('')}
@@ -590,6 +629,7 @@ export const FULL_PERMISSIONS_CATALOG = [
   // 🛡️ النظام والأمان (Administration & Governance)
   { id: 'manage_users', category: 'admin', categoryAr: 'النظام والأمان', categoryEn: 'Administration & Governance', nameAr: 'إدارة ودعوة وتفعيل حسابات المستخدمين', nameEn: 'Manage Users' },
   { id: 'manage_existing_account_permissions', category: 'admin', categoryAr: 'النظام والأمان', categoryEn: 'Administration & Governance', nameAr: 'تعديل أدوار وصلاحيات الحسابات الموجودة', nameEn: 'Manage Existing Account Permissions' },
+  { id: 'view_user_activity', category: 'admin', categoryAr: 'النظام والأمان', categoryEn: 'Administration & Governance', nameAr: 'متابعة أوقات دخول ونشاط المستخدمين', nameEn: 'View User Logins & Activity Timestamps' },
   { id: 'manage_roles', category: 'admin', categoryAr: 'النظام والأمان', categoryEn: 'Administration & Governance', nameAr: 'إنشاء وتعديل الأدوار والصلاحيات', nameEn: 'Manage Roles & Permissions' },
   { id: 'manage_settings', category: 'admin', categoryAr: 'النظام والأمان', categoryEn: 'Administration & Governance', nameAr: 'إدارة إعدادات النظام والشركة ومساحة العمل', nameEn: 'Manage Company & Settings' },
   { id: 'manage_trash', category: 'admin', categoryAr: 'النظام والأمان', categoryEn: 'Administration & Governance', nameAr: 'إدارة واستعادة سلة المهملات', nameEn: 'Manage Trash' },

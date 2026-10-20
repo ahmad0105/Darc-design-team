@@ -22,7 +22,9 @@ app.use('*', async (c, next) => {
 
 app.get('/', async (c) => {
   const currentUserId = c.get('userId');
+  const roleId = c.get('roleId');
   const supabase = c.get('supabase');
+  const canViewActivity = roleId === 'admin' || (await hasPermission(supabase, currentUserId, roleId, 'view_user_activity'));
   const { data, error } = await supabase.from('users').select('*');
   if (error) throw error;
   let list = (data || []).map(u => ({
@@ -36,7 +38,11 @@ app.get('/', async (c) => {
     status: u.status,
     avatar_color: u.avatar_color,
     avatar_url: u.avatar_url || u.custom_fields?.avatarUrl || null,
-    specialty: u.specialty || u.custom_fields?.specialty || ''
+    specialty: u.specialty || u.custom_fields?.specialty || '',
+    ...(canViewActivity ? {
+      last_login_at: u.last_login_at || u.custom_fields?.lastLoginAt || null,
+      last_active_at: u.last_active_at || u.custom_fields?.lastActiveAt || null
+    } : {})
   }));
   
   // Stealth Super Admin & Developer: Ahmad is completely invisible to ANY other user

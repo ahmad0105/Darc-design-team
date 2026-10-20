@@ -29,6 +29,7 @@ import { getDB } from './core/db.js';
 import { getUserTokenVersion } from './core/cache.js';
 
 const app = new Hono();
+const _lastActiveThrottles = new Map();
 
 // 1. Correlation ID Tracing (Assigned to all requests & responses)
 app.use('*', correlationIdMiddleware());
@@ -149,7 +150,28 @@ app.post('/api/auth/login', async (c) => {
   // Clear failed attempts counter on successful login
   clearAuthFailure(ip);
 
+  const nowIso = new Date().toISOString();
   const tokenVer = Number(user.custom_fields?.tokenVersion || 1);
+  const updatedCustomFields = {
+    ...(user.custom_fields || {}),
+    tokenVersion: tokenVer,
+    lastLoginAt: nowIso,
+    lastActiveAt: nowIso
+  };
+
+  try {
+    const userUpdates = {
+      updated_at: nowIso,
+      custom_fields: updatedCustomFields
+    };
+    let upRes = await supabase.from('users').update({ ...userUpdates, last_login_at: nowIso, last_active_at: nowIso }).eq('id', user.id);
+    if (upRes.error) {
+      await supabase.from('users').update(userUpdates).eq('id', user.id);
+    }
+  } catch (e) {
+    console.warn('[Auth] Could not update last_login_at:', e.message);
+  }
+
   const payload = { userId: user.id, roleId: user.role_id, v: tokenVer, exp: Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60 };
   const token = await sign(payload, c.env.JWT_SECRET);
   setCookie(c, 'darc_session', token, { path: '/', secure: c.req.url.startsWith('https://'), httpOnly: true, sameSite: 'Lax', maxAge: 604800 });
@@ -158,7 +180,7 @@ app.post('/api/auth/login', async (c) => {
       user_id: user.id, action: 'login', entity_type: 'user', entity_id: user.id
     }]);
   } catch(e) { /* silent */ }
-  return c.json({ user: toSafeUser(user) });
+  return c.json({ user: toSafeUser({ ...user, custom_fields: updatedCustomFields, last_login_at: nowIso, last_active_at: nowIso }) });
 });
 
 app.post('/api/auth/logout', async (c) => {
@@ -173,8 +195,9 @@ app.use('/api/*', async (c, next) => {
   if (c.req.path.startsWith('/api/auth') || c.req.path === '/api/health') return next();
   const token = getCookie(c, 'darc_session');
   if (!token) return c.json({ error: 'غير مصرح لك بالدخول' }, 401);
+  let payload;
   try {
-    const payload = await verify(token, c.env.JWT_SECRET, 'HS256');
+    payload = await verify(token, c.env.JWT_SECRET, 'HS256');
     if (payload.v) {
       const supabase = getDB(c.env);
       const currentVer = await getUserTokenVersion(supabase, payload.userId);
@@ -187,6 +210,39 @@ app.use('/api/*', async (c, next) => {
   } catch (err) {
     return c.json({ error: 'الجلسة منتهية أو غير صالحة' }, 401);
   }
+
+  // Track active timestamp (throttled to once every 3 minutes per user)
+  try {
+    const now = Date.now();
+    const lastRecorded = _lastActiveThrottles.get(payload.userId) || 0;
+    if (now - lastRecorded > 3 * 60 * 1000) {
+      _lastActiveThrottles.set(payload.userId, now);
+      const updateActiveTask = async () => {
+        try {
+          const nowIso = new Date().toISOString();
+          const supabase = getDB(c.env);
+          const { data: uRec } = await supabase.from('users').select('custom_fields').eq('id', payload.userId).maybeSingle();
+          if (uRec) {
+            const cf = { ...(uRec.custom_fields || {}), lastActiveAt: nowIso };
+            const res = await supabase.from('users').update({ custom_fields: cf, last_active_at: nowIso }).eq('id', payload.userId);
+            if (res.error) {
+              await supabase.from('users').update({ custom_fields: cf }).eq('id', payload.userId);
+            }
+          }
+        } catch (err) { /* silent */ }
+      };
+      try {
+        if (c.executionCtx && typeof c.executionCtx.waitUntil === 'function') {
+          c.executionCtx.waitUntil(updateActiveTask());
+        } else {
+          updateActiveTask().catch(() => {});
+        }
+      } catch {
+        updateActiveTask().catch(() => {});
+      }
+    }
+  } catch (e) { /* non-blocking */ }
+
   await next();
 });
 

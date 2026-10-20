@@ -27,6 +27,7 @@ const DEFAULT_PERMISSIONS_CATALOG = [
   // 🛡️ النظام والأمان (Administration & Governance)
   { id: 'manage_users', category: 'admin', categoryAr: 'النظام والأمان', categoryEn: 'Administration & Governance', nameAr: 'إدارة حسابات المستخدمين', nameEn: 'Manage Users' },
   { id: 'manage_existing_account_permissions', category: 'admin', categoryAr: 'النظام والأمان', categoryEn: 'Administration & Governance', nameAr: 'تعديل صلاحيات الحسابات الموجودة', nameEn: 'Manage Existing Account Permissions' },
+  { id: 'view_user_activity', category: 'admin', categoryAr: 'النظام والأمان', categoryEn: 'Administration & Governance', nameAr: 'متابعة أوقات دخول ونشاط المستخدمين', nameEn: 'View User Logins & Activity Timestamps' },
   { id: 'manage_roles', category: 'admin', categoryAr: 'النظام والأمان', categoryEn: 'Administration & Governance', nameAr: 'إدارة الأدوار والصلاحيات', nameEn: 'Manage Roles & Permissions' },
   { id: 'manage_settings', category: 'admin', categoryAr: 'النظام والأمان', categoryEn: 'Administration & Governance', nameAr: 'إدارة إعدادات النظام والشركة', nameEn: 'Manage Company & Settings' },
   { id: 'manage_trash', category: 'admin', categoryAr: 'النظام والأمان', categoryEn: 'Administration & Governance', nameAr: 'إدارة سلة المهملات', nameEn: 'Manage Trash' },
@@ -263,8 +264,18 @@ app.get('/', async (c) => {
 
     const currentUser = userMap.get(userId) || {};
 
+    // Activity Permission Guard: only users with view_user_activity or admin can see login/active times
+    const canViewActivity = isGlobalAdmin || userRole?.permissions?.includes('view_user_activity') || userRole?.permissions?.includes('*');
+
     // Stealth Super Admin: Ahmad is completely invisible to any other user across the entire system
-    const exposedUsers = isAhmad ? activeUsers : activeUsers.filter(u => u.id !== 'usr_ahmad');
+    const exposedUsers = (isAhmad ? activeUsers : activeUsers.filter(u => u.id !== 'usr_ahmad')).map(u => {
+      const copy = { ...u };
+      if (!canViewActivity) {
+        delete copy.last_login_at;
+        delete copy.last_active_at;
+      }
+      return toCamelCase(copy);
+    });
     const exposedTasks = isAhmad ? tasks : tasks.map(t => (t.assignee_id === 'usr_ahmad' ? { ...t, assignee_id: null } : t));
     const exposedAuditLogs = isAhmad ? auditLogs : auditLogs.filter(a => a.user_id !== 'usr_ahmad' && a.entity_id !== 'usr_ahmad');
 
@@ -277,7 +288,7 @@ app.get('/', async (c) => {
       documents: toCamelCase(documents),
       comments: toCamelCase(comments),
       templates: toCamelCase(templates),
-      users: exposedUsers.map(u => toCamelCase(u)),
+      users: exposedUsers,
       roles: toCamelCase(roles),
       permissionsCatalog: DEFAULT_PERMISSIONS_CATALOG,
       notifications: toCamelCase(notifications),

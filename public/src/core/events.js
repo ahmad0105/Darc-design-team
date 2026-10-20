@@ -280,6 +280,16 @@ export async function handleClick(event) {
   if (!target) return;
   const action = target.dataset.action;
 
+  if (target.classList.contains('menu-item')) {
+    const pMenu = target.closest('.dropdown-menu');
+    if (pMenu) pMenu.style.display = 'none';
+  }
+
+  if (target.dataset.view) {
+    switchView(target.dataset.view, target.dataset.projectId || undefined);
+    return;
+  }
+
   if (action === 'trigger-avatar-upload') {
     const input = document.getElementById('user-avatar-file-input');
     if (input) input.click();
@@ -290,11 +300,6 @@ export async function handleClick(event) {
     const input = document.getElementById('company-logo-file-input');
     if (input) input.click();
     return;
-  }
-  
-  if (target.classList.contains('menu-item')) {
-    const pMenu = target.closest('.dropdown-menu');
-    if (pMenu) pMenu.style.display = 'none';
   }
 
   if (action === 'toggle-theme') {
@@ -328,7 +333,7 @@ export async function handleClick(event) {
   if (action === 'logout') {
     await api('/api/auth/logout', { method: 'POST' }).catch(() => {});
     try {
-      const { clearOfflineBootstrap } = await import('./offline.js?v=3.4');
+      const { clearOfflineBootstrap } = await import('./offline.js?v=3.5');
       if (typeof clearOfflineBootstrap === 'function') await clearOfflineBootstrap();
     } catch {}
     invalidateBootstrapEtag();
@@ -339,7 +344,7 @@ export async function handleClick(event) {
   if (action === 'logout-all') {
     await api('/api/auth/logout-all', { method: 'POST' }).catch(() => {});
     try {
-      const { clearOfflineBootstrap } = await import('./offline.js?v=3.4');
+      const { clearOfflineBootstrap } = await import('./offline.js?v=3.5');
       if (typeof clearOfflineBootstrap === 'function') await clearOfflineBootstrap();
     } catch {}
     invalidateBootstrapEtag();
@@ -1684,6 +1689,22 @@ if (typeof window !== 'undefined' && !window._hashChangeListenerSet) {
     const rawHash = window.location.hash.replace(/^#/, '');
     if (!rawHash) return;
     const [viewPart, queryPart] = rawHash.split('?');
+    if (viewPart === 'login') {
+      if (state.data?.user) {
+        state.data.user = null;
+      }
+      renderLogin();
+      return;
+    }
+    const hashParams = new URLSearchParams(queryPart || (rawHash.includes('=') ? rawHash : ''));
+    if (hashParams.get('activate')) {
+      renderActivation(hashParams.get('activate'));
+      return;
+    }
+    if (hashParams.get('reset')) {
+      renderResetPassword(hashParams.get('reset'));
+      return;
+    }
     const validViews = ['dashboard', 'projects', 'tasks', 'documents', 'templates', 'team', 'reports', 'settings', 'project-detail'];
     if (validViews.includes(viewPart)) {
       let pid = state.activeProjectId;
