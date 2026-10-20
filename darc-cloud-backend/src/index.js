@@ -43,7 +43,8 @@ const ALLOWED_ORIGINS = [
   'http://127.0.0.1:4318',
   'http://localhost:8787',
   'http://127.0.0.1:8787',
-  'https://darc-design-team.netlify.app'
+  'https://darc-design-team.netlify.app',
+  'https://darc-design-team.workers.dev'
 ];
 app.use('*', cors({
   origin: (origin) => {
@@ -53,6 +54,8 @@ app.use('*', cors({
       origin.endsWith('.darc.local') || 
       origin === 'https://darc-design-team.netlify.app' ||
       origin.endsWith('.darc-design-team.netlify.app') ||
+      origin.endsWith('.workers.dev') ||
+      origin.endsWith('.pages.dev') ||
       origin.startsWith('http://localhost:') ||
       origin.startsWith('http://127.0.0.1:')
     ) return origin;

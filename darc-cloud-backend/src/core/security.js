@@ -96,6 +96,8 @@ export function csrfGuardMiddleware() {
         origin.startsWith('http://127.0.0.1:') ||
         origin === 'https://darc-design-team.netlify.app' ||
         origin.endsWith('.darc-design-team.netlify.app') ||
+        origin.endsWith('.workers.dev') ||
+        origin.endsWith('.pages.dev') ||
         origin.endsWith('.darc.local');
 
       if (!isAllowed) {
