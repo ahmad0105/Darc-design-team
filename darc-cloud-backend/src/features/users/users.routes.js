@@ -301,12 +301,12 @@ app.post('/:id/impersonate', requireAdmin, async (c) => {
   const { data: user, error } = await supabase.from('users').select('id, role_id, custom_fields').eq('id', targetId).single();
   if (error || !user) return c.json({ error: 'المستخدم غير موجود.' }, 404);
   const { sign } = await import('hono/jwt');
+  const { setSessionCookie } = await import('../../core/cookie.js');
   const secret = c.env.JWT_SECRET;
   const tokenVer = Number(user.custom_fields?.tokenVersion || 1);
   const exp = Math.floor(Date.now() / 1000) + 60 * 60 * 4; // 4 hours
   const token = await sign({ userId: user.id, roleId: user.role_id, v: tokenVer, exp }, secret);
-  const { setCookie } = await import('hono/cookie');
-  setCookie(c, 'darc_session', token, { httpOnly: true, sameSite: 'Lax', secure: c.req.url.startsWith('https://'), maxAge: 60 * 60 * 4, path: '/' });
+  setSessionCookie(c, token, 60 * 60 * 4);
   await logAudit(supabase, { userId: currentUserId, action: 'impersonate', entityType: 'user', entityId: targetId });
   return c.json({ ok: true });
 });

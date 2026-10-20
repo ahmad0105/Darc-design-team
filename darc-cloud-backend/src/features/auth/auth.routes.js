@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { getDB } from '../../core/db.js';
-import { getCookie, setCookie, deleteCookie } from 'hono/cookie';
+import { setSessionCookie, clearSessionCookie, getSessionToken } from '../../core/cookie.js';
 import { verify, sign } from 'hono/jwt';
 import crypto from 'node:crypto';
 import { Buffer } from 'node:buffer';
@@ -42,9 +42,9 @@ async function hashPassword(password) {
   });
 }
 
-// Helper: get userId from JWT cookie (for routes that bypass global auth middleware)
+// Helper: get userId from JWT cookie or auth header (for routes that bypass global auth middleware)
 async function getUserIdFromCookie(c) {
-  const token = getCookie(c, 'darc_session');
+  const token = getSessionToken(c);
   if (!token) return null;
   try {
     const payload = await verify(token, c.env.JWT_SECRET, 'HS256');
@@ -97,7 +97,7 @@ app.post('/reset-password', authRateLimiter(), async (c) => {
   // Issue session cookie with new tokenVersion
   const payload = { userId: user.id, roleId: user.role_id, v: nextVer, exp: Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60 };
   const sessionToken = await sign(payload, c.env.JWT_SECRET);
-  setCookie(c, 'darc_session', sessionToken, { path: '/', secure: c.req.url.startsWith('https://'), httpOnly: true, sameSite: 'Lax', maxAge: 604800 });
+  setSessionCookie(c, sessionToken, 604800);
 
   return c.json({ ok: true });
 });
@@ -114,7 +114,7 @@ app.post('/logout-all', async (c) => {
     setUserTokenVersion(userId, nextVer);
     invalidateUsersCache();
   }
-  deleteCookie(c, 'darc_session', { path: '/', secure: c.req.url.startsWith('https://'), sameSite: 'Lax' });
+  clearSessionCookie(c);
   return c.json({ ok: true });
 });
 
@@ -153,7 +153,7 @@ app.post('/change-password', async (c) => {
   // Re-issue fresh cookie for current session with incremented version
   const payload = { userId: user.id, roleId: user.role_id, v: nextVer, exp: Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60 };
   const sessionToken = await sign(payload, c.env.JWT_SECRET);
-  setCookie(c, 'darc_session', sessionToken, { path: '/', secure: c.req.url.startsWith('https://'), httpOnly: true, sameSite: 'Lax', maxAge: 604800 });
+  setSessionCookie(c, sessionToken, 604800);
 
   return c.json({ ok: true });
 });
@@ -212,7 +212,7 @@ app.post('/activate', authRateLimiter(), async (c) => {
   // Issue session cookie so user is logged in
   const payload = { userId: updatedUser.id, roleId: updatedUser.role_id, v: 1, exp: Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60 };
   const sessionToken = await sign(payload, c.env.JWT_SECRET);
-  setCookie(c, 'darc_session', sessionToken, { path: '/', secure: c.req.url.startsWith('https://'), httpOnly: true, sameSite: 'Lax', maxAge: 604800 });
+  setSessionCookie(c, sessionToken, 604800);
 
   return c.json({ ok: true, user: toCamelCase(updatedUser) });
 });

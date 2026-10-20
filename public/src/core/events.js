@@ -322,8 +322,22 @@ export async function handleClick(event) {
     }
     return;
   }
-  if (action === 'goto-forgot') { event.preventDefault(); renderLogin('', 'forgot'); return; }
-  if (action === 'goto-login') { event.preventDefault(); renderLogin(); return; }
+  if (action === 'goto-forgot') { 
+    event.preventDefault(); 
+    if (typeof history !== 'undefined' && history.replaceState) {
+      history.replaceState(null, '', '#forgot');
+    }
+    renderLogin('', 'forgot'); 
+    return; 
+  }
+  if (action === 'goto-login') { 
+    event.preventDefault(); 
+    if (typeof history !== 'undefined' && history.replaceState) {
+      history.replaceState(null, '', '#login');
+    }
+    renderLogin(); 
+    return; 
+  }
   if (action === 'toggle-sidebar') { state.sidebarOpen = !state.sidebarOpen; document.querySelector('.sidebar')?.classList.toggle('open', state.sidebarOpen); return; }
   if (action === 'logout') {
     await api('/api/auth/logout', { method: 'POST' }).catch(() => {});
@@ -332,6 +346,12 @@ export async function handleClick(event) {
     } catch {}
     invalidateBootstrapEtag();
     state.data = null;
+    state.view = 'login';
+    if (typeof history !== 'undefined' && history.replaceState) {
+      history.replaceState(null, '', '#login');
+    } else if (typeof window !== 'undefined') {
+      window.location.hash = '#login';
+    }
     renderLogin();
     return;
   }
@@ -342,6 +362,12 @@ export async function handleClick(event) {
     } catch {}
     invalidateBootstrapEtag();
     state.data = null;
+    state.view = 'login';
+    if (typeof history !== 'undefined' && history.replaceState) {
+      history.replaceState(null, '', '#login');
+    } else if (typeof window !== 'undefined') {
+      window.location.hash = '#login';
+    }
     renderLogin();
     return;
   }
@@ -1643,6 +1669,8 @@ export async function init() {
   if (activationToken) return renderActivation(activationToken);
   const resetToken = hashParams.get('reset');
   if (resetToken) return renderResetPassword(resetToken);
+  if (rawHash === 'forgot') return renderLogin('', 'forgot');
+  if (rawHash === 'login') return renderLogin();
 
   // Restore route from hash or session storage on refresh
   try {
@@ -1702,8 +1730,12 @@ export async function init() {
       }
     }
   } catch { 
-    if (typeof window !== 'undefined' && window.location.hash !== '#login') {
-      window.location.hash = '#login';
+    if (typeof window !== 'undefined') {
+      if (window.history && window.history.replaceState) {
+        window.history.replaceState(null, '', '#login');
+      } else {
+        window.location.hash = '#login';
+      }
     }
     renderLogin(); 
   }
@@ -1725,6 +1757,10 @@ if (typeof window !== 'undefined' && !window._hashChangeListenerSet) {
         state.data.user = null;
       }
       renderLogin();
+      return;
+    }
+    if (viewPart === 'forgot') {
+      renderLogin('', 'forgot');
       return;
     }
     const hashParams = new URLSearchParams(queryPart || (rawHash.includes('=') ? rawHash : ''));

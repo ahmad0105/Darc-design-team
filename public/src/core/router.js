@@ -65,6 +65,24 @@ export function renderApp() {
   if (!canAccessView(state.view)) {
     state.view = getFirstAllowedView();
   }
+
+  // Synchronize URL hash when entering authenticated workspace from #login, #forgot, or empty hash
+  if (typeof window !== 'undefined') {
+    const currentHash = window.location.hash.replace(/^#/, '');
+    if (!currentHash || currentHash === 'login' || currentHash === 'forgot') {
+      let targetHash = state.view;
+      if (state.view === 'project-detail' && state.activeProjectId) {
+        targetHash = `project-detail?id=${encodeURIComponent(state.activeProjectId)}${state.projectTab ? `&tab=${encodeURIComponent(state.projectTab)}` : ''}`;
+      }
+      window._isInternalNav = true;
+      if (window.history && window.history.replaceState) {
+        window.history.replaceState(null, '', `#${targetHash}`);
+      } else {
+        window.location.hash = `#${targetHash}`;
+      }
+    }
+  }
+
   document.body.classList.add('in-app');
   document.documentElement.lang = state.lang;
   document.documentElement.dir = state.lang === 'ar' ? 'rtl' : 'ltr';

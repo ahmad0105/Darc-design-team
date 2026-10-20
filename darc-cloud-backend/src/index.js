@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
-import { setCookie, getCookie, deleteCookie } from 'hono/cookie';
+import { setSessionCookie, clearSessionCookie, getSessionToken } from './core/cookie.js';
 import { sign, verify } from 'hono/jwt';
 import { createClient } from '@supabase/supabase-js';
 import crypto from 'node:crypto';
@@ -174,7 +174,7 @@ app.post('/api/auth/login', async (c) => {
 
   const payload = { userId: user.id, roleId: user.role_id, v: tokenVer, exp: Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60 };
   const token = await sign(payload, c.env.JWT_SECRET);
-  setCookie(c, 'darc_session', token, { path: '/', secure: c.req.url.startsWith('https://'), httpOnly: true, sameSite: 'Lax', maxAge: 604800 });
+  setSessionCookie(c, token, 604800);
   try {
     await supabase.from('audit_logs').insert([{
       user_id: user.id, action: 'login', entity_type: 'user', entity_id: user.id
@@ -184,7 +184,7 @@ app.post('/api/auth/login', async (c) => {
 });
 
 app.post('/api/auth/logout', async (c) => {
-  deleteCookie(c, 'darc_session', { path: '/', secure: c.req.url.startsWith('https://'), sameSite: 'Lax' });
+  clearSessionCookie(c);
   return c.json({ success: true });
 });
 
@@ -193,7 +193,7 @@ app.get('/api/health', (c) => c.json({ ok: true, status: 'healthy', env: 'produc
 // JWT Guard with Token Revocation Protection
 app.use('/api/*', async (c, next) => {
   if (c.req.path.startsWith('/api/auth') || c.req.path === '/api/health') return next();
-  const token = getCookie(c, 'darc_session');
+  const token = getSessionToken(c);
   if (!token) return c.json({ error: 'غير مصرح لك بالدخول' }, 401);
   let payload;
   try {

@@ -144,6 +144,20 @@ function startRateLimitCountdown(buttonEl, seconds = 60) {
 }
 
 export function renderLogin(errorMessage = '', mode = 'login', isSuccess = false) {
+  state.view = 'login';
+  
+  // Instantly synchronize browser URL address bar to #login or #forgot
+  if (typeof window !== 'undefined') {
+    const targetHash = mode === 'forgot' ? '#forgot' : '#login';
+    if (window.location.hash !== targetHash) {
+      if (window.history && window.history.replaceState) {
+        window.history.replaceState(null, '', targetHash);
+      } else {
+        window.location.hash = targetHash;
+      }
+    }
+  }
+
   document.body.classList.remove('in-app');
   document.documentElement.lang = state.lang;
   document.documentElement.dir = state.lang === 'ar' ? 'rtl' : 'ltr';

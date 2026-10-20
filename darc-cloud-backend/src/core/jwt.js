@@ -1,5 +1,5 @@
 import { verify } from 'hono/jwt';
-import { getCookie } from 'hono/cookie';
+import { getSessionToken } from './cookie.js';
 
 export function createJwtMiddleware() {
   return async (c, next) => {
@@ -15,7 +15,7 @@ export function createJwtMiddleware() {
       return next();
     }
 
-    const token = getCookie(c, 'darc_session');
+    const token = getSessionToken(c);
     if (!token) return c.json({ error: 'لم يتم تقديم رمز المصادقة.' }, 401);
 
     let payload;
