@@ -1,6 +1,6 @@
 // DARC Design Team — Documents Feature Module
 import { state } from '../../core/state.js';
-import { choose, t, esc, icon, dateLabel, statusText } from '../../core/utils.js';
+import { choose, t, esc, icon, dateLabel, statusText, can, isAdmin } from '../../core/utils.js';
 
 export function renderDocuments() {
   const documents = state.data?.documents || [];
@@ -9,8 +9,19 @@ export function renderDocuments() {
   const searchQuery = (state.searches?.documents || '').trim().toLowerCase();
   const projectFilter = state.docProjectFilter || 'all';
 
+  const currentUserId = state.data?.user?.id;
+  const userIsAdmin = isAdmin();
+  const activeTaskIds = new Set(tasks.filter(t => !t.deletedAt).map(t => t.id));
+  const activeProjectIds = new Set(projects.filter(p => !p.deletedAt).map(p => p.id));
+
+  // Filter out soft-deleted documents AND orphan documents from deleted tasks or deleted projects
   const filteredDocs = documents.filter((doc) => {
     if (doc.deletedAt) return false;
+    // Hide documents linked to a task that has been deleted or is not in active tasks
+    if (doc.taskId && !activeTaskIds.has(doc.taskId)) return false;
+    // Hide documents linked to a project that has been deleted or is not in active projects
+    if (doc.projectId && !activeProjectIds.has(doc.projectId)) return false;
+
     if (projectFilter !== 'all' && doc.projectId !== projectFilter) return false;
     if (searchQuery) {
       const name = (doc.originalName || '').toLowerCase();
@@ -34,6 +45,10 @@ export function renderDocuments() {
         <p class="intro">${choose('استعراض وتحميل ومعاينة كافة المخططات والمستندات المرفوعة في جميع المشاريع.', 'Browse, preview, and download all architectural blueprints and documents uploaded across projects.')}</p>
       </div>
       <div style="display:flex;align-items:center;gap:10px;">
+        <button class="btn btn-secondary btn-sm" data-action="go-to-trash" style="display:inline-flex;align-items:center;gap:6px;" title="${choose('الانتقال لسلة المحذوفات لاستعراض واستعادة الملفات والمشاريع المحذوفة', 'Go to trash bin to review and restore deleted files and projects')}">
+          ${icon('trash', 14)}
+          <span>${choose('سلة المهملات', 'Trash')}</span>
+        </button>
         <span class="mini-badge badge-pulse" style="padding:6px 12px;font-weight:700;font-size:12px;">
           ${filteredDocs.length} ${choose('ملف', 'files')} (${totalSizeFormatted})
         </span>
@@ -87,6 +102,8 @@ export function renderDocuments() {
                 ? (doc.size / (1024 * 1024)).toFixed(1) + ' MB' 
                 : Math.round((doc.size || 0) / 1024) + ' KB';
 
+              const canDeleteDoc = userIsAdmin || can('delete_documents') || doc.uploaderId === currentUserId;
+
               return `
                 <tr data-doc-id="${esc(doc.id)}">
                   <td>
@@ -126,6 +143,11 @@ export function renderDocuments() {
                       <a href="/api/documents/${esc(doc.id)}" target="_blank" download class="btn btn-ghost btn-sm" style="padding:5px;color:var(--blue);" title="${choose('تحميل', 'Download')}">
                         ${icon('download', 14)}
                       </a>
+                      ${canDeleteDoc ? `
+                        <button class="btn btn-ghost btn-sm" data-action="delete-doc" data-doc-id="${esc(doc.id)}" style="padding:5px;color:var(--red);" title="${choose('نقل لسلة المهملات (يمكن استعادته خلال 30 يوماً)', 'Move to trash (can be restored within 30 days)')}">
+                          ${icon('trash', 14)}
+                        </button>
+                      ` : ''}
                     </div>
                   </td>
                 </tr>

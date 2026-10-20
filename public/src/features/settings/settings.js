@@ -112,7 +112,7 @@ export function renderSettings() {
     ...(userIsAdmin || can('manage_roles') ? [['roles', t('roles')]] : []),
     ...(canAccessAccounts ? [['accounts', t('accounts')]] : []),
     ['security', choose('الأمان', 'Security')],
-    ...(userIsAdmin || can('manage_trash') ? [['trash', choose('سلة المهملات', 'Trash')]] : []),
+    ['trash', choose('سلة المهملات', 'Trash')],
     ...(userIsAdmin || can('view_audit_logs') ? [['audit', t('audit')]] : [])
   ];
 
@@ -408,12 +408,16 @@ export function renderSettings() {
     `;
   }
 
-  // TRASH SECTION (Admin or manage_trash)
-  if (state.settingsSection === 'trash' && (userIsAdmin || can('manage_trash'))) {
+  // TRASH SECTION (Available to all users, scoped by project membership)
+  if (state.settingsSection === 'trash') {
     if (!state.trashLoaded && !state._trashFetching) {
       state._trashFetching = true;
       import('../../core/api.js').then(({ api }) => api('/api/trash')).then(data => {
-        state.trash = Array.isArray(data) ? data : (data.trash || [...(data.projects || []).map(p => ({...p, type:'project'})), ...(data.tasks || []).map(t => ({...t, type:'task'}))]);
+        state.trash = Array.isArray(data) ? data : (data.trash || [
+          ...(data.projects || []).map(p => ({...p, type:'project'})),
+          ...(data.tasks || []).map(t => ({...t, type:'task'})),
+          ...(data.documents || []).map(d => ({...d, type:'document'}))
+        ]);
         state.trashLoaded = true;
         state._trashFetching = false;
         import('../../core/router.js').then(r => r.renderView());
@@ -430,7 +434,7 @@ export function renderSettings() {
     const filteredItems = allTrashItems.filter(item => {
       if (currentFilter !== 'all' && item.type !== currentFilter) return false;
       if (!searchQuery) return true;
-      const name = (choose(item.nameAr || item.titleAr, item.nameEn || item.titleEn) || item.name || item.title || '').toLowerCase();
+      const name = (choose(item.nameAr || item.titleAr, item.nameEn || item.titleEn) || item.name || item.title || item.originalName || '').toLowerCase();
       const code = (item.code || item.projectCode || '').toLowerCase();
       const parent = (item.projectNameAr || item.projectNameEn || '').toLowerCase();
       return name.includes(searchQuery) || code.includes(searchQuery) || parent.includes(searchQuery);
@@ -438,18 +442,19 @@ export function renderSettings() {
 
     const projectCount = allTrashItems.filter(x => x.type === 'project').length;
     const taskCount = allTrashItems.filter(x => x.type === 'task').length;
+    const docCount = allTrashItems.filter(x => x.type === 'document').length;
 
     const listHtml = allTrashItems.length ? `
       <div class="trash-notice-banner">
         <div class="trash-notice-icon">${icon('info', 16)}</div>
         <div class="trash-notice-text">
           <strong>${choose('سلة المحذوفات المركزية المحمية', 'Central Protected Trash Bin')}</strong>
-          <p>${choose('تحتفظ المنصة بالعناصر المحذوفة لمدة 30 يومًا قبل الحذف التلقائي. استعادة أي مشروع تسترجع تلقائيًا كافة مهامه المرتبطة به.', 'Items are retained for 30 days before permanent purging. Restoring a project automatically recovers all its associated tasks.')}</p>
+          <p>${choose('تحتفظ المنصة بالمشاريع والمهام والمستندات المحذوفة لمدة 30 يومًا قبل الحذف التلقائي. استعادة أي عنصر تعيده فوراً لمكانه دون فقدان أي بيانات.', 'Projects, tasks, and documents are retained for 30 days before permanent purging. Restoring any item recovers it immediately with full data integrity.')}</p>
         </div>
       </div>
 
       <div class="trash-filter-bar" style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
-        <div style="display:flex;align-items:center;gap:6px;">
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
           <button class="btn btn-sm ${currentFilter === 'all' ? 'btn-primary' : 'btn-ghost'}" data-action="filter-trash" data-filter="all">
             ${choose('الكل', 'All')} <span class="badge" style="margin-inline-start:4px;font-size:10px;background:rgba(255,255,255,0.25);">${allTrashItems.length}</span>
           </button>
@@ -458,6 +463,9 @@ export function renderSettings() {
           </button>
           <button class="btn btn-sm ${currentFilter === 'task' ? 'btn-primary' : 'btn-ghost'}" data-action="filter-trash" data-filter="task">
             ${icon('checklist', 12)} ${choose('المهام', 'Tasks')} <span class="badge" style="margin-inline-start:4px;font-size:10px;background:rgba(255,255,255,0.25);">${taskCount}</span>
+          </button>
+          <button class="btn btn-sm ${currentFilter === 'document' ? 'btn-primary' : 'btn-ghost'}" data-action="filter-trash" data-filter="document">
+            ${icon('document', 12)} ${choose('المستندات', 'Documents')} <span class="badge" style="margin-inline-start:4px;font-size:10px;background:rgba(255,255,255,0.25);">${docCount}</span>
           </button>
         </div>
         <div style="min-width:220px;max-width:320px;flex:1;">
@@ -481,28 +489,40 @@ export function renderSettings() {
             <tbody>
               ${filteredItems.map((item) => {
                 const isProject = item.type === 'project';
-                const displayName = choose(item.nameAr || item.titleAr, item.nameEn || item.titleEn) || item.name || item.title || item.code || choose('عنصر محذوف', 'Deleted item');
+                const isTask = item.type === 'task';
+                const isDoc = item.type === 'document';
+
+                const displayName = choose(item.nameAr || item.titleAr, item.nameEn || item.titleEn) || item.name || item.title || item.originalName || item.code || choose('عنصر محذوف', 'Deleted item');
                 const parentProject = !isProject && item.projectId ? (state.data?.projects || []).find(p => p.id === item.projectId) : null;
                 const parentDisplayName = item.projectNameAr || item.projectNameEn || (parentProject ? choose(parentProject.nameAr, parentProject.nameEn || parentProject.nameAr) : null);
                 const parentCode = item.projectCode || parentProject?.code;
+
+                const sizeFormatted = isDoc && item.size ? (
+                  item.size > 1024 * 1024 
+                    ? (item.size / (1024 * 1024)).toFixed(1) + ' MB' 
+                    : Math.round(item.size / 1024) + ' KB'
+                ) : '';
+
+                const canPurge = userIsAdmin || can('manage_trash') || item.uploaderId === currentUserId;
 
                 return `
                   <tr class="trash-row">
                     <td>
                       <div class="trash-item-cell">
-                        <div class="trash-item-icon ${isProject ? 'is-project' : 'is-task'}">
-                          ${icon(isProject ? 'building' : 'checklist', 14)}
+                        <div class="trash-item-icon ${isProject ? 'is-project' : (isTask ? 'is-task' : 'is-doc')}">
+                          ${icon(isProject ? 'building' : (isTask ? 'checklist' : 'document'), 14)}
                         </div>
                         <div>
                           <strong class="trash-item-title">${esc(displayName)}</strong>
                           ${(item.code || isProject) ? `<span class="trash-item-code">${esc(item.code || item.id)}</span>` : ''}
+                          ${isDoc && sizeFormatted ? `<span class="trash-item-code" style="color:var(--muted);">${sizeFormatted}</span>` : ''}
                         </div>
                       </div>
                     </td>
                     <td>
-                      <span class="type-pill ${isProject ? 'type-project' : 'type-task'}">
-                        ${isProject ? icon('building', 11) : icon('checklist', 11)}
-                        ${isProject ? choose('مشروع', 'Project') : choose('مهمة', 'Task')}
+                      <span class="type-pill ${isProject ? 'type-project' : (isTask ? 'type-task' : 'type-doc')}">
+                        ${icon(isProject ? 'building' : (isTask ? 'checklist' : 'document'), 11)}
+                        ${isProject ? choose('مشروع', 'Project') : (isTask ? choose('مهمة', 'Task') : choose('مستند', 'Document'))}
                       </span>
                     </td>
                     <td>
@@ -510,7 +530,7 @@ export function renderSettings() {
                         ${isProject 
                           ? `<span class="mini-badge" style="background:var(--mint);color:var(--teal);">${choose('مشروع رئيسي', 'Primary Project')}</span>` 
                           : (parentDisplayName 
-                              ? `${icon('building', 11)} <span>${esc(parentDisplayName)}${parentCode ? ` (${esc(parentCode)})` : ''}</span>` 
+                              ? `${icon('building', 11)} <span>${esc(parentDisplayName)}${parentCode ? ` (${esc(parentCode)})` : ''}</span>${isDoc && item.taskTitleAr ? ` <span style="font-size:11px;color:var(--muted)">· ${esc(item.taskTitleAr)}</span>` : ''}` 
                               : `<span style="color:var(--muted)">—</span>`
                             )
                         }
@@ -529,9 +549,11 @@ export function renderSettings() {
                         <button class="btn btn-soft btn-sm restore-btn" data-action="restore-item" data-type="${esc(item.type)}" data-id="${esc(item.id)}" title="${choose('استعادة العنصر وإعادته للعمل', 'Restore item to active')}">
                           ${icon(state.lang === 'ar' ? 'arrow' : 'arrowLeft', 12)} ${choose('استعادة', 'Restore')}
                         </button>
-                        <button class="btn btn-danger btn-sm" data-action="purge-trash-item" data-type="${esc(item.type)}" data-id="${esc(item.id)}" title="${choose('حذف العنصر نهائياً', 'Permanently delete item')}">
-                          ${icon('trash', 12)} ${choose('حذف نهائي', 'Purge')}
-                        </button>
+                        ${canPurge ? `
+                          <button class="btn btn-danger btn-sm" data-action="purge-trash-item" data-type="${esc(item.type)}" data-id="${esc(item.id)}" title="${choose('حذف العنصر نهائياً', 'Permanently delete item')}">
+                            ${icon('trash', 12)} ${choose('حذف نهائي', 'Purge')}
+                          </button>
+                        ` : ''}
                       </div>
                     </td>
                   </tr>
@@ -563,9 +585,9 @@ export function renderSettings() {
                 ${allTrashItems.length} ${choose('عناصر', 'items')}
               </span>
             </div>
-            <p>${choose('استعراض واستعادة المشاريع والمهام المحذوفة مؤقتاً، أو حذفها نهائياً.', 'Review, restore, or permanently purge temporarily deleted projects and tasks.')}</p>
+            <p>${choose('استعراض واستعادة المشاريع والمهام والمستندات المحذوفة مؤقتاً، أو حذفها نهائياً.', 'Review, restore, or permanently purge temporarily deleted projects, tasks, and documents.')}</p>
           </div>
-          ${allTrashItems.length > 0 ? `
+          ${(userIsAdmin || can('manage_trash')) && allTrashItems.length > 0 ? `
             <div class="page-actions">
               <button class="btn btn-danger btn-sm" data-action="empty-trash" title="${choose('حذف كافة العناصر المحذوفة نهائياً من قاعدة البيانات', 'Permanently erase all deleted items')}">
                 ${icon('trash', 13)} ${choose('إفراغ سلة المهملات', 'Empty Trash')}

@@ -279,13 +279,22 @@ app.get('/', async (c) => {
     const exposedTasks = isAhmad ? tasks : tasks.map(t => (t.assignee_id === 'usr_ahmad' ? { ...t, assignee_id: null } : t));
     const exposedAuditLogs = isAhmad ? auditLogs : auditLogs.filter(a => a.user_id !== 'usr_ahmad' && a.entity_id !== 'usr_ahmad');
 
+    const activeTaskIdSet = new Set(tasks.map(t => t.id));
+    const activeProjectIdSet = new Set(projects.map(p => p.id));
+    const activeDocuments = documents.filter(d => {
+      if (d.deleted_at) return false;
+      if (d.project_id && !activeProjectIdSet.has(d.project_id)) return false;
+      if (d.task_id && !activeTaskIdSet.has(d.task_id)) return false;
+      return true;
+    });
+
     const responsePayload = {
       company: toCamelCase(company || { name: 'DARC Design Team', nameAr: 'فريق دارك للتصميم', nameEn: 'DARC Design Team' }),
       user: toCamelCase(currentUser),
       role: toCamelCase(userRole || {}),
       projects: toCamelCase(projects),
       tasks: toCamelCase(exposedTasks),
-      documents: toCamelCase(documents),
+      documents: toCamelCase(activeDocuments),
       comments: toCamelCase(comments),
       templates: toCamelCase(templates),
       users: exposedUsers,

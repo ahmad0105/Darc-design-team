@@ -428,8 +428,15 @@ export async function handleClick(event) {
     return;
   }
   
+  if (action === 'go-to-trash') {
+    state.settingsSection = 'trash';
+    state.trashLoaded = false;
+    switchView('settings');
+    return;
+  }
+
   if (action === 'delete-doc') {
-    if (!window.confirm(choose('هل أنت متأكد من حذف هذا الملف نهائياً؟', 'Are you sure you want to delete this file permanently?'))) return;
+    if (!window.confirm(choose('هل أنت متأكد من نقل هذا المستند إلى سلة المهملات؟ يمكنك استعادته خلال 30 يوماً.', 'Are you sure you want to move this document to trash? You can restore it within 30 days.'))) return;
     const docId = target.dataset.docId;
     const doc = state.data?.documents?.find(d => d.id === docId);
     const taskId = doc?.taskId;
@@ -438,7 +445,9 @@ export async function handleClick(event) {
       if (state.data?.documents) {
         state.data.documents = state.data.documents.filter(d => d.id !== docId);
       }
+      state.trashLoaded = false;
       await refreshView(true);
+      showToast(choose('تم نقل المستند إلى سلة المهملات بنجاح.', 'Document moved to trash successfully.'));
       if (taskId) {
         const task = state.data?.tasks?.find(t => t.id === taskId);
         if (task) {
@@ -448,6 +457,9 @@ export async function handleClick(event) {
           }
         }
       }
+    } catch (e) { showToast(e.message, true); }
+    return;
+  }
       showToast(choose('تم حذف الملف بنجاح.', 'Document deleted successfully.'));
     } catch (e) { showToast(e.message, true); }
     return;
@@ -701,7 +713,11 @@ export async function handleClick(event) {
     target.closest('.settings-nav')?.querySelectorAll('.settings-nav-item').forEach(b => b.classList.toggle('active', b === target));
     if (state.settingsSection === 'trash' && !state.trashLoaded) {
       api('/api/trash').then(data => {
-        state.trash = Array.isArray(data) ? data : (data.trash || [...(data.projects || []).map(p => ({...p, type:'project'})), ...(data.tasks || []).map(t => ({...t, type:'task'}))]);
+        state.trash = Array.isArray(data) ? data : (data.trash || [
+          ...(data.projects || []).map(p => ({...p, type:'project'})),
+          ...(data.tasks || []).map(t => ({...t, type:'task'})),
+          ...(data.documents || []).map(d => ({...d, type:'document'}))
+        ]);
         state.trashLoaded = true;
         renderView();
       }).catch(e => console.error(e));
@@ -712,7 +728,12 @@ export async function handleClick(event) {
   if (action === 'restore-item') {
     try {
       await api(`/api/restore/${target.dataset.type}/${target.dataset.id}`, { method: 'POST' });
-      const data = await api('/api/trash'); state.trash = Array.isArray(data) ? data : (data.trash || [...(data.projects || []).map(p => ({...p, type:'project'})), ...(data.tasks || []).map(t => ({...t, type:'task'}))]);
+      const data = await api('/api/trash');
+      state.trash = Array.isArray(data) ? data : (data.trash || [
+        ...(data.projects || []).map(p => ({...p, type:'project'})),
+        ...(data.tasks || []).map(t => ({...t, type:'task'})),
+        ...(data.documents || []).map(d => ({...d, type:'document'}))
+      ]);
       await refreshView();
       showToast(choose('تمت الاستعادة بنجاح.', 'Restored successfully.'));
     } catch(e) { showToast(e.message, true); }
@@ -730,7 +751,11 @@ export async function handleClick(event) {
     try {
       await api(`/api/trash/${type}/${id}`, { method: 'DELETE' });
       const data = await api('/api/trash');
-      state.trash = Array.isArray(data) ? data : (data.trash || [...(data.projects || []).map(p => ({...p, type:'project'})), ...(data.tasks || []).map(t => ({...t, type:'task'}))]);
+      state.trash = Array.isArray(data) ? data : (data.trash || [
+        ...(data.projects || []).map(p => ({...p, type:'project'})),
+        ...(data.tasks || []).map(t => ({...t, type:'task'})),
+        ...(data.documents || []).map(d => ({...d, type:'document'}))
+      ]);
       renderView();
       showToast(choose('تم حذف العنصر نهائياً بنجاح.', 'Item permanently deleted.'));
     } catch(e) { showToast(e.message, true); }

@@ -278,6 +278,7 @@ app.delete('/:id', async (c) => {
   const now = new Date().toISOString();
   const [delRes] = await Promise.all([
     supabase.from('tasks').update({ status: 'canceled', updated_at: now, deleted_at: now }).eq('id', taskId),
+    supabase.from('documents').update({ deleted_at: now, updated_at: now }).eq('task_id', taskId).is('deleted_at', null),
     supabase.from('audit_logs').insert([{ user_id: userId, action: 'delete', entity_type: 'task', entity_id: taskId }])
   ]);
 

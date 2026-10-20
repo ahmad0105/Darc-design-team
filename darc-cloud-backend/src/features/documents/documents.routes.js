@@ -10,6 +10,7 @@ import {
 import { hasPermission, isProjectVisible } from '../../utils/permissions.js';
 import { toCamelCase } from '../../utils/transformers.js';
 import { generateSecureId } from '../../core/security.js';
+import { invalidateBootstrapCache } from '../../core/cache.js';
 
 const DANGEROUS_EXTENSIONS = new Set([
   'exe', 'bat', 'cmd', 'sh', 'bash', 'ps1', 'vbs', 'js', 'mjs', 'cjs',
@@ -327,31 +328,44 @@ app.patch('/:id', async (c) => {
   return c.json({ ok: true, document: toCamelCase(data) });
 });
 
-// DELETE /api/documents/:id -> Soft delete DB, Hard delete GDrive
+// DELETE /api/documents/:id -> Soft delete to Trash (retained for 30 days)
 app.delete('/:id', async (c) => {
   const docId = c.req.param('id');
   const supabase = c.get('supabase');
   const userId = c.get('userId');
   const roleId = c.get('roleId');
   
-  const { data: doc } = await supabase.from('documents').select('*').eq('id', docId).single();
-  if (!doc) return c.json({ error: 'المستند غير موجود' }, 404);
+  const { data: doc } = await supabase.from('documents').select('*').eq('id', docId).is('deleted_at', null).single();
+  if (!doc) return c.json({ error: 'المستند غير موجود أو محذوف مسبقاً' }, 404);
 
-  if (doc.uploader_id !== userId && !(await hasPermission(supabase, userId, roleId, 'edit_tasks', doc.project_id))) {
+  const canDelete = (roleId === 'admin') ||
+    (doc.uploader_id === userId) ||
+    (await hasPermission(supabase, userId, roleId, 'delete_documents', doc.project_id)) ||
+    (await hasPermission(supabase, userId, roleId, 'edit_tasks', doc.project_id));
+
+  if (!canDelete) {
     return c.json({ error: 'غير مصرح لك بحذف هذا الملف' }, 403);
   }
 
-  const { error } = await supabase.from('documents').update({ deleted_at: new Date().toISOString() }).eq('id', docId);
+  const now = new Date().toISOString();
+  const { error } = await supabase.from('documents').update({ deleted_at: now, updated_at: now }).eq('id', docId);
   if (error) throw error;
 
-  if (doc.disk_filename && doc.disk_filename.includes('drive.google.com')) {
-    const match = doc.disk_filename.match(/\/d\/([a-zA-Z0-9_-]+)/);
-    if (match && match[1]) {
-      deleteFromGoogleDrive(c.env, match[1]).catch(e => console.error(e));
-    }
-  }
+  // Log deletion in audit_logs so trash knows who deleted it
+  supabase.from('audit_logs').insert([{
+    user_id: userId,
+    action: 'delete',
+    entity_type: 'document',
+    entity_id: docId,
+    details: { name: doc.original_name, project_id: doc.project_id, task_id: doc.task_id }
+  }]).then().catch(() => {});
 
-  return c.json({ ok: true });
+  // Note: We do NOT delete from Google Drive here. The file is preserved in Trash
+  // for 30 days so users can restore it. It is permanently deleted only upon manual purge or 30-day cleanup.
+
+  invalidateBootstrapCache();
+
+  return c.json({ ok: true, message: 'تم نقل المستند إلى سلة المهملات بنجاح.' });
 });
 
 export default app;
