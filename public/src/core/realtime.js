@@ -38,7 +38,8 @@ export function initRealtimeConnection() {
     state.isOffline = false;
     const { syncPendingMutations } = await import('./offline.js');
     const { api } = await import('./api.js');
-    const { showToast, choose } = await import('./utils.js');
+    const { choose } = await import('./utils.js');
+    const { showToast } = await import('../shared/ui.js');
     
     // 1. Replay any pending offline operations
     const syncRes = await syncPendingMutations(api);
@@ -57,7 +58,8 @@ export function initRealtimeConnection() {
 
   window.addEventListener('offline', async () => {
     state.isOffline = true;
-    const { showToast, choose } = await import('./utils.js');
+    const { choose } = await import('./utils.js');
+    const { showToast } = await import('../shared/ui.js');
     const { renderApp } = await import('./router.js');
     renderApp();
     showToast(choose('أنت في وضع عدم الاتصال (Offline Mode) — يمكنك مواصلة العمل وسيتم الرفع فور عودة الإنترنت', 'Offline Mode — you can continue working, changes will auto-sync on reconnect'), true);

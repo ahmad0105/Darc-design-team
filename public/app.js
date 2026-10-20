@@ -47,9 +47,15 @@ document.addEventListener('submit', (event) => { handleSubmit(event).catch((erro
 document.addEventListener('input', handleInput);
 document.addEventListener('change', handleChange);
 document.addEventListener('keydown', (event) => { if (event.key === 'Escape') closeModal(); });
+let _resizeRaf = null;
 window.addEventListener('resize', () => {
   if (state.view === 'project-detail' && state.projectTab === 'timeline') {
-    drawTimelineArrows();
+    if (!_resizeRaf) {
+      _resizeRaf = requestAnimationFrame(() => {
+        _resizeRaf = null;
+        drawTimelineArrows();
+      });
+    }
   }
 });
 

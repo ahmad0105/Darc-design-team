@@ -1,6 +1,7 @@
 import { state } from './state.js';
 import { generatePrefixedId, enqueueOfflineMutation, simulateOfflineMutation } from './offline.js';
-import { showToast, choose } from './utils.js';
+import { choose } from './utils.js';
+import { showToast } from '../shared/ui.js';
 
 // Dynamically match current hostname/port or use proxy
 export const API_BASE = (typeof window !== 'undefined' && (window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost'))
