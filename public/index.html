@@ -13,7 +13,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&family=Tajawal:wght@400;500;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="/styles.css?v=3.8.1" />
+    <link rel="stylesheet" href="/styles.css?v=3.8.2" />
     <script>
       (function() {
         try {
@@ -33,11 +33,12 @@
   <body>
     <div id="app"></div>
     <script type="module">
-      const APP_VERSION = 'v3.8.1';
+      const APP_VERSION = 'v3.8.2';
 
-      try {
-        await import(`/app.js?v=${APP_VERSION}`);
-      } catch (error) {
+      (async function boot() {
+        try {
+          await import(`/app.js?v=${APP_VERSION}`);
+        } catch (error) {
         console.error("Critical System Startup Error:", error);
 
         const errorMsg = String(error?.message || error || 'Unknown startup error');
@@ -221,6 +222,7 @@
           });
         }
       }
+    })();
     </script>
   </body>
 </html>

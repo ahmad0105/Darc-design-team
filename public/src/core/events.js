@@ -501,10 +501,6 @@ export async function handleClick(event) {
     } catch (e) { showToast(e.message, true); }
     return;
   }
-      showToast(choose('تم حذف الملف بنجاح.', 'Document deleted successfully.'));
-    } catch (e) { showToast(e.message, true); }
-    return;
-  }
 
   if (action === 'delete-project') {
     if (!window.confirm(choose('هل أنت متأكد من رغبتك بحذف هذا المشروع؟ سيتم أرشفته.', 'Are you sure you want to delete this project? It will be archived.'))) return;
