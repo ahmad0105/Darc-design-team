@@ -1,6 +1,7 @@
 
 import { state } from './state.js';
-import { api, API_BASE } from './api.js';
+import { api, API_BASE, invalidateBootstrapEtag } from './api.js';
+import { clearOfflineBootstrap } from './offline.js';
 import { switchView, refreshView, renderView, renderApp } from './router.js';
 import { openOmnisearch, closeOmnisearch, openShortcutsCheatsheet } from '../features/dashboard/omnisearch.js';
 import { playSuccessChime } from './utils.js';
@@ -325,8 +326,22 @@ export async function handleClick(event) {
   if (action === 'goto-forgot') { event.preventDefault(); renderLogin('', 'forgot'); return; }
   if (action === 'goto-login') { event.preventDefault(); renderLogin(); return; }
   if (action === 'toggle-sidebar') { state.sidebarOpen = !state.sidebarOpen; document.querySelector('.sidebar')?.classList.toggle('open', state.sidebarOpen); return; }
-  if (action === 'logout') { await api('/api/auth/logout', { method: 'POST' }).catch(() => {}); state.data = null; renderLogin(); return; }
-  if (action === 'logout-all') { await api('/api/auth/logout-all', { method: 'POST' }).catch(() => {}); state.data = null; renderLogin(); return; }
+  if (action === 'logout') {
+    await api('/api/auth/logout', { method: 'POST' }).catch(() => {});
+    await clearOfflineBootstrap();
+    invalidateBootstrapEtag();
+    state.data = null;
+    renderLogin();
+    return;
+  }
+  if (action === 'logout-all') {
+    await api('/api/auth/logout-all', { method: 'POST' }).catch(() => {});
+    await clearOfflineBootstrap();
+    invalidateBootstrapEtag();
+    state.data = null;
+    renderLogin();
+    return;
+  }
   if (action === 'open-omnisearch') { openOmnisearch(); return; }
   if (action === 'close-omnisearch') { closeOmnisearch(); return; }
   if (action === 'open-cheatsheet') { openShortcutsCheatsheet(); return; }
@@ -683,6 +698,34 @@ export async function handleClick(event) {
     } catch(e) { showToast(e.message, true); }
     return;
   }
+  if (action === 'filter-trash') {
+    state.trashFilter = target.dataset.filter;
+    renderView();
+    return;
+  }
+  if (action === 'purge-trash-item') {
+    const type = target.dataset.type;
+    const id = target.dataset.id;
+    if (!window.confirm(choose('هل أنت متأكد من الحذف النهائي لهذا العنصر؟ لا يمكن التراجع عن هذا الإجراء.', 'Are you sure you want to permanently delete this item? This action cannot be undone.'))) return;
+    try {
+      await api(`/api/trash/${type}/${id}`, { method: 'DELETE' });
+      const data = await api('/api/trash');
+      state.trash = Array.isArray(data) ? data : (data.trash || [...(data.projects || []).map(p => ({...p, type:'project'})), ...(data.tasks || []).map(t => ({...t, type:'task'}))]);
+      renderView();
+      showToast(choose('تم حذف العنصر نهائياً بنجاح.', 'Item permanently deleted.'));
+    } catch(e) { showToast(e.message, true); }
+    return;
+  }
+  if (action === 'empty-trash') {
+    if (!window.confirm(choose('هل أنت متأكد تماماً من إفراغ سلة المهملات بالكامل؟ سيتم مسح كافة العناصر المحذوفة نهائياً ولا يمكن استرجاعها.', 'Are you sure you want to empty the entire recycle bin? All items will be permanently erased.'))) return;
+    try {
+      await api('/api/trash/empty', { method: 'DELETE' });
+      state.trash = [];
+      renderView();
+      showToast(choose('تم إفراغ سلة المهملات بالكامل بنجاح.', 'Trash bin emptied successfully.'));
+    } catch(e) { showToast(e.message, true); }
+    return;
+  }
   if (action === 'open-role') { const role = state.data.roles.find((item) => item.id === target.dataset.roleId); if (role) openRoleModal(role); return; }
   if (action === 'delete-role') { 
     if (!window.confirm(t('confirmDeleteRole'))) return; 
@@ -747,6 +790,18 @@ export function handleInput(event) {
     } else {
       dropdown.style.display = 'none';
     }
+  }
+
+  if (event.target.dataset.action === 'search-trash-input') {
+    state.trashQuery = event.target.value;
+    const cursor = event.target.selectionStart;
+    clearTimeout(_searchDebounceTimer);
+    _searchDebounceTimer = setTimeout(() => {
+      renderView();
+      const next = document.querySelector('[data-action="search-trash-input"]');
+      if (next) { next.focus(); next.setSelectionRange(cursor, cursor); }
+    }, 120);
+    return;
   }
 
   const search = event.target.dataset.search || (event.target.dataset.action === 'search-documents' ? 'documents' : null);

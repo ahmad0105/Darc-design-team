@@ -67,6 +67,22 @@ async function idbSet(key, val) {
   });
 }
 
+async function idbDelete(key) {
+  const db = await getIDB();
+  if (!db) return false;
+  return new Promise((resolve) => {
+    try {
+      const tx = db.transaction(STORE_NAME, 'readwrite');
+      const store = tx.objectStore(STORE_NAME);
+      const req = store.delete(key);
+      req.onsuccess = () => resolve(true);
+      req.onerror = () => resolve(false);
+    } catch {
+      resolve(false);
+    }
+  });
+}
+
 /**
  * Checks whether the browser has active network connectivity.
  */
@@ -122,6 +138,24 @@ export async function getOfflineBootstrapAsync() {
   const idbRecord = await idbGet(STORAGE_BOOTSTRAP_KEY);
   if (idbRecord?.data) return idbRecord.data;
   return getOfflineBootstrap();
+}
+
+/**
+ * Completely purges offline cached bootstrap and queued mutations from localStorage and IndexedDB.
+ * Essential on logout and session expiration to prevent cross-account data leakage.
+ */
+export async function clearOfflineBootstrap() {
+  if (typeof localStorage !== 'undefined') {
+    try {
+      localStorage.removeItem(STORAGE_BOOTSTRAP_KEY);
+      localStorage.removeItem(STORAGE_QUEUE_KEY);
+    } catch {}
+  }
+  await Promise.all([
+    idbDelete(STORAGE_BOOTSTRAP_KEY),
+    idbDelete(STORAGE_QUEUE_KEY)
+  ]);
+  emitQueueChange();
 }
 
 /**

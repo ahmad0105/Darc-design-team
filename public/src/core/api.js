@@ -94,6 +94,7 @@ export async function api(path, options = {}) {
     try { payload = JSON.parse(text); } catch(e) {}
     
     if (response.status === 401) {
+      _lastBootstrapEtag = null;
       if (path !== '/api/auth/login') {
         const { state } = await import('./state.js');
         if (state.data) state.data.user = null;
@@ -105,7 +106,9 @@ export async function api(path, options = {}) {
       }
     }
     
-    throw new Error(payload.error || `Failed to fetch ${path}`);
+    const err = new Error(payload.error || `Failed to fetch ${path}`);
+    err.status = response.status;
+    throw err;
   }
 
   const etag = response.headers.get('ETag');

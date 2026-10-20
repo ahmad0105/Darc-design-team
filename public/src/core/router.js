@@ -191,6 +191,10 @@ export async function loadData(silent = false) {
       state.data = payload; 
     }
   } catch (error) {
+    // If unauthorized or forbidden, do NOT fallback to previous user's offline cache
+    if (error && (error.status === 401 || error.status === 403)) {
+      throw error;
+    }
     const cachedData = await getOfflineBootstrapAsync();
     if (cachedData) {
       state.data = cachedData;

@@ -105,7 +105,7 @@ export function renderSettings() {
         </div>
 
         <div class="profile-avatar-card">
-          <div class="avatar-upload-trigger" id="profile-avatar-preview" data-action="trigger-avatar-upload" role="button" tabindex="0" title="${choose('انقر لرفع صورة شخصية جديدة', 'Click to upload a new profile picture')}">
+          <label for="user-avatar-file-input" class="avatar-upload-trigger" id="profile-avatar-preview" role="button" tabindex="0" title="${choose('انقر لرفع صورة شخصية جديدة', 'Click to upload a new profile picture')}">
             <div class="avatar-upload-circle">
               ${currentUser.avatarUrl
                 ? `<img src="${esc(currentUser.avatarUrl)}" alt="Avatar" class="avatar-upload-img" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" /><div class="avatar-upload-fallback" style="display:none;background:${/^#[0-9a-f]{6}$/i.test(currentUser.avatarColor || '') ? currentUser.avatarColor : '#0d6269'};">${esc(initials(currentUser))}</div>`
@@ -116,15 +116,15 @@ export function renderSettings() {
                 <span>${choose('تغيير', 'Change')}</span>
               </div>
             </div>
-          </div>
+          </label>
           <div class="profile-avatar-meta">
             <h3 class="profile-user-name">${esc(choose(currentUser.name, currentUser.nameEn || currentUser.name))}</h3>
             <p class="profile-user-role">${esc(choose(currentUser.jobTitleAr || '', currentUser.jobTitleEn || currentUser.jobTitleAr || ''))} · <span class="status-badge done">${esc(roleName(currentUser))}</span></p>
             <div class="profile-upload-actions">
-              <input type="file" id="user-avatar-file-input" accept="image/jpeg,image/png,image/webp" style="display:none;" />
-              <button type="button" class="btn btn-soft btn-sm" data-action="trigger-avatar-upload">
+              <input type="file" id="user-avatar-file-input" accept="image/jpeg,image/png,image/webp" style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0;opacity:0;pointer-events:none;" />
+              <label for="user-avatar-file-input" class="btn btn-soft btn-sm" role="button" tabindex="0" style="cursor:pointer;display:inline-flex;align-items:center;gap:6px;">
                 ${icon('upload', 14)} ${choose('رفع صورة جديدة', 'Upload new avatar')}
-              </button>
+              </label>
               <span class="upload-hint">${choose('يدعم JPG, PNG, WebP (حد أقصى 2MB)', 'Supports JPG, PNG, WebP (Max 2MB)')}</span>
             </div>
           </div>
@@ -177,7 +177,7 @@ export function renderSettings() {
         <p>${choose('هوية مساحة العمل وشعار الشركة واللغة الافتراضية.', 'Workspace identity, company logo, and default language.')}</p>
         
         <div class="company-preview">
-          <div class="logo-upload-trigger" id="company-logo-preview" data-action="trigger-company-logo-upload" role="button" tabindex="0" title="${choose('انقر لرفع وتعديل شعار الشركة', 'Click to upload and change company logo')}">
+          <label for="company-logo-file-input" class="logo-upload-trigger" id="company-logo-preview" role="button" tabindex="0" title="${choose('انقر لرفع وتعديل شعار الشركة', 'Click to upload and change company logo')}">
             <div class="logo-upload-box">
               ${comp.logoUrl 
                 ? `<img src="${esc(comp.logoUrl)}" alt="Logo" class="logo-upload-img" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" /><span class="brand-mark" style="display:none;">${icon('building', 24)}</span>`
@@ -188,15 +188,15 @@ export function renderSettings() {
                 <span>${choose('تعديل', 'Edit')}</span>
               </div>
             </div>
-          </div>
+          </label>
           <div class="company-preview-meta">
             <strong class="company-name">${esc(comp.name || 'DARC Design Team')}</strong>
             <span class="company-sub">${choose('العربية افتراضيًا · دعم الإنجليزية · توقيت الرياض', 'Arabic default · English support · Riyadh timezone')}</span>
             <div class="company-upload-actions">
-              <input type="file" id="company-logo-file-input" accept="image/png,image/jpeg,image/webp,image/svg+xml" style="display:none;" />
-              <button type="button" class="btn btn-soft btn-sm" data-action="trigger-company-logo-upload">
+              <input type="file" id="company-logo-file-input" accept="image/png,image/jpeg,image/webp,image/svg+xml" style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0;opacity:0;pointer-events:none;" />
+              <label for="company-logo-file-input" class="btn btn-soft btn-sm" role="button" tabindex="0" style="cursor:pointer;display:inline-flex;align-items:center;gap:6px;">
                 ${icon('upload', 14)} ${choose('رفع وتعديل الشعار', 'Upload & Change Logo')}
-              </button>
+              </label>
               <span class="upload-hint">${choose('يدعم PNG, SVG, JPG (حد أقصى 2MB)', 'Supports PNG, SVG, JPG (Max 2MB)')}</span>
             </div>
           </div>
@@ -368,72 +368,142 @@ export function renderSettings() {
 
   // TRASH SECTION (Admin only)
   if (state.settingsSection === 'trash' && userIsAdmin) {
-    const trashItems = state.trash || [];
-    const listHtml = trashItems.length ? `
+    if (!state.trashLoaded && !state._trashFetching) {
+      state._trashFetching = true;
+      import('../../core/api.js').then(({ api }) => api('/api/trash')).then(data => {
+        state.trash = Array.isArray(data) ? data : (data.trash || [...(data.projects || []).map(p => ({...p, type:'project'})), ...(data.tasks || []).map(t => ({...t, type:'task'}))]);
+        state.trashLoaded = true;
+        state._trashFetching = false;
+        import('../../core/router.js').then(r => r.renderView());
+      }).catch(err => {
+        state._trashFetching = false;
+        console.error('[Trash fetch error]', err);
+      });
+    }
+
+    const allTrashItems = state.trash || [];
+    const currentFilter = state.trashFilter || 'all';
+    const searchQuery = (state.trashQuery || '').trim().toLowerCase();
+
+    const filteredItems = allTrashItems.filter(item => {
+      if (currentFilter !== 'all' && item.type !== currentFilter) return false;
+      if (!searchQuery) return true;
+      const name = (choose(item.nameAr || item.titleAr, item.nameEn || item.titleEn) || item.name || item.title || '').toLowerCase();
+      const code = (item.code || item.projectCode || '').toLowerCase();
+      const parent = (item.projectNameAr || item.projectNameEn || '').toLowerCase();
+      return name.includes(searchQuery) || code.includes(searchQuery) || parent.includes(searchQuery);
+    });
+
+    const projectCount = allTrashItems.filter(x => x.type === 'project').length;
+    const taskCount = allTrashItems.filter(x => x.type === 'task').length;
+
+    const listHtml = allTrashItems.length ? `
       <div class="trash-notice-banner">
         <div class="trash-notice-icon">${icon('info', 16)}</div>
         <div class="trash-notice-text">
           <strong>${choose('سلة المحذوفات المركزية المحمية', 'Central Protected Trash Bin')}</strong>
-          <p>${choose('تحتفظ المنصة بالعناصر المحذوفة لمدة 30 يومًا قبل الحذف التلقائي. استعادة أي مشروع تسترجع تلقائيًا كافة مهامه ومخططاته المرتبطة به.', 'Items are retained for 30 days before permanent purging. Restoring a project automatically recovers all its associated tasks and drawings.')}</p>
+          <p>${choose('تحتفظ المنصة بالعناصر المحذوفة لمدة 30 يومًا قبل الحذف التلقائي. استعادة أي مشروع تسترجع تلقائيًا كافة مهامه المرتبطة به.', 'Items are retained for 30 days before permanent purging. Restoring a project automatically recovers all its associated tasks.')}</p>
         </div>
       </div>
-      <div class="table-wrap">
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>${choose('الاسم / العنوان', 'Name / Title')}</th>
-              <th>${choose('النوع', 'Type')}</th>
-              <th>${choose('المشروع التابع له', 'Project')}</th>
-              <th>${choose('تاريخ الحذف', 'Deleted At')}</th>
-              <th style="text-align:${state.lang === 'ar' ? 'left' : 'right'}">${choose('الإجراء', 'Action')}</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${trashItems.map((item) => {
-              const isProject = item.type === 'project';
-              const displayName = choose(item.nameAr || item.titleAr, item.nameEn || item.titleEn) || item.name || item.title || item.code || choose('عنصر محذوف', 'Deleted item');
-              const parentProject = !isProject && item.projectId ? (state.data?.projects || []).find(p => p.id === item.projectId) : null;
-              const parentName = parentProject ? choose(parentProject.nameAr, parentProject.nameEn || parentProject.nameAr) : (item.projectId || '—');
-              return `
-                <tr class="trash-row">
-                  <td>
-                    <div class="trash-item-cell">
-                      <div class="trash-item-icon ${isProject ? 'is-project' : 'is-task'}">
-                        ${icon(isProject ? 'building' : 'checklist', 14)}
-                      </div>
-                      <div>
-                        <strong class="trash-item-title">${esc(displayName)}</strong>
-                        ${item.code ? `<span class="trash-item-code">${esc(item.code)}</span>` : ''}
-                      </div>
-                    </div>
-                  </td>
-                  <td>
-                    <span class="type-pill ${isProject ? 'type-project' : 'type-task'}">
-                      ${isProject ? icon('building', 11) : icon('checklist', 11)}
-                      ${isProject ? choose('مشروع', 'Project') : choose('مهمة', 'Task')}
-                    </span>
-                  </td>
-                  <td>
-                    <span class="trash-parent-badge">
-                      ${isProject ? choose('مشروع رئيسي', 'Primary Project') : (parentProject ? `${icon('building', 11)} ${esc(parentName)}` : '—')}
-                    </span>
-                  </td>
-                  <td>
-                    <span class="trash-date" title="${esc(item.deletedAt || '')}">
-                      ${dateLabel(item.deletedAt, true)}
-                    </span>
-                  </td>
-                  <td style="text-align:${state.lang === 'ar' ? 'left' : 'right'}">
-                    <button class="btn btn-soft btn-sm restore-btn" data-action="restore-item" data-type="${esc(item.type)}" data-id="${esc(item.id)}" title="${choose('استعادة العنصر وإعادته لمكانه الأصلي', 'Restore item to original location')}">
-                      ${icon(state.lang === 'ar' ? 'arrow' : 'arrowLeft', 12)} ${choose('استعادة', 'Restore')}
-                    </button>
-                  </td>
-                </tr>
-              `;
-            }).join('')}
-          </tbody>
-        </table>
+
+      <div class="trash-filter-bar" style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
+        <div style="display:flex;align-items:center;gap:6px;">
+          <button class="btn btn-sm ${currentFilter === 'all' ? 'btn-primary' : 'btn-ghost'}" data-action="filter-trash" data-filter="all">
+            ${choose('الكل', 'All')} <span class="badge" style="margin-inline-start:4px;font-size:10px;background:rgba(255,255,255,0.25);">${allTrashItems.length}</span>
+          </button>
+          <button class="btn btn-sm ${currentFilter === 'project' ? 'btn-primary' : 'btn-ghost'}" data-action="filter-trash" data-filter="project">
+            ${icon('building', 12)} ${choose('المشاريع', 'Projects')} <span class="badge" style="margin-inline-start:4px;font-size:10px;background:rgba(255,255,255,0.25);">${projectCount}</span>
+          </button>
+          <button class="btn btn-sm ${currentFilter === 'task' ? 'btn-primary' : 'btn-ghost'}" data-action="filter-trash" data-filter="task">
+            ${icon('checklist', 12)} ${choose('المهام', 'Tasks')} <span class="badge" style="margin-inline-start:4px;font-size:10px;background:rgba(255,255,255,0.25);">${taskCount}</span>
+          </button>
+        </div>
+        <div style="min-width:220px;max-width:320px;flex:1;">
+          <input type="search" class="input input-sm" placeholder="${choose('بحث في المحذوفات...', 'Search deleted items...')}" value="${esc(state.trashQuery || '')}" data-action="search-trash-input" style="width:100%;padding:6px 12px;font-size:12px;" />
+        </div>
       </div>
+
+      ${filteredItems.length ? `
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>${choose('الاسم / العنوان', 'Name / Title')}</th>
+                <th>${choose('النوع', 'Type')}</th>
+                <th>${choose('المشروع التابع له', 'Project')}</th>
+                <th>${choose('الحالة السابقة', 'Prior Status')}</th>
+                <th>${choose('تاريخ الحذف', 'Deleted At')}</th>
+                <th style="text-align:${state.lang === 'ar' ? 'left' : 'right'}">${choose('الإجراءات', 'Actions')}</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${filteredItems.map((item) => {
+                const isProject = item.type === 'project';
+                const displayName = choose(item.nameAr || item.titleAr, item.nameEn || item.titleEn) || item.name || item.title || item.code || choose('عنصر محذوف', 'Deleted item');
+                const parentProject = !isProject && item.projectId ? (state.data?.projects || []).find(p => p.id === item.projectId) : null;
+                const parentDisplayName = item.projectNameAr || item.projectNameEn || (parentProject ? choose(parentProject.nameAr, parentProject.nameEn || parentProject.nameAr) : null);
+                const parentCode = item.projectCode || parentProject?.code;
+
+                return `
+                  <tr class="trash-row">
+                    <td>
+                      <div class="trash-item-cell">
+                        <div class="trash-item-icon ${isProject ? 'is-project' : 'is-task'}">
+                          ${icon(isProject ? 'building' : 'checklist', 14)}
+                        </div>
+                        <div>
+                          <strong class="trash-item-title">${esc(displayName)}</strong>
+                          ${(item.code || isProject) ? `<span class="trash-item-code">${esc(item.code || item.id)}</span>` : ''}
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <span class="type-pill ${isProject ? 'type-project' : 'type-task'}">
+                        ${isProject ? icon('building', 11) : icon('checklist', 11)}
+                        ${isProject ? choose('مشروع', 'Project') : choose('مهمة', 'Task')}
+                      </span>
+                    </td>
+                    <td>
+                      <span class="trash-parent-badge">
+                        ${isProject 
+                          ? `<span class="mini-badge" style="background:var(--mint);color:var(--teal);">${choose('مشروع رئيسي', 'Primary Project')}</span>` 
+                          : (parentDisplayName 
+                              ? `${icon('building', 11)} <span>${esc(parentDisplayName)}${parentCode ? ` (${esc(parentCode)})` : ''}</span>` 
+                              : `<span style="color:var(--muted)">—</span>`
+                            )
+                        }
+                      </span>
+                    </td>
+                    <td>
+                      ${item.status ? statusBadge(item.status) : `<span style="color:var(--muted)">—</span>`}
+                    </td>
+                    <td>
+                      <span class="trash-date" title="${esc(item.deletedAt || '')}">
+                        ${dateLabel(item.deletedAt, true)}
+                      </span>
+                    </td>
+                    <td style="text-align:${state.lang === 'ar' ? 'left' : 'right'}">
+                      <div style="display:inline-flex;align-items:center;gap:6px;">
+                        <button class="btn btn-soft btn-sm restore-btn" data-action="restore-item" data-type="${esc(item.type)}" data-id="${esc(item.id)}" title="${choose('استعادة العنصر وإعادته للعمل', 'Restore item to active')}">
+                          ${icon(state.lang === 'ar' ? 'arrow' : 'arrowLeft', 12)} ${choose('استعادة', 'Restore')}
+                        </button>
+                        <button class="btn btn-danger btn-sm" data-action="purge-trash-item" data-type="${esc(item.type)}" data-id="${esc(item.id)}" title="${choose('حذف العنصر نهائياً', 'Permanently delete item')}">
+                          ${icon('trash', 12)} ${choose('حذف نهائي', 'Purge')}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+      ` : `
+        <div class="empty">
+          ${icon('search', 22)}
+          <span>${choose('لا توجد نتائج تطابق بحثك في سلة المهملات.', 'No items match your search in trash.')}</span>
+        </div>
+      `}
     ` : `
       <div class="empty">
         ${icon('trash', 24)}
@@ -444,15 +514,22 @@ export function renderSettings() {
     content = `
       <section class="setting-section">
         <div class="panel-head">
-          <div>
+          <div style="flex:1;">
             <div style="display:flex;align-items:center;gap:10px;">
               <h2>${choose('سلة المهملات', 'Recycle Bin')}</h2>
               <span class="mini-badge badge-neutral" style="padding:3px 9px;font-size:10px;font-weight:700;">
-                ${trashItems.length} ${choose('عناصر', 'items')}
+                ${allTrashItems.length} ${choose('عناصر', 'items')}
               </span>
             </div>
-            <p>${choose('استعراض واستعادة المشاريع والمهام المحذوفة مؤقتاً.', 'Review and restore temporarily deleted projects and tasks.')}</p>
+            <p>${choose('استعراض واستعادة المشاريع والمهام المحذوفة مؤقتاً، أو حذفها نهائياً.', 'Review, restore, or permanently purge temporarily deleted projects and tasks.')}</p>
           </div>
+          ${allTrashItems.length > 0 ? `
+            <div class="page-actions">
+              <button class="btn btn-danger btn-sm" data-action="empty-trash" title="${choose('حذف كافة العناصر المحذوفة نهائياً من قاعدة البيانات', 'Permanently erase all deleted items')}">
+                ${icon('trash', 13)} ${choose('إفراغ سلة المهملات', 'Empty Trash')}
+              </button>
+            </div>
+          ` : ''}
         </div>
         ${listHtml}
       </section>

@@ -46,7 +46,7 @@ const ALLOWED_ORIGINS = [
 ];
 app.use('*', cors({
   origin: (origin) => {
-    if (!origin) return 'http://localhost:4318';
+    if (!origin) return 'https://darc-design-team.netlify.app';
     if (
       ALLOWED_ORIGINS.includes(origin) || 
       origin.endsWith('.darc.local') || 

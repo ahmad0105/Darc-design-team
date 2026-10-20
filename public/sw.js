@@ -1,5 +1,5 @@
-// DARC Design Team — Service Worker (Offline-First Cache v3.0)
-const CACHE_NAME = 'darc-cache-v3.0';
+// DARC Design Team — Service Worker (Offline-First Cache v3.1)
+const CACHE_NAME = 'darc-cache-v3.1';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -47,38 +47,10 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
-  // Do not intercept mutations (POST/PATCH/DELETE) or external streaming
+  // Do not intercept mutations (POST/PATCH/DELETE), API calls, or external streaming
+  // API caching and offline persistence are managed by public/src/core/offline.js
   if (event.request.method !== 'GET') return;
-  if (url.pathname.startsWith('/api/documents/download')) return;
-
-  // Stale-While-Revalidate for app static assets and fonts
-  if (
-    url.origin === location.origin ||
-    url.hostname.includes('fonts.googleapis.com') ||
-    url.hostname.includes('fonts.gstatic.com')
-  ) {
-    // For API requests, try network first, save to cache on success, fallback to cached data if offline
-    if (url.pathname.startsWith('/api/')) {
-      event.respondWith(
-        fetch(event.request)
-          .then((networkResponse) => {
-            if (networkResponse && networkResponse.status === 200) {
-              const responseToCache = networkResponse.clone();
-              caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseToCache));
-            }
-            return networkResponse;
-          })
-          .catch(async () => {
-            const cachedResponse = await caches.match(event.request);
-            if (cachedResponse) return cachedResponse;
-            return new Response(JSON.stringify({ error: 'أنت غير متصل بالإنترنت حالياً (وضع عدم الاتصال)' }), {
-              status: 503,
-              headers: { 'Content-Type': 'application/json' }
-            });
-          })
-      );
-      return;
-    }
+  if (url.pathname.startsWith('/api/')) return;
 
     event.respondWith(
       caches.match(event.request).then((cachedResponse) => {
