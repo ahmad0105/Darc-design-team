@@ -9,9 +9,9 @@ let _templatesCacheTime = 0;
 let _usersCache = null;
 let _usersCacheTime = 0;
 
-const BOOTSTRAP_TTL = 15000; // 15 seconds
-const STATIC_TTL = 300000;   // 5 minutes
-const USERS_TTL = 60000;     // 60 seconds
+const BOOTSTRAP_TTL = 60000; // 60 seconds (High-speed cached responses, invalidated immediately on mutations)
+const STATIC_TTL = 600000;   // 10 minutes
+const USERS_TTL = 120000;    // 2 minutes
 
 // --- BOOTSTRAP CACHE & VERSIONING ---
 let _cacheVersion = 1;
