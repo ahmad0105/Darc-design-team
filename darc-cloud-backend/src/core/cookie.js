@@ -30,13 +30,22 @@ export function isSecureRequest(c) {
  */
 export function setSessionCookie(c, token, maxAgeSeconds = DEFAULT_SESSION_MAX_AGE) {
   const secure = isSecureRequest(c);
-  // Using SameSite=None + Secure allows cookies across different origins (e.g. panel.darc-design.bond to workers.dev)
-  // on iOS Firefox / Safari WebKit engine where ITP strictly isolates cross-origin cookies.
+  
+  // Dynamic domain targeting: when on *.darc-design.bond, bind cookie to parent domain .darc-design.bond
+  let cookieDomain = undefined;
+  try {
+    const host = new URL(c.req.url).hostname;
+    if (host === 'darc-design.bond' || host.endsWith('.darc-design.bond')) {
+      cookieDomain = '.darc-design.bond';
+    }
+  } catch(e) {}
+
   setCookie(c, SESSION_COOKIE_NAME, token, {
     path: '/',
     httpOnly: true,
     secure: true,
     sameSite: 'None',
+    domain: cookieDomain,
     maxAge: maxAgeSeconds
   });
 }
@@ -46,11 +55,20 @@ export function setSessionCookie(c, token, maxAgeSeconds = DEFAULT_SESSION_MAX_A
  * the path, secure, sameSite, and httpOnly flags.
  */
 export function clearSessionCookie(c) {
+  let cookieDomain = undefined;
+  try {
+    const host = new URL(c.req.url).hostname;
+    if (host === 'darc-design.bond' || host.endsWith('.darc-design.bond')) {
+      cookieDomain = '.darc-design.bond';
+    }
+  } catch(e) {}
+
   deleteCookie(c, SESSION_COOKIE_NAME, {
     path: '/',
     httpOnly: true,
     secure: true,
-    sameSite: 'None'
+    sameSite: 'None',
+    domain: cookieDomain
   });
 }
 

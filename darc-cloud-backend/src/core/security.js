@@ -8,7 +8,8 @@ const ALLOWED_ORIGINS = [
   'https://darc-design-team.netlify.app',
   'https://darc-design-team.workers.dev',
   'https://darc-design.bond',
-  'https://panel.darc-design.bond'
+  'https://panel.darc-design.bond',
+  'https://api.darc-design.bond'
 ];
 
 /**
