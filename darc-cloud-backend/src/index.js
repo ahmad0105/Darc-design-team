@@ -188,7 +188,7 @@ app.post('/api/auth/login', async (c) => {
       user_id: user.id, action: 'login', entity_type: 'user', entity_id: user.id
     }]);
   } catch(e) { /* silent */ }
-  return c.json({ user: toSafeUser({ ...user, custom_fields: updatedCustomFields, last_login_at: nowIso, last_active_at: nowIso }) });
+  return c.json({ token, user: toSafeUser({ ...user, custom_fields: updatedCustomFields, last_login_at: nowIso, last_active_at: nowIso }) });
 });
 
 app.post('/api/auth/logout', async (c) => {

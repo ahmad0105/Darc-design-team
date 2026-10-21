@@ -30,11 +30,13 @@ export function isSecureRequest(c) {
  */
 export function setSessionCookie(c, token, maxAgeSeconds = DEFAULT_SESSION_MAX_AGE) {
   const secure = isSecureRequest(c);
+  // Using SameSite=None + Secure allows cookies across different origins (e.g. panel.darc-design.bond to workers.dev)
+  // on iOS Firefox / Safari WebKit engine where ITP strictly isolates cross-origin cookies.
   setCookie(c, SESSION_COOKIE_NAME, token, {
     path: '/',
     httpOnly: true,
-    secure,
-    sameSite: 'Lax',
+    secure: true,
+    sameSite: 'None',
     maxAge: maxAgeSeconds
   });
 }
@@ -44,12 +46,11 @@ export function setSessionCookie(c, token, maxAgeSeconds = DEFAULT_SESSION_MAX_A
  * the path, secure, sameSite, and httpOnly flags.
  */
 export function clearSessionCookie(c) {
-  const secure = isSecureRequest(c);
   deleteCookie(c, SESSION_COOKIE_NAME, {
     path: '/',
     httpOnly: true,
-    secure,
-    sameSite: 'Lax'
+    secure: true,
+    sameSite: 'None'
   });
 }
 

@@ -55,7 +55,9 @@ export async function api(path, options = {}) {
     return { ok: true, queued: true, offline: true, id: item?.id, ...simResult };
   }
 
+  const token = (typeof localStorage !== 'undefined') ? localStorage.getItem('darc_token') : null;
   const headers = {
+    ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
     ...(options.body ? { 'Content-Type': 'application/json' } : {}),
     ...(options.headers || {})
   };

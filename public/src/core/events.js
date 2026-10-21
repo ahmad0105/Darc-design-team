@@ -357,10 +357,12 @@ export async function handleClick(event) {
   if (action === 'logout') {
     await api('/api/auth/logout', { method: 'POST' }).catch(() => {});
     try {
+      if (typeof localStorage !== 'undefined') localStorage.removeItem('darc_token');
       const off = await import('./offline.js');
       if (off && typeof off.clearOfflineBootstrap === 'function') await off.clearOfflineBootstrap();
     } catch (e) {
       try {
+        localStorage.removeItem('darc_token');
         localStorage.removeItem('darc_offline_bootstrap');
         localStorage.removeItem('darc_offline_queue');
       } catch (err) {}
@@ -379,10 +381,12 @@ export async function handleClick(event) {
   if (action === 'logout-all') {
     await api('/api/auth/logout-all', { method: 'POST' }).catch(() => {});
     try {
+      if (typeof localStorage !== 'undefined') localStorage.removeItem('darc_token');
       const off = await import('./offline.js');
       if (off && typeof off.clearOfflineBootstrap === 'function') await off.clearOfflineBootstrap();
     } catch (e) {
       try {
+        localStorage.removeItem('darc_token');
         localStorage.removeItem('darc_offline_bootstrap');
         localStorage.removeItem('darc_offline_queue');
       } catch (err) {}

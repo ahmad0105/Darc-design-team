@@ -282,8 +282,11 @@ export function renderLogin(errorMessage = '', mode = 'login', isSuccess = false
     button.innerHTML = `<span>${choose('جاري التحقق وتسجيل الدخول...', 'Verifying & signing in...')}</span>`;
     
     try {
-      await api('/api/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) });
+      const loginRes = await api('/api/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) });
       if (typeof localStorage !== 'undefined') {
+        if (loginRes?.token) {
+          localStorage.setItem('darc_token', loginRes.token);
+        }
         if (rememberMe) {
           localStorage.setItem('darc_last_email', email);
         } else {
