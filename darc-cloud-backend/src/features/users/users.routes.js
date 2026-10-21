@@ -308,7 +308,7 @@ app.post('/:id/impersonate', requireAdmin, async (c) => {
   const token = await sign({ userId: user.id, roleId: user.role_id, v: tokenVer, exp }, secret);
   setSessionCookie(c, token, 60 * 60 * 4);
   await logAudit(supabase, { userId: currentUserId, action: 'impersonate', entityType: 'user', entityId: targetId });
-  return c.json({ ok: true });
+  return c.json({ ok: true, token, user: { id: user.id, roleId: user.role_id } });
 });
 
 export default app;

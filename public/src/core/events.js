@@ -728,7 +728,10 @@ export async function handleClick(event) {
   if (action === 'impersonate-user') {
     if (!window.confirm('هل أنت متأكد أنك تريد الدخول كـ هذا الحساب؟ للعودة ستحتاج لتسجيل الخروج والدخول بحسابك مجدداً.')) return;
     try {
-      await api(`/api/users/${target.dataset.userId}/impersonate`, { method: 'POST' });
+      const res = await api(`/api/users/${target.dataset.userId}/impersonate`, { method: 'POST' });
+      if (res && res.token && typeof localStorage !== 'undefined') {
+        localStorage.setItem('darc_token', res.token);
+      }
       window.location.reload();
     } catch(e) { showToast(e.message, true); }
     return;
