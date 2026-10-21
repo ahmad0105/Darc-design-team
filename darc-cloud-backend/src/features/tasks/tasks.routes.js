@@ -495,4 +495,27 @@ app.delete('/:id/comments/:commentId', async (c) => {
   return c.json({ ok: true });
 });
 
+// GET /api/tasks/:id/comments — Lazy load comments for a task (Performance Optimization)
+app.get('/:id/comments', async (c) => {
+  const taskId = c.req.param('id');
+  const userId = c.get('userId');
+  const roleId = c.get('roleId');
+  const supabase = c.get('supabase');
+
+  const { data: task } = await supabase.from('tasks').select('project_id').eq('id', taskId).single();
+  if (!task || !(await isProjectVisible(supabase, userId, roleId, task.project_id))) {
+    return c.json({ error: 'غير مصرح' }, 403);
+  }
+
+  const { data: comments, error } = await supabase
+    .from('comments')
+    .select('id, task_id, user_id, content, created_at, updated_at, deleted_at, user:user_id(id, name, name_en, email, avatar_color)')
+    .eq('task_id', taskId)
+    .is('deleted_at', null)
+    .order('created_at', { ascending: true });
+
+  if (error) throw error;
+  return c.json({ comments: toCamelCase(comments || []) });
+});
+
 export default app;
