@@ -739,108 +739,118 @@ export function openProjectModal(project = null) {
 
   const form = `
     <form id="project-form" data-project-id="${esc(project?.id || '')}">
-      <!-- Section 1: Core Details -->
-      <div style="margin-bottom:16px;">
-        <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;font-size:12px;font-weight:700;color:var(--teal);">
-          ${icon('building', 14)} ${choose('البيانات الأساسية للمشروع', 'Core Project Information')}
-        </div>
-        <div class="form-grid">
-          <div class="field full">
-            <label>${t('nameAr')}</label>
-            <input name="nameAr" value="${esc(project?.nameAr || '')}" placeholder="${choose('مثال: فيلا النخيل — التصميم الداخلي', 'e.g. Al Nakheel Villa — Interior Design')}" required />
-          </div>
-          <div class="field">
-            <label>${t('nameEn')}</label>
-            <input name="nameEn" value="${esc(project?.nameEn || '')}" placeholder="Al Nakheel Villa — Interior Design" />
-          </div>
-          <div class="field">
-            <label>${t('projectCode')}</label>
-            <input name="code" value="${esc(defaultCode)}" placeholder="DARC-025" required />
-          </div>
-          <div class="field full">
-            <label>${t('client')}</label>
-            <input name="clientAr" value="${esc(project?.clientAr || '')}" placeholder="${choose('اسم العميل أو الجهة المالكة', 'Client or owning entity')}" />
-          </div>
-        </div>
-      </div>
+      <input type="hidden" name="memberIds" id="project-members-input" value="${esc(JSON.stringify(currentMemberIds))}" />
 
-      <!-- Section 2: Management & Schedule -->
-      <div style="margin-bottom:16px;padding-top:12px;border-top:1px solid var(--line);">
-        <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;font-size:12px;font-weight:700;color:var(--teal);">
-          ${icon('calendar', 14)} ${choose('الجدولة والإدارة', 'Management & Schedule')}
-        </div>
-        <div class="form-grid">
-          <div class="field">
-            <label>${t('manager')}</label>
-            <select name="managerId" id="project-manager-select">
-              <option value="">${choose('— بدون تحديد —', '— Unassigned —')}</option>
-              ${state.data.users.map((user) => `<option value="${esc(user.id)}" ${(project ? project.managerId === user.id : state.data.user.id === user.id) ? 'selected' : ''}>${esc(choose(user.name, user.nameEn || user.name))}</option>`).join('')}
-            </select>
-          </div>
-          <div class="field">
-            <label>${choose('أولوية المشروع', 'Project Priority')}</label>
-            <select name="priority">
-              <option value="low" ${(project?.priority === 'low' || project?.customFields?.priority === 'low') ? 'selected' : ''}>${choose('منخفضة', 'Low')}</option>
-              <option value="medium" ${(!project || project?.priority === 'medium' || project?.customFields?.priority === 'medium' || !project?.priority) ? 'selected' : ''}>${choose('متوسطة', 'Medium')}</option>
-              <option value="high" ${(project?.priority === 'high' || project?.customFields?.priority === 'high') ? 'selected' : ''}>${choose('عالية', 'High')}</option>
-              <option value="urgent" ${(project?.priority === 'urgent' || project?.customFields?.priority === 'urgent') ? 'selected' : ''}>${choose('حرجة / عاجلة', 'Urgent')}</option>
-            </select>
-          </div>
-          <div class="field">
-            <label>${choose('حالة المشروع', 'Project Status')}</label>
-            <select name="lifecycle">
-              <option value="active" ${(!project || project.lifecycle === 'active') ? 'selected' : ''}>${choose('نشط (قيد التنفيذ)', 'Active (In Progress)')}</option>
-              <option value="planning" ${project?.lifecycle === 'planning' ? 'selected' : ''}>${choose('تخطيط', 'Planning')}</option>
-              <option value="on_hold" ${project?.lifecycle === 'on_hold' ? 'selected' : ''}>${choose('معلق / متوقف', 'On Hold')}</option>
-              <option value="completed" ${project?.lifecycle === 'completed' ? 'selected' : ''}>${choose('مكتمل', 'Completed')}</option>
-              <option value="archived" ${project?.lifecycle === 'archived' ? 'selected' : ''}>${choose('مؤرشف', 'Archived')}</option>
-            </select>
-          </div>
-          <div class="field">
-            <label>${t('startDate')}</label>
-            <input type="date" name="startDate" value="${esc(project?.startDate || '')}" />
-          </div>
-          <div class="field">
-            <label>${t('dueDate')}</label>
-            <input type="date" name="dueDate" value="${esc(project?.dueDate || '')}" />
-          </div>
-        </div>
-      </div>
-
-      <!-- Section 3: Project Team & Members -->
-      <div style="margin-bottom:16px;padding-top:12px;border-top:1px solid var(--line);">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-          <div style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--teal);">
-            ${icon('users', 14)} ${choose('أعضاء فريق المشروع والمشاركون', 'Project Team Members & Collaborators')}
-          </div>
-          <span style="font-size:11px;color:var(--muted);">${choose('حدد أعضاء الفريق الذين يمكنهم الوصول للمشروع', 'Select team members who can access this project')}</span>
+      <div class="form-grid">
+        <!-- 🏢 القسم 1: البيانات الأساسية للمشروع -->
+        <div style="font-size:12px;font-weight:700;color:var(--teal);margin:4px 0 6px;grid-column:1/-1;border-bottom:1px solid var(--line);padding-bottom:4px;display:flex;align-items:center;gap:6px;">
+          ${icon('building', 14)} <span>${choose('البيانات الأساسية للمشروع', 'Core Project Information')}</span>
         </div>
 
-        <div id="project-members-chips-container" style="display:${currentMemberIds.length ? 'flex' : 'none'};flex-wrap:wrap;gap:6px;min-height:36px;padding:8px;background:var(--surface-soft);border:1px solid var(--line);border-radius:8px;margin-bottom:8px;align-items:center;">
-          ${buildProjectMemberChipsHtml(currentMemberIds)}
+        <div class="field full">
+          <label>${t('nameAr')} *</label>
+          <input name="nameAr" value="${esc(project?.nameAr || '')}" placeholder="${choose('مثال: فيلا النخيل — التصميم الداخلي', 'e.g. Al Nakheel Villa — Interior Design')}" required />
         </div>
-
-        <div style="position:relative;">
-          <input type="text" id="project-member-search" placeholder="${choose('ابحث عن عضو لإضافته لفريق المشروع...', 'Search user to add to project team...')}" autocomplete="off" style="width:100%;padding:8px 12px;font-size:12px;" />
-          <div id="project-member-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;max-height:200px;overflow-y:auto;background:var(--surface);border:1px solid var(--line);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,0.14);z-index:100;margin-top:4px;padding:4px;">
-          </div>
+        <div class="field">
+          <label>${t('nameEn')}</label>
+          <input name="nameEn" value="${esc(project?.nameEn || '')}" placeholder="Al Nakheel Villa — Interior Design" />
         </div>
-        <input type="hidden" name="memberIds" id="project-members-input" value="${esc(JSON.stringify(currentMemberIds))}" />
-      </div>
-
-      <!-- Section 4: Scope & Description -->
-      <div style="padding-top:12px;border-top:1px solid var(--line);">
-        <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;font-size:12px;font-weight:700;color:var(--teal);">
-          ${icon('document', 14)} ${choose('نطاق المشروع والملاحظات', 'Scope & Notes')}
+        <div class="field">
+          <label>${t('projectCode')} *</label>
+          <input name="code" value="${esc(defaultCode)}" placeholder="DARC-025" required />
         </div>
         <div class="field full">
+          <label>${t('client')}</label>
+          <input name="clientAr" value="${esc(project?.clientAr || '')}" placeholder="${choose('اسم العميل أو الجهة المالكة', 'Client or owning entity')}" />
+        </div>
+
+        <!-- 📅 القسم 2: الجدولة والإدارة -->
+        <div style="font-size:12px;font-weight:700;color:var(--teal);margin:16px 0 6px;grid-column:1/-1;padding-top:12px;border-top:1px solid var(--line);display:flex;align-items:center;gap:6px;">
+          ${icon('calendar', 14)} <span>${choose('الجدولة والإدارة', 'Management & Schedule')}</span>
+        </div>
+
+        <div class="field full">
+          <label>${t('manager')}</label>
+          <select name="managerId" id="project-manager-select">
+            <option value="">${choose('— بدون تحديد —', '— Unassigned —')}</option>
+            ${state.data.users.map((user) => `<option value="${esc(user.id)}" ${(project ? project.managerId === user.id : state.data.user.id === user.id) ? 'selected' : ''}>${esc(choose(user.name, user.nameEn || user.name))}</option>`).join('')}
+          </select>
+        </div>
+        <div class="field">
+          <label>${choose('أولوية المشروع', 'Project Priority')}</label>
+          <select name="priority">
+            <option value="low" ${(project?.priority === 'low' || project?.customFields?.priority === 'low') ? 'selected' : ''}>${choose('منخفضة', 'Low')}</option>
+            <option value="medium" ${(!project || project?.priority === 'medium' || project?.customFields?.priority === 'medium' || !project?.priority) ? 'selected' : ''}>${choose('متوسطة', 'Medium')}</option>
+            <option value="high" ${(project?.priority === 'high' || project?.customFields?.priority === 'high') ? 'selected' : ''}>${choose('عالية', 'High')}</option>
+            <option value="urgent" ${(project?.priority === 'urgent' || project?.customFields?.priority === 'urgent') ? 'selected' : ''}>${choose('حرجة / عاجلة', 'Urgent')}</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>${choose('حالة المشروع', 'Project Status')}</label>
+          <select name="lifecycle">
+            <option value="active" ${(!project || project.lifecycle === 'active') ? 'selected' : ''}>${choose('نشط (قيد التنفيذ)', 'Active (In Progress)')}</option>
+            <option value="planning" ${project?.lifecycle === 'planning' ? 'selected' : ''}>${choose('تخطيط', 'Planning')}</option>
+            <option value="on_hold" ${project?.lifecycle === 'on_hold' ? 'selected' : ''}>${choose('معلق / متوقف', 'On Hold')}</option>
+            <option value="completed" ${project?.lifecycle === 'completed' ? 'selected' : ''}>${choose('مكتمل', 'Completed')}</option>
+            <option value="archived" ${project?.lifecycle === 'archived' ? 'selected' : ''}>${choose('مؤرشف', 'Archived')}</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>${t('startDate')}</label>
+          <input type="date" name="startDate" value="${esc(project?.startDate || '')}" />
+        </div>
+        <div class="field">
+          <label>${t('dueDate')}</label>
+          <input type="date" name="dueDate" value="${esc(project?.dueDate || '')}" />
+        </div>
+
+        <!-- 👥 القسم 3: أعضاء فريق المشروع والمشاركون -->
+        <div style="font-size:12px;font-weight:700;color:var(--teal);margin:16px 0 6px;grid-column:1/-1;padding-top:12px;border-top:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;">
+          <div style="display:flex;align-items:center;gap:6px;">
+            ${icon('users', 14)} <span>${choose('أعضاء فريق المشروع والمشاركون', 'Project Team Members & Collaborators')}</span>
+          </div>
+          <span style="font-size:10px;color:var(--muted);font-weight:normal;">${choose('اختر من الفريق لإعطائهم حق الوصول للمشروع', 'Select team members who can access this project')}</span>
+        </div>
+
+        <div class="field full" style="position:relative;">
+          <!-- الشارات المحددة حالياً (Pre-rendered for zero layout shift) -->
+          <div id="project-members-chips-container" style="display:${currentMemberIds.length ? 'flex' : 'none'};flex-wrap:wrap;gap:6px;min-height:36px;padding:6px;background:var(--surface-soft);border:1px solid var(--line);border-radius:8px;margin-bottom:6px;align-items:center;">
+            ${buildProjectMemberChipsHtml(currentMemberIds)}
+          </div>
+
+          <!-- حقل البحث والإضافة السريعة -->
+          <div style="position:relative;display:flex;gap:6px;">
+            <input type="text" id="project-member-search" placeholder="${choose('ابحث عن عضو لإضافته لفريق المشروع...', 'Search team member to add to project team...')}" autocomplete="off" style="flex:1;padding:8px 12px;font-size:12px;" />
+          </div>
+
+          <!-- القائمة المنسدلة للبحث والاختيار -->
+          <div id="project-member-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;max-height:220px;overflow-y:auto;background:var(--surface);border:1px solid var(--line);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,0.14);z-index:100;margin-top:4px;padding:4px;">
+          </div>
+        </div>
+
+        <!-- 📝 القسم 4: نطاق المشروع والملاحظات -->
+        <div style="font-size:12px;font-weight:700;color:var(--teal);margin:16px 0 6px;grid-column:1/-1;padding-top:12px;border-top:1px solid var(--line);display:flex;align-items:center;gap:6px;">
+          ${icon('document', 14)} <span>${choose('نطاق المشروع والملاحظات', 'Scope & Notes')}</span>
+        </div>
+
+        <div class="field full">
+          <label>${choose('وصف ونطاق المشروع', 'Project Scope & Description')}</label>
           <textarea name="descriptionAr" placeholder="${choose('وصف مختصر لنطاق العمل، المعايير المعتمدة، وأي ملاحظات خاصة...', 'Brief description of scope, design criteria, and special notes...')}">${esc(project?.descriptionAr || '')}</textarea>
         </div>
       </div>
 
-      <div class="modal-actions" style="margin-top:20px;">
-        <button type="button" class="btn btn-ghost" data-action="close-modal">${t('cancel')}</button>
-        <button type="submit" class="btn btn-primary">${icon('check', 14)} ${project ? t('save') : t('create')}</button>
+      <div class="modal-actions" style="display:flex;align-items:center;justify-content:space-between;width:100%;flex-wrap:wrap;gap:10px;margin-top:20px;">
+        <div>
+          ${project && (can('delete_projects') || isAdmin()) ? `
+            <button type="button" class="btn btn-ghost" data-action="delete-project" data-project-id="${esc(project.id)}" style="color:var(--red);display:inline-flex;align-items:center;gap:6px;" title="${choose('حذف المشروع ونقله لسلة المهملات', 'Delete project and move to trash')}">
+              ${icon('trash', 14)} ${choose('حذف المشروع', 'Delete Project')}
+            </button>
+          ` : ''}
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <button type="button" class="btn btn-ghost" data-action="close-modal">${t('cancel')}</button>
+          <button type="submit" class="btn btn-primary">${icon('check', 14)} ${project ? t('save') : t('create')}</button>
+        </div>
       </div>
     </form>
   `;

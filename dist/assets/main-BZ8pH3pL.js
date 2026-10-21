@@ -1,5 +1,5 @@
-const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["assets/api-Cl2-uCgl.js","assets/ui-DYyyctAF.js","assets/offline-D3uOjEmC.js","assets/utils-BJC_1mrk.js"])))=>i.map(i=>d[i]);
-import{a as e,i as n,n as r,r as i,t as a}from"./ui-DYyyctAF.js";import{a as o,i as s,l as c,r as l,s as u}from"./offline-D3uOjEmC.js";import{a as d,c as f,d as p,f as m,g as h,h as g,i as _,l as v,m as y,n as b,o as x,p as S,r as C,s as w,t as ee,u as T}from"./utils-BJC_1mrk.js";import{a as E,n as D,t as te}from"./api-Cl2-uCgl.js";(function(){let e=document.createElement(`link`).relList;if(e&&e.supports&&e.supports(`modulepreload`))return;for(let e of document.querySelectorAll(`link[rel="modulepreload"]`))r(e);new MutationObserver(e=>{for(let n of e)if(n.type===`childList`)for(let e of n.addedNodes)e.tagName===`LINK`&&e.rel===`modulepreload`&&r(e)}).observe(document,{childList:!0,subtree:!0});function n(e){let n={};return e.integrity&&(n.integrity=e.integrity),e.referrerPolicy&&(n.referrerPolicy=e.referrerPolicy),n.credentials=e.crossOrigin===`use-credentials`?`include`:e.crossOrigin===`anonymous`?`omit`:`same-origin`,n}function r(e){if(e.ep)return;e.ep=!0;let r=n(e);fetch(e.href,r)}})();var ne=e({calculatePasswordStrength:()=>re,openForcePasswordModal:()=>ue,renderActivation:()=>ce,renderLogin:()=>O,renderResetPassword:()=>le,renderStrengthMeterHtml:()=>ie});function re(e){let r=String(e||``);if(!r)return{score:0,label:``,percent:0,color:`var(--line)`};let i=0;return r.length>=10&&(i+=1),/[a-z]/.test(r)&&/[A-Z]/.test(r)&&(i+=1),/\d/.test(r)&&(i+=1),/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?~`§±]/.test(r)&&(i+=1),i===1?{score:1,label:n.lang===`ar`?`ضعيفة جداً`:`Very weak`,percent:25,color:`var(--red)`}:i===2?{score:2,label:n.lang===`ar`?`متوسطة`:`Fair`,percent:50,color:`var(--amber)`}:i===3?{score:3,label:n.lang===`ar`?`جيدة`:`Good`,percent:75,color:`var(--blue)`}:{score:4,label:n.lang===`ar`?`قوية وممتازة 🛡️`:`Strong & Secure 🛡️`,percent:100,color:`var(--mint-strong)`}}function ie(e=`strength`){return`
+const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["assets/api-B-s2YwS-.js","assets/ui-DYyyctAF.js","assets/offline-D3uOjEmC.js","assets/utils-BJC_1mrk.js"])))=>i.map(i=>d[i]);
+import{a as e,i as n,n as r,r as i,t as a}from"./ui-DYyyctAF.js";import{a as o,i as s,l as c,r as l,s as u}from"./offline-D3uOjEmC.js";import{a as d,c as f,d as p,f as m,g as h,h as g,i as _,l as v,m as y,n as b,o as x,p as S,r as C,s as w,t as ee,u as T}from"./utils-BJC_1mrk.js";import{a as E,n as D,t as te}from"./api-B-s2YwS-.js";(function(){let e=document.createElement(`link`).relList;if(e&&e.supports&&e.supports(`modulepreload`))return;for(let e of document.querySelectorAll(`link[rel="modulepreload"]`))r(e);new MutationObserver(e=>{for(let n of e)if(n.type===`childList`)for(let e of n.addedNodes)e.tagName===`LINK`&&e.rel===`modulepreload`&&r(e)}).observe(document,{childList:!0,subtree:!0});function n(e){let n={};return e.integrity&&(n.integrity=e.integrity),e.referrerPolicy&&(n.referrerPolicy=e.referrerPolicy),n.credentials=e.crossOrigin===`use-credentials`?`include`:e.crossOrigin===`anonymous`?`omit`:`same-origin`,n}function r(e){if(e.ep)return;e.ep=!0;let r=n(e);fetch(e.href,r)}})();var ne=e({calculatePasswordStrength:()=>re,openForcePasswordModal:()=>ue,renderActivation:()=>ce,renderLogin:()=>O,renderResetPassword:()=>le,renderStrengthMeterHtml:()=>ie});function re(e){let r=String(e||``);if(!r)return{score:0,label:``,percent:0,color:`var(--line)`};let i=0;return r.length>=10&&(i+=1),/[a-z]/.test(r)&&/[A-Z]/.test(r)&&(i+=1),/\d/.test(r)&&(i+=1),/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?~`§±]/.test(r)&&(i+=1),i===1?{score:1,label:n.lang===`ar`?`ضعيفة جداً`:`Very weak`,percent:25,color:`var(--red)`}:i===2?{score:2,label:n.lang===`ar`?`متوسطة`:`Fair`,percent:50,color:`var(--amber)`}:i===3?{score:3,label:n.lang===`ar`?`جيدة`:`Good`,percent:75,color:`var(--blue)`}:{score:4,label:n.lang===`ar`?`قوية وممتازة 🛡️`:`Strong & Secure 🛡️`,percent:100,color:`var(--mint-strong)`}}function ie(e=`strength`){return`
     <div id="${e}-meter-wrap" style="margin-top:6px;display:none;flex-direction:column;gap:4px;">
       <div style="height:4px;width:100%;background:var(--line);border-radius:2px;overflow:hidden;display:flex;">
         <div id="${e}-meter-bar" style="height:100%;width:0%;transition:width 0.25s ease, background 0.25s ease;"></div>
@@ -1099,108 +1099,118 @@ import{a as e,i as n,n as r,r as i,t as a}from"./ui-DYyyctAF.js";import{a as o,i
       </span>
     `}).join(``)}function Qe(e=null){let r=e?.code||`DARC-${String((n.data?.projects?.length||0)+1).padStart(3,`0`)}`,i=e?P(e).internalMembers.map(e=>e.id):[],a=i.length>0?i:[n.data?.user?.id].filter(Boolean),o=`
     <form id="project-form" data-project-id="${esc(e?.id||``)}">
-      <!-- Section 1: Core Details -->
-      <div style="margin-bottom:16px;">
-        <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;font-size:12px;font-weight:700;color:var(--teal);">
-          ${icon(`building`,14)} ${choose(`البيانات الأساسية للمشروع`,`Core Project Information`)}
-        </div>
-        <div class="form-grid">
-          <div class="field full">
-            <label>${t(`nameAr`)}</label>
-            <input name="nameAr" value="${esc(e?.nameAr||``)}" placeholder="${choose(`مثال: فيلا النخيل — التصميم الداخلي`,`e.g. Al Nakheel Villa — Interior Design`)}" required />
-          </div>
-          <div class="field">
-            <label>${t(`nameEn`)}</label>
-            <input name="nameEn" value="${esc(e?.nameEn||``)}" placeholder="Al Nakheel Villa — Interior Design" />
-          </div>
-          <div class="field">
-            <label>${t(`projectCode`)}</label>
-            <input name="code" value="${esc(r)}" placeholder="DARC-025" required />
-          </div>
-          <div class="field full">
-            <label>${t(`client`)}</label>
-            <input name="clientAr" value="${esc(e?.clientAr||``)}" placeholder="${choose(`اسم العميل أو الجهة المالكة`,`Client or owning entity`)}" />
-          </div>
-        </div>
-      </div>
+      <input type="hidden" name="memberIds" id="project-members-input" value="${esc(JSON.stringify(a))}" />
 
-      <!-- Section 2: Management & Schedule -->
-      <div style="margin-bottom:16px;padding-top:12px;border-top:1px solid var(--line);">
-        <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;font-size:12px;font-weight:700;color:var(--teal);">
-          ${icon(`calendar`,14)} ${choose(`الجدولة والإدارة`,`Management & Schedule`)}
-        </div>
-        <div class="form-grid">
-          <div class="field">
-            <label>${t(`manager`)}</label>
-            <select name="managerId" id="project-manager-select">
-              <option value="">${choose(`— بدون تحديد —`,`— Unassigned —`)}</option>
-              ${n.data.users.map(r=>`<option value="${esc(r.id)}" ${(e?e.managerId===r.id:n.data.user.id===r.id)?`selected`:``}>${esc(choose(r.name,r.nameEn||r.name))}</option>`).join(``)}
-            </select>
-          </div>
-          <div class="field">
-            <label>${choose(`أولوية المشروع`,`Project Priority`)}</label>
-            <select name="priority">
-              <option value="low" ${e?.priority===`low`||e?.customFields?.priority===`low`?`selected`:``}>${choose(`منخفضة`,`Low`)}</option>
-              <option value="medium" ${!e||e?.priority===`medium`||e?.customFields?.priority===`medium`||!e?.priority?`selected`:``}>${choose(`متوسطة`,`Medium`)}</option>
-              <option value="high" ${e?.priority===`high`||e?.customFields?.priority===`high`?`selected`:``}>${choose(`عالية`,`High`)}</option>
-              <option value="urgent" ${e?.priority===`urgent`||e?.customFields?.priority===`urgent`?`selected`:``}>${choose(`حرجة / عاجلة`,`Urgent`)}</option>
-            </select>
-          </div>
-          <div class="field">
-            <label>${choose(`حالة المشروع`,`Project Status`)}</label>
-            <select name="lifecycle">
-              <option value="active" ${!e||e.lifecycle===`active`?`selected`:``}>${choose(`نشط (قيد التنفيذ)`,`Active (In Progress)`)}</option>
-              <option value="planning" ${e?.lifecycle===`planning`?`selected`:``}>${choose(`تخطيط`,`Planning`)}</option>
-              <option value="on_hold" ${e?.lifecycle===`on_hold`?`selected`:``}>${choose(`معلق / متوقف`,`On Hold`)}</option>
-              <option value="completed" ${e?.lifecycle===`completed`?`selected`:``}>${choose(`مكتمل`,`Completed`)}</option>
-              <option value="archived" ${e?.lifecycle===`archived`?`selected`:``}>${choose(`مؤرشف`,`Archived`)}</option>
-            </select>
-          </div>
-          <div class="field">
-            <label>${t(`startDate`)}</label>
-            <input type="date" name="startDate" value="${esc(e?.startDate||``)}" />
-          </div>
-          <div class="field">
-            <label>${t(`dueDate`)}</label>
-            <input type="date" name="dueDate" value="${esc(e?.dueDate||``)}" />
-          </div>
-        </div>
-      </div>
-
-      <!-- Section 3: Project Team & Members -->
-      <div style="margin-bottom:16px;padding-top:12px;border-top:1px solid var(--line);">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-          <div style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--teal);">
-            ${icon(`users`,14)} ${choose(`أعضاء فريق المشروع والمشاركون`,`Project Team Members & Collaborators`)}
-          </div>
-          <span style="font-size:11px;color:var(--muted);">${choose(`حدد أعضاء الفريق الذين يمكنهم الوصول للمشروع`,`Select team members who can access this project`)}</span>
+      <div class="form-grid">
+        <!-- 🏢 القسم 1: البيانات الأساسية للمشروع -->
+        <div style="font-size:12px;font-weight:700;color:var(--teal);margin:4px 0 6px;grid-column:1/-1;border-bottom:1px solid var(--line);padding-bottom:4px;display:flex;align-items:center;gap:6px;">
+          ${icon(`building`,14)} <span>${choose(`البيانات الأساسية للمشروع`,`Core Project Information`)}</span>
         </div>
 
-        <div id="project-members-chips-container" style="display:${a.length?`flex`:`none`};flex-wrap:wrap;gap:6px;min-height:36px;padding:8px;background:var(--surface-soft);border:1px solid var(--line);border-radius:8px;margin-bottom:8px;align-items:center;">
-          ${Ze(a)}
+        <div class="field full">
+          <label>${t(`nameAr`)} *</label>
+          <input name="nameAr" value="${esc(e?.nameAr||``)}" placeholder="${choose(`مثال: فيلا النخيل — التصميم الداخلي`,`e.g. Al Nakheel Villa — Interior Design`)}" required />
         </div>
-
-        <div style="position:relative;">
-          <input type="text" id="project-member-search" placeholder="${choose(`ابحث عن عضو لإضافته لفريق المشروع...`,`Search user to add to project team...`)}" autocomplete="off" style="width:100%;padding:8px 12px;font-size:12px;" />
-          <div id="project-member-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;max-height:200px;overflow-y:auto;background:var(--surface);border:1px solid var(--line);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,0.14);z-index:100;margin-top:4px;padding:4px;">
-          </div>
+        <div class="field">
+          <label>${t(`nameEn`)}</label>
+          <input name="nameEn" value="${esc(e?.nameEn||``)}" placeholder="Al Nakheel Villa — Interior Design" />
         </div>
-        <input type="hidden" name="memberIds" id="project-members-input" value="${esc(JSON.stringify(a))}" />
-      </div>
-
-      <!-- Section 4: Scope & Description -->
-      <div style="padding-top:12px;border-top:1px solid var(--line);">
-        <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;font-size:12px;font-weight:700;color:var(--teal);">
-          ${icon(`document`,14)} ${choose(`نطاق المشروع والملاحظات`,`Scope & Notes`)}
+        <div class="field">
+          <label>${t(`projectCode`)} *</label>
+          <input name="code" value="${esc(r)}" placeholder="DARC-025" required />
         </div>
         <div class="field full">
+          <label>${t(`client`)}</label>
+          <input name="clientAr" value="${esc(e?.clientAr||``)}" placeholder="${choose(`اسم العميل أو الجهة المالكة`,`Client or owning entity`)}" />
+        </div>
+
+        <!-- 📅 القسم 2: الجدولة والإدارة -->
+        <div style="font-size:12px;font-weight:700;color:var(--teal);margin:16px 0 6px;grid-column:1/-1;padding-top:12px;border-top:1px solid var(--line);display:flex;align-items:center;gap:6px;">
+          ${icon(`calendar`,14)} <span>${choose(`الجدولة والإدارة`,`Management & Schedule`)}</span>
+        </div>
+
+        <div class="field full">
+          <label>${t(`manager`)}</label>
+          <select name="managerId" id="project-manager-select">
+            <option value="">${choose(`— بدون تحديد —`,`— Unassigned —`)}</option>
+            ${n.data.users.map(r=>`<option value="${esc(r.id)}" ${(e?e.managerId===r.id:n.data.user.id===r.id)?`selected`:``}>${esc(choose(r.name,r.nameEn||r.name))}</option>`).join(``)}
+          </select>
+        </div>
+        <div class="field">
+          <label>${choose(`أولوية المشروع`,`Project Priority`)}</label>
+          <select name="priority">
+            <option value="low" ${e?.priority===`low`||e?.customFields?.priority===`low`?`selected`:``}>${choose(`منخفضة`,`Low`)}</option>
+            <option value="medium" ${!e||e?.priority===`medium`||e?.customFields?.priority===`medium`||!e?.priority?`selected`:``}>${choose(`متوسطة`,`Medium`)}</option>
+            <option value="high" ${e?.priority===`high`||e?.customFields?.priority===`high`?`selected`:``}>${choose(`عالية`,`High`)}</option>
+            <option value="urgent" ${e?.priority===`urgent`||e?.customFields?.priority===`urgent`?`selected`:``}>${choose(`حرجة / عاجلة`,`Urgent`)}</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>${choose(`حالة المشروع`,`Project Status`)}</label>
+          <select name="lifecycle">
+            <option value="active" ${!e||e.lifecycle===`active`?`selected`:``}>${choose(`نشط (قيد التنفيذ)`,`Active (In Progress)`)}</option>
+            <option value="planning" ${e?.lifecycle===`planning`?`selected`:``}>${choose(`تخطيط`,`Planning`)}</option>
+            <option value="on_hold" ${e?.lifecycle===`on_hold`?`selected`:``}>${choose(`معلق / متوقف`,`On Hold`)}</option>
+            <option value="completed" ${e?.lifecycle===`completed`?`selected`:``}>${choose(`مكتمل`,`Completed`)}</option>
+            <option value="archived" ${e?.lifecycle===`archived`?`selected`:``}>${choose(`مؤرشف`,`Archived`)}</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>${t(`startDate`)}</label>
+          <input type="date" name="startDate" value="${esc(e?.startDate||``)}" />
+        </div>
+        <div class="field">
+          <label>${t(`dueDate`)}</label>
+          <input type="date" name="dueDate" value="${esc(e?.dueDate||``)}" />
+        </div>
+
+        <!-- 👥 القسم 3: أعضاء فريق المشروع والمشاركون -->
+        <div style="font-size:12px;font-weight:700;color:var(--teal);margin:16px 0 6px;grid-column:1/-1;padding-top:12px;border-top:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;">
+          <div style="display:flex;align-items:center;gap:6px;">
+            ${icon(`users`,14)} <span>${choose(`أعضاء فريق المشروع والمشاركون`,`Project Team Members & Collaborators`)}</span>
+          </div>
+          <span style="font-size:10px;color:var(--muted);font-weight:normal;">${choose(`اختر من الفريق لإعطائهم حق الوصول للمشروع`,`Select team members who can access this project`)}</span>
+        </div>
+
+        <div class="field full" style="position:relative;">
+          <!-- الشارات المحددة حالياً (Pre-rendered for zero layout shift) -->
+          <div id="project-members-chips-container" style="display:${a.length?`flex`:`none`};flex-wrap:wrap;gap:6px;min-height:36px;padding:6px;background:var(--surface-soft);border:1px solid var(--line);border-radius:8px;margin-bottom:6px;align-items:center;">
+            ${Ze(a)}
+          </div>
+
+          <!-- حقل البحث والإضافة السريعة -->
+          <div style="position:relative;display:flex;gap:6px;">
+            <input type="text" id="project-member-search" placeholder="${choose(`ابحث عن عضو لإضافته لفريق المشروع...`,`Search team member to add to project team...`)}" autocomplete="off" style="flex:1;padding:8px 12px;font-size:12px;" />
+          </div>
+
+          <!-- القائمة المنسدلة للبحث والاختيار -->
+          <div id="project-member-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;max-height:220px;overflow-y:auto;background:var(--surface);border:1px solid var(--line);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,0.14);z-index:100;margin-top:4px;padding:4px;">
+          </div>
+        </div>
+
+        <!-- 📝 القسم 4: نطاق المشروع والملاحظات -->
+        <div style="font-size:12px;font-weight:700;color:var(--teal);margin:16px 0 6px;grid-column:1/-1;padding-top:12px;border-top:1px solid var(--line);display:flex;align-items:center;gap:6px;">
+          ${icon(`document`,14)} <span>${choose(`نطاق المشروع والملاحظات`,`Scope & Notes`)}</span>
+        </div>
+
+        <div class="field full">
+          <label>${choose(`وصف ونطاق المشروع`,`Project Scope & Description`)}</label>
           <textarea name="descriptionAr" placeholder="${choose(`وصف مختصر لنطاق العمل، المعايير المعتمدة، وأي ملاحظات خاصة...`,`Brief description of scope, design criteria, and special notes...`)}">${esc(e?.descriptionAr||``)}</textarea>
         </div>
       </div>
 
-      <div class="modal-actions" style="margin-top:20px;">
-        <button type="button" class="btn btn-ghost" data-action="close-modal">${t(`cancel`)}</button>
-        <button type="submit" class="btn btn-primary">${icon(`check`,14)} ${e?t(`save`):t(`create`)}</button>
+      <div class="modal-actions" style="display:flex;align-items:center;justify-content:space-between;width:100%;flex-wrap:wrap;gap:10px;margin-top:20px;">
+        <div>
+          ${e&&(can(`delete_projects`)||isAdmin())?`
+            <button type="button" class="btn btn-ghost" data-action="delete-project" data-project-id="${esc(e.id)}" style="color:var(--red);display:inline-flex;align-items:center;gap:6px;" title="${choose(`حذف المشروع ونقله لسلة المهملات`,`Delete project and move to trash`)}">
+              ${icon(`trash`,14)} ${choose(`حذف المشروع`,`Delete Project`)}
+            </button>
+          `:``}
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <button type="button" class="btn btn-ghost" data-action="close-modal">${t(`cancel`)}</button>
+          <button type="submit" class="btn btn-primary">${icon(`check`,14)} ${e?t(`save`):t(`create`)}</button>
+        </div>
       </div>
     </form>
   `;document.getElementById(`modal-root`).innerHTML=modalShell(e?choose(`تعديل بيانات المشروع`,`Edit Project`):t(`addProject`),choose(`إدارة البيانات الأساسية وحالة متابعة المشروع والجدول الزمني.`,`Manage project details, schedule, and workflow health.`),o,`project`),setTimeout(()=>{let e=document.getElementById(`project-member-search`),r=document.getElementById(`project-member-dropdown`),i=document.getElementById(`project-members-chips-container`),o=document.getElementById(`project-members-input`),s=document.getElementById(`project-manager-select`);if(!e||!r||!i||!o)return;let c=[...a];function l(){i.innerHTML=Ze(c),i.style.display=c.length?`flex`:`none`,o.value=JSON.stringify(c),i.querySelectorAll(`.btn-remove-project-member`).forEach(e=>{e.addEventListener(`click`,n=>{n.stopPropagation();let r=e.dataset.uid;c=c.filter(e=>e!==r),l()})})}s&&s.addEventListener(`change`,()=>{let e=s.value;e&&!c.includes(e)&&(c.push(e),l())});function u(i=``){let a=i.toLowerCase().trim(),o=(n.data?.users||[]).filter(e=>!c.includes(e.id)&&(!a||e.name&&e.name.toLowerCase().includes(a)||e.nameEn&&e.nameEn.toLowerCase().includes(a)||e.email&&e.email.toLowerCase().includes(a)));o.length?(r.innerHTML=o.map(e=>`
@@ -1825,7 +1835,7 @@ import{a as e,i as n,n as r,r as i,t as a}from"./ui-DYyyctAF.js";import{a as o,i
           `).join(``)}
         </div>
       </section>
-    `),n.settingsSection===`trash`){!n.trashLoaded&&!n._trashFetching&&(n._trashFetching=!0,E(async()=>{let{api:e}=await import(`./api-Cl2-uCgl.js`).then(e=>e.r);return{api:e}},__vite__mapDeps([0,1,2,3])).then(({api:e})=>e(`/api/trash`)).then(e=>{n.trash=Array.isArray(e)?e:e.trash||[...(e.projects||[]).map(e=>({...e,type:`project`})),...(e.tasks||[]).map(e=>({...e,type:`task`})),...(e.documents||[]).map(e=>({...e,type:`document`}))],n.trashLoaded=!0,n._trashFetching=!1,E(()=>Promise.resolve().then(()=>vt).then(e=>e.renderView()),void 0)}).catch(e=>{n._trashFetching=!1,console.error(`[Trash fetch error]`,e)}));let i=n.trash||[],a=n.trashFilter||`all`,o=(n.trashQuery||``).trim().toLowerCase(),c=i.filter(e=>{if(a!==`all`&&e.type!==a)return!1;if(!o)return!0;let n=(choose(e.nameAr||e.titleAr,e.nameEn||e.titleEn)||e.name||e.title||e.originalName||``).toLowerCase(),r=(e.code||e.projectCode||``).toLowerCase(),i=(e.projectNameAr||e.projectNameEn||``).toLowerCase();return n.includes(o)||r.includes(o)||i.includes(o)}),l=i.filter(e=>e.type===`project`).length,u=i.filter(e=>e.type===`task`).length,d=i.filter(e=>e.type===`document`).length,f=i.length?`
+    `),n.settingsSection===`trash`){!n.trashLoaded&&!n._trashFetching&&(n._trashFetching=!0,E(async()=>{let{api:e}=await import(`./api-B-s2YwS-.js`).then(e=>e.r);return{api:e}},__vite__mapDeps([0,1,2,3])).then(({api:e})=>e(`/api/trash`)).then(e=>{n.trash=Array.isArray(e)?e:e.trash||[...(e.projects||[]).map(e=>({...e,type:`project`})),...(e.tasks||[]).map(e=>({...e,type:`task`})),...(e.documents||[]).map(e=>({...e,type:`document`}))],n.trashLoaded=!0,n._trashFetching=!1,E(()=>Promise.resolve().then(()=>vt).then(e=>e.renderView()),void 0)}).catch(e=>{n._trashFetching=!1,console.error(`[Trash fetch error]`,e)}));let i=n.trash||[],a=n.trashFilter||`all`,o=(n.trashQuery||``).trim().toLowerCase(),c=i.filter(e=>{if(a!==`all`&&e.type!==a)return!1;if(!o)return!0;let n=(choose(e.nameAr||e.titleAr,e.nameEn||e.titleEn)||e.name||e.title||e.originalName||``).toLowerCase(),r=(e.code||e.projectCode||``).toLowerCase(),i=(e.projectNameAr||e.projectNameEn||``).toLowerCase();return n.includes(o)||r.includes(o)||i.includes(o)}),l=i.filter(e=>e.type===`project`).length,u=i.filter(e=>e.type===`task`).length,d=i.filter(e=>e.type===`document`).length,f=i.length?`
       <div class="trash-notice-banner">
         <div class="trash-notice-icon">${icon(`info`,16)}</div>
         <div class="trash-notice-text">
@@ -2257,4 +2267,4 @@ import{a as e,i as n,n as r,r as i,t as a}from"./ui-DYyyctAF.js";import{a as o,i
       border: 1px solid var(--teal, #0d9488);
       background: var(--surface, #ffffff);
       border-radius: 12px;
-    `,document.body.appendChild(Z),X.classList.add(`is-dragging`),X.style.opacity=`0.25`,X.style.pointerEvents=`none`;let n=X.closest(`.board-column`);if(n){n.classList.add(`drag-over`);let e=n.querySelector(`.board-cards`);if(e){let n=Ht(),i=Ut(e,r.clientY);i&&n.nextSibling!==i?e.insertBefore(n,i):e.contains(n)||e.appendChild(n)}}},220)},{passive:!0}),document.addEventListener(`touchmove`,e=>{if(!X)return;let n=e.touches[0],r=Math.abs(n.clientX-Gt),i=Math.abs(n.clientY-Kt);if(!$){(r>8||i>8)&&(Q&&=(clearTimeout(Q),null),X=null);return}if(e.cancelable&&e.preventDefault(),Z){let e=n.clientX-qt,r=n.clientY-Jt;Z.style.transform=`translate3d(${e}px, ${r}px, 0) scale(1.03) rotate(1.5deg)`}let a=document.querySelector(`.board, .board-columns, .tasks-board, [data-board]`);a&&(n.clientX<45?a.scrollLeft-=12:n.clientX>window.innerWidth-45&&(a.scrollLeft+=12));let o=document.elementFromPoint(n.clientX,n.clientY)?.closest(`.board-column`);if(document.querySelectorAll(`.board-column`).forEach(e=>e.classList.toggle(`drag-over`,e===o)),o){let e=o.querySelector(`.board-cards`);if(e){let r=Ht(),i=Ut(e,n.clientY);i?r.nextSibling!==i&&e.insertBefore(r,i):(!e.contains(r)||e.lastElementChild!==r)&&e.appendChild(r)}}},{passive:!1}),document.addEventListener(`touchend`,async e=>{if(Q&&=(clearTimeout(Q),null),X){if($){let n=e.changedTouches[0],r=document.elementFromPoint(n.clientX,n.clientY)?.closest(`.board-column`)||q&&q.closest(`.board-column`),i=J;Yt(),r&&i&&await Wt(r,n.clientY,i)}else Yt()}}),document.addEventListener(`touchcancel`,()=>{Yt()});var Xt=e({initRealtimeConnection:()=>en,notifyStateMutation:()=>tn,triggerImmediateSync:()=>$t}),Zt=null,Qt=!1;function $t(e=`realtime`){Zt&&clearTimeout(Zt),Zt=setTimeout(async()=>{if(!(typeof document<`u`&&document.hidden)&&n.data&&n.view)try{await bt(!0)}catch(e){console.warn(`[Realtime] Sync error:`,e.message)}},250)}function en(){if(!Qt){if(Qt=!0,typeof BroadcastChannel<`u`){let e=new BroadcastChannel(`darc_state_sync`);e.onmessage=e=>{e.data?.type===`STATE_MUTATION`&&$t(`broadcast_channel`)},window._darcBroadcastChannel=e}window.addEventListener(`online`,async()=>{n.isOffline=!1;let{syncPendingMutations:e}=await E(async()=>{let{syncPendingMutations:e}=await import(`./offline-D3uOjEmC.js`).then(e=>e.o);return{syncPendingMutations:e}},__vite__mapDeps([2,1])),{api:r}=await E(async()=>{let{api:e}=await import(`./api-Cl2-uCgl.js`).then(e=>e.r);return{api:e}},__vite__mapDeps([0,1,2,3])),{choose:i}=await E(async()=>{let{choose:e}=await import(`./utils-BJC_1mrk.js`).then(e=>e.g);return{choose:e}},__vite__mapDeps([3,1])),{showToast:a}=await E(async()=>{let{showToast:e}=await import(`./ui-DYyyctAF.js`).then(e=>e.r);return{showToast:e}},[]),o=await e(r);o&&o.synced>0?a(i(`تمت استعادة الاتصال ومزامنة ${o.synced} عمليات معلقة بنجاح! 🚀`,`Internet restored! Synced ${o.synced} pending actions successfully! 🚀`),!1):a(i(`تمت استعادة الاتصال بالإنترنت`,`Internet connection restored`),!1),$t(`online`)}),window.addEventListener(`offline`,async()=>{n.isOffline=!0;let{choose:e}=await E(async()=>{let{choose:e}=await import(`./utils-BJC_1mrk.js`).then(e=>e.g);return{choose:e}},__vite__mapDeps([3,1])),{showToast:r}=await E(async()=>{let{showToast:e}=await import(`./ui-DYyyctAF.js`).then(e=>e.r);return{showToast:e}},[]),{renderApp:i}=await E(async()=>{let{renderApp:e}=await Promise.resolve().then(()=>vt);return{renderApp:e}},void 0);i(),r(e(`أنت في وضع عدم الاتصال (Offline Mode) — يمكنك مواصلة العمل وسيتم الرفع فور عودة الإنترنت`,`Offline Mode — you can continue working, changes will auto-sync on reconnect`),!0)})}}function tn(){if(window._darcBroadcastChannel)try{window._darcBroadcastChannel.postMessage({type:`STATE_MUTATION`,timestamp:Date.now()})}catch{}}document.documentElement.dataset.theme=n.theme,document.documentElement.lang=n.lang,document.documentElement.dir=n.lang===`ar`?`rtl`:`ltr`,n.lang===`en`?document.body.classList.add(`is-ltr`):document.body.classList.remove(`is-ltr`),Object.assign(window,i),Object.assign(window,ne),Object.assign(window,de),Object.assign(window,Be),Object.assign(window,ye),Object.assign(window,rt),Object.assign(window,ot),Object.assign(window,ct),Object.assign(window,gt),Object.assign(window,vt),Object.assign(window,kt),Object.assign(window,h),Ot(),document.addEventListener(`click`,e=>{handleClick(e).catch(e=>showToast(e.message,!0))}),document.addEventListener(`submit`,e=>{handleSubmit(e).catch(e=>showToast(e.message,!0))}),document.addEventListener(`input`,handleInput),document.addEventListener(`change`,handleChange),document.addEventListener(`keydown`,e=>{e.key===`Escape`&&closeModal()});var nn=null;window.addEventListener(`resize`,()=>{n.view===`project-detail`&&n.projectTab===`timeline`&&(nn||=requestAnimationFrame(()=>{nn=null,drawTimelineArrows()}))}),window.addEventListener(`error`,e=>{console.error(`Runtime Error:`,e.error),typeof showToast==`function`&&showToast(`خطأ برمجي: ${e.message}`,!0)}),`serviceWorker`in navigator&&window.location.protocol.startsWith(`http`)&&window.addEventListener(`load`,()=>{navigator.serviceWorker.register(`/sw.js`).catch(e=>{console.warn(`[PWA] ServiceWorker registration skipped:`,e.message)})}),en(),init();export{Xt as t};
+    `,document.body.appendChild(Z),X.classList.add(`is-dragging`),X.style.opacity=`0.25`,X.style.pointerEvents=`none`;let n=X.closest(`.board-column`);if(n){n.classList.add(`drag-over`);let e=n.querySelector(`.board-cards`);if(e){let n=Ht(),i=Ut(e,r.clientY);i&&n.nextSibling!==i?e.insertBefore(n,i):e.contains(n)||e.appendChild(n)}}},220)},{passive:!0}),document.addEventListener(`touchmove`,e=>{if(!X)return;let n=e.touches[0],r=Math.abs(n.clientX-Gt),i=Math.abs(n.clientY-Kt);if(!$){(r>8||i>8)&&(Q&&=(clearTimeout(Q),null),X=null);return}if(e.cancelable&&e.preventDefault(),Z){let e=n.clientX-qt,r=n.clientY-Jt;Z.style.transform=`translate3d(${e}px, ${r}px, 0) scale(1.03) rotate(1.5deg)`}let a=document.querySelector(`.board, .board-columns, .tasks-board, [data-board]`);a&&(n.clientX<45?a.scrollLeft-=12:n.clientX>window.innerWidth-45&&(a.scrollLeft+=12));let o=document.elementFromPoint(n.clientX,n.clientY)?.closest(`.board-column`);if(document.querySelectorAll(`.board-column`).forEach(e=>e.classList.toggle(`drag-over`,e===o)),o){let e=o.querySelector(`.board-cards`);if(e){let r=Ht(),i=Ut(e,n.clientY);i?r.nextSibling!==i&&e.insertBefore(r,i):(!e.contains(r)||e.lastElementChild!==r)&&e.appendChild(r)}}},{passive:!1}),document.addEventListener(`touchend`,async e=>{if(Q&&=(clearTimeout(Q),null),X){if($){let n=e.changedTouches[0],r=document.elementFromPoint(n.clientX,n.clientY)?.closest(`.board-column`)||q&&q.closest(`.board-column`),i=J;Yt(),r&&i&&await Wt(r,n.clientY,i)}else Yt()}}),document.addEventListener(`touchcancel`,()=>{Yt()});var Xt=e({initRealtimeConnection:()=>en,notifyStateMutation:()=>tn,triggerImmediateSync:()=>$t}),Zt=null,Qt=!1;function $t(e=`realtime`){Zt&&clearTimeout(Zt),Zt=setTimeout(async()=>{if(!(typeof document<`u`&&document.hidden)&&n.data&&n.view)try{await bt(!0)}catch(e){console.warn(`[Realtime] Sync error:`,e.message)}},250)}function en(){if(!Qt){if(Qt=!0,typeof BroadcastChannel<`u`){let e=new BroadcastChannel(`darc_state_sync`);e.onmessage=e=>{e.data?.type===`STATE_MUTATION`&&$t(`broadcast_channel`)},window._darcBroadcastChannel=e}window.addEventListener(`online`,async()=>{n.isOffline=!1;let{syncPendingMutations:e}=await E(async()=>{let{syncPendingMutations:e}=await import(`./offline-D3uOjEmC.js`).then(e=>e.o);return{syncPendingMutations:e}},__vite__mapDeps([2,1])),{api:r}=await E(async()=>{let{api:e}=await import(`./api-B-s2YwS-.js`).then(e=>e.r);return{api:e}},__vite__mapDeps([0,1,2,3])),{choose:i}=await E(async()=>{let{choose:e}=await import(`./utils-BJC_1mrk.js`).then(e=>e.g);return{choose:e}},__vite__mapDeps([3,1])),{showToast:a}=await E(async()=>{let{showToast:e}=await import(`./ui-DYyyctAF.js`).then(e=>e.r);return{showToast:e}},[]),o=await e(r);o&&o.synced>0?a(i(`تمت استعادة الاتصال ومزامنة ${o.synced} عمليات معلقة بنجاح! 🚀`,`Internet restored! Synced ${o.synced} pending actions successfully! 🚀`),!1):a(i(`تمت استعادة الاتصال بالإنترنت`,`Internet connection restored`),!1),$t(`online`)}),window.addEventListener(`offline`,async()=>{n.isOffline=!0;let{choose:e}=await E(async()=>{let{choose:e}=await import(`./utils-BJC_1mrk.js`).then(e=>e.g);return{choose:e}},__vite__mapDeps([3,1])),{showToast:r}=await E(async()=>{let{showToast:e}=await import(`./ui-DYyyctAF.js`).then(e=>e.r);return{showToast:e}},[]),{renderApp:i}=await E(async()=>{let{renderApp:e}=await Promise.resolve().then(()=>vt);return{renderApp:e}},void 0);i(),r(e(`أنت في وضع عدم الاتصال (Offline Mode) — يمكنك مواصلة العمل وسيتم الرفع فور عودة الإنترنت`,`Offline Mode — you can continue working, changes will auto-sync on reconnect`),!0)})}}function tn(){if(window._darcBroadcastChannel)try{window._darcBroadcastChannel.postMessage({type:`STATE_MUTATION`,timestamp:Date.now()})}catch{}}document.documentElement.dataset.theme=n.theme,document.documentElement.lang=n.lang,document.documentElement.dir=n.lang===`ar`?`rtl`:`ltr`,n.lang===`en`?document.body.classList.add(`is-ltr`):document.body.classList.remove(`is-ltr`),Object.assign(window,i),Object.assign(window,ne),Object.assign(window,de),Object.assign(window,Be),Object.assign(window,ye),Object.assign(window,rt),Object.assign(window,ot),Object.assign(window,ct),Object.assign(window,gt),Object.assign(window,vt),Object.assign(window,kt),Object.assign(window,h),Ot(),document.addEventListener(`click`,e=>{handleClick(e).catch(e=>showToast(e.message,!0))}),document.addEventListener(`submit`,e=>{handleSubmit(e).catch(e=>showToast(e.message,!0))}),document.addEventListener(`input`,handleInput),document.addEventListener(`change`,handleChange),document.addEventListener(`keydown`,e=>{e.key===`Escape`&&closeModal()});var nn=null;window.addEventListener(`resize`,()=>{n.view===`project-detail`&&n.projectTab===`timeline`&&(nn||=requestAnimationFrame(()=>{nn=null,drawTimelineArrows()}))}),window.addEventListener(`error`,e=>{console.error(`Runtime Error:`,e.error),typeof showToast==`function`&&showToast(`خطأ برمجي: ${e.message}`,!0)}),`serviceWorker`in navigator&&window.location.protocol.startsWith(`http`)&&window.addEventListener(`load`,()=>{navigator.serviceWorker.register(`/sw.js`).catch(e=>{console.warn(`[PWA] ServiceWorker registration skipped:`,e.message)})}),en(),init();export{Xt as t};
