@@ -100,6 +100,9 @@ export async function api(path, options = {}) {
     if (response.status === 401) {
       _lastBootstrapEtag = null;
       if (path !== '/api/auth/login') {
+        if (typeof localStorage !== 'undefined') {
+          localStorage.removeItem('darc_token');
+        }
         if (state.data) state.data.user = null;
         if (typeof window !== 'undefined') {
           if (window.location.hash !== '#login') {

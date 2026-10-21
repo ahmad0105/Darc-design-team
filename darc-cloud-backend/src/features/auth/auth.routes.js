@@ -99,7 +99,7 @@ app.post('/reset-password', authRateLimiter(), async (c) => {
   const sessionToken = await sign(payload, c.env.JWT_SECRET);
   setSessionCookie(c, sessionToken, 604800);
 
-  return c.json({ ok: true });
+  return c.json({ ok: true, token: sessionToken });
 });
 
 app.post('/logout-all', async (c) => {
@@ -155,7 +155,7 @@ app.post('/change-password', async (c) => {
   const sessionToken = await sign(payload, c.env.JWT_SECRET);
   setSessionCookie(c, sessionToken, 604800);
 
-  return c.json({ ok: true });
+  return c.json({ ok: true, token: sessionToken });
 });
 
 app.post('/activate', authRateLimiter(), async (c) => {
@@ -214,7 +214,7 @@ app.post('/activate', authRateLimiter(), async (c) => {
   const sessionToken = await sign(payload, c.env.JWT_SECRET);
   setSessionCookie(c, sessionToken, 604800);
 
-  return c.json({ ok: true, user: toCamelCase(updatedUser) });
+  return c.json({ ok: true, token: sessionToken, user: toCamelCase(updatedUser) });
 });
 
 export default app;
