@@ -20,10 +20,13 @@
         if (typeof window !== 'undefined') {
           var h = window.location.hostname;
           if (
-            h.endsWith('.workers.dev') || 
-            h.endsWith('.pages.dev') || 
             h === 'darc-design.bond' || 
             h.endsWith('.darc-design.bond')
+          ) {
+            window.__API_BASE__ = 'https://api.darc-design.bond';
+          } else if (
+            h.endsWith('.workers.dev') || 
+            h.endsWith('.pages.dev')
           ) {
             window.__API_BASE__ = 'https://darc-cloud-backend.ahmad-hashmi-c.workers.dev';
           }
