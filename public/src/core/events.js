@@ -12,7 +12,11 @@ export async function handleSubmit(event) {
   if (!['project-form', 'task-form', 'user-form', 'role-form', 'activation-form', 'task-comment-form', 'template-form', 'force-password-form'].includes(form.id) && !form.dataset.action) return;
   event.preventDefault();
   const values = Object.fromEntries(new FormData(form).entries());
-  const submitButton = form.querySelector('button[type="submit"]'); if (submitButton) submitButton.disabled = true;
+  const submitButton = form.querySelector('button[type="submit"]');
+  if (submitButton) {
+    submitButton.disabled = true;
+    submitButton.classList.add('is-loading');
+  }
   try {
     if (form.id === 'activation-form') {
       if (values.password !== values.passwordConfirm) throw new Error(choose('كلمتا المرور غير متطابقتين.', 'Passwords do not match.'));
@@ -246,7 +250,11 @@ export async function handleSubmit(event) {
   } catch (error) {
     if (form.id === 'activation-form') renderActivation(values.token, error.message);
     else showToast(error.message, true);
-    if (submitButton) submitButton.disabled = false;
+  } finally {
+    if (submitButton) {
+      submitButton.disabled = false;
+      submitButton.classList.remove('is-loading');
+    }
   }
 }
 

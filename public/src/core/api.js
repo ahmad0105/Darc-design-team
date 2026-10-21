@@ -14,6 +14,41 @@ export function invalidateBootstrapEtag() {
   _lastBootstrapEtag = null;
 }
 
+let _activeRequestsCount = 0;
+let _topProgressBar = null;
+
+function ensureTopProgressBar() {
+  if (typeof document === 'undefined') return null;
+  if (!_topProgressBar) {
+    _topProgressBar = document.getElementById('darc-global-progress');
+    if (!_topProgressBar) {
+      _topProgressBar = document.createElement('div');
+      _topProgressBar.id = 'darc-global-progress';
+      _topProgressBar.className = 'global-top-progress';
+      document.body.appendChild(_topProgressBar);
+    }
+  }
+  return _topProgressBar;
+}
+
+export function showGlobalLoading() {
+  _activeRequestsCount++;
+  const bar = ensureTopProgressBar();
+  if (bar) {
+    bar.classList.add('active');
+  }
+}
+
+export function hideGlobalLoading() {
+  _activeRequestsCount = Math.max(0, _activeRequestsCount - 1);
+  if (_activeRequestsCount === 0) {
+    const bar = ensureTopProgressBar();
+    if (bar) {
+      bar.classList.remove('active');
+    }
+  }
+}
+
 export async function api(path, options = {}) {
   const isMutation = ['POST', 'PATCH', 'PUT', 'DELETE'].includes(options.method);
   const isAuth = path.startsWith('/api/auth');
@@ -69,9 +104,11 @@ export async function api(path, options = {}) {
 
   options.credentials = 'include';
   let response;
+  showGlobalLoading();
   try {
     response = await fetch(API_BASE + path, { ...options, headers });
   } catch (networkError) {
+    hideGlobalLoading();
     if (isMutation && !isAuth && !isReplay) {
       const item = enqueueOfflineMutation({
         path,
@@ -84,6 +121,8 @@ export async function api(path, options = {}) {
     }
     throw new Error('تعذر الاتصال بالخادم، يرجى التحقق من اتصال الإنترنت.');
   }
+
+  hideGlobalLoading();
   
   if (response.status === 304) {
     return null; // HTTP 304 Not Modified: Data is identical, 0 bytes transferred

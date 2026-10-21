@@ -126,7 +126,7 @@ export async function uploadToGoogleDrive(env, fileBuffer, fileName, mimeType, p
   form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
   form.append('file', new Blob([fileBuffer], { type: mimeType }), fileName);
 
-  const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&supportsAllDrives=true', {
+  const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${token}`
@@ -197,7 +197,7 @@ export async function getOrCreateFolder(env, folderName, parentId) {
 
   try {
     const searchRes = await fetch(
-      `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id,name)&supportsAllDrives=true`,
+      `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id,name)`,
       { headers: { 'Authorization': `Bearer ${token}` } }
     );
     const searchData = await searchRes.json().catch(() => ({}));
@@ -212,7 +212,7 @@ export async function getOrCreateFolder(env, folderName, parentId) {
 
   // Folder doesn't exist, create it immediately
   try {
-    const createRes = await fetch('https://www.googleapis.com/drive/v3/files?supportsAllDrives=true', {
+    const createRes = await fetch('https://www.googleapis.com/drive/v3/files', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -314,7 +314,7 @@ export async function createResumableSession(env, fileName, mimeType, origin = n
     headers['Origin'] = origin;
   }
 
-  const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&supportsAllDrives=true', {
+  const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable', {
     method: 'POST',
     headers,
     body: JSON.stringify(metadata)
