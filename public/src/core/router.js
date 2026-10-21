@@ -228,6 +228,35 @@ export async function loadData(silent = false) {
     // Save to offline storage non-blockingly for instant access when offline
     saveOfflineBootstrap(payload);
     state.isOffline = false;
+
+    // Optimistic Preservation Guard: Protect recently created/updated items against race conditions or stale caches
+    if (state.data?.tasks && payload?.tasks) {
+      const now = Date.now();
+      const payloadTaskIds = new Set(payload.tasks.map(t => t.id));
+      for (const localTask of state.data.tasks) {
+        if (!payloadTaskIds.has(localTask.id)) {
+          const createdAtTime = localTask.createdAt ? new Date(localTask.createdAt).getTime() : now;
+          if (now - createdAtTime < 120000) {
+            payload.tasks.unshift(localTask);
+            payloadTaskIds.add(localTask.id);
+          }
+        }
+      }
+    }
+
+    if (state.data?.projects && payload?.projects) {
+      const now = Date.now();
+      const payloadProjIds = new Set(payload.projects.map(p => p.id));
+      for (const localProj of state.data.projects) {
+        if (!payloadProjIds.has(localProj.id)) {
+          const createdAtTime = localProj.createdAt ? new Date(localProj.createdAt).getTime() : now;
+          if (now - createdAtTime < 120000) {
+            payload.projects.unshift(localProj);
+            payloadProjIds.add(localProj.id);
+          }
+        }
+      }
+    }
     
     // Prevent DOM thrashing: Fast shallow comparison instead of expensive synchronous JSON.stringify
     const isDataChanged = !state.data || 

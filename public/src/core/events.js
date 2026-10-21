@@ -30,6 +30,14 @@ export async function handleSubmit(event) {
       if (!values.startDate) values.startDate = null;
       if (!values.dueDate) values.dueDate = null;
       if (!values.managerId) values.managerId = null;
+      let memberIds = [];
+      try {
+        if (values.memberIds) memberIds = JSON.parse(values.memberIds);
+      } catch (e) {}
+      if (values.managerId && !memberIds.includes(values.managerId)) {
+        memberIds.push(values.managerId);
+      }
+      values.memberIds = memberIds;
       const isEdit = !!form.dataset.projectId;
       const res = await api(isEdit ? `/api/projects/${form.dataset.projectId}` : '/api/projects', { method: isEdit ? 'PATCH' : 'POST', body: JSON.stringify(values) });
       if (res.project) {
@@ -108,6 +116,16 @@ export async function handleSubmit(event) {
           if (idx !== -1) state.data.tasks[idx] = { ...state.data.tasks[idx], ...result.task };
         } else {
           state.data.tasks.unshift(result.task);
+
+          // Auto-adjust filters so the newly created task is immediately visible to the user
+          if (state.view === 'tasks') {
+            if (state.taskProjectFilter !== 'all' && state.taskProjectFilter !== result.task.projectId) {
+              state.taskProjectFilter = result.task.projectId;
+            }
+            if (state.taskFilter === 'mine' && result.task.assigneeId !== state.data.user?.id) {
+              state.taskFilter = 'all';
+            }
+          }
         }
 
         // Sync any newly added reminders with /api/reminders

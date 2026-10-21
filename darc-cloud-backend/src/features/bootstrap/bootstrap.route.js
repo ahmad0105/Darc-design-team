@@ -66,25 +66,6 @@ function toCamelCase(obj) {
 app.get('/', async (c) => {
   const userId = c.get('userId');
   const roleId = c.get('roleId');
-  const cacheKey = `${userId}_${roleId}`;
-  const etag = `W/"boot-${userId}-${roleId}-v${getCacheVersion()}"`;
-
-  // Check HTTP ETag conditional request
-  const clientEtag = c.req.header('if-none-match');
-  if (clientEtag && clientEtag === etag) {
-    c.header('ETag', etag);
-    c.header('Cache-Control', 'private, no-cache');
-    return c.body(null, 304);
-  }
-
-  // 1. Check Fast In-Memory Cache (0ms latency!)
-  const cachedData = getBootstrapCache(cacheKey);
-  if (cachedData) {
-    c.header('ETag', etag);
-    c.header('Cache-Control', 'private, no-cache');
-    return c.json(cachedData);
-  }
-
   const supabase = getDB(c.env);
 
   try {
@@ -93,7 +74,7 @@ app.get('/', async (c) => {
     let roles, templates, activeUsers, company, projectsRes, tasksRes, docsRes, membersRes, commentsRes, auditRes, notifRes;
 
     const PROJECT_COLUMNS = 'id, code, name_ar, name_en, client_ar, client_en, description_ar, description_en, lifecycle, health, start_date, due_date, manager_id, progress, progress_mode, demo, custom_fields, created_at, updated_at';
-    const TASK_COLUMNS = 'id, project_id, code, title_ar, title_en, description_ar, description_en, status, priority, category_ar, category_en, weight, progress, assignee_id, reviewer_id, start_date, due_date, template_id, custom_fields, created_at, updated_at';
+    const TASK_COLUMNS = 'id, project_id, title_ar, title_en, description_ar, description_en, status, priority, category_ar, category_en, type_ar, type_en, weight, progress, assignee_id, reviewer_id, start_date, due_date, template_id, custom_fields, created_at, updated_at';
     const MEMBER_COLUMNS = 'project_id, user_id, role_id';
     const NOTIFICATION_COLUMNS = 'id, user_id, type, content, task_id, project_id, read, created_at';
     const DOCUMENT_COLUMNS = 'id, project_id, task_id, uploader_id, original_name, disk_filename, mime_type, size, status, created_at, deleted_at';
@@ -321,11 +302,7 @@ app.get('/', async (c) => {
       auditLogs: toCamelCase(exposedAuditLogs)
     };
 
-    // 4. Save to Cache
-    setBootstrapCache(cacheKey, responsePayload);
-
-    c.header('ETag', etag);
-    c.header('Cache-Control', 'private, no-cache');
+    c.header('Cache-Control', 'private, no-cache, no-store, must-revalidate');
     return c.json(responsePayload);
   } catch (error) {
     console.error('[Bootstrap] Error:', error.message);

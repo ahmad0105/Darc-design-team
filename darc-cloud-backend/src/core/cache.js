@@ -9,7 +9,9 @@ let _templatesCacheTime = 0;
 let _usersCache = null;
 let _usersCacheTime = 0;
 
-const BOOTSTRAP_TTL = 60000; // 60 seconds (High-speed cached responses, invalidated immediately on mutations)
+// Dynamic entity bootstrap is always pulled fresh from Supabase to prevent cross-isolate stale cache desync on Cloudflare Workers.
+// Static definitions (roles, templates, company metadata) are retained in memory with long TTLs.
+const BOOTSTRAP_TTL = 0; 
 const STATIC_TTL = 600000;   // 10 minutes
 const USERS_TTL = 120000;    // 2 minutes
 
@@ -21,18 +23,15 @@ export function getCacheVersion() {
   return _cacheVersion;
 }
 
-export async function getUserTokenVersion(supabase, userId) {
+export function getUserTokenVersion(supabase, userId) {
   if (_userTokenVersions.has(userId)) {
     return _userTokenVersions.get(userId);
   }
-  try {
-    const { data } = await supabase.from('users').select('custom_fields').eq('id', userId).single();
+  return supabase.from('users').select('custom_fields').eq('id', userId).single().then(({ data }) => {
     const ver = Number(data?.custom_fields?.tokenVersion || 1);
     _userTokenVersions.set(userId, ver);
     return ver;
-  } catch (e) {
-    return 1;
-  }
+  }).catch(() => 1);
 }
 
 export function setUserTokenVersion(userId, ver) {
@@ -45,15 +44,12 @@ export function incrementCacheVersion() {
 }
 
 export function getBootstrapCache(key) {
-  const cached = _bootstrapCache.get(key);
-  if (cached && (Date.now() - cached.timestamp < BOOTSTRAP_TTL)) {
-    return cached.data;
-  }
+  // Always return null so each request receives the latest live state from Supabase
   return null;
 }
 
 export function setBootstrapCache(key, data) {
-  _bootstrapCache.set(key, { data, timestamp: Date.now() });
+  // No-op for cross-isolate safety
 }
 
 export function invalidateBootstrapCache() {

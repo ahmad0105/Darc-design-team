@@ -718,8 +718,24 @@ export function renderProjectDetail() {
   `;
 }
 
+export function buildProjectMemberChipsHtml(memberIds = []) {
+  const users = state.data?.users || [];
+  return memberIds.map(uid => {
+    const u = users.find(x => x.id === uid) || { name: uid, id: uid };
+    return `
+      <span class="chip-item" data-uid="${esc(uid)}" style="display:inline-flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:3px 10px 3px 6px;font-size:12px;color:var(--ink);">
+        ${avatar(u, 'mini-avatar')}
+        <span style="font-weight:500;">${esc(choose(u.name, u.nameEn || u.name))}</span>
+        <button type="button" class="btn-remove-project-member" data-uid="${esc(uid)}" style="border:none;background:none;cursor:pointer;color:var(--muted);padding:0 2px;font-size:14px;line-height:1;margin-inline-start:4px;" title="${choose('إزالة', 'Remove')}">×</button>
+      </span>
+    `;
+  }).join('');
+}
+
 export function openProjectModal(project = null) {
   const defaultCode = project?.code || `DARC-${String((state.data?.projects?.length || 0) + 1).padStart(3, '0')}`;
+  const existingTeam = project ? getProjectTeamData(project).internalMembers.map(m => m.id) : [];
+  const currentMemberIds = existingTeam.length > 0 ? existingTeam : [state.data?.user?.id].filter(Boolean);
 
   const form = `
     <form id="project-form" data-project-id="${esc(project?.id || '')}">
@@ -756,7 +772,7 @@ export function openProjectModal(project = null) {
         <div class="form-grid">
           <div class="field">
             <label>${t('manager')}</label>
-            <select name="managerId">
+            <select name="managerId" id="project-manager-select">
               <option value="">${choose('— بدون تحديد —', '— Unassigned —')}</option>
               ${state.data.users.map((user) => `<option value="${esc(user.id)}" ${(project ? project.managerId === user.id : state.data.user.id === user.id) ? 'selected' : ''}>${esc(choose(user.name, user.nameEn || user.name))}</option>`).join('')}
             </select>
@@ -791,7 +807,28 @@ export function openProjectModal(project = null) {
         </div>
       </div>
 
-      <!-- Section 3: Scope & Description -->
+      <!-- Section 3: Project Team & Members -->
+      <div style="margin-bottom:16px;padding-top:12px;border-top:1px solid var(--line);">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <div style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--teal);">
+            ${icon('users', 14)} ${choose('أعضاء فريق المشروع والمشاركون', 'Project Team Members & Collaborators')}
+          </div>
+          <span style="font-size:11px;color:var(--muted);">${choose('حدد أعضاء الفريق الذين يمكنهم الوصول للمشروع', 'Select team members who can access this project')}</span>
+        </div>
+
+        <div id="project-members-chips-container" style="display:${currentMemberIds.length ? 'flex' : 'none'};flex-wrap:wrap;gap:6px;min-height:36px;padding:8px;background:var(--surface-soft);border:1px solid var(--line);border-radius:8px;margin-bottom:8px;align-items:center;">
+          ${buildProjectMemberChipsHtml(currentMemberIds)}
+        </div>
+
+        <div style="position:relative;">
+          <input type="text" id="project-member-search" placeholder="${choose('ابحث عن عضو لإضافته لفريق المشروع...', 'Search user to add to project team...')}" autocomplete="off" style="width:100%;padding:8px 12px;font-size:12px;" />
+          <div id="project-member-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;max-height:200px;overflow-y:auto;background:var(--surface);border:1px solid var(--line);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,0.14);z-index:100;margin-top:4px;padding:4px;">
+          </div>
+        </div>
+        <input type="hidden" name="memberIds" id="project-members-input" value="${esc(JSON.stringify(currentMemberIds))}" />
+      </div>
+
+      <!-- Section 4: Scope & Description -->
       <div style="padding-top:12px;border-top:1px solid var(--line);">
         <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;font-size:12px;font-weight:700;color:var(--teal);">
           ${icon('document', 14)} ${choose('نطاق المشروع والملاحظات', 'Scope & Notes')}
@@ -813,6 +850,94 @@ export function openProjectModal(project = null) {
     form,
     'project'
   );
+
+  // Wire interactive member chips and search dropdown
+  setTimeout(() => {
+    const searchInput = document.getElementById('project-member-search');
+    const dropdown = document.getElementById('project-member-dropdown');
+    const chipsContainer = document.getElementById('project-members-chips-container');
+    const hiddenInput = document.getElementById('project-members-input');
+    const managerSelect = document.getElementById('project-manager-select');
+    if (!searchInput || !dropdown || !chipsContainer || !hiddenInput) return;
+
+    let selectedIds = [...currentMemberIds];
+
+    function updateChips() {
+      chipsContainer.innerHTML = buildProjectMemberChipsHtml(selectedIds);
+      chipsContainer.style.display = selectedIds.length ? 'flex' : 'none';
+      hiddenInput.value = JSON.stringify(selectedIds);
+
+      chipsContainer.querySelectorAll('.btn-remove-project-member').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const uid = btn.dataset.uid;
+          selectedIds = selectedIds.filter(id => id !== uid);
+          updateChips();
+        });
+      });
+    }
+
+    if (managerSelect) {
+      managerSelect.addEventListener('change', () => {
+        const mgrId = managerSelect.value;
+        if (mgrId && !selectedIds.includes(mgrId)) {
+          selectedIds.push(mgrId);
+          updateChips();
+        }
+      });
+    }
+
+    function renderDropdown(filterText = '') {
+      const q = filterText.toLowerCase().trim();
+      const allUsers = state.data?.users || [];
+      const available = allUsers.filter(u => !selectedIds.includes(u.id) && (
+        !q ||
+        (u.name && u.name.toLowerCase().includes(q)) ||
+        (u.nameEn && u.nameEn.toLowerCase().includes(q)) ||
+        (u.email && u.email.toLowerCase().includes(q))
+      ));
+
+      if (!available.length) {
+        dropdown.innerHTML = `<div style="padding:8px 12px;font-size:12px;color:var(--muted);">${choose('لا يوجد أعضاء مطابقون', 'No matching members')}</div>`;
+      } else {
+        dropdown.innerHTML = available.map(u => `
+          <div class="project-member-opt" data-uid="${esc(u.id)}" style="display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:6px;cursor:pointer;font-size:12px;">
+            ${avatar(u, 'mini-avatar')}
+            <div style="flex:1;">
+              <div style="font-weight:600;color:var(--ink);">${esc(choose(u.name, u.nameEn || u.name))}</div>
+              <div style="font-size:10px;color:var(--muted);">${esc(u.roleId || '')}</div>
+            </div>
+            <span style="font-size:11px;color:var(--teal);">➕ ${choose('إضافة', 'Add')}</span>
+          </div>
+        `).join('');
+
+        dropdown.querySelectorAll('.project-member-opt').forEach(opt => {
+          opt.addEventListener('mouseenter', () => opt.style.background = 'var(--surface-soft)');
+          opt.addEventListener('mouseleave', () => opt.style.background = 'transparent');
+          opt.addEventListener('click', () => {
+            const uid = opt.dataset.uid;
+            if (uid && !selectedIds.includes(uid)) {
+              selectedIds.push(uid);
+              updateChips();
+              searchInput.value = '';
+              dropdown.style.display = 'none';
+            }
+          });
+        });
+      }
+      dropdown.style.display = 'block';
+    }
+
+    searchInput.addEventListener('focus', () => renderDropdown(searchInput.value));
+    searchInput.addEventListener('input', () => renderDropdown(searchInput.value));
+    document.addEventListener('click', (e) => {
+      if (!searchInput.contains(e.target) && !dropdown.contains(e.target)) {
+        dropdown.style.display = 'none';
+      }
+    });
+
+    updateChips();
+  }, 50);
 }
 
 export function openCloneModal(project) {

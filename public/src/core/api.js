@@ -97,11 +97,6 @@ export async function api(path, options = {}) {
     ...(options.headers || {})
   };
 
-  // ETag conditional request for bootstrap caching
-  if (path === '/api/bootstrap' && !options.method && _lastBootstrapEtag) {
-    headers['If-None-Match'] = _lastBootstrapEtag;
-  }
-
   options.credentials = 'include';
   let response;
   showGlobalLoading();

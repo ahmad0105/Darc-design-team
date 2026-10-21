@@ -239,18 +239,104 @@ document.addEventListener('drop', async (event) => {
 
 // Touch Drag & Drop Support for Mobile / iPad
 let touchCard = null;
+let touchGhost = null;
 let touchStartX = 0;
 let touchStartY = 0;
+let touchOffsetX = 0;
+let touchOffsetY = 0;
+let touchHoldTimer = null;
 let isTouchDragging = false;
 
+function cleanTouchDrag() {
+  if (touchHoldTimer) {
+    clearTimeout(touchHoldTimer);
+    touchHoldTimer = null;
+  }
+  if (touchGhost && touchGhost.parentNode) {
+    touchGhost.parentNode.removeChild(touchGhost);
+  }
+  touchGhost = null;
+  if (touchCard) {
+    touchCard.style.opacity = '';
+    touchCard.style.pointerEvents = '';
+    touchCard.classList.remove('is-dragging');
+  }
+  document.querySelectorAll('.board-column').forEach(col => col.classList.remove('drag-over'));
+  removePlaceholder();
+  touchCard = null;
+  isTouchDragging = false;
+  activeDraggedTaskId = null;
+}
+
 document.addEventListener('touchstart', (e) => {
+  // Only handle single touch on a task card
+  if (e.touches.length !== 1) return;
   const card = e.target.closest('.task-card');
-  if (!card) return;
+  // Avoid dragging if touch started on an interactive control inside the card
+  if (!card || e.target.closest('button, a, input, select, textarea, .btn')) return;
+
   touchCard = card;
   const touch = e.touches[0];
   touchStartX = touch.clientX;
   touchStartY = touch.clientY;
   isTouchDragging = false;
+
+  // 220ms Long-Press Timer: Prevents accidental dragging when user simply scrolls the board
+  touchHoldTimer = setTimeout(() => {
+    if (!touchCard) return;
+    isTouchDragging = true;
+    activeDraggedTaskId = touchCard.dataset.taskId;
+
+    // Haptic feedback if supported
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      try { navigator.vibrate(40); } catch (e) {}
+    }
+
+    const rect = touchCard.getBoundingClientRect();
+    touchOffsetX = touch.clientX - rect.left;
+    touchOffsetY = touch.clientY - rect.top;
+
+    // Create floating clone that visibly follows the finger
+    touchGhost = touchCard.cloneNode(true);
+    touchGhost.id = 'touch-drag-ghost';
+    touchGhost.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: ${rect.width}px;
+      pointer-events: none;
+      z-index: 10000;
+      opacity: 0.95;
+      transform: translate3d(${rect.left}px, ${rect.top}px, 0) scale(1.03) rotate(1.5deg);
+      box-shadow: 0 16px 36px rgba(0,0,0,0.25);
+      transition: transform 0.05s linear;
+      border: 1px solid var(--teal, #0d9488);
+      background: var(--surface, #ffffff);
+      border-radius: 12px;
+    `;
+    document.body.appendChild(touchGhost);
+
+    // Make original card transparent and transparent to elementFromPoint
+    touchCard.classList.add('is-dragging');
+    touchCard.style.opacity = '0.25';
+    touchCard.style.pointerEvents = 'none';
+
+    // Highlight initial column
+    const column = touchCard.closest('.board-column');
+    if (column) {
+      column.classList.add('drag-over');
+      const cardsContainer = column.querySelector('.board-cards');
+      if (cardsContainer) {
+        const ph = getOrCreatePlaceholder();
+        const nextCard = getDropTargetCard(cardsContainer, touch.clientY);
+        if (nextCard && ph.nextSibling !== nextCard) {
+          cardsContainer.insertBefore(ph, nextCard);
+        } else if (!cardsContainer.contains(ph)) {
+          cardsContainer.appendChild(ph);
+        }
+      }
+    }
+  }, 220);
 }, { passive: true });
 
 document.addEventListener('touchmove', (e) => {
@@ -259,30 +345,54 @@ document.addEventListener('touchmove', (e) => {
   const deltaX = Math.abs(touch.clientX - touchStartX);
   const deltaY = Math.abs(touch.clientY - touchStartY);
 
-  if (!isTouchDragging && (deltaX > 15 || deltaY > 15)) {
-    isTouchDragging = true;
-    activeDraggedTaskId = touchCard.dataset.taskId;
-    touchCard.classList.add('is-dragging');
-    touchCard.style.opacity = '0.4';
+  // If user moves finger before long-press fires, they are scrolling: cancel drag timer!
+  if (!isTouchDragging) {
+    if (deltaX > 8 || deltaY > 8) {
+      if (touchHoldTimer) {
+        clearTimeout(touchHoldTimer);
+        touchHoldTimer = null;
+      }
+      touchCard = null;
+    }
+    return;
   }
 
-  if (isTouchDragging) {
-    if (e.cancelable) e.preventDefault();
-    const elUnder = document.elementFromPoint(touch.clientX, touch.clientY);
-    const column = elUnder?.closest('.board-column');
-    document.querySelectorAll('.board-column').forEach(col => col.classList.toggle('drag-over', col === column));
+  // Active Dragging Mode
+  if (e.cancelable) e.preventDefault();
 
-    if (column) {
-      const cardsContainer = column.querySelector('.board-cards');
-      if (cardsContainer) {
-        const ph = getOrCreatePlaceholder();
-        const nextCard = getDropTargetCard(cardsContainer, touch.clientY);
-        if (nextCard) {
-          if (ph.nextSibling !== nextCard) cardsContainer.insertBefore(ph, nextCard);
-        } else {
-          if (!cardsContainer.contains(ph) || cardsContainer.lastElementChild !== ph) {
-            cardsContainer.appendChild(ph);
-          }
+  // Move floating ghost smoothly with finger
+  if (touchGhost) {
+    const gx = touch.clientX - touchOffsetX;
+    const gy = touch.clientY - touchOffsetY;
+    touchGhost.style.transform = `translate3d(${gx}px, ${gy}px, 0) scale(1.03) rotate(1.5deg)`;
+  }
+
+  // Horizontal auto-scroll if dragging near screen edges
+  const edgeMargin = 45;
+  const boardEl = document.querySelector('.board, .board-columns, .tasks-board, [data-board]');
+  if (boardEl) {
+    if (touch.clientX < edgeMargin) {
+      boardEl.scrollLeft -= 12;
+    } else if (touch.clientX > window.innerWidth - edgeMargin) {
+      boardEl.scrollLeft += 12;
+    }
+  }
+
+  // Find target element underneath finger (touchGhost & touchCard have pointer-events: none)
+  const elUnder = document.elementFromPoint(touch.clientX, touch.clientY);
+  const column = elUnder?.closest('.board-column');
+  document.querySelectorAll('.board-column').forEach(col => col.classList.toggle('drag-over', col === column));
+
+  if (column) {
+    const cardsContainer = column.querySelector('.board-cards');
+    if (cardsContainer) {
+      const ph = getOrCreatePlaceholder();
+      const nextCard = getDropTargetCard(cardsContainer, touch.clientY);
+      if (nextCard) {
+        if (ph.nextSibling !== nextCard) cardsContainer.insertBefore(ph, nextCard);
+      } else {
+        if (!cardsContainer.contains(ph) || cardsContainer.lastElementChild !== ph) {
+          cardsContainer.appendChild(ph);
         }
       }
     }
@@ -290,25 +400,28 @@ document.addEventListener('touchmove', (e) => {
 }, { passive: false });
 
 document.addEventListener('touchend', async (e) => {
+  if (touchHoldTimer) {
+    clearTimeout(touchHoldTimer);
+    touchHoldTimer = null;
+  }
   if (!touchCard) return;
-  if (isTouchDragging) {
-    touchCard.style.opacity = '1';
-    touchCard.classList.remove('is-dragging');
-    document.querySelectorAll('.board-column').forEach(col => col.classList.remove('drag-over'));
 
+  if (isTouchDragging) {
     const touch = e.changedTouches[0];
     const elUnder = document.elementFromPoint(touch.clientX, touch.clientY);
     const column = elUnder?.closest('.board-column') || (placeholder && placeholder.closest('.board-column'));
     const draggedId = activeDraggedTaskId;
-    activeDraggedTaskId = null;
 
-    if (column) {
+    cleanTouchDrag();
+
+    if (column && draggedId) {
       await handleTaskDrop(column, touch.clientY, draggedId);
-    } else {
-      removePlaceholder();
     }
+  } else {
+    cleanTouchDrag();
   }
-  touchCard = null;
-  isTouchDragging = false;
-  activeDraggedTaskId = null;
+});
+
+document.addEventListener('touchcancel', () => {
+  cleanTouchDrag();
 });

@@ -485,7 +485,6 @@ export function openTaskModal(task = null, presetTemplateId = null, presetProjec
   const initialRemindersHtml = buildRemindersListHtml(taskReminders);
 
   const taskForm = `<form id="task-form" data-task-id="${esc(task?.id || '')}">
-    <input type="hidden" name="projectId" value="${esc(projectId)}" />
     <input type="hidden" name="typeAr" id="task-type-ar" value="${esc(task?.typeAr || template?.typeAr || (template ? 'مخطط' : ''))}" />
     <input type="hidden" name="typeEn" id="task-type-en" value="${esc(task?.typeEn || template?.typeEn || (template ? 'Drawing' : ''))}" />
     <input type="hidden" name="additionalAssignees" id="task-additional-assignees-input" value="${esc(JSON.stringify(additionalAssigneeIds))}" />
@@ -496,6 +495,13 @@ export function openTaskModal(task = null, presetTemplateId = null, presetProjec
       <!-- 📋 القسم 1: البيانات الأساسية والمكتبة القياسية -->
       <div style="font-size:12px;font-weight:700;color:var(--teal);margin:4px 0 2px;grid-column:1/-1;border-bottom:1px solid var(--line);padding-bottom:4px;display:flex;align-items:center;gap:6px;">
         <span>📋</span> <span>${choose('البيانات الأساسية والمكتبة القياسية', 'Basic Details & Standard Library')}</span>
+      </div>
+
+      <div class="field full">
+        <label>${choose('المشروع التابع له', 'Project')} *</label>
+        <select name="projectId" id="task-project-select" required>
+          ${state.data.projects.map((p) => `<option value="${esc(p.id)}" ${(p.id === projectId) ? 'selected' : ''}>${esc(choose(p.nameAr, p.nameEn))} (${esc(p.code)})</option>`).join('')}
+        </select>
       </div>
 
       <div class="field full">

@@ -78,15 +78,21 @@ app.post('/', async (c) => {
   const { data: project, error: pErr } = await supabase.from('projects').insert([projectData]).select().single();
   if (pErr) throw pErr;
 
-  // Add members in parallel with audit log
+  // Add creator, manager, and any selected team members in parallel with audit log
+  const incomingMemberIds = Array.isArray(body.memberIds) ? body.memberIds : (Array.isArray(body.members) ? body.members : []);
   const members = [{ project_id: project.id, user_id: userId, role_id: 'project_manager' }];
   if (managerId !== userId) {
     members.push({ project_id: project.id, user_id: managerId, role_id: 'project_manager' });
   }
+  for (const mid of incomingMemberIds) {
+    if (mid && typeof mid === 'string' && !members.some(m => m.user_id === mid)) {
+      members.push({ project_id: project.id, user_id: mid, role_id: 'member' });
+    }
+  }
   
   await Promise.all([
     supabase.from('project_members').upsert(members, { onConflict: 'project_id,user_id' }),
-    supabase.from('audit_logs').insert([{ user_id: userId, action: 'create', entity_type: 'project', entity_id: project.id, details: { name: project.name_ar } }])
+    supabase.from('audit_logs').insert([{ user_id: userId, action: 'create', entity_type: 'project', entity_id: project.id, details: { name: project.name_ar, membersCount: members.length } }])
   ]);
 
   invalidateBootstrapCache();
@@ -125,7 +131,23 @@ app.patch('/:id', async (c) => {
   const { data: project, error } = await supabase.from('projects').update(updates).eq('id', projectId).select().single();
   if (error) throw error;
 
-  if (updates.manager_id) {
+  if (Array.isArray(body.memberIds)) {
+    const newMemberIds = body.memberIds.filter(mid => typeof mid === 'string' && mid.trim().length > 0);
+    const effectiveMgr = updates.manager_id || project.manager_id;
+    const memberRows = [];
+    if (effectiveMgr) {
+      memberRows.push({ project_id: projectId, user_id: effectiveMgr, role_id: 'project_manager' });
+    }
+    for (const mid of newMemberIds) {
+      if (!memberRows.some(m => m.user_id === mid)) {
+        memberRows.push({ project_id: projectId, user_id: mid, role_id: 'member' });
+      }
+    }
+    await supabase.from('project_members').delete().eq('project_id', projectId);
+    if (memberRows.length > 0) {
+      await supabase.from('project_members').upsert(memberRows, { onConflict: 'project_id,user_id' });
+    }
+  } else if (updates.manager_id) {
     await supabase.from('project_members').upsert([{ project_id: projectId, user_id: updates.manager_id, role_id: 'project_manager' }], { onConflict: 'project_id,user_id' });
   }
 
