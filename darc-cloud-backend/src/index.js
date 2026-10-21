@@ -44,14 +44,19 @@ const ALLOWED_ORIGINS = [
   'http://localhost:8787',
   'http://127.0.0.1:8787',
   'https://darc-design-team.netlify.app',
-  'https://darc-design-team.workers.dev'
+  'https://darc-design-team.workers.dev',
+  'https://darc-design.bond',
+  'https://panel.darc-design.bond'
 ];
 app.use('*', cors({
   origin: (origin) => {
-    if (!origin) return 'https://darc-design-team.netlify.app';
+    if (!origin) return 'https://panel.darc-design.bond';
     if (
       ALLOWED_ORIGINS.includes(origin) || 
       origin.endsWith('.darc.local') || 
+      origin.endsWith('.darc-design.bond') ||
+      origin === 'https://darc-design.bond' ||
+      origin === 'https://panel.darc-design.bond' ||
       origin === 'https://darc-design-team.netlify.app' ||
       origin.endsWith('.darc-design-team.netlify.app') ||
       origin.endsWith('.workers.dev') ||
