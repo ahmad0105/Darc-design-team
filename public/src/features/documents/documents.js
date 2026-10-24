@@ -1,6 +1,7 @@
 // DARC Design Team — Documents Feature Module
 import { state } from '../../core/state.js';
 import { choose, t, esc, icon, dateLabel, statusText, can, isAdmin, getFileFormatInfo, extractDrawingVersion } from '../../core/utils.js';
+import { modalShell, closeModal } from '../../shared/ui.js';
 
 export function renderDocuments() {
   const documents = state.data?.documents || [];
@@ -200,89 +201,79 @@ export function openUploadDrawingModal(preselectedProjectId = null) {
   const selectedProjId = preselectedProjectId || projects[0]?.id || '';
   const filteredTasks = state.data?.tasks?.filter(t => t.projectId === selectedProjId && !t.deletedAt) || [];
 
-  const modalHtml = `
-    <div class="modal-card modal-lg" style="max-width:620px;">
-      <div class="modal-head">
-        <div style="display:flex;align-items:center;gap:10px;">
-          <span style="color:var(--teal);background:var(--teal-soft);padding:8px;border-radius:10px;display:flex;">
-            ${icon('upload', 20)}
-          </span>
-          <div>
-            <h3>${choose('رفع مخطط أو مخرج هندسي جديد', 'Upload Architectural Deliverable / Drawing')}</h3>
-            <p class="intro" style="margin:0;font-size:12px;">${choose('رفع ملفات CAD و BIM و PDF مع توثيق الإصدارات والتخصص الهندسي.', 'Upload CAD, BIM, and PDF files with revision numbering and discipline tagging.')}</p>
-          </div>
+  const formBody = `
+    <form id="upload-drawing-form" style="padding:16px 20px 20px;display:grid;gap:16px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+        <div class="field">
+          <label style="font-size:12px;font-weight:700;">${choose('المشروع المستهدف *', 'Target Project *')}</label>
+          <select id="drawing-upload-project" class="filter-select" style="width:100%;height:38px;" required>
+            ${projects.map(p => `<option value="${esc(p.id)}" ${p.id === selectedProjId ? 'selected' : ''}>${esc(p.code)} - ${esc(choose(p.nameAr, p.nameEn))}</option>`).join('')}
+          </select>
         </div>
-        <button class="modal-close" data-action="close-modal">&times;</button>
+
+        <div class="field">
+          <label style="font-size:12px;font-weight:700;">${choose('المهمة الهندسية (اختياري)', 'Engineering Task (Optional)')}</label>
+          <select id="drawing-upload-task" class="filter-select" style="width:100%;height:38px;">
+            <option value="">${choose('— مخطط عام لكامل المشروع —', '— General Project Drawing —')}</option>
+            ${filteredTasks.map(t => `<option value="${esc(t.id)}">${esc(choose(t.titleAr, t.titleEn))}</option>`).join('')}
+          </select>
+        </div>
       </div>
 
-      <form id="upload-drawing-form" style="padding:20px;display:grid;gap:16px;">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
-          <div class="field">
-            <label style="font-size:12px;font-weight:700;">${choose('المشروع المستهدف *', 'Target Project *')}</label>
-            <select id="drawing-upload-project" class="filter-select" style="width:100%;height:38px;" required>
-              ${projects.map(p => `<option value="${esc(p.id)}" ${p.id === selectedProjId ? 'selected' : ''}>${esc(p.code)} - ${esc(choose(p.nameAr, p.nameEn))}</option>`).join('')}
-            </select>
-          </div>
-
-          <div class="field">
-            <label style="font-size:12px;font-weight:700;">${choose('المهمة الهندسية (اختياري)', 'Engineering Task (Optional)')}</label>
-            <select id="drawing-upload-task" class="filter-select" style="width:100%;height:38px;">
-              <option value="">${choose('— مخطط عام لكامل المشروع —', '— General Project Drawing —')}</option>
-              ${filteredTasks.map(t => `<option value="${esc(t.id)}">${esc(choose(t.titleAr, t.titleEn))}</option>`).join('')}
-            </select>
-          </div>
-        </div>
-
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
-          <div class="field">
-            <label style="font-size:12px;font-weight:700;">${choose('التخصص الهندسي', 'Engineering Discipline')}</label>
-            <select id="drawing-upload-discipline" class="filter-select" style="width:100%;height:38px;">
-              <option value="معماري">🏛️ ${choose('معماري (Architectural)', 'Architectural')}</option>
-              <option value="إنشائي">🏗️ ${choose('إنشائي (Structural)', 'Structural')}</option>
-              <option value="كهرباء">⚡ ${choose('كهرباء (Electrical)', 'Electrical')}</option>
-              <option value="ميكانيك وتكييف">🌡️ ${choose('ميكانيك وتكييف (HVAC)', 'HVAC')}</option>
-              <option value="سباكة وصحي">💧 ${choose('سباكة وصحي (Plumbing)', 'Plumbing')}</option>
-              <option value="مخرجات ثلاثية الأبعاد">📐 ${choose('3D / BIM (Revit/SketchUp)', '3D / BIM')}</option>
-              <option value="عام">📁 ${choose('مستندات عامة ومواصفات', 'General Specs')}</option>
-            </select>
-          </div>
-
-          <div class="field">
-            <label style="font-size:12px;font-weight:700;">${choose('الحالة الهندسية المبدئية', 'Initial Approval Status')}</label>
-            <select id="drawing-upload-status" class="filter-select" style="width:100%;height:38px;">
-              <option value="draft">📝 ${choose('مسودة عمل (Draft)', 'Draft')}</option>
-              <option value="review" selected>🔍 ${choose('قيد المراجعة الفنية (Under Review)', 'Under Review')}</option>
-              <option value="approved">✅ ${choose('معتمد للتنفيذ (Approved for Construction)', 'Approved for Construction')}</option>
-            </select>
-          </div>
-        </div>
-
-        <!-- File Upload Dropzone -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
         <div class="field">
-          <label style="font-size:12px;font-weight:700;">${choose('الملفات والمخططات *', 'Drawings & Files *')}</label>
-          <div id="drawing-dropzone" style="border:2px dashed var(--line);border-radius:12px;padding:24px 16px;text-align:center;background:var(--surface);cursor:pointer;transition:border-color 0.2s;">
-            <div style="color:var(--teal);margin-bottom:8px;">${icon('upload', 28)}</div>
-            <p style="margin:0 0 4px;font-size:13px;font-weight:700;color:var(--ink);">${choose('اسحب وأفلت المخططات هنا أو انقر للاختيار', 'Drag & drop drawings here or click to browse')}</p>
-            <p style="margin:0;font-size:11px;color:var(--muted);">${choose('يدعم ملفات هندسية عملاقة: DWG, DXF, RVT, IFC, SKP, PDF, ZIP (يدعم 10GB - 50GB+ برفع مستأنف فائق السرعة)', 'Supports massive engineering files: DWG, DXF, RVT, IFC, SKP, PDF, ZIP (Supports 10GB - 50GB+ with high-speed resumable chunks)')}</p>
-            <input type="file" multiple id="drawing-file-input" style="display:none;" />
-          </div>
-          <div id="drawing-selected-files-list" style="margin-top:10px;display:grid;gap:6px;"></div>
+          <label style="font-size:12px;font-weight:700;">${choose('التخصص الهندسي', 'Engineering Discipline')}</label>
+          <select id="drawing-upload-discipline" class="filter-select" style="width:100%;height:38px;">
+            <option value="معماري">🏛️ ${choose('معماري (Architectural)', 'Architectural')}</option>
+            <option value="إنشائي">🏗️ ${choose('إنشائي (Structural)', 'Structural')}</option>
+            <option value="كهرباء">⚡ ${choose('كهرباء (Electrical)', 'Electrical')}</option>
+            <option value="ميكانيك وتكييف">🌡️ ${choose('ميكانيك وتكييف (HVAC)', 'HVAC')}</option>
+            <option value="سباكة وصحي">💧 ${choose('سباكة وصحي (Plumbing)', 'Plumbing')}</option>
+            <option value="مخرجات ثلاثية الأبعاد">📐 ${choose('3D / BIM (Revit/SketchUp)', '3D / BIM')}</option>
+            <option value="عام">📁 ${choose('مستندات عامة ومواصفات', 'General Specs')}</option>
+          </select>
         </div>
 
-        <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:10px;">
-          <button type="button" class="btn btn-secondary btn-sm" data-action="close-modal">${choose('إلغاء', 'Cancel')}</button>
-          <button type="submit" class="btn btn-primary btn-sm" id="start-drawing-upload-btn" style="font-weight:700;" disabled>
-            ${icon('upload', 14)} <span>${choose('بدء الرفع المباشر', 'Start Resumable Upload')}</span>
-          </button>
+        <div class="field">
+          <label style="font-size:12px;font-weight:700;">${choose('الحالة الهندسية المبدئية', 'Initial Approval Status')}</label>
+          <select id="drawing-upload-status" class="filter-select" style="width:100%;height:38px;">
+            <option value="draft">📝 ${choose('مسودة عمل (Draft)', 'Draft')}</option>
+            <option value="review" selected>🔍 ${choose('قيد المراجعة الفنية (Under Review)', 'Under Review')}</option>
+            <option value="approved">✅ ${choose('معتمد للتنفيذ (Approved for Construction)', 'Approved for Construction')}</option>
+          </select>
         </div>
-      </form>
-    </div>
+      </div>
+
+      <!-- File Upload Dropzone -->
+      <div class="field">
+        <label style="font-size:12px;font-weight:700;">${choose('الملفات والمخططات *', 'Drawings & Files *')}</label>
+        <div id="drawing-dropzone" style="border:2px dashed var(--line);border-radius:12px;padding:24px 16px;text-align:center;background:var(--surface);cursor:pointer;transition:border-color 0.2s;">
+          <div style="color:var(--teal);margin-bottom:8px;">${icon('upload', 28)}</div>
+          <p style="margin:0 0 4px;font-size:13px;font-weight:700;color:var(--ink);">${choose('اسحب وأفلت المخططات هنا أو انقر للاختيار', 'Drag & drop drawings here or click to browse')}</p>
+          <p style="margin:0;font-size:11px;color:var(--muted);">${choose('يدعم ملفات هندسية عملاقة: DWG, DXF, RVT, IFC, SKP, PDF, ZIP (حتى 100GB برفع مستأنف فائق السرعة)', 'Supports massive engineering files: DWG, DXF, RVT, IFC, SKP, PDF, ZIP (Up to 100GB with resumable chunks)')}</p>
+          <input type="file" multiple id="drawing-file-input" style="display:none;" />
+        </div>
+        <div id="drawing-selected-files-list" style="margin-top:10px;display:grid;gap:6px;"></div>
+      </div>
+
+      <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:10px;">
+        <button type="button" class="btn btn-secondary btn-sm" data-action="close-modal">${choose('إلغاء', 'Cancel')}</button>
+        <button type="submit" class="btn btn-primary btn-sm" id="start-drawing-upload-btn" style="font-weight:700;" disabled>
+          ${icon('upload', 14)} <span>${choose('بدء الرفع المباشر', 'Start Resumable Upload')}</span>
+        </button>
+      </div>
+    </form>
   `;
 
   const modalRoot = document.getElementById('modal-root');
   if (modalRoot) {
-    modalRoot.innerHTML = modalHtml;
-    modalRoot.classList.add('active');
+    modalRoot.innerHTML = modalShell(
+      choose('رفع مخطط أو مخرج هندسي جديد', 'Upload Architectural Deliverable / Drawing'),
+      choose('رفع ملفات CAD و BIM و PDF مع توثيق الإصدارات والتخصص الهندسي.', 'Upload CAD, BIM, and PDF files with revision numbering and discipline tagging.'),
+      formBody,
+      'upload-drawing',
+      'modal-lg'
+    );
 
     // Setup project change dynamic task population
     const projSelect = document.getElementById('drawing-upload-project');
@@ -374,17 +365,26 @@ export function openUploadDrawingModal(preselectedProjectId = null) {
         const status = document.getElementById('drawing-upload-status')?.value || 'draft';
 
         // Close modal and launch direct upload
-        modalRoot.classList.remove('active');
-        modalRoot.innerHTML = '';
+        closeModal();
 
-        const { uploadDirectFiles } = await import('../../core/events.js');
-        uploadDirectFiles({
-          files: _selectedFiles,
-          projectId,
-          taskId,
-          discipline,
-          status
-        });
+        if (typeof window.uploadDirectFiles === 'function') {
+          window.uploadDirectFiles({
+            files: _selectedFiles,
+            projectId,
+            taskId,
+            discipline,
+            status
+          });
+        } else {
+          const { uploadDirectFiles } = await import('../../core/events.js');
+          uploadDirectFiles({
+            files: _selectedFiles,
+            projectId,
+            taskId,
+            discipline,
+            status
+          });
+        }
       });
     }
   }

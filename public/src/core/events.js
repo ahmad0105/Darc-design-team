@@ -519,8 +519,12 @@ export async function handleClick(event) {
     return;
   }
   if (action === 'open-upload-drawing-modal') {
-    const { openUploadDrawingModal } = await import('../features/documents/documents.js');
-    openUploadDrawingModal(target.dataset.projectId || null);
+    if (typeof openUploadDrawingModal === 'function') {
+      openUploadDrawingModal(target.dataset.projectId || null);
+    } else {
+      const mod = await import('../features/documents/documents.js');
+      mod.openUploadDrawingModal(target.dataset.projectId || null);
+    }
     return;
   }
   if (action === 'new-project') { openProjectModal(); return; }
