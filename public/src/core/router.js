@@ -4,6 +4,7 @@ import { can, isAdmin, choose, t, esc, icon, avatar, roleName, currentViewTitle 
 import { saveOfflineBootstrap, getOfflineBootstrap, getOfflineBootstrapAsync, getPendingMutations, isOnline } from './offline.js';
 
 export function canAccessView(view) {
+  if (!state.data) return true;
   if (view === 'dashboard') return can('view_dashboard');
   if (view === 'projects' || view === 'project-detail') return can('view_projects');
   if (view === 'tasks') return can('create_tasks') || can('edit_tasks') || can('delete_tasks') || can('assign_tasks') || can('review_tasks') || can('approve_tasks') || can('manage_reminders') || isAdmin();
@@ -20,7 +21,7 @@ export function getFirstAllowedView() {
   for (const v of order) {
     if (canAccessView(v)) return v;
   }
-  return 'settings';
+  return 'dashboard';
 }
 
 export function renderSyncIndicator() {
