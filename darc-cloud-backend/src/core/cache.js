@@ -23,19 +23,35 @@ export function getCacheVersion() {
   return _cacheVersion;
 }
 
-export function getUserTokenVersion(supabase, userId) {
-  if (_userTokenVersions.has(userId)) {
-    return _userTokenVersions.get(userId);
+export async function getUserTokenRecord(supabase, userId) {
+  const cached = _userTokenVersions.get(userId);
+  const now = Date.now();
+  // 30 seconds TTL: protects DB from polling floods while ensuring instant revocation
+  if (cached && (now - cached.time < 30000)) {
+    return cached;
   }
-  return supabase.from('users').select('custom_fields').eq('id', userId).single().then(({ data }) => {
+  return supabase.from('users').select('status, custom_fields').eq('id', userId).single().then(({ data }) => {
     const ver = Number(data?.custom_fields?.tokenVersion || 1);
-    _userTokenVersions.set(userId, ver);
-    return ver;
-  }).catch(() => 1);
+    const status = data?.status || 'active';
+    const record = { ver, status, time: now };
+    _userTokenVersions.set(userId, record);
+    return record;
+  }).catch(() => ({ ver: 1, status: 'active', time: now }));
+}
+
+export async function getUserTokenVersion(supabase, userId) {
+  const rec = await getUserTokenRecord(supabase, userId);
+  return rec.ver;
 }
 
 export function setUserTokenVersion(userId, ver) {
-  _userTokenVersions.set(userId, ver);
+  const cached = _userTokenVersions.get(userId) || { status: 'active' };
+  _userTokenVersions.set(userId, { ...cached, ver, time: Date.now() });
+}
+
+export function setUserStatus(userId, status) {
+  const cached = _userTokenVersions.get(userId) || { ver: 1 };
+  _userTokenVersions.set(userId, { ...cached, status, time: Date.now() });
 }
 
 export function incrementCacheVersion() {

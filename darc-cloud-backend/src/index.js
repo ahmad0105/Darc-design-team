@@ -26,7 +26,7 @@ import { createErrorHandler } from './core/errors.js';
 import { securityHeadersMiddleware, csrfGuardMiddleware, correlationIdMiddleware, payloadLimitMiddleware } from './core/security.js';
 import { authRateLimiter, recordAuthFailure, clearAuthFailure, getClientIp, mutationRateLimiter } from './core/rate-limit.js';
 import { getDB } from './core/db.js';
-import { getUserTokenVersion } from './core/cache.js';
+import { getUserTokenRecord } from './core/cache.js';
 
 const app = new Hono();
 const _lastActiveThrottles = new Map();
@@ -213,12 +213,13 @@ app.use('/api/*', async (c, next) => {
   let payload;
   try {
     payload = await verify(token, c.env.JWT_SECRET, 'HS256');
-    if (payload.v) {
-      const supabase = getDB(c.env);
-      const currentVer = await getUserTokenVersion(supabase, payload.userId);
-      if (payload.v < currentVer) {
-        return c.json({ error: 'تم تسجيل الخروج من هذه الجلسة، يرجى تسجيل الدخول مجدداً' }, 401);
-      }
+    const supabase = getDB(c.env);
+    const userRec = await getUserTokenRecord(supabase, payload.userId);
+    if (userRec.status && userRec.status !== 'active') {
+      return c.json({ error: 'تم تعطيل أو تعليق هذا الحساب، يرجى مراجعة إدارة النظام.' }, 401);
+    }
+    if (payload.v && payload.v < userRec.ver) {
+      return c.json({ error: 'تم تسجيل الخروج من هذه الجلسة، يرجى تسجيل الدخول مجدداً' }, 401);
     }
     c.set('userId', payload.userId);
     c.set('roleId', payload.roleId);

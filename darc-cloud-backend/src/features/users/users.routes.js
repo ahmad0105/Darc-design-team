@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { getDB } from '../../core/db.js';
-import { invalidateUsersCache, setUserTokenVersion, getUserTokenVersion } from '../../core/cache.js';
+import { invalidateUsersCache, setUserTokenVersion, getUserTokenVersion, setUserStatus } from '../../core/cache.js';
 import { logAudit } from '../../core/audit.js';
 import { toCamelCase } from '../../utils/transformers.js';
 import { hasPermission } from '../../utils/permissions.js';
@@ -218,6 +218,7 @@ app.patch('/:id', async (c) => {
   const { data, error } = await supabase.from('users').update(updates).eq('id', userId).select().single();
   if (error) throw error;
 
+  if (updates.status) setUserStatus(userId, updates.status);
   invalidateUsersCache();
 
   if (data) {
@@ -242,6 +243,7 @@ app.post('/:id/deactivate', requireAdmin, async (c) => {
   const { error } = await supabase.from('users').update({ status: 'inactive', custom_fields: newFields, updated_at: new Date().toISOString() }).eq('id', targetId);
   if (error) throw error;
   setUserTokenVersion(targetId, nextVer);
+  setUserStatus(targetId, 'inactive');
   invalidateUsersCache();
   return c.json({ ok: true });
 });
@@ -261,6 +263,7 @@ app.delete('/:id', requireAdmin, async (c) => {
   const { error } = await supabase.from('users').update({ status: 'inactive', custom_fields: newFields, updated_at: new Date().toISOString() }).eq('id', targetId);
   if (error) throw error;
   setUserTokenVersion(targetId, nextVer);
+  setUserStatus(targetId, 'inactive');
   invalidateUsersCache();
   return c.json({ ok: true });
 });
