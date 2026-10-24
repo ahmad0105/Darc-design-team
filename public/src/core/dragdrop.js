@@ -55,6 +55,7 @@ function getDropTargetCard(cardsContainer, clientY) {
 document.addEventListener('dragstart', (event) => {
   const card = event.target.closest('.task-card');
   if (card) {
+    window._isDraggingTask = true;
     activeDraggedTaskId = card.dataset.taskId;
     event.dataTransfer.effectAllowed = 'move';
     try { event.dataTransfer.setData('text/plain', activeDraggedTaskId); } catch(e) {}
@@ -67,6 +68,9 @@ document.addEventListener('dragend', (event) => {
   if (card) {
     card.classList.remove('is-dragging');
   }
+  window._isDraggingTask = false;
+  window._justDroppedTaskId = activeDraggedTaskId;
+  window._justDroppedAt = Date.now();
   activeDraggedTaskId = null;
   document.querySelectorAll('.board-column').forEach(col => col.classList.remove('drag-over'));
   removePlaceholder();
@@ -78,6 +82,17 @@ document.addEventListener('dragover', (event) => {
     event.preventDefault();
     event.dataTransfer.dropEffect = 'move';
     column.classList.add('drag-over');
+
+    // Horizontal auto-scroll if dragging near screen edges on desktop
+    const edgeMargin = 50;
+    const boardEl = document.querySelector('.board, .board-columns, .tasks-board, [data-board]');
+    if (boardEl) {
+      if (event.clientX < edgeMargin) {
+        boardEl.scrollLeft -= 14;
+      } else if (event.clientX > window.innerWidth - edgeMargin) {
+        boardEl.scrollLeft += 14;
+      }
+    }
 
     const cardsContainer = column.querySelector('.board-cards');
     if (cardsContainer) {
@@ -103,9 +118,18 @@ document.addEventListener('dragenter', (event) => {
 
 document.addEventListener('dragleave', (event) => {
   const column = event.target.closest('.board-column');
-  if (column && !column.contains(event.relatedTarget)) {
-    column.classList.remove('drag-over');
-    removePlaceholder();
+  if (column) {
+    if (event.relatedTarget && column.contains(event.relatedTarget)) {
+      return; // Still inside column
+    }
+    const rect = column.getBoundingClientRect();
+    const x = event.clientX;
+    const y = event.clientY;
+    // Only remove placeholder if cursor is genuinely outside column boundary
+    if (x <= rect.left || x >= rect.right || y <= rect.top || y >= rect.bottom) {
+      column.classList.remove('drag-over');
+      removePlaceholder();
+    }
   }
 });
 
@@ -182,7 +206,21 @@ async function handleTaskDrop(column, clientY, explicitTaskId = null) {
   // Insert at the exact calculated location
   let insertIdx = targetColumnTasks.length; // default to end
   if (insertBeforeTaskId) {
-    const nextIdx = targetColumnTasks.findIndex(t => t.id === insertBeforeTaskId);
+    let nextIdx = targetColumnTasks.findIndex(t => t.id === insertBeforeTaskId);
+    if (nextIdx === -1 && placeholder && placeholder.parentNode) {
+      // Find the first subsequent card in DOM that belongs to this same project
+      let siblingEl = placeholder.nextElementSibling;
+      while (siblingEl) {
+        if (siblingEl.classList?.contains('task-card') && siblingEl.dataset.taskId) {
+          const sIdx = targetColumnTasks.findIndex(t => t.id === siblingEl.dataset.taskId);
+          if (sIdx !== -1) {
+            nextIdx = sIdx;
+            break;
+          }
+        }
+        siblingEl = siblingEl.nextElementSibling;
+      }
+    }
     if (nextIdx !== -1) insertIdx = nextIdx;
   }
   targetColumnTasks.splice(insertIdx, 0, task);

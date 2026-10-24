@@ -771,7 +771,14 @@ export async function handleClick(event) {
     requestAnimationFrame(() => renderView());
     return;
   }
-  if (action === 'open-task') { const task = state.data.tasks.find((item) => item.id === target.dataset.taskId); if (task) openTaskModal(task); return; }
+  if (action === 'open-task') {
+    if (window._justDroppedAt && (Date.now() - window._justDroppedAt < 250)) {
+      return; // Ignore synthetic click caused by mouse release on drop
+    }
+    const task = state.data.tasks.find((item) => item.id === target.dataset.taskId);
+    if (task) openTaskModal(task);
+    return;
+  }
   if (action === 'task-filter') {
     state.taskFilter = target.dataset.filter;
     target.closest('.view-toolbar-start')?.querySelectorAll('.filter-tab').forEach(b => b.classList.toggle('active', b === target));
