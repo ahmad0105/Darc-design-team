@@ -125,6 +125,19 @@ export function renderApp() {
         </div>
       </aside>
       <section class="workspace">
+        ${(state.data?.isDemo || state.data?.user?.id === 'usr_demo') ? `
+        <div class="demo-showcase-banner" style="display:flex;align-items:center;justify-content:space-between;background:linear-gradient(90deg, rgba(13,98,105,0.12), rgba(20,184,166,0.14));border-bottom:1px solid rgba(20,184,166,0.28);padding:8px 20px;font-size:12px;color:var(--ink);gap:12px;flex-wrap:wrap;z-index:90;">
+          <div style="display:flex;align-items:center;gap:8px;font-weight:600;">
+            <span style="background:var(--brand-teal);color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:12px;letter-spacing:0.5px;text-transform:uppercase;">${choose('بيئة عرض تجريبية', 'DEMO SHOWCASE')}</span>
+            <span>${choose('مساحة تفاعلية مخصصة لاستعراض قدرات المنصة — يمكنك تجربة النقل والتعديل بحرية دون التأثير على البيانات الحقيقية.', 'Interactive sandbox showcasing DARC capabilities — feel free to explore, drag, and test without affecting real data.')}</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <button class="btn btn-xs btn-soft" data-action="reset-demo-sandbox" style="font-size:11px;padding:3px 10px;border-radius:6px;display:flex;align-items:center;gap:4px;">
+              <span>🔄</span>
+              <span>${choose('إعادة ضبط البيانات', 'Reset Demo Data')}</span>
+            </button>
+          </div>
+        </div>` : ''}
         <header class="topbar">
           <div class="topbar-left"><button class="icon-button mobile-menu" data-action="toggle-sidebar" aria-label="Menu">${icon('menu', 18)}</button><div><div class="topbar-kicker">DARC / ${t('workspace')}</div><div class="topbar-title">${esc(currentViewTitle())}</div></div></div>
           <div class="topbar-right">

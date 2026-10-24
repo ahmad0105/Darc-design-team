@@ -4,6 +4,7 @@ import { hasPermission, isProjectVisible } from '../../utils/permissions.js';
 import { toCamelCase } from '../../utils/transformers.js';
 import { createNotification } from '../notifications/notifications.service.js';
 import { invalidateBootstrapCache } from '../../core/cache.js';
+import { applyDemoTaskUpdate, createDemoTask } from '../demo/demo.service.js';
 
 const app = new Hono();
 
@@ -60,9 +61,14 @@ function sanitizeCustomFields(cf) {
 app.post('/', async (c) => {
   const userId = c.get('userId');
   const roleId = c.get('roleId');
-  const supabase = c.get('supabase');
-  
   const body = await c.req.json();
+
+  if (c.get('isDemo')) {
+    const created = createDemoTask(body);
+    return c.json({ task: created }, 201);
+  }
+
+  const supabase = c.get('supabase');
   const projectId = body.projectId;
   
   if (!(await hasPermission(supabase, userId, roleId, 'create_tasks', projectId))) {
@@ -141,11 +147,17 @@ app.post('/', async (c) => {
 
 // PATCH /api/tasks/reorder - Batch update task sort orders & statuses
 app.patch('/reorder', async (c) => {
+  const body = await c.req.json();
+  const items = Array.isArray(body.items) ? body.items : [];
+
+  if (c.get('isDemo')) {
+    items.forEach(item => applyDemoTaskUpdate(item.id, item));
+    return c.json({ ok: true });
+  }
+
   const userId = c.get('userId');
   const roleId = c.get('roleId');
   const supabase = c.get('supabase');
-  const body = await c.req.json();
-  const items = Array.isArray(body.items) ? body.items : [];
 
   if (!items.length) return c.json({ ok: true });
 
@@ -202,6 +214,13 @@ app.patch('/reorder', async (c) => {
 // PATCH /api/tasks/:id
 app.patch('/:id', async (c) => {
   const taskId = c.req.param('id');
+  const body = await c.req.json();
+
+  if (c.get('isDemo')) {
+    const updated = applyDemoTaskUpdate(taskId, body);
+    return c.json({ task: toCamelCase(updated || body) });
+  }
+
   const userId = c.get('userId');
   const roleId = c.get('roleId');
   const supabase = c.get('supabase');
@@ -220,7 +239,6 @@ app.patch('/:id', async (c) => {
     return c.json({ error: 'لا تملك الصلاحية المطلوبة لهذه العملية' }, 403);
   }
 
-  const body = await c.req.json();
   const updates = {};
   
   const fieldMap = { 

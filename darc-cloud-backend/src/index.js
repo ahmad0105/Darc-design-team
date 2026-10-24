@@ -27,6 +27,7 @@ import { securityHeadersMiddleware, csrfGuardMiddleware, correlationIdMiddleware
 import { authRateLimiter, recordAuthFailure, clearAuthFailure, getClientIp, mutationRateLimiter } from './core/rate-limit.js';
 import { getDB } from './core/db.js';
 import { getUserTokenRecord } from './core/cache.js';
+import { getDemoPayload, resetDemoPayload } from './features/demo/demo.service.js';
 
 const app = new Hono();
 const _lastActiveThrottles = new Map();
@@ -135,11 +136,34 @@ app.use('/api/auth/change-password', authRateLimiter());
 app.post('/api/auth/login', async (c) => {
   const ip = getClientIp(c);
   const { email, password } = await c.req.json();
+  const cleanEmail = (email || '').trim().toLowerCase();
+
+  // 0. Dedicated Isolated Demo Sandbox Login (100% Shielded from Production DB)
+  if (cleanEmail === 'demo@darc-design.bond' || cleanEmail === 'demo@darc.local') {
+    if (password === 'demo123456') {
+      clearAuthFailure(ip);
+      const demoData = getDemoPayload();
+      const payload = {
+        userId: 'usr_demo',
+        roleId: 'admin',
+        isDemo: true,
+        v: 1,
+        exp: Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60
+      };
+      const token = await sign(payload, c.env.JWT_SECRET);
+      setSessionCookie(c, token, 604800);
+      return c.json({ token, user: demoData.user });
+    } else {
+      recordAuthFailure(ip);
+      return c.json({ error: 'البريد الإلكتروني أو كلمة المرور غير صحيحة' }, 401);
+    }
+  }
+
   const supabase = getDB(c.env);
   const { data: users, error } = await supabase
     .from('users')
     .select('id, name, name_en, email, password_hash, status, role_id, avatar_color, custom_fields')
-    .eq('email', (email || '').trim().toLowerCase())
+    .eq('email', cleanEmail)
     .limit(1);
   if (error || !users || users.length === 0) {
     recordAuthFailure(ip);
@@ -205,6 +229,11 @@ app.post('/api/auth/logout', async (c) => {
 
 app.get('/api/health', (c) => c.json({ ok: true, status: 'healthy', env: 'production' }));
 
+app.post('/api/demo/reset', async (c) => {
+  const fresh = resetDemoPayload();
+  return c.json({ ok: true, data: fresh });
+});
+
 // JWT Guard with Token Revocation Protection
 app.use('/api/*', async (c, next) => {
   if (c.req.path.startsWith('/api/auth') || c.req.path === '/api/health') return next();
@@ -213,6 +242,12 @@ app.use('/api/*', async (c, next) => {
   let payload;
   try {
     payload = await verify(token, c.env.JWT_SECRET, 'HS256');
+    if (payload.userId === 'usr_demo' || payload.isDemo) {
+      c.set('userId', 'usr_demo');
+      c.set('roleId', 'admin');
+      c.set('isDemo', true);
+      return next();
+    }
     const supabase = getDB(c.env);
     const userRec = await getUserTokenRecord(supabase, payload.userId);
     if (userRec.status && userRec.status !== 'active') {

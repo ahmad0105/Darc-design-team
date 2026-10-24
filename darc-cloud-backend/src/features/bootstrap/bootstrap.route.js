@@ -38,6 +38,7 @@ const DEFAULT_PERMISSIONS_CATALOG = [
 import { Hono } from 'hono';
 import { getDB } from '../../core/db.js';
 import { getBootstrapCache, setBootstrapCache, fetchBootstrapWithCoalescing, getCachedRoles, getCachedTemplates, getCachedUsers, getCachedCompany, getCacheVersion } from '../../core/cache.js';
+import { getDemoPayload } from '../demo/demo.service.js';
 
 const app = new Hono();
 
@@ -67,6 +68,13 @@ function toCamelCase(obj) {
 app.get('/', async (c) => {
   const userId = c.get('userId');
   const roleId = c.get('roleId');
+
+  // Isolated Showcase Demo Sandbox (100% Shielded from Production DB)
+  if (userId === 'usr_demo' || c.get('isDemo')) {
+    const demoPayload = getDemoPayload();
+    return c.json(demoPayload);
+  }
+
   const cacheKey = `${userId}:${roleId}`;
   const clientEtag = c.req.header('if-none-match');
   const cacheControl = (c.req.header('cache-control') || '').toLowerCase();

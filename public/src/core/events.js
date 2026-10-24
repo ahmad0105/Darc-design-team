@@ -5,7 +5,7 @@ import { switchView, refreshView, renderView, renderApp, canAccessView, getFirst
 import { openOmnisearch, closeOmnisearch, openShortcutsCheatsheet } from '../features/dashboard/omnisearch.js';
 import { playSuccessChime, savePreferencesCookies } from './utils.js';
 import { setSavedTaskSort, openDocumentPreviewModal, renderTaskDocuments } from '../features/tasks/tasks.js';
-import { getPendingMutations, syncPendingMutations, getOfflineBootstrap, clearOfflineBootstrap } from './offline.js';
+import { getPendingMutations, syncPendingMutations, getOfflineBootstrap, clearOfflineBootstrap, saveOfflineBootstrap } from './offline.js';
 
 export async function handleSubmit(event) {
   const form = event.target;
@@ -379,6 +379,21 @@ export async function handleClick(event) {
     }
     renderLogin(); 
     return; 
+  }
+  if (action === 'reset-demo-sandbox') {
+    try {
+      showToast(choose('جاري إعادة ضبط بيانات العرض التجريبي...', 'Resetting demo sandbox...'), false);
+      const res = await api('/api/demo/reset', { method: 'POST' });
+      if (res && res.data) {
+        state.data = res.data;
+        saveOfflineBootstrap(res.data);
+        renderApp();
+        showToast(choose('تمت إعادة ضبط البيانات بنجاح ✨', 'Demo data reset successfully ✨'), false);
+      }
+    } catch (e) {
+      showToast(e.message, true);
+    }
+    return;
   }
   if (action === 'toggle-sidebar') { state.sidebarOpen = !state.sidebarOpen; document.querySelector('.sidebar')?.classList.toggle('open', state.sidebarOpen); return; }
   if (action === 'logout') {
