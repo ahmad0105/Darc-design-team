@@ -958,7 +958,7 @@ var e=Object.defineProperty,n=(n,r)=>{let i={};for(var a in n)e(i,a,{get:n[a],en
             <!-- Filter by Task dropdown -->
             <div style="display:flex;align-items:center;gap:6px;">
               <span style="font-size:12px;color:var(--ink-soft);">${choose(`المهمة:`,`Task:`)}</span>
-              <select data-action="filter-project-docs-task" style="padding:6px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);font-size:12px;max-width:200px;">
+              <select data-action="filter-project-docs-task" class="filter-select select-compact" style="max-width:200px;">
                 <option value="all" ${o===`all`?`selected`:``}>${choose(`— جميع المهام —`,`— All Tasks —`)}</option>
                 ${n.map(e=>`<option value="${esc(e.id)}" ${o===e.id?`selected`:``}>${esc(choose(e.titleAr,e.titleEn))}</option>`).join(``)}
               </select>
@@ -1523,7 +1523,7 @@ var e=Object.defineProperty,n=(n,r)=>{let i={};for(var a in n)e(i,a,{get:n[a],en
 
       <div style="display:flex;align-items:center;gap:8px;">
         <span style="font-size:12px;color:var(--ink-soft);">${O(`المشروع:`,`Project:`)}</span>
-        <select data-action="doc-project-filter" style="padding:8px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);font-size:12px;min-width:180px;">
+        <select data-action="doc-project-filter" class="filter-select select-compact" style="min-width:180px;">
           <option value="all" ${o===`all`?`selected`:``}>${O(`— جميع المشاريع —`,`— All Projects —`)}</option>
           ${n.map(e=>`<option value="${k(e.id)}" ${o===e.id?`selected`:``}>${k(e.code)} - ${k(O(e.nameAr,e.nameEn))}</option>`).join(``)}
         </select>
@@ -1631,14 +1631,14 @@ var e=Object.defineProperty,n=(n,r)=>{let i={};for(var a in n)e(i,a,{get:n[a],en
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
         <div class="field">
           <label style="font-size:12px;font-weight:700;">${O(`المشروع المستهدف *`,`Target Project *`)}</label>
-          <select id="drawing-upload-project" style="width:100%;min-height:44px;padding:8px 12px;font-size:13px;line-height:1.6;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);box-sizing:border-box;" required>
+          <select id="drawing-upload-project" style="width:100%;min-height:44px;padding:8px 12px 8px 36px;font-size:13px;line-height:1.6;border:1px solid var(--line);border-radius:10px;background-color:var(--surface);color:var(--ink);box-sizing:border-box;" required>
             ${n.map(e=>`<option value="${k(e.id)}" ${e.id===i?`selected`:``}>${k(e.code)} - ${k(O(e.nameAr,e.nameEn))}</option>`).join(``)}
           </select>
         </div>
 
         <div class="field">
           <label style="font-size:12px;font-weight:700;">${O(`المهمة الهندسية (اختياري)`,`Engineering Task (Optional)`)}</label>
-          <select id="drawing-upload-task" style="width:100%;min-height:44px;padding:8px 12px;font-size:13px;line-height:1.6;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);box-sizing:border-box;">
+          <select id="drawing-upload-task" style="width:100%;min-height:44px;padding:8px 12px 8px 36px;font-size:13px;line-height:1.6;border:1px solid var(--line);border-radius:10px;background-color:var(--surface);color:var(--ink);box-sizing:border-box;">
             <option value="">${O(`— مخطط عام لكامل المشروع —`,`— General Project Drawing —`)}</option>
             ${a.map(e=>`<option value="${k(e.id)}">${k(O(e.titleAr,e.titleEn))}</option>`).join(``)}
           </select>
@@ -1648,7 +1648,7 @@ var e=Object.defineProperty,n=(n,r)=>{let i={};for(var a in n)e(i,a,{get:n[a],en
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
         <div class="field">
           <label style="font-size:12px;font-weight:700;">${O(`التخصص الهندسي`,`Engineering Discipline`)}</label>
-          <select id="drawing-upload-discipline" style="width:100%;min-height:44px;padding:8px 12px;font-size:13px;line-height:1.6;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);box-sizing:border-box;">
+          <select id="drawing-upload-discipline" style="width:100%;min-height:44px;padding:8px 12px 8px 36px;font-size:13px;line-height:1.6;border:1px solid var(--line);border-radius:10px;background-color:var(--surface);color:var(--ink);box-sizing:border-box;">
             <option value="معماري">🏛️ ${O(`معماري (Architectural)`,`Architectural`)}</option>
             <option value="إنشائي">🏗️ ${O(`إنشائي (Structural)`,`Structural`)}</option>
             <option value="كهرباء">⚡ ${O(`كهرباء (Electrical)`,`Electrical`)}</option>
@@ -1661,7 +1661,7 @@ var e=Object.defineProperty,n=(n,r)=>{let i={};for(var a in n)e(i,a,{get:n[a],en
 
         <div class="field">
           <label style="font-size:12px;font-weight:700;">${O(`الحالة الهندسية المبدئية`,`Initial Approval Status`)}</label>
-          <select id="drawing-upload-status" style="width:100%;min-height:44px;padding:8px 12px;font-size:13px;line-height:1.6;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);box-sizing:border-box;">
+          <select id="drawing-upload-status" style="width:100%;min-height:44px;padding:8px 12px 8px 36px;font-size:13px;line-height:1.6;border:1px solid var(--line);border-radius:10px;background-color:var(--surface);color:var(--ink);box-sizing:border-box;">
             <option value="draft">📝 ${O(`مسودة عمل (Draft)`,`Draft`)}</option>
             <option value="review" selected>🔍 ${O(`قيد المراجعة الفنية (Under Review)`,`Under Review`)}</option>
             <option value="approved">✅ ${O(`معتمد للتنفيذ (Approved for Construction)`,`Approved for Construction`)}</option>

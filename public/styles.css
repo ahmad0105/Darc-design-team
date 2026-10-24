@@ -280,9 +280,17 @@ a { color: inherit; text-decoration: none; }
   border: 1px solid var(--line);
   border-radius: 12px;
   outline: 0;
-  background: #fff;
+  background-color: var(--surface, #fff);
   color: var(--ink);
   transition: .2s border-color, .2s box-shadow;
+}
+.field select {
+  padding-left: 38px;
+  line-height: 1.6;
+}
+.is-ltr .field select, [dir="ltr"] .field select {
+  padding-left: 14px;
+  padding-right: 38px;
 }
 .field textarea { min-height: 100px; resize: vertical; }
 .field input::placeholder, .field textarea::placeholder { color: #b0bdbc; }
@@ -560,7 +568,8 @@ a { color: inherit; text-decoration: none; }
 /* Engineering Drawings & Deliverables Badges */
 .file-format-badge { display: inline-flex; align-items: center; justify-content: center; font-family: "JetBrains Mono", monospace; line-height: 1; letter-spacing: 0.5px; }
 .version-badge { font-family: "JetBrains Mono", monospace; letter-spacing: 0.5px; }
-.doc-status-select { font-family: inherit; font-size: 11px; font-weight: 700; height: 32px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); padding: 0 8px; cursor: pointer; outline: none; }
+.doc-status-select { font-family: inherit; font-size: 11px; font-weight: 700; height: 32px; border-radius: 8px; border: 1px solid var(--line); background-color: var(--surface); color: var(--ink); padding: 0 8px 0 24px !important; background-position: left 8px center !important; background-size: 11px 11px !important; cursor: pointer; outline: none; }
+.is-ltr .doc-status-select, [dir="ltr"] .doc-status-select { padding: 0 24px 0 8px !important; background-position: right 8px center !important; }
 .doc-status-select:focus { border-color: var(--teal); box-shadow: 0 0 0 2px var(--teal-soft); }
 .priority-badge { padding: 4px 7px; font-weight: 900; }
 .priority-badge.urgent { color: var(--red); background: var(--red-soft); }
@@ -599,31 +608,40 @@ a { color: inherit; text-decoration: none; }
 .search-box:focus-within, .filter-select:focus, .select-compact:focus { border-color: var(--teal, #0d9488); box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.12); }
 .search-box svg { width: 15px; height: 15px; flex: none; color: var(--muted); }
 .search-box input { width: 100%; height: 100%; padding: 0; border: 0; outline: 0; color: var(--ink); background: transparent; font-size: 12px; font-weight: 500; }
-.filter-select, .select-compact {
-  appearance: none;
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  height: 38px;
+/* --- Universal Dropdown & Select Box Styling (Every select has the chevron arrow) --- */
+select, .filter-select, .select-compact {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
   box-sizing: border-box;
-  padding: 0 12px 0 30px;
+  padding: 0 12px 0 34px;
   border: 1px solid var(--line);
   border-radius: 10px;
   outline: 0;
   color: var(--ink);
   background-color: var(--surface, #fff);
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%238fa3a1' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: left 10px center;
-  background-size: 14px 14px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23466367' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: left 12px center !important;
+  background-size: 14px 14px !important;
   font-size: 12px;
   font-weight: 500;
   font-family: inherit;
   cursor: pointer;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
-.is-ltr .filter-select, .is-ltr .select-compact, [dir="ltr"] .filter-select, [dir="ltr"] .select-compact {
-  padding: 0 30px 0 12px;
-  background-position: right 10px center;
+.filter-select, .sort-box select, .select-compact {
+  height: 38px;
+}
+.is-ltr select, .is-ltr .filter-select, .is-ltr .select-compact, [dir="ltr"] select, [dir="ltr"] .filter-select, [dir="ltr"] .select-compact {
+  padding: 0 34px 0 12px;
+  background-position: right 12px center !important;
+}
+[data-theme="dark"] select,
+[data-theme="dark"] .filter-select,
+[data-theme="dark"] .select-compact {
+  background-color: var(--surface-soft, #1e293b);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") !important;
 }
 .sort-box { display: inline-flex; align-items: center; gap: 6px; }
 .sort-box span { font-size: 12px; font-weight: 600; color: var(--ink-soft); white-space: nowrap; }
@@ -786,7 +804,21 @@ a { color: inherit; text-decoration: none; }
 .data-table tr:hover td { background: #fbfdfc; }
 .table-title { color: var(--ink); font-weight: 900; }
 .table-sub { display: block; margin-top: 4px; color: var(--muted); font-size: 9px; }
-.select-compact { padding: 6px 8px; border: 1px solid var(--line); border-radius: 8px; outline: 0; color: var(--ink-soft); background: #fff; font-size: 9px; }
+.data-table .select-compact {
+  padding: 4px 6px 4px 22px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  outline: 0;
+  color: var(--ink-soft);
+  font-size: 10px;
+  background-color: var(--surface, #fff);
+  background-position: left 6px center !important;
+  background-size: 10px 10px !important;
+}
+.is-ltr .data-table .select-compact, [dir="ltr"] .data-table .select-compact {
+  padding: 4px 22px 4px 6px;
+  background-position: right 6px center !important;
+}
 
 .project-hero { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; margin-bottom: 22px; padding: 24px; border: 1px solid var(--line); border-radius: var(--radius-lg); background: #fff; box-shadow: var(--shadow-sm); }
 .project-hero-copy { min-width: 0; display: flex; align-items: flex-start; gap: 14px; }
@@ -1549,7 +1581,7 @@ body:has(#floating-upload-manager) .toast-stack { bottom: 230px; }
 [data-theme="dark"] input,
 [data-theme="dark"] select,
 [data-theme="dark"] textarea {
-  background: var(--surface-soft) !important;
+  background-color: var(--surface-soft) !important;
   border-color: var(--line) !important;
   color: var(--ink) !important;
 }

@@ -521,7 +521,7 @@ export function renderProjectDetail() {
             <!-- Filter by Task dropdown -->
             <div style="display:flex;align-items:center;gap:6px;">
               <span style="font-size:12px;color:var(--ink-soft);">${choose('المهمة:', 'Task:')}</span>
-              <select data-action="filter-project-docs-task" style="padding:6px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);font-size:12px;max-width:200px;">
+              <select data-action="filter-project-docs-task" class="filter-select select-compact" style="max-width:200px;">
                 <option value="all" ${docTaskFilter === 'all' ? 'selected' : ''}>${choose('— جميع المهام —', '— All Tasks —')}</option>
                 ${allTasks.map(t => `<option value="${esc(t.id)}" ${docTaskFilter === t.id ? 'selected' : ''}>${esc(choose(t.titleAr, t.titleEn))}</option>`).join('')}
               </select>
