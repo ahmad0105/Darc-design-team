@@ -98,12 +98,13 @@ export async function api(path, options = {}) {
   };
 
   options.credentials = 'include';
+  const isSilent = Boolean(options.silent || (options.headers && options.headers['X-Silent']));
   let response;
-  showGlobalLoading();
+  if (!isSilent) showGlobalLoading();
   try {
     response = await fetch(API_BASE + path, { ...options, headers });
   } catch (networkError) {
-    hideGlobalLoading();
+    if (!isSilent) hideGlobalLoading();
     if (isMutation && !isAuth && !isReplay) {
       const item = enqueueOfflineMutation({
         path,
@@ -117,7 +118,7 @@ export async function api(path, options = {}) {
     throw new Error('تعذر الاتصال بالخادم، يرجى التحقق من اتصال الإنترنت.');
   }
 
-  hideGlobalLoading();
+  if (!isSilent) hideGlobalLoading();
   
   if (response.status === 304) {
     return null; // HTTP 304 Not Modified: Data is identical, 0 bytes transferred

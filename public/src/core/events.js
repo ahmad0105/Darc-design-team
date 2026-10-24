@@ -1829,7 +1829,7 @@ export async function init() {
             // Ignore background poll errors (e.g. offline)
           }
         }
-      }, 10000); // Poll every 10 seconds (0ms CPU & 0 bytes via 304 ETag)
+      }, 3000); // Poll every 3 seconds (0ms CPU & 0 bytes via 304 ETag)
 
       // Refresh immediately when user returns to tab
       if (typeof document !== 'undefined') {

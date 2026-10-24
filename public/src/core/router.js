@@ -220,7 +220,7 @@ export async function refreshView(silent = false) { try { await loadData(silent)
 
 export async function loadData(silent = false) {
   try {
-    const payload = await api('/api/bootstrap');
+    const payload = await api('/api/bootstrap', { silent });
     if (payload === null) {
       // HTTP 304 Not Modified: Cache is completely identical, 0ms CPU & 0 DOM ops!
       return;
@@ -259,11 +259,38 @@ export async function loadData(silent = false) {
       }
     }
     
-    // Prevent DOM thrashing: Fast shallow comparison instead of expensive synchronous JSON.stringify
-    const isDataChanged = !state.data || 
-      state.data.updatedAt !== payload.updatedAt ||
-      state.data.projects?.length !== payload.projects?.length ||
-      state.data.tasks?.length !== payload.tasks?.length ||
+    // Deep entity check: Ensure reorders, status changes, and progress updates trigger re-render
+    let hasEntityChanged = false;
+    if (state.data && payload) {
+      if (state.data.updatedAt !== payload.updatedAt) {
+        hasEntityChanged = true;
+      } else if (state.data.tasks?.length !== payload.tasks?.length || state.data.projects?.length !== payload.projects?.length) {
+        hasEntityChanged = true;
+      } else {
+        const oldTasks = state.data.tasks || [];
+        const newTasks = payload.tasks || [];
+        for (let i = 0; i < newTasks.length; i++) {
+          const nt = newTasks[i], ot = oldTasks[i];
+          if (!ot || ot.id !== nt.id || ot.status !== nt.status || (ot.sortOrder || ot.sort_order) !== (nt.sortOrder || nt.sort_order) || ot.progress !== nt.progress) {
+            hasEntityChanged = true;
+            break;
+          }
+        }
+        if (!hasEntityChanged) {
+          const oldProjs = state.data.projects || [];
+          const newProjs = payload.projects || [];
+          for (let i = 0; i < newProjs.length; i++) {
+            const np = newProjs[i], op = oldProjs[i];
+            if (!op || op.id !== np.id || op.lifecycle !== np.lifecycle || op.health !== np.health || op.progress !== np.progress) {
+              hasEntityChanged = true;
+              break;
+            }
+          }
+        }
+      }
+    }
+
+    const isDataChanged = !state.data || hasEntityChanged ||
       state.data.comments?.length !== payload.comments?.length ||
       state.data.documents?.length !== payload.documents?.length ||
       state.data.users?.length !== payload.users?.length ||

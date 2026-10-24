@@ -270,7 +270,29 @@ app.get('/', async (c) => {
       return true;
     });
 
+    let maxUpdatedAt = 0;
+    for (const t of tasks) {
+      if (t.updated_at) {
+        const time = new Date(t.updated_at).getTime();
+        if (time > maxUpdatedAt) maxUpdatedAt = time;
+      }
+    }
+    for (const p of projects) {
+      if (p.updated_at) {
+        const time = new Date(p.updated_at).getTime();
+        if (time > maxUpdatedAt) maxUpdatedAt = time;
+      }
+    }
+    for (const d of documents) {
+      if (d.updated_at) {
+        const time = new Date(d.updated_at).getTime();
+        if (time > maxUpdatedAt) maxUpdatedAt = time;
+      }
+    }
+    const computedUpdatedAt = maxUpdatedAt ? new Date(maxUpdatedAt).toISOString() : new Date().toISOString();
+
     const responsePayload = {
+      updatedAt: computedUpdatedAt,
       company: toCamelCase(company || { name: 'DARC Design Team', nameAr: 'فريق دارك للتصميم', nameEn: 'DARC Design Team' }),
       user: toCamelCase(currentUser),
       role: toCamelCase(userRole || {}),
