@@ -842,6 +842,14 @@ export async function handleClick(event) {
   }
   if (action === 'settings-section') { 
     state.settingsSection = target.dataset.section; 
+    try {
+      if (typeof sessionStorage !== 'undefined') {
+        const saved = sessionStorage.getItem('darc_last_route');
+        const parsed = saved ? JSON.parse(saved) : {};
+        parsed.settingsSection = state.settingsSection;
+        sessionStorage.setItem('darc_last_route', JSON.stringify(parsed));
+      }
+    } catch (e) {}
     target.closest('.settings-nav')?.querySelectorAll('.settings-nav-item').forEach(b => b.classList.toggle('active', b === target));
     if (state.settingsSection === 'trash' && !state.trashLoaded) {
       api('/api/trash').then(data => {
@@ -1893,6 +1901,36 @@ export async function init() {
   if (rawHash === 'forgot') return renderLogin('', 'forgot');
   if (rawHash === 'login') return renderLogin();
 
+  // Restore route from hash or session storage on refresh BEFORE initial paint
+  try {
+    if (rawHash) {
+      const [viewPart, queryPart] = rawHash.split('?');
+      const validViews = ['dashboard', 'projects', 'tasks', 'documents', 'templates', 'team', 'reports', 'settings', 'project-detail'];
+      if (validViews.includes(viewPart)) {
+        state.view = viewPart;
+        if (queryPart) {
+          const q = new URLSearchParams(queryPart);
+          if (q.get('id')) state.activeProjectId = q.get('id');
+          if (q.get('tab')) state.projectTab = q.get('tab');
+          if (q.get('section')) state.settingsSection = q.get('section');
+        }
+      }
+    } else if (typeof sessionStorage !== 'undefined') {
+      const saved = sessionStorage.getItem('darc_last_route');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.view) state.view = parsed.view;
+        if (parsed.activeProjectId) state.activeProjectId = parsed.activeProjectId;
+        if (parsed.projectTab) state.projectTab = parsed.projectTab;
+        if (parsed.settingsSection) state.settingsSection = parsed.settingsSection;
+      }
+    }
+  } catch (e) {}
+
+  if (state.view === 'settings' && !state.settingsSection) {
+    state.settingsSection = 'profile';
+  }
+
   // Instant 0ms Paint: If offline cache is available, pre-render workspace immediately
   const cachedData = getOfflineBootstrap();
   if (cachedData && cachedData.user) {
@@ -1904,30 +1942,6 @@ export async function init() {
   } else {
     renderLoading();
   }
-
-  // Restore route from hash or session storage on refresh
-  try {
-    if (rawHash) {
-      const [viewPart, queryPart] = rawHash.split('?');
-      const validViews = ['dashboard', 'projects', 'tasks', 'documents', 'templates', 'team', 'reports', 'settings', 'project-detail'];
-      if (validViews.includes(viewPart)) {
-        state.view = viewPart;
-        if (queryPart) {
-          const q = new URLSearchParams(queryPart);
-          if (q.get('id')) state.activeProjectId = q.get('id');
-          if (q.get('tab')) state.projectTab = q.get('tab');
-        }
-      }
-    } else if (typeof sessionStorage !== 'undefined') {
-      const saved = sessionStorage.getItem('darc_last_route');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed.view) state.view = parsed.view;
-        if (parsed.activeProjectId) state.activeProjectId = parsed.activeProjectId;
-        if (parsed.projectTab) state.projectTab = parsed.projectTab;
-      }
-    }
-  } catch (e) {}
 
   try { 
     // Replay any pending mutations from previous offline sessions before loading fresh bootstrap
@@ -2074,6 +2088,7 @@ if (typeof window !== 'undefined' && !window._hashChangeListenerSet) {
         const q = new URLSearchParams(queryPart);
         if (q.get('id')) pid = q.get('id');
         if (q.get('tab')) state.projectTab = q.get('tab');
+        if (q.get('section')) state.settingsSection = q.get('section');
       }
       if (state.view !== viewPart || state.activeProjectId !== pid) {
         switchView(viewPart, pid);

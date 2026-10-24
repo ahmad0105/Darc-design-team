@@ -40,13 +40,52 @@ function resolveInitialTheme() {
   return 'light';
 }
 
+function resolveInitialRoute() {
+  const defaultRoute = { view: 'dashboard', activeProjectId: null, projectTab: 'overview', settingsSection: 'profile' };
+  if (typeof window === 'undefined') return defaultRoute;
+  try {
+    const rawHash = window.location.hash.replace(/^#/, '');
+    if (rawHash && !['login', 'forgot'].includes(rawHash)) {
+      const [viewPart, queryPart] = rawHash.split('?');
+      const validViews = ['dashboard', 'projects', 'tasks', 'documents', 'templates', 'team', 'reports', 'settings', 'project-detail'];
+      if (validViews.includes(viewPart)) {
+        let activeProjectId = null;
+        let projectTab = 'overview';
+        let settingsSection = 'profile';
+        if (queryPart) {
+          const q = new URLSearchParams(queryPart);
+          if (q.get('id')) activeProjectId = q.get('id');
+          if (q.get('tab')) projectTab = q.get('tab');
+          if (q.get('section')) settingsSection = q.get('section');
+        }
+        return { view: viewPart, activeProjectId, projectTab, settingsSection };
+      }
+    }
+    const saved = sessionStorage.getItem('darc_last_route');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (parsed.view) {
+        return {
+          view: parsed.view,
+          activeProjectId: parsed.activeProjectId || null,
+          projectTab: parsed.projectTab || 'overview',
+          settingsSection: parsed.settingsSection || 'profile'
+        };
+      }
+    }
+  } catch (e) {}
+  return defaultRoute;
+}
+
+const initialRoute = resolveInitialRoute();
+
 export const state = {
   lang: resolveInitialLang(),
   theme: resolveInitialTheme(),
-  view: 'dashboard',
-  activeProjectId: null,
-  projectTab: 'overview',
-  settingsSection: 'company',
+  view: initialRoute.view,
+  activeProjectId: initialRoute.activeProjectId,
+  projectTab: initialRoute.projectTab,
+  settingsSection: initialRoute.settingsSection || 'profile',
   templateCategory: 'all',
   searches: { projects: '', tasks: '', templates: '', documents: '' },
   taskFilter: 'all',

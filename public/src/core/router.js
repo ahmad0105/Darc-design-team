@@ -180,6 +180,7 @@ export function switchView(view, projectId = undefined) {
   }
   state.view = view;
   if (projectId !== undefined) state.activeProjectId = projectId;
+  if (view === 'settings') state.settingsSection = 'profile';
   state.sidebarOpen = false;
   document.querySelector('.sidebar')?.classList.remove('open');
 
@@ -206,7 +207,8 @@ export function switchView(view, projectId = undefined) {
       sessionStorage.setItem('darc_last_route', JSON.stringify({
         view: state.view,
         activeProjectId: state.activeProjectId,
-        projectTab: state.projectTab
+        projectTab: state.projectTab,
+        settingsSection: state.settingsSection
       }));
     }
   } catch (e) {}
