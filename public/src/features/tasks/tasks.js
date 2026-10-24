@@ -172,9 +172,9 @@ export function setSavedTaskSort(mode) {
 export function renderTaskSortSelect(currentSort, actionName = 'sort-project-tasks') {
   const activeSort = currentSort || getSavedTaskSort();
   return `
-    <div style="display:flex;align-items:center;gap:6px;">
-      <span style="font-size:12px;color:var(--ink-soft);">${choose('الترتيب:', 'Sort:')}</span>
-      <select data-action="${actionName}" style="padding:5px 9px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);font-size:12px;">
+    <div class="sort-box">
+      <span>${choose('الترتيب:', 'Sort:')}</span>
+      <select class="filter-select select-compact" data-action="${actionName}">
         <option value="importance" ${activeSort === 'importance' ? 'selected' : ''}>${choose('حسب الأهمية والأولوية (افتراضي)', 'By Importance & Priority (Default)')}</option>
         <option value="deadline" ${activeSort === 'deadline' ? 'selected' : ''}>${choose('الأقرب استحقاقاً', 'Earliest Deadline')}</option>
         <option value="custom" ${activeSort === 'custom' ? 'selected' : ''}>${choose('ترتيب مخصص (السحب والإسقاط)', 'Custom (Drag & Drop)')}</option>

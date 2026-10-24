@@ -456,7 +456,7 @@ export function renderProjects() {
     projects.sort((a, b) => (Number(b.progress) || 0) - (Number(a.progress) || 0));
   }
 
-  return `<div class="page-head"><div><p class="eyebrow">${choose('المحفظة', 'PORTFOLIO')}</p><h1>${t('projects')}</h1><p>${choose('كل مشروع في صورة واحدة: الحالة، الإنجاز، الفريق، والموعد التالي.', 'One view for every project: health, progress, team, and next deadline.')}</p></div><div class="page-actions">${can('create_projects') ? `<button class="btn btn-primary" data-action="new-project">${icon('plus', 15)} ${t('addProject')}</button>` : ''}</div></div><div class="view-toolbar"><div class="view-toolbar-start"><div class="search-box">${icon('search', 15)}<input data-search="projects" value="${esc(state.searches.projects)}" placeholder="${t('search')}" /></div><div class="sort-box" style="display:flex;align-items:center;gap:6px;"><span style="font-size:11px;color:var(--muted);">${choose('الترتيب:', 'Sort:')}</span><select id="sort-projects" class="select-compact" data-action="sort-projects" style="font-size:11px;padding:6px 10px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer;"><option value="default" ${sort === 'default' ? 'selected' : ''}>${choose('الافتراضي', 'Default')}</option><option value="alpha-asc" ${sort === 'alpha-asc' ? 'selected' : ''}>${choose('أبجدياً (أ - ي)', 'Alphabetical (A - Z)')}</option><option value="alpha-desc" ${sort === 'alpha-desc' ? 'selected' : ''}>${choose('أبجدياً (ي - أ)', 'Alphabetical (Z - A)')}</option><option value="progress-asc" ${sort === 'progress-asc' ? 'selected' : ''}>${choose('نسبة الإنجاز (تصاعدي 0% ← 100%)', 'Progress (Low to High)')}</option><option value="progress-desc" ${sort === 'progress-desc' ? 'selected' : ''}>${choose('نسبة الإنجاز (تنازلي 100% ← 0%)', 'Progress (High to Low)')}</option></select></div></div><div class="view-toolbar-end"><span class="mini-badge" style="padding:8px 10px;color:var(--ink-soft);background:var(--surface-soft)">${projects.length} ${choose('مشاريع', 'projects')}</span></div></div>${projects.length ? `<div class="project-cards">${projects.map(projectCard).join('')}</div>` : `<section class="panel"><div class="empty">${icon('building', 18)}<span>${t('noProjects')}</span></div></section>`}`;
+  return `<div class="page-head"><div><p class="eyebrow">${choose('المحفظة', 'PORTFOLIO')}</p><h1>${t('projects')}</h1><p>${choose('كل مشروع في صورة واحدة: الحالة، الإنجاز، الفريق، والموعد التالي.', 'One view for every project: health, progress, team, and next deadline.')}</p></div><div class="page-actions">${can('create_projects') ? `<button class="btn btn-primary" data-action="new-project">${icon('plus', 15)} ${t('addProject')}</button>` : ''}</div></div><div class="view-toolbar"><div class="view-toolbar-start"><div class="search-box">${icon('search', 15)}<input data-search="projects" value="${esc(state.searches.projects)}" placeholder="${t('search')}" /></div><div class="sort-box"><span>${choose('الترتيب:', 'Sort:')}</span><select id="sort-projects" class="select-compact" data-action="sort-projects"><option value="default" ${sort === 'default' ? 'selected' : ''}>${choose('الافتراضي', 'Default')}</option><option value="alpha-asc" ${sort === 'alpha-asc' ? 'selected' : ''}>${choose('أبجدياً (أ - ي)', 'Alphabetical (A - Z)')}</option><option value="alpha-desc" ${sort === 'alpha-desc' ? 'selected' : ''}>${choose('أبجدياً (ي - أ)', 'Alphabetical (Z - A)')}</option><option value="progress-asc" ${sort === 'progress-asc' ? 'selected' : ''}>${choose('نسبة الإنجاز (تصاعدي 0% ← 100%)', 'Progress (Low to High)')}</option><option value="progress-desc" ${sort === 'progress-desc' ? 'selected' : ''}>${choose('نسبة الإنجاز (تنازلي 100% ← 0%)', 'Progress (High to Low)')}</option></select></div></div><div class="view-toolbar-end"><span class="mini-badge" style="padding:8px 10px;color:var(--ink-soft);background:var(--surface-soft)">${projects.length} ${choose('مشاريع', 'projects')}</span></div></div>${projects.length ? `<div class="project-cards">${projects.map(projectCard).join('')}</div>` : `<section class="panel"><div class="empty">${icon('building', 18)}<span>${t('noProjects')}</span></div></section>`}`;
 }
 
 export function renderProjectDetail() {
@@ -1118,6 +1118,14 @@ export function exportPortfolioXLS() {
   table += '</table>';
   exportXLS(`DARC_Portfolio_Report_${new Date().toISOString().split('T')[0]}`, table);
   showToast(choose('تم بدء تحميل التقرير.', 'Report download started.'));
+  api('/api/audit', {
+    method: 'POST',
+    body: JSON.stringify({
+      action: 'export_report',
+      entityType: 'report',
+      details: { title: choose('تقرير حالة مشاريع المحفظة (Excel)', 'Portfolio Projects Report (Excel)'), count: projects.length }
+    })
+  }).catch(() => {});
 }
 
 export function exportProjectXLS(projectId) {
@@ -1168,5 +1176,14 @@ export function exportProjectXLS(projectId) {
   table += '</table>';
   exportXLS(`DARC_Project_${project.code}_${new Date().toISOString().split('T')[0]}`, table);
   showToast(choose('تم بدء تحميل التقرير.', 'Report download started.'));
+  api('/api/audit', {
+    method: 'POST',
+    body: JSON.stringify({
+      action: 'export_report',
+      entityType: 'project',
+      entityId: projectId,
+      details: { title: choose(`تقرير مهام مشروع: ${project.nameAr}`, `Project Tasks Report: ${project.nameEn || project.nameAr}`), taskCount: tasks.length }
+    })
+  }).catch(() => {});
 }
 

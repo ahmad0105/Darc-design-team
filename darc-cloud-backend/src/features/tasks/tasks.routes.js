@@ -178,6 +178,15 @@ app.patch('/reorder', async (c) => {
       updated_at: now
     };
     if (item.status && ['not_started', 'in_progress', 'review', 'approval', 'done', 'blocked', 'canceled'].includes(item.status)) {
+      if (existing.status !== item.status) {
+        supabase.from('audit_logs').insert([{
+          user_id: userId,
+          action: 'status_change',
+          entity_type: 'task',
+          entity_id: item.id,
+          details: { oldStatus: existing.status, newStatus: item.status }
+        }]).then().catch(() => {});
+      }
       updates.status = item.status;
       const autoP = calculateAutoProgress(item.status);
       if (autoP !== null) updates.progress = autoP;

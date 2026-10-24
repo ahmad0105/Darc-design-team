@@ -744,6 +744,8 @@ export async function handleClick(event) {
   if (action === 'project-tab') {
     state.projectTab = target.dataset.tab;
     target.closest('.detail-tabs')?.querySelectorAll('.detail-tab').forEach(b => b.classList.toggle('active', b === target));
+    const main = document.getElementById('main-content');
+    if (main) main.scrollTop = 0;
     requestAnimationFrame(() => renderView());
     return;
   }

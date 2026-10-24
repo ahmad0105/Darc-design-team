@@ -95,10 +95,6 @@ export function renderTemplates() {
                   <span>${esc(state.lang === 'ar' ? template.nameEn : template.nameAr)}</span>
                 </div>
                 <span class="badge badge-teal" style="font-size:10.5px;font-weight:600;padding:2px 8px;border-radius:6px;margin-inline-start:auto;">${esc(template.typeAr || 'مخطط')}</span>
-                <button class="btn btn-secondary btn-sm" data-action="use-template" data-template-id="${esc(template.id)}" title="${t('useTemplate')}" style="padding:3px 8px;font-size:11px;margin-inline-start:6px;display:inline-flex;align-items:center;gap:4px;border-radius:6px;">
-                  ${icon('plus', 12)}
-                  <span>${t('useTemplate')}</span>
-                </button>
                 ${can('manage_templates') ? `<button class="template-action" data-action="edit-template" data-template-id="${esc(template.id)}" title="${t('edit')}" style="background:var(--surface-soft);color:var(--ink-soft);border-radius:6px;width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--line);margin-${state.lang === 'ar' ? 'right' : 'left'}:6px">${icon('edit', 14)}</button>` : ''}
               </article>
             `).join('')}

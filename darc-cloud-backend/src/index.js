@@ -303,6 +303,23 @@ app.use('/api/*', async (c, next) => {
   }
 });
 
+app.post('/api/audit', async (c) => {
+  const userId = c.get('userId');
+  if (!userId) return c.json({ error: 'غير مصرح' }, 401);
+  const body = await c.req.json();
+  const supabase = getDB(c.env);
+  const nowIso = new Date().toISOString();
+  await supabase.from('audit_logs').insert([{
+    user_id: userId,
+    action: body.action || 'activity',
+    entity_type: body.entityType || 'system',
+    entity_id: body.entityId || null,
+    details: body.details || {},
+    created_at: nowIso
+  }]);
+  return c.json({ ok: true });
+});
+
 // Route mounting
 app.route('/api/projects',      projectsApp);
 app.route('/api/tasks',         tasksApp);

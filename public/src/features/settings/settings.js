@@ -99,6 +99,81 @@ export function renderUserActivityCell(user) {
   return `<div class="activity-wrapper">${activityPill}${loginText}</div>`;
 }
 
+function formatAuditTimestamp(isoStr) {
+  if (!isoStr) return { date: '—', time: '—' };
+  try {
+    const d = new Date(isoStr);
+    if (isNaN(d.getTime())) return { date: isoStr, time: '' };
+    const date = new Intl.DateTimeFormat(state.lang === 'ar' ? 'ar-SA' : 'en-US', {
+      year: 'numeric', month: 'short', day: 'numeric'
+    }).format(d);
+    const time = new Intl.DateTimeFormat(state.lang === 'ar' ? 'ar-SA' : 'en-US', {
+      hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true
+    }).format(d);
+    return { date, time };
+  } catch (e) {
+    return { date: isoStr, time: '' };
+  }
+}
+
+function renderAuditDetails(log) {
+  const action = log.action || '';
+  const entityType = log.entityType || log.entity_type || '';
+  const details = log.details || {};
+
+  let badgeClass = 'badge-neutral';
+  let actionLabel = action;
+  let entityLabel = entityType;
+
+  if (action === 'login') {
+    badgeClass = 'badge-teal';
+    actionLabel = choose('تسجيل دخول', 'Sign In');
+    entityLabel = choose('جلسة نظام', 'System Session');
+  } else if (action === 'create') {
+    badgeClass = 'badge-mint';
+    actionLabel = choose('إنشاء جديد', 'Created');
+  } else if (action === 'update') {
+    badgeClass = 'badge-blue';
+    actionLabel = choose('تعديل بيانات', 'Updated');
+  } else if (action === 'delete') {
+    badgeClass = 'badge-red';
+    actionLabel = choose('نقل للمهملات', 'Moved to Trash');
+  } else if (action === 'status_change') {
+    badgeClass = 'badge-amber';
+    actionLabel = choose('تغيير حالة', 'Status Changed');
+  } else if (action === 'export_report') {
+    badgeClass = 'badge-teal';
+    actionLabel = choose('تصدير تقرير', 'Exported Report');
+  } else if (action === 'restore') {
+    badgeClass = 'badge-mint';
+    actionLabel = choose('استعادة', 'Restored');
+  } else if (action === 'purge') {
+    badgeClass = 'badge-danger';
+    actionLabel = choose('حذف نهائي', 'Purged');
+  } else if (action === 'invite') {
+    badgeClass = 'badge-blue';
+    actionLabel = choose('دعوة مستخدم', 'Invite Sent');
+  }
+
+  if (entityType === 'task') entityLabel = choose('مهمة', 'Task');
+  else if (entityType === 'project') entityLabel = choose('مشروع', 'Project');
+  else if (entityType === 'document') entityLabel = choose('مستند', 'Document');
+  else if (entityType === 'user') entityLabel = choose('مستخدم', 'User');
+  else if (entityType === 'report') entityLabel = choose('تقرير', 'Report');
+  else if (entityType === 'role') entityLabel = choose('دور وصلاحيات', 'Role');
+
+  let detailHtml = '—';
+  if (details.title || details.name) {
+    detailHtml = `<strong>${esc(details.title || details.name)}</strong>`;
+  } else if (action === 'status_change' && (details.oldStatus || details.newStatus)) {
+    detailHtml = `<span>${esc(statusText(details.oldStatus))} ➔ <strong>${esc(statusText(details.newStatus))}</strong></span>`;
+  } else if (log.entityId) {
+    detailHtml = `<code style="font-size:11px;color:var(--muted);">${esc(log.entityId)}</code>`;
+  }
+
+  return { badgeClass, actionLabel, entityLabel, detailHtml };
+}
+
 export function renderSettings() {
   const currentUserId = state.data?.user?.id;
   const userIsAdmin = isAdmin();
@@ -602,7 +677,86 @@ export function renderSettings() {
 
   // AUDIT SECTION (Admin or view_audit_logs)
   if (state.settingsSection === 'audit' && (userIsAdmin || can('view_audit_logs'))) {
-    content = `<section class="setting-section"><div class="panel-head"><div><h2>${t('audit')}</h2><p>${choose('سجل غير قابل للتجاهل للعمليات الإدارية وتغييرات العمل.', 'A reviewable history of administrative and work changes.')}</p></div></div>${state.data?.auditLogs?.length ? `<div class="audit-list">${state.data.auditLogs.map((log) => `<div class="audit-row"><span class="audit-dot"></span><div class="audit-copy"><strong>${esc(log.user ? choose(log.user.name, log.user.nameEn || log.user.name) : 'DARC')} · ${esc(log.action)}</strong><span>${esc(log.entityType)} · ${dateLabel(log.createdAt, true)}</span></div></div>`).join('')}</div>` : `<div class="empty">${choose('سيظهر سجل العمليات بعد أول تعديل.', 'The audit trail will appear after the first change.')}</div>`}</section>`;
+    const rawAuditLogs = state.data?.auditLogs || [];
+    const sortedLogs = [...rawAuditLogs].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+    content = `
+      <section class="setting-section">
+        <div class="panel-head">
+          <div>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <h2>${t('audit')}</h2>
+              <span class="mini-badge badge-neutral" style="padding:3px 9px;font-size:10px;font-weight:700;">
+                ${sortedLogs.length} ${choose('عملية مسجلة', 'events recorded')}
+              </span>
+            </div>
+            <p>${choose('سجل رقابي شامل يسجل هوية المنفذ بدقة، ونوع النشاط، وتاريخ وساعة التعديل بالثواني.', 'Comprehensive audit trail tracking user identity, activity type, and exact timestamp down to the second.')}</p>
+          </div>
+        </div>
+
+        ${sortedLogs.length ? `
+          <div class="table-wrap" style="border:1px solid var(--line);border-radius:12px;overflow-x:auto;background:var(--surface);">
+            <table class="data-table" style="width:100%;border-collapse:collapse;font-size:12px;min-width:650px;">
+              <thead>
+                <tr style="background:var(--surface-soft);border-bottom:1px solid var(--line);color:var(--ink-soft);font-size:11px;font-weight:700;text-align:inherit;">
+                  <th style="padding:12px 14px;">${choose('المستخدم / المنفذ', 'User / Actor')}</th>
+                  <th style="padding:12px 14px;">${choose('نوع النشاط والعملية', 'Action & Target')}</th>
+                  <th style="padding:12px 14px;">${choose('التفاصيل والتغيير', 'Details / Context')}</th>
+                  <th style="padding:12px 14px;text-align:${state.lang === 'ar' ? 'left' : 'right'};">${choose('التاريخ والوقت الدقيق', 'Exact Date & Time')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${sortedLogs.map((log) => {
+                  const author = log.user || (log.userId ? (state.data?.users || []).find(u => u.id === log.userId) : null);
+                  const authorName = author ? choose(author.name, author.nameEn || author.name) : choose('النظام', 'System');
+                  const authorRole = author ? roleName(author) : choose('تلقائي', 'Automated');
+                  
+                  const dt = formatAuditTimestamp(log.createdAt);
+                  const { badgeClass, actionLabel, entityLabel, detailHtml } = renderAuditDetails(log);
+
+                  return `
+                    <tr style="border-bottom:1px solid var(--line);transition:background 0.15s ease;">
+                      <td style="padding:12px 14px;vertical-align:middle;">
+                        <div style="display:flex;align-items:center;gap:10px;">
+                          ${avatar(author)}
+                          <div>
+                            <div style="font-size:12.5px;font-weight:700;color:var(--ink);">${esc(authorName)}</div>
+                            <div style="font-size:10.5px;color:var(--muted);">${esc(authorRole)}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td style="padding:12px 14px;vertical-align:middle;">
+                        <div style="display:inline-flex;align-items:center;gap:6px;">
+                          <span class="badge ${badgeClass}" style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;">
+                            ${esc(actionLabel)}
+                          </span>
+                          <span style="font-size:11.5px;font-weight:600;color:var(--ink-soft);">${esc(entityLabel)}</span>
+                        </div>
+                      </td>
+                      <td style="padding:12px 14px;vertical-align:middle;color:var(--ink);font-size:12px;">
+                        ${detailHtml}
+                      </td>
+                      <td style="padding:12px 14px;vertical-align:middle;text-align:${state.lang === 'ar' ? 'left' : 'right'};white-space:nowrap;">
+                        <div style="font-size:12px;font-weight:700;color:var(--ink);">${esc(dt.date)}</div>
+                        <div style="font-size:11px;color:var(--muted);font-family:monospace;margin-top:2px;display:inline-flex;align-items:center;gap:4px;">
+                          ${icon('clock', 11)}
+                          <span>${esc(dt.time)}</span>
+                        </div>
+                      </td>
+                    </tr>
+                  `;
+                }).join('')}
+              </tbody>
+            </table>
+          </div>
+        ` : `
+          <div class="empty">
+            ${icon('checklist', 24)}
+            <span>${choose('لا توجد عمليات مسجلة حتى الآن.', 'No audit logs recorded yet.')}</span>
+          </div>
+        `}
+      </section>
+    `;
   }
 
   return `

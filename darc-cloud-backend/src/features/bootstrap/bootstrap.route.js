@@ -93,12 +93,12 @@ app.get('/', async (c) => {
         supabase.from('documents').select(DOCUMENT_COLUMNS).is('deleted_at', null),
         supabase.from('project_members').select(MEMBER_COLUMNS),
         supabase.from('comments').select(COMMENT_COLUMNS).is('deleted_at', null),
-        supabase.from('audit_logs').select('id, user_id, action, entity_type, entity_id, details, created_at').order('created_at', { ascending: false }).limit(30),
+        supabase.from('audit_logs').select('id, user_id, action, entity_type, entity_id, details, created_at').order('created_at', { ascending: false }).limit(100),
         supabase.from('notifications').select(NOTIFICATION_COLUMNS).eq('user_id', userId).order('created_at', { ascending: false }).limit(25)
       ]);
     } else {
       const initialProjReq = supabase.from('active_projects').select(`${PROJECT_COLUMNS}, project_members!inner(user_id)`).eq('project_members.user_id', userId);
-      const auditLogsReq = supabase.from('audit_logs').select('id, user_id, action, entity_type, entity_id, details, created_at').eq('user_id', userId).order('created_at', { ascending: false }).limit(15);
+      const auditLogsReq = supabase.from('audit_logs').select('id, user_id, action, entity_type, entity_id, details, created_at').eq('user_id', userId).order('created_at', { ascending: false }).limit(50);
       const notifReq = supabase.from('notifications').select(NOTIFICATION_COLUMNS).eq('user_id', userId).order('created_at', { ascending: false }).limit(25);
 
       const [r, t, u, comp, userProjRes, auditLogsRes, nr] = await Promise.all([
@@ -259,7 +259,20 @@ app.get('/', async (c) => {
       return toCamelCase(copy);
     });
     const exposedTasks = isAhmad ? tasks : tasks.map(t => (t.assignee_id === 'usr_ahmad' ? { ...t, assignee_id: null } : t));
-    const exposedAuditLogs = isAhmad ? auditLogs : auditLogs.filter(a => a.user_id !== 'usr_ahmad' && a.entity_id !== 'usr_ahmad');
+    const exposedAuditLogs = (isAhmad ? auditLogs : auditLogs.filter(a => a.user_id !== 'usr_ahmad' && a.entity_id !== 'usr_ahmad')).map(log => {
+      const author = userMap.get(log.user_id);
+      return {
+        ...log,
+        user: author ? {
+          id: author.id,
+          name: author.name,
+          name_ar: author.name,
+          name_en: author.name_en || author.name,
+          role_id: author.role_id,
+          avatar_url: author.avatar_url || author.custom_fields?.avatar_url || null
+        } : null
+      };
+    });
 
     const activeTaskIdSet = new Set(tasks.map(t => t.id));
     const activeProjectIdSet = new Set(projects.map(p => p.id));
