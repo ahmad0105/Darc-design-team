@@ -1818,26 +1818,54 @@ export async function init() {
     }
     await loadData(); 
     
-    // Start Smart Live Sync (Background Polling with Visibility Guard)
+    // Start Smart Live Sync (Sequential Polling with Exponential Backoff & Concurrency Guard)
     if (!window._darcPollingActive) {
       window._darcPollingActive = true;
-      setInterval(async () => {
-        // Pause polling when browser tab is in background to save battery and network
-        if (typeof document !== 'undefined' && document.hidden) return;
-        if (state.data?.user && state.view && state.view !== 'login') {
-          try {
-            await loadData(true); // Silent ETag refresh
-          } catch (e) {
-            // Ignore background poll errors (e.g. offline)
-          }
+      let _pollTimer = null;
+      let _pollFailures = 0;
+      let _isPollInFlight = false;
+
+      const scheduleNextPoll = () => {
+        if (_pollTimer) clearTimeout(_pollTimer);
+        // Exponential backoff if server temporarily unreachable (e.g. during deployment: 3s -> 6s -> 12s -> max 20s)
+        const delay = _pollFailures > 0 ? Math.min(20000, 3000 * Math.pow(2, _pollFailures)) : 3500;
+        _pollTimer = setTimeout(runPoll, delay);
+      };
+
+      const runPoll = async () => {
+        // Pause polling when browser tab is hidden to save battery and bandwidth
+        if (typeof document !== 'undefined' && document.hidden) {
+          scheduleNextPoll();
+          return;
         }
-      }, 3000); // Poll every 3 seconds (0ms CPU & 0 bytes via 304 ETag)
+        if (!state.data?.user || !state.view || state.view === 'login') {
+          scheduleNextPoll();
+          return;
+        }
+        if (_isPollInFlight) {
+          scheduleNextPoll();
+          return;
+        }
+
+        _isPollInFlight = true;
+        try {
+          await loadData(true); // Silent ETag 304 refresh
+          _pollFailures = 0;    // Reset failure counter on successful handshake
+        } catch (e) {
+          _pollFailures++;      // Back off to prevent console flooding during edge restarts
+        } finally {
+          _isPollInFlight = false;
+          scheduleNextPoll();
+        }
+      };
+
+      scheduleNextPoll();
 
       // Refresh immediately when user returns to tab
       if (typeof document !== 'undefined') {
         document.addEventListener('visibilitychange', () => {
           if (!document.hidden && state.data?.user && state.view && state.view !== 'login') {
-            loadData(true).catch(() => {});
+            runPoll();
           }
         });
       }
