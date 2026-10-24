@@ -62,7 +62,9 @@ export function taskCard(task) {
         ? 'var(--blue)'
         : 'var(--line)';
 
-  return `<article class="task-card ${overdue ? 'is-overdue' : ''}" draggable="true" data-action="open-task" data-task-id="${esc(task.id)}">
+  const canEditTask = isAdmin() || can('edit_tasks') || (task.assigneeId === state.data?.user?.id);
+
+  return `<article class="task-card ${overdue ? 'is-overdue' : ''} ${!canEditTask ? 'not-draggable' : ''}" draggable="${canEditTask ? 'true' : 'false'}" data-action="open-task" data-task-id="${esc(task.id)}">
     <div class="task-card-top">
       <span class="task-code">${esc(task.templateId ? task.templateId.replace('tpl-', '#') : '#CUSTOM')}</span>
       <div style="display:flex;align-items:center;gap:6px;">

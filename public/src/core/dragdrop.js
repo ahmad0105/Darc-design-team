@@ -2,7 +2,7 @@ import { state } from './state.js';
 import { api } from './api.js';
 import { renderView } from './router.js';
 import { showToast } from '../shared/ui.js';
-import { choose } from '../core/utils.js';
+import { choose, can, isAdmin } from '../core/utils.js';
 import { getTaskSortOrder } from '../features/tasks/tasks.js';
 
 let placeholder = null;
@@ -55,6 +55,12 @@ function getDropTargetCard(cardsContainer, clientY) {
 document.addEventListener('dragstart', (event) => {
   const card = event.target.closest('.task-card');
   if (card) {
+    const task = (state.data?.tasks || []).find(t => t.id === card.dataset.taskId);
+    const canEdit = isAdmin() || can('edit_tasks') || (task && task.assigneeId === state.data?.user?.id);
+    if (!canEdit) {
+      event.preventDefault();
+      return;
+    }
     window._isDraggingTask = true;
     activeDraggedTaskId = card.dataset.taskId;
     event.dataTransfer.effectAllowed = 'move';
@@ -312,6 +318,10 @@ document.addEventListener('touchstart', (e) => {
   const card = e.target.closest('.task-card');
   // Avoid dragging if touch started on an interactive control inside the card
   if (!card || e.target.closest('button, a, input, select, textarea, .btn')) return;
+
+  const task = (state.data?.tasks || []).find(t => t.id === card.dataset.taskId);
+  const canEdit = isAdmin() || can('edit_tasks') || (task && task.assigneeId === state.data?.user?.id);
+  if (!canEdit) return;
 
   touchCard = card;
   const touch = e.touches[0];

@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { getDB } from '../../core/db.js';
 import { invalidateRolesCache } from '../../utils/permissions.js';
+import { invalidateRolesCache as invalidateCoreRolesCache } from '../../core/cache.js';
 import { toCamelCase } from '../../utils/transformers.js';
 import { generateSecureId } from '../../core/security.js';
 
@@ -37,6 +38,7 @@ app.post('/', requireAdmin, async (c) => {
   if (error) throw error;
   
   invalidateRolesCache();
+  invalidateCoreRolesCache();
   return c.json({ ok: true, role: toCamelCase(data) });
 });
 
@@ -62,6 +64,7 @@ app.patch('/:id', requireAdmin, async (c) => {
   if (error) throw error;
   
   invalidateRolesCache();
+  invalidateCoreRolesCache();
   return c.json({ ok: true, role: toCamelCase(data) });
 });
 
@@ -93,6 +96,7 @@ app.delete('/:id', requireAdmin, async (c) => {
   if (error) throw error;
   
   invalidateRolesCache();
+  invalidateCoreRolesCache();
   return c.json({ ok: true });
 });
 

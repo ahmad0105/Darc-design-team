@@ -7,7 +7,7 @@ export function canAccessView(view) {
   if (!state.data) return true;
   if (view === 'dashboard') return can('view_dashboard');
   if (view === 'projects' || view === 'project-detail') return can('view_projects');
-  if (view === 'tasks') return can('create_tasks') || can('edit_tasks') || can('delete_tasks') || can('assign_tasks') || can('review_tasks') || can('approve_tasks') || can('manage_reminders') || isAdmin();
+  if (view === 'tasks') return can('create_tasks') || can('edit_tasks') || can('delete_tasks') || can('assign_tasks') || can('review_tasks') || can('approve_tasks') || can('manage_reminders') || can('view_projects') || isAdmin();
   if (view === 'documents') return can('upload_documents') || can('delete_documents') || isAdmin();
   if (view === 'templates') return can('manage_templates') || isAdmin();
   if (view === 'team') return isAdmin() || can('manage_users');
@@ -303,6 +303,22 @@ export async function loadData(silent = false) {
         state.view = getFirstAllowedView();
       }
       const hasOpenModal = Boolean(document.getElementById('modal-root')?.children?.length);
+      const isDragging = Boolean(
+        document.querySelector('.is-dragging') ||
+        document.querySelector('.touch-dragging') ||
+        document.querySelector('.drag-placeholder')
+      );
+      const isTyping = Boolean(
+        document.activeElement && 
+        ['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName) &&
+        document.getElementById('main-content')?.contains(document.activeElement)
+      );
+
+      // Do not disrupt ongoing touch/mouse drags or active typing during silent background sync
+      if (silent && (isDragging || isTyping)) {
+        return;
+      }
+
       if (!silent && !hasOpenModal) {
         requestAnimationFrame(() => renderApp());
       } else {
