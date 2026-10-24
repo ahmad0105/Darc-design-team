@@ -37,7 +37,7 @@ const DEFAULT_PERMISSIONS_CATALOG = [
 
 import { Hono } from 'hono';
 import { getDB } from '../../core/db.js';
-import { getBootstrapCache, setBootstrapCache, getCachedRoles, getCachedTemplates, getCachedUsers, getCachedCompany, getCacheVersion } from '../../core/cache.js';
+import { getBootstrapCache, setBootstrapCache, fetchBootstrapWithCoalescing, getCachedRoles, getCachedTemplates, getCachedUsers, getCachedCompany, getCacheVersion } from '../../core/cache.js';
 
 const app = new Hono();
 
@@ -84,83 +84,84 @@ app.get('/', async (c) => {
   const supabase = getDB(c.env);
 
   try {
-    const isGlobalAdmin = roleId === 'admin';
+    const { responsePayload, etag } = await fetchBootstrapWithCoalescing(cacheKey, async () => {
+      const isGlobalAdmin = roleId === 'admin';
 
-    let roles, templates, activeUsers, company, projectsRes, tasksRes, docsRes, membersRes, commentsRes, auditRes, notifRes;
+      let roles, templates, activeUsers, company, projectsRes, tasksRes, docsRes, membersRes, commentsRes, auditRes, notifRes;
 
-    const PROJECT_COLUMNS = 'id, code, name_ar, name_en, client_ar, client_en, description_ar, description_en, lifecycle, health, start_date, due_date, manager_id, progress, progress_mode, demo, custom_fields, created_at, updated_at';
-    const TASK_COLUMNS = 'id, project_id, title_ar, title_en, description_ar, description_en, status, priority, category_ar, category_en, type_ar, type_en, weight, progress, assignee_id, reviewer_id, start_date, due_date, template_id, custom_fields, created_at, updated_at';
-    const MEMBER_COLUMNS = 'project_id, user_id, role_id';
-    const NOTIFICATION_COLUMNS = 'id, user_id, type, content, task_id, project_id, read, created_at';
-    const DOCUMENT_COLUMNS = 'id, project_id, task_id, uploader_id, original_name, disk_filename, mime_type, size, status, created_at, deleted_at';
-    const COMMENT_COLUMNS = 'id, task_id, user_id, content, created_at, updated_at, deleted_at';
+      const PROJECT_COLUMNS = 'id, code, name_ar, name_en, client_ar, client_en, description_ar, description_en, lifecycle, health, start_date, due_date, manager_id, progress, progress_mode, demo, custom_fields, created_at, updated_at';
+      const TASK_COLUMNS = 'id, project_id, title_ar, title_en, description_ar, description_en, status, priority, category_ar, category_en, type_ar, type_en, weight, progress, assignee_id, reviewer_id, start_date, due_date, template_id, custom_fields, created_at, updated_at';
+      const MEMBER_COLUMNS = 'project_id, user_id, role_id';
+      const NOTIFICATION_COLUMNS = 'id, user_id, type, content, task_id, project_id, read, created_at';
+      const DOCUMENT_COLUMNS = 'id, project_id, task_id, uploader_id, original_name, disk_filename, mime_type, size, status, created_at, deleted_at';
+      const COMMENT_COLUMNS = 'id, task_id, user_id, content, created_at, updated_at, deleted_at';
 
-    // Single-batch parallel execution (eliminates sequential round-trips & lean projections)
-    if (isGlobalAdmin) {
-      [roles, templates, activeUsers, company, projectsRes, tasksRes, docsRes, membersRes, commentsRes, auditRes, notifRes] = await Promise.all([
-        getCachedRoles(supabase),
-        getCachedTemplates(supabase),
-        getCachedUsers(supabase),
-        getCachedCompany(supabase),
-        supabase.from('active_projects').select(PROJECT_COLUMNS),
-        supabase.from('active_tasks').select(TASK_COLUMNS),
-        supabase.from('documents').select(DOCUMENT_COLUMNS).is('deleted_at', null),
-        supabase.from('project_members').select(MEMBER_COLUMNS),
-        supabase.from('comments').select(COMMENT_COLUMNS).is('deleted_at', null).order('created_at', { ascending: false }).limit(200),
-        supabase.from('audit_logs').select('id, user_id, action, entity_type, entity_id, details, created_at').order('created_at', { ascending: false }).limit(50),
-        supabase.from('notifications').select(NOTIFICATION_COLUMNS).eq('user_id', userId).order('created_at', { ascending: false }).limit(25)
-      ]);
-    } else {
-      const initialProjReq = supabase.from('active_projects').select(`${PROJECT_COLUMNS}, project_members!inner(user_id)`).eq('project_members.user_id', userId);
-      const auditLogsReq = supabase.from('audit_logs').select('id, user_id, action, entity_type, entity_id, details, created_at').eq('user_id', userId).order('created_at', { ascending: false }).limit(50);
-      const notifReq = supabase.from('notifications').select(NOTIFICATION_COLUMNS).eq('user_id', userId).order('created_at', { ascending: false }).limit(25);
-
-      const [r, t, u, comp, userProjRes, auditLogsRes, nr] = await Promise.all([
-        getCachedRoles(supabase),
-        getCachedTemplates(supabase),
-        getCachedUsers(supabase),
-        getCachedCompany(supabase),
-        initialProjReq,
-        auditLogsReq,
-        notifReq
-      ]);
-
-      roles = r;
-      templates = t;
-      activeUsers = u;
-      company = comp;
-      auditRes = auditLogsRes;
-      notifRes = nr;
-
-      const userRole = roles.find(role => role.id === roleId);
-      const canViewAll = userRole?.permissions?.includes('view_all_projects');
-
-      let userProjects = (userProjRes.data || []).map(p => { const copy = { ...p }; delete copy.project_members; return copy; });
-      
-      if (canViewAll) {
-        const { data: allProj } = await supabase.from('active_projects').select(PROJECT_COLUMNS);
-        if (allProj) userProjects = allProj;
-      }
-      
-      projectsRes = { data: userProjects };
-      const visibleIds = userProjects.map(p => p.id);
-
-      if (visibleIds.length > 0) {
-        [tasksRes, docsRes, membersRes] = await Promise.all([
-          supabase.from('active_tasks').select(TASK_COLUMNS).in('project_id', visibleIds),
-          supabase.from('documents').select(DOCUMENT_COLUMNS).in('project_id', visibleIds).is('deleted_at', null),
-          supabase.from('project_members').select(MEMBER_COLUMNS).in('project_id', visibleIds)
+      // Single-batch parallel execution (eliminates sequential round-trips & lean projections)
+      if (isGlobalAdmin) {
+        [roles, templates, activeUsers, company, projectsRes, tasksRes, docsRes, membersRes, commentsRes, auditRes, notifRes] = await Promise.all([
+          getCachedRoles(supabase),
+          getCachedTemplates(supabase),
+          getCachedUsers(supabase),
+          getCachedCompany(supabase),
+          supabase.from('active_projects').select(PROJECT_COLUMNS),
+          supabase.from('active_tasks').select(TASK_COLUMNS),
+          supabase.from('documents').select(DOCUMENT_COLUMNS).is('deleted_at', null),
+          supabase.from('project_members').select(MEMBER_COLUMNS),
+          supabase.from('comments').select(COMMENT_COLUMNS).is('deleted_at', null).order('created_at', { ascending: false }).limit(150),
+          supabase.from('audit_logs').select('id, user_id, action, entity_type, entity_id, details, created_at').order('created_at', { ascending: false }).limit(35),
+          supabase.from('notifications').select(NOTIFICATION_COLUMNS).eq('user_id', userId).order('created_at', { ascending: false }).limit(20)
         ]);
-        const visibleTaskIds = (tasksRes?.data || []).map(t => t.id);
-        if (visibleTaskIds.length > 0) {
-          commentsRes = await supabase.from('comments').select(COMMENT_COLUMNS).in('task_id', visibleTaskIds).is('deleted_at', null);
-        } else {
-          commentsRes = { data: [] };
-        }
       } else {
-        tasksRes = { data: [] }; docsRes = { data: [] }; membersRes = { data: [] }; commentsRes = { data: [] };
+        const initialProjReq = supabase.from('active_projects').select(`${PROJECT_COLUMNS}, project_members!inner(user_id)`).eq('project_members.user_id', userId);
+        const auditLogsReq = supabase.from('audit_logs').select('id, user_id, action, entity_type, entity_id, details, created_at').eq('user_id', userId).order('created_at', { ascending: false }).limit(35);
+        const notifReq = supabase.from('notifications').select(NOTIFICATION_COLUMNS).eq('user_id', userId).order('created_at', { ascending: false }).limit(20);
+
+        const [r, t, u, comp, userProjRes, auditLogsRes, nr] = await Promise.all([
+          getCachedRoles(supabase),
+          getCachedTemplates(supabase),
+          getCachedUsers(supabase),
+          getCachedCompany(supabase),
+          initialProjReq,
+          auditLogsReq,
+          notifReq
+        ]);
+
+        roles = r;
+        templates = t;
+        activeUsers = u;
+        company = comp;
+        auditRes = auditLogsRes;
+        notifRes = nr;
+
+        const userRole = roles.find(role => role.id === roleId);
+        const canViewAll = userRole?.permissions?.includes('view_all_projects');
+
+        let userProjects = (userProjRes.data || []).map(p => { const copy = { ...p }; delete copy.project_members; return copy; });
+        
+        if (canViewAll) {
+          const { data: allProj } = await supabase.from('active_projects').select(PROJECT_COLUMNS);
+          if (allProj) userProjects = allProj;
+        }
+        
+        projectsRes = { data: userProjects };
+        const visibleIds = userProjects.map(p => p.id);
+
+        if (visibleIds.length > 0) {
+          [tasksRes, docsRes, membersRes] = await Promise.all([
+            supabase.from('active_tasks').select(TASK_COLUMNS).in('project_id', visibleIds),
+            supabase.from('documents').select(DOCUMENT_COLUMNS).in('project_id', visibleIds).is('deleted_at', null),
+            supabase.from('project_members').select(MEMBER_COLUMNS).in('project_id', visibleIds)
+          ]);
+          const visibleTaskIds = (tasksRes?.data || []).map(t => t.id);
+          if (visibleTaskIds.length > 0) {
+            commentsRes = await supabase.from('comments').select(COMMENT_COLUMNS).in('task_id', visibleTaskIds).is('deleted_at', null).order('created_at', { ascending: false }).limit(150);
+          } else {
+            commentsRes = { data: [] };
+          }
+        } else {
+          tasksRes = { data: [] }; docsRes = { data: [] }; membersRes = { data: [] }; commentsRes = { data: [] };
+        }
       }
-    }
 
     let projects = projectsRes?.data || [];
     const tasks = tasksRes?.data || [];
@@ -355,15 +356,18 @@ app.get('/', async (c) => {
     const etag = `W/"${computedUpdatedAt}-${projects.length}-${tasks.length}-${comments.length}-${auditLogs.length}-${getCacheVersion()}"`;
     setBootstrapCache(cacheKey, responsePayload, etag);
 
-    c.header('ETag', etag);
-    c.header('Cache-Control', 'private, no-cache');
+    return { responsePayload, etag };
+  });
 
-    if (clientEtag && clientEtag === etag) {
-      return c.body(null, 304);
-    }
+  c.header('ETag', etag);
+  c.header('Cache-Control', 'private, no-cache');
 
-    return c.json(responsePayload);
-  } catch (error) {
+  if (clientEtag && clientEtag === etag) {
+    return c.body(null, 304);
+  }
+
+  return c.json(responsePayload);
+} catch (error) {
     console.error('[Bootstrap] Error:', error.message);
     return c.json({ error: 'Internal Server Error' }, 500);
   }

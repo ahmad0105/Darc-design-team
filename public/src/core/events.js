@@ -1818,17 +1818,45 @@ export async function init() {
     }
     await loadData(); 
     
-    // Start Smart Live Sync (Sequential Polling with Exponential Backoff & Concurrency Guard)
+    // Start Smart Live Sync (Sequential Polling with Adaptive Idle Throttling & Stampede Guard)
     if (!window._darcPollingActive) {
       window._darcPollingActive = true;
       let _pollTimer = null;
       let _pollFailures = 0;
       let _isPollInFlight = false;
+      let _lastActivityTime = Date.now();
+      let _lastPollTime = 0;
+
+      const markUserActive = () => {
+        const wasIdle = (Date.now() - _lastActivityTime) > 45000;
+        _lastActivityTime = Date.now();
+        // If user returns after being idle and more than 4s have passed since last poll, refresh instantly
+        if (wasIdle && (Date.now() - _lastPollTime) > 4000 && !_isPollInFlight) {
+          runPoll();
+        }
+      };
+
+      if (typeof window !== 'undefined') {
+        let _throttleActive = 0;
+        const onUserGesture = () => {
+          const now = Date.now();
+          if (now - _throttleActive > 5000) {
+            _throttleActive = now;
+            markUserActive();
+          }
+        };
+        window.addEventListener('click', onUserGesture, { passive: true });
+        window.addEventListener('keydown', onUserGesture, { passive: true });
+        window.addEventListener('touchstart', onUserGesture, { passive: true });
+        window.addEventListener('mousemove', onUserGesture, { passive: true });
+      }
 
       const scheduleNextPoll = () => {
         if (_pollTimer) clearTimeout(_pollTimer);
-        // Exponential backoff if server temporarily unreachable (e.g. during deployment: 3s -> 6s -> 12s -> max 20s)
-        const delay = _pollFailures > 0 ? Math.min(20000, 3000 * Math.pow(2, _pollFailures)) : 3500;
+        // Adaptive Idle Throttling: If user is inactive for >45s, relax polling to 15s (saves 75% edge requests)
+        const isUserIdle = (Date.now() - _lastActivityTime) > 45000;
+        const baseDelay = isUserIdle ? 15000 : 4000;
+        const delay = _pollFailures > 0 ? Math.min(25000, baseDelay * Math.pow(2, _pollFailures)) : baseDelay;
         _pollTimer = setTimeout(runPoll, delay);
       };
 
@@ -1848,6 +1876,7 @@ export async function init() {
         }
 
         _isPollInFlight = true;
+        _lastPollTime = Date.now();
         try {
           await loadData(true); // Silent ETag 304 refresh
           _pollFailures = 0;    // Reset failure counter on successful handshake
@@ -1865,6 +1894,7 @@ export async function init() {
       if (typeof document !== 'undefined') {
         document.addEventListener('visibilitychange', () => {
           if (!document.hidden && state.data?.user && state.view && state.view !== 'login') {
+            markUserActive();
             runPoll();
           }
         });

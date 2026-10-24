@@ -63,6 +63,24 @@ export function invalidateBootstrapCache() {
   _bootstrapCache.clear();
 }
 
+// --- STAMPEDE / THUNDERING HERD GUARD (Request Coalescing) ---
+const _inFlightBootstrapPromises = new Map();
+
+export async function fetchBootstrapWithCoalescing(key, fetcher) {
+  if (_inFlightBootstrapPromises.has(key)) {
+    return _inFlightBootstrapPromises.get(key);
+  }
+  const promise = (async () => {
+    try {
+      return await fetcher();
+    } finally {
+      _inFlightBootstrapPromises.delete(key);
+    }
+  })();
+  _inFlightBootstrapPromises.set(key, promise);
+  return promise;
+}
+
 // --- STATIC CACHES (Roles, Templates, Users) ---
 
 export async function getCachedRoles(supabase) {
