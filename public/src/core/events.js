@@ -518,6 +518,11 @@ export async function handleClick(event) {
     }
     return;
   }
+  if (action === 'open-upload-drawing-modal') {
+    const { openUploadDrawingModal } = await import('../features/documents/documents.js');
+    openUploadDrawingModal(target.dataset.projectId || null);
+    return;
+  }
   if (action === 'new-project') { openProjectModal(); return; }
   if (action === 'edit-project') { const project = state.data.projects.find((item) => item.id === target.dataset.projectId); if (project) openProjectModal(project); return; }
   if (action === 'clone-project') { 
@@ -1001,6 +1006,25 @@ export function handleInput(event) {
 }
 
 export async function handleChange(event) {
+  if (event.target.dataset.action === 'change-doc-status') {
+    const docId = event.target.dataset.docId;
+    const newStatus = event.target.value;
+    const doc = state.data?.documents?.find(d => d.id === docId);
+    if (!doc) return;
+    try {
+      await api(`/api/documents/${docId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status: newStatus })
+      });
+      doc.status = newStatus;
+      showToast(choose('تم تحديث حالة المخطط بنجاح ✅', 'Drawing status updated ✅'));
+      await refreshView(true);
+    } catch (err) {
+      showToast(err.message, true);
+    }
+    return;
+  }
+
   if (event.target.dataset.action === 'doc-project-filter') {
     state.docProjectFilter = event.target.value;
     renderView();
@@ -1431,22 +1455,35 @@ export function updateFloatingUploadWidget({
 
 export async function uploadTaskFiles(files, taskId) {
   if (!files || !files.length || !taskId) return;
+  const task = state.data?.tasks?.find(t => t.id === taskId);
+  return uploadDirectFiles({
+    files,
+    taskId,
+    projectId: task?.projectId,
+    status: 'draft',
+    isTaskModal: true
+  });
+}
+
+export async function uploadDirectFiles({ files, projectId = null, taskId = null, discipline = 'عام', status = 'draft', isTaskModal = false }) {
+  if (!files || !files.length) return;
   if (typeof navigator !== 'undefined' && !navigator.onLine) {
     showToast(choose('لا يمكن رفع المخططات والملفات أثناء وضع عدم الاتصال. يرجى الاتصال بالإنترنت أولاً.', 'Cannot upload drawings or files while offline. Please connect to the internet first.'), true);
     return;
   }
-  const task = state.data?.tasks?.find(t => t.id === taskId);
-  const project = task ? state.data?.projects?.find(p => p.id === task.projectId) : null;
-  const taskDocs = state.data?.documents ? state.data.documents.filter(d => d.taskId === taskId && !d.deletedAt) : [];
+  const task = taskId ? state.data?.tasks?.find(t => t.id === taskId) : null;
+  const targetProjectId = projectId || task?.projectId;
+  const project = targetProjectId ? state.data?.projects?.find(p => p.id === targetProjectId) : null;
+  const existingDocs = state.data?.documents ? state.data.documents.filter(d => (!d.deletedAt) && (taskId ? d.taskId === taskId : d.projectId === targetProjectId)) : [];
 
   const projName = project ? project.nameAr : 'Project';
-  const taskName = task ? task.titleAr : 'Task';
+  const taskName = task ? task.titleAr : (discipline || 'General');
 
   const nextVersions = {};
   const getNextVersion = (ext) => {
     if (nextVersions[ext]) return nextVersions[ext];
     let maxV = 0;
-    taskDocs.forEach(d => {
+    existingDocs.forEach(d => {
       if (d.originalName && d.originalName.toLowerCase().endsWith(ext)) {
         const match = d.originalName.match(/_v(\d+)\./);
         if (match && parseInt(match[1]) > maxV) maxV = parseInt(match[1]);
@@ -1462,8 +1499,8 @@ export async function uploadTaskFiles(files, taskId) {
   const progressText = document.getElementById('upload-progress-text');
   const dropzone = document.getElementById('task-dropzone');
 
-  if (progressContainer) progressContainer.style.display = 'block';
-  if (dropzone) dropzone.style.pointerEvents = 'none';
+  if (isTaskModal && progressContainer) progressContainer.style.display = 'block';
+  if (isTaskModal && dropzone) dropzone.style.pointerEvents = 'none';
 
   // Initialize Persistent Floating Upload Widget on document.body
   getOrCreateFloatingUploadWidget({
@@ -1517,7 +1554,7 @@ export async function uploadTaskFiles(files, taskId) {
         body: JSON.stringify({
           compiledName,
           mimeType: file.type || 'application/octet-stream',
-          projectId: task?.projectId,
+          projectId: targetProjectId,
           taskId,
           size: file.size
         })
@@ -1549,30 +1586,40 @@ export async function uploadTaskFiles(files, taskId) {
         const totalUploaded = Math.min(file.size, uploadedSoFar + currentChunkLoaded);
         const pct = Math.min(100, Math.round((totalUploaded / file.size) * 100));
 
-        const bar = document.getElementById('upload-progress-bar');
-        const pPercent = document.getElementById('upload-progress-percent');
-        const pText = document.getElementById('upload-progress-text');
-        const pContainer = document.getElementById('upload-progress-container');
+        if (isTaskModal) {
+          const bar = document.getElementById('upload-progress-bar');
+          const pPercent = document.getElementById('upload-progress-percent');
+          const pText = document.getElementById('upload-progress-text');
+          const pContainer = document.getElementById('upload-progress-container');
 
-        if (pContainer) pContainer.style.display = 'block';
-        if (bar) bar.style.width = `${pct}%`;
-        if (pPercent) pPercent.textContent = `${pct}%`;
+          if (pContainer) pContainer.style.display = 'block';
+          if (bar) bar.style.width = `${pct}%`;
+          if (pPercent) pPercent.textContent = `${pct}%`;
+
+          const elapsedSec = (Date.now() - fileStartTime) / 1000;
+          const speedBps = totalUploaded / Math.max(elapsedSec, 0.2);
+          const speedMBs = (speedBps / (1024 * 1024)).toFixed(1);
+
+          const remainingBytes = Math.max(0, file.size - totalUploaded);
+          const etaSeconds = Math.round(remainingBytes / Math.max(speedBps, 1));
+          const etaText = etaSeconds < 60
+            ? `${etaSeconds} ${choose('ثانية', 's')}`
+            : `${Math.floor(etaSeconds / 60)}:${String(etaSeconds % 60).padStart(2, '0')} ${choose('دقيقة', 'min')}`;
+
+          const loadedMB = (totalUploaded / (1024 * 1024)).toFixed(1);
+
+          if (pText) {
+            pText.textContent = `${choose('رفع إلى الخادم', 'Uploading to server')} (${i + 1}/${files.length}): ${file.name} — ${loadedMB} / ${fileSizeMB} MB (${pct}%) • ${speedMBs} MB/s • ${choose('متبقي:', 'ETA:')} ${etaText}`;
+          }
+        }
 
         const elapsedSec = (Date.now() - fileStartTime) / 1000;
         const speedBps = totalUploaded / Math.max(elapsedSec, 0.2);
         const speedMBs = (speedBps / (1024 * 1024)).toFixed(1);
-
         const remainingBytes = Math.max(0, file.size - totalUploaded);
         const etaSeconds = Math.round(remainingBytes / Math.max(speedBps, 1));
-        const etaText = etaSeconds < 60
-          ? `${etaSeconds} ${choose('ثانية', 's')}`
-          : `${Math.floor(etaSeconds / 60)}:${String(etaSeconds % 60).padStart(2, '0')} ${choose('دقيقة', 'min')}`;
-
+        const etaText = etaSeconds < 60 ? `${etaSeconds} s` : `${Math.floor(etaSeconds / 60)}m`;
         const loadedMB = (totalUploaded / (1024 * 1024)).toFixed(1);
-
-        if (pText) {
-          pText.textContent = `${choose('رفع إلى الخادم', 'Uploading to server')} (${i + 1}/${files.length}): ${file.name} — ${loadedMB} / ${fileSizeMB} MB (${pct}%) • ${speedMBs} MB/s • ${choose('متبقي:', 'ETA:')} ${etaText}`;
-        }
 
         updateFloatingUploadWidget({
           fileName: file.name,
@@ -1619,7 +1666,7 @@ export async function uploadTaskFiles(files, taskId) {
             }
 
             if (fallbackToProxy) {
-              const docMeta = { projectId: task?.projectId, taskId, compiledName, mimeType: file.type, size: file.size };
+              const docMeta = { projectId: targetProjectId, taskId, compiledName, mimeType: file.type, size: file.size, status };
               res = await uploadChunkXHR({
                 url: `${API_BASE}/api/documents/chunk`,
                 chunk,
@@ -1692,21 +1739,24 @@ export async function uploadTaskFiles(files, taskId) {
           method: 'POST',
           body: JSON.stringify({
             driveFileId,
-            projectId: task?.projectId,
+            projectId: targetProjectId,
             taskId,
             compiledName,
             mimeType: file.type,
-            size: file.size
+            size: file.size,
+            status
           })
         });
       }
     }
 
     await refreshView(true);
-    const updatedTask = state.data?.tasks?.find(t => t.id === taskId);
-    const docListEl = document.getElementById('task-documents-list');
-    if (docListEl && updatedTask) {
-      docListEl.innerHTML = renderTaskDocuments(updatedTask);
+    if (isTaskModal && taskId) {
+      const updatedTask = state.data?.tasks?.find(t => t.id === taskId);
+      const docListEl = document.getElementById('task-documents-list');
+      if (docListEl && updatedTask) {
+        docListEl.innerHTML = renderTaskDocuments(updatedTask);
+      }
     }
     
     // Play success luxury chime
@@ -1720,7 +1770,7 @@ export async function uploadTaskFiles(files, taskId) {
       isDone: true
     });
 
-    showToast(choose('تم رفع الملفات بنجاح إلى الخادم.', 'Files uploaded successfully to server.'));
+    showToast(choose('تم رفع المخطط وتوثيقه بنجاح إلى الخادم ✅', 'Drawing uploaded & registered successfully ✅'));
   } catch (err) {
     updateFloatingUploadWidget({
       isError: true,
@@ -1728,14 +1778,16 @@ export async function uploadTaskFiles(files, taskId) {
     });
     showToast(err.message, true);
   } finally {
-    const pContainer = document.getElementById('upload-progress-container');
-    const bar = document.getElementById('upload-progress-bar');
-    const dz = document.getElementById('task-dropzone');
-    if (pContainer) pContainer.style.display = 'none';
-    if (bar) bar.style.width = '0%';
-    if (dz) dz.style.pointerEvents = 'auto';
-    const input = document.getElementById('task-upload-input');
-    if (input) input.value = '';
+    if (isTaskModal) {
+      const pContainer = document.getElementById('upload-progress-container');
+      const bar = document.getElementById('upload-progress-bar');
+      const dz = document.getElementById('task-dropzone');
+      if (pContainer) pContainer.style.display = 'none';
+      if (bar) bar.style.width = '0%';
+      if (dz) dz.style.pointerEvents = 'auto';
+      const input = document.getElementById('task-upload-input');
+      if (input) input.value = '';
+    }
   }
 }
 

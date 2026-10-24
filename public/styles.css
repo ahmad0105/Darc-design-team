@@ -553,7 +553,15 @@ a { color: inherit; text-decoration: none; }
 .status-badge.off_track, .status-badge.blocked { color: #b05249; background: #ffebea; }
 .status-badge.in_progress { color: #436d9e; background: #e9f1fb; }
 .status-badge.not_started, .status-badge.on_hold, .status-badge.planning { color: #687c80; background: #eef2f1; }
-.status-badge.completed { color: #177f73; background: #e3f6f0; }
+.status-badge.completed, .status-badge.approved { color: #177f73; background: #e3f6f0; }
+.status-badge.draft { color: #64748b; background: #f1f5f9; }
+.status-badge.superseded { color: #94a3b8; background: #f8fafc; text-decoration: line-through; }
+
+/* Engineering Drawings & Deliverables Badges */
+.file-format-badge { display: inline-flex; align-items: center; justify-content: center; font-family: "JetBrains Mono", monospace; line-height: 1; letter-spacing: 0.5px; }
+.version-badge { font-family: "JetBrains Mono", monospace; letter-spacing: 0.5px; }
+.doc-status-select { font-family: inherit; font-size: 11px; font-weight: 700; height: 32px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); padding: 0 8px; cursor: pointer; outline: none; }
+.doc-status-select:focus { border-color: var(--teal); box-shadow: 0 0 0 2px var(--teal-soft); }
 .priority-badge { padding: 4px 7px; font-weight: 900; }
 .priority-badge.urgent { color: var(--red); background: var(--red-soft); }
 .priority-badge.high { color: #a16a25; background: var(--amber-soft); }
@@ -1816,9 +1824,19 @@ body:has(#floating-upload-manager) .toast-stack { bottom: 230px; }
 /* --- Status badges --- */
 [data-theme="dark"] .status-badge.on_track,
 [data-theme="dark"] .status-badge.done,
+[data-theme="dark"] .status-badge.approved,
 [data-theme="dark"] .status-badge.completed {
   color: var(--mint-strong);
   background: var(--mint);
+}
+[data-theme="dark"] .status-badge.draft {
+  color: var(--ink-soft);
+  background: var(--surface-soft);
+}
+[data-theme="dark"] .status-badge.superseded {
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.05);
+  text-decoration: line-through;
 }
 [data-theme="dark"] .status-badge.at_risk,
 [data-theme="dark"] .status-badge.review,

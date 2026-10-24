@@ -146,6 +146,35 @@ export function getTaskStatusStyle(task) {
   };
 }
 
+export function getFileFormatInfo(filename, mimeType = '') {
+  const ext = (filename || '').split('.').pop()?.toLowerCase() || '';
+  if (['dwg', 'dxf'].includes(ext)) {
+    return { ext: ext.toUpperCase(), label: 'AutoCAD', color: '#0284c7', bg: 'rgba(2,132,199,0.12)', border: 'rgba(2,132,199,0.3)', isCad: true };
+  }
+  if (['rvt', 'rfa', 'ifc', 'skp', 'pln', '3ds'].includes(ext)) {
+    return { ext: ext.toUpperCase(), label: 'BIM / 3D', color: '#7c3aed', bg: 'rgba(124,58,237,0.12)', border: 'rgba(124,58,237,0.3)', isBim: true };
+  }
+  if (ext === 'pdf') {
+    return { ext: 'PDF', label: 'PDF Blueprint', color: '#dc2626', bg: 'rgba(220,38,38,0.12)', border: 'rgba(220,38,38,0.3)', isPdf: true };
+  }
+  if (['png', 'jpg', 'jpeg', 'webp', 'heic'].includes(ext)) {
+    return { ext: ext.toUpperCase(), label: 'Image', color: '#059669', bg: 'rgba(5,150,105,0.12)', border: 'rgba(5,150,105,0.3)', isImg: true };
+  }
+  if (['zip', 'rar', '7z', 'tar'].includes(ext)) {
+    return { ext: ext.toUpperCase(), label: 'Archive', color: '#d97706', bg: 'rgba(217,119,6,0.12)', border: 'rgba(217,119,6,0.3)', isZip: true };
+  }
+  return { ext: ext.toUpperCase() || 'DOC', label: 'Document', color: '#0d6269', bg: 'rgba(13,98,105,0.12)', border: 'rgba(13,98,105,0.3)', isDoc: true };
+}
+
+export function extractDrawingVersion(filename) {
+  if (!filename) return null;
+  const match = filename.match(/[_-\s]v(\d+)(\.|$)/i) || filename.match(/\bv(\d+)\b/i);
+  if (match) {
+    return `V${match[1]}`;
+  }
+  return null;
+}
+
 export function getActiveCalendarSystem() {
   return state.calendarSystem || state.data?.user?.customFields?.calendarSystem || localStorage.getItem('darc_calendar_system') || 'gregorian';
 }
