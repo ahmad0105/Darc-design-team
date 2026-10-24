@@ -32,17 +32,21 @@ export function savePreferencesCookies({ theme, lang } = {}) {
     }
   }
 
-  if (theme) {
-    document.cookie = `darc_theme=${encodeURIComponent(theme)}; Path=/; Max-Age=${maxAge}; SameSite=Lax${secure}${domainPart}`;
-    try { window.localStorage.setItem('darc-theme', theme); } catch (e) {}
+  // Strict whitelist sanitization against injection or malformed values
+  const safeTheme = (theme === 'dark' || theme === 'light') ? theme : null;
+  const safeLang = (lang === 'ar' || lang === 'en') ? lang : null;
+
+  if (safeTheme) {
+    document.cookie = `darc_theme=${encodeURIComponent(safeTheme)}; Path=/; Max-Age=${maxAge}; SameSite=Lax${secure}${domainPart}`;
+    try { window.localStorage.setItem('darc-theme', safeTheme); } catch (e) {}
   }
-  if (lang) {
-    document.cookie = `darc_lang=${encodeURIComponent(lang)}; Path=/; Max-Age=${maxAge}; SameSite=Lax${secure}${domainPart}`;
-    try { window.localStorage.setItem('darc-locale', lang); } catch (e) {}
+  if (safeLang) {
+    document.cookie = `darc_lang=${encodeURIComponent(safeLang)}; Path=/; Max-Age=${maxAge}; SameSite=Lax${secure}${domainPart}`;
+    try { window.localStorage.setItem('darc-locale', safeLang); } catch (e) {}
   }
 
-  const currentTheme = theme || (state && state.theme) || getCookieVal('darc_theme') || 'light';
-  const currentLang = lang || (state && state.lang) || getCookieVal('darc_lang') || 'ar';
+  const currentTheme = safeTheme || (state && state.theme === 'dark' ? 'dark' : 'light') || 'light';
+  const currentLang = safeLang || (state && state.lang === 'en' ? 'en' : 'ar') || 'ar';
   const prefsJson = JSON.stringify({ theme: currentTheme, lang: currentLang });
   document.cookie = `darc_prefs=${encodeURIComponent(prefsJson)}; Path=/; Max-Age=${maxAge}; SameSite=Lax${secure}${domainPart}`;
 }

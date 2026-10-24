@@ -56,7 +56,7 @@
               try { effectiveLang = JSON.parse(prefsCookie).lang; } catch (e) {}
             }
           }
-          if (!effectiveLang) {
+          if (effectiveLang !== 'ar' && effectiveLang !== 'en') {
             var navLang = (navigator.languages && navigator.languages[0]) || navigator.language || '';
             effectiveLang = navLang.toLowerCase().startsWith('ar') ? 'ar' : 'en';
           }
@@ -71,7 +71,7 @@
               try { effectiveTheme = JSON.parse(prefsCookie).theme; } catch (e) {}
             }
           }
-          if (!effectiveTheme) {
+          if (effectiveTheme !== 'dark' && effectiveTheme !== 'light') {
             if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
               effectiveTheme = 'dark';
             } else {

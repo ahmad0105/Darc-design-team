@@ -333,8 +333,9 @@ export async function handleClick(event) {
     state.theme = state.theme === 'dark' ? 'light' : 'dark';
     savePreferencesCookies({ theme: state.theme });
     document.documentElement.dataset.theme = state.theme;
-    const themeBtn = document.querySelector('[data-action="toggle-theme"]');
-    if (themeBtn) themeBtn.textContent = state.theme === 'dark' ? '☀️' : '🌙';
+    document.querySelectorAll('[data-action="toggle-theme"]').forEach(btn => {
+      btn.textContent = state.theme === 'dark' ? '☀️' : '🌙';
+    });
     return;
   }
   if (action === 'toggle-lang') {
