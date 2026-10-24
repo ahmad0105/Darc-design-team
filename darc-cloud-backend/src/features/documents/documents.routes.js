@@ -16,17 +16,32 @@ const DANGEROUS_EXTENSIONS = new Set([
   'exe', 'bat', 'cmd', 'sh', 'bash', 'ps1', 'vbs', 'js', 'mjs', 'cjs',
   'py', 'php', 'phtml', 'php3', 'php4', 'php5', 'phps', 'html', 'htm',
   'xhtml', 'jar', 'msi', 'dll', 'com', 'scr', 'hta', 'svg', 'apk', 'app',
-  'deb', 'rpm', 'vbe', 'wsf', 'wsh'
+  'deb', 'rpm', 'vbe', 'wsf', 'wsh', 'jsp', 'asp', 'aspx', 'cgi', 'pl',
+  'elf', 'bin', 'reg', 'gadget'
 ]);
 
 export function isDangerousFile(filename, mimeType = '') {
   if (!filename || typeof filename !== 'string') return true;
-  const parts = filename.toLowerCase().trim().split('.');
+  const trimmed = filename.trim();
+
+  // 1. Block Unicode BiDi / RTLO override attacks & control characters
+  if (/[\u202A-\u202E\u2066-\u2069\x00-\x1f\x7f-\x9f]/.test(trimmed)) return true;
+
+  // 2. Block Directory Traversal & separators
+  if (trimmed.includes('..') || trimmed.includes('/') || trimmed.includes('\\')) return true;
+
+  // 3. Block Hidden system files (.env, .htaccess, .git, etc.)
+  if (trimmed.startsWith('.')) return true;
+
+  // 4. Check all extensions (prevent double-extension bypass e.g. plan.dwg.exe or test.php.pdf)
+  const parts = trimmed.toLowerCase().split('.');
   if (parts.length >= 2) {
     for (const part of parts.slice(1)) {
-      if (DANGEROUS_EXTENSIONS.has(part)) return true;
+      if (DANGEROUS_EXTENSIONS.has(part.trim())) return true;
     }
   }
+
+  // 5. Block dangerous executable and scripting MIME types
   const lowMime = (mimeType || '').toLowerCase();
   if (
     lowMime.includes('javascript') ||
@@ -34,11 +49,63 @@ export function isDangerousFile(filename, mimeType = '') {
     lowMime.includes('svg+xml') ||
     lowMime.includes('x-msdownload') ||
     lowMime.includes('x-sh') ||
-    lowMime.includes('x-php')
+    lowMime.includes('x-php') ||
+    lowMime.includes('x-executable') ||
+    lowMime.includes('application/x-bat') ||
+    lowMime.includes('application/x-msdos-program')
   ) {
     return true;
   }
   return false;
+}
+
+/**
+ * Checks if a user is authorized to upload documents / drawings
+ */
+async function canUserUpload(supabase, userId, roleId, projectId = null) {
+  if (roleId === 'admin') return true;
+  if (projectId) {
+    return (
+      (await hasPermission(supabase, userId, roleId, 'edit_tasks', projectId)) ||
+      (await hasPermission(supabase, userId, roleId, 'upload_documents', projectId))
+    );
+  }
+  return roleId === 'team_lead' || roleId === 'member';
+}
+
+/**
+ * Checks if a user is authorized to approve engineering drawings
+ */
+async function canUserApprove(supabase, userId, roleId, projectId = null) {
+  if (roleId === 'admin' || roleId === 'team_lead') return true;
+  if (projectId) {
+    return (
+      (await hasPermission(supabase, userId, roleId, 'manage_tasks', projectId)) ||
+      (await hasPermission(supabase, userId, roleId, 'approve_tasks', projectId))
+    );
+  }
+  return false;
+}
+
+/**
+ * Automatically marks prior approved versions of the same drawing as 'superseded'
+ */
+async function autoSupersedePriorVersions(supabase, projectId, docId, filename) {
+  if (!projectId || !filename) return;
+  // Extract root drawing name without version (e.g. "ARCH-FL-01_v2.dwg" -> "ARCH-FL-01")
+  const basePrefix = filename.replace(/(_v\d+)?\.[^.]+$/i, '').trim();
+  if (!basePrefix || basePrefix.length < 3) return;
+
+  try {
+    await supabase.from('documents')
+      .update({ status: 'superseded', updated_at: new Date().toISOString() })
+      .eq('project_id', projectId)
+      .eq('status', 'approved')
+      .neq('id', docId)
+      .ilike('original_name', `${basePrefix}%`);
+  } catch (err) {
+    console.warn('[Documents] Auto-supersede warning:', err.message);
+  }
 }
 
 const app = new Hono();
@@ -80,7 +147,7 @@ app.post('/session', async (c) => {
   const roleId = c.get('roleId');
   const supabase = c.get('supabase');
 
-  if (projectId && !(await hasPermission(supabase, userId, roleId, 'edit_tasks', projectId))) {
+  if (!(await canUserUpload(supabase, userId, roleId, projectId))) {
     return c.json({ error: 'غير مصرح لك برفع مستندات لهذا المشروع' }, 403);
   }
 
@@ -117,7 +184,7 @@ app.post('/finalize', async (c) => {
 
   if (!driveFileId) return c.json({ error: 'معرف الملف مفقود' }, 400);
 
-  if (projectId && !(await hasPermission(supabase, userId, roleId, 'edit_tasks', projectId))) {
+  if (!(await canUserUpload(supabase, userId, roleId, projectId))) {
     return c.json({ error: 'غير مصرح لك برفع مستندات لهذا المشروع' }, 403);
   }
 
@@ -126,8 +193,17 @@ app.post('/finalize', async (c) => {
   }
 
   try {
+    let finalStatus = ['draft', 'review', 'approved', 'superseded'].includes(body.status) ? body.status : 'draft';
+    if (finalStatus === 'approved') {
+      const authorized = await canUserApprove(supabase, userId, roleId, projectId);
+      if (!authorized) {
+        finalStatus = 'review';
+      }
+    }
+
     const driveResult = await finalizeGoogleDrivePermissions(c.env, driveFileId);
     const docId = generateSecureId('doc_');
+    const verifiedSize = driveResult.size || size || 0;
 
     const docData = {
       id: docId,
@@ -137,19 +213,29 @@ app.post('/finalize', async (c) => {
       original_name: compiledName || 'document',
       disk_filename: driveResult.webViewLink,
       mime_type: mimeType || 'application/octet-stream',
-      size: size || 0,
-      status: ['draft', 'review', 'approved', 'superseded'].includes(body.status) ? body.status : 'draft'
+      size: verifiedSize,
+      status: finalStatus
     };
 
     const { data, error } = await supabase.from('documents').insert([docData]).select().single();
     if (error) throw error;
+
+    if (finalStatus === 'approved' && projectId) {
+      await autoSupersedePriorVersions(supabase, projectId, docId, docData.original_name);
+    }
 
     supabase.from('audit_logs').insert([{
       user_id: userId,
       action: 'create',
       entity_type: 'document',
       entity_id: docId,
-      details: { name: docData.original_name, link: driveResult.webViewLink }
+      details: {
+        name: docData.original_name,
+        link: driveResult.webViewLink,
+        size: verifiedSize,
+        md5: driveResult.md5Checksum || null,
+        status: finalStatus
+      }
     }]).then().catch(() => {});
 
     return c.json({ ok: true, document: toCamelCase(data) });
@@ -205,36 +291,61 @@ app.put('/chunk', async (c) => {
       const userId = c.get('userId');
       const roleId = c.get('roleId');
       const supabase = c.get('supabase');
+      const projectId = docMeta.projectId || null;
 
-      if (docMeta.projectId && !(await hasPermission(supabase, userId, roleId, 'edit_tasks', docMeta.projectId))) {
+      if (!(await canUserUpload(supabase, userId, roleId, projectId))) {
         return c.json({ error: 'غير مصرح لك برفع مستندات لهذا المشروع' }, 403);
       }
 
-      if (isDangerousFile(docMeta.compiledName || driveData.name, docMeta.mimeType)) {
+      const fileName = docMeta.compiledName || driveData.name || 'document';
+      if (isDangerousFile(fileName, docMeta.mimeType)) {
         return c.json({ error: 'صيغة الملف غير مسموح برفعها لأسباب أمنية.' }, 400);
+      }
+
+      let finalStatus = ['draft', 'review', 'approved', 'superseded'].includes(docMeta.status) ? docMeta.status : 'draft';
+      if (finalStatus === 'approved') {
+        const authorized = await canUserApprove(supabase, userId, roleId, projectId);
+        if (!authorized) {
+          finalStatus = 'review';
+        }
       }
 
       const driveResult = await finalizeGoogleDrivePermissions(c.env, driveData.id);
       const docId = generateSecureId('doc_');
+      const verifiedSize = driveResult.size || docMeta.size || driveData.size || 0;
 
       const docData = {
         id: docId,
-        project_id: docMeta.projectId || null,
+        project_id: projectId,
         task_id: docMeta.taskId || null,
         uploader_id: userId,
-        original_name: docMeta.compiledName || driveData.name,
+        original_name: fileName,
         disk_filename: driveResult.webViewLink,
         mime_type: docMeta.mimeType || 'application/octet-stream',
-        size: docMeta.size || 0,
-        status: ['draft', 'review', 'approved', 'superseded'].includes(docMeta.status) ? docMeta.status : 'draft'
+        size: verifiedSize,
+        status: finalStatus
       };
 
       const { data, error } = await supabase.from('documents').insert([docData]).select().single();
       if (error) throw error;
 
+      if (finalStatus === 'approved' && projectId) {
+        await autoSupersedePriorVersions(supabase, projectId, docId, fileName);
+      }
+
       supabase.from('audit_logs').insert([{
-        user_id: userId, action: 'create', entity_type: 'document', entity_id: docId, details: { name: docData.original_name, link: driveResult.webViewLink }
-      }]).then().catch(()=>{});
+        user_id: userId,
+        action: 'create',
+        entity_type: 'document',
+        entity_id: docId,
+        details: {
+          name: docData.original_name,
+          link: driveResult.webViewLink,
+          size: verifiedSize,
+          md5: driveResult.md5Checksum || null,
+          status: finalStatus
+        }
+      }]).then().catch(() => {});
 
       return c.json({ ok: true, document: toCamelCase(data) });
     } catch (err) {
@@ -267,11 +378,19 @@ app.post('/', async (c) => {
     return c.json({ error: 'صيغة الملف غير مسموح برفعها لأسباب أمنية.' }, 400);
   }
 
-  if (projectId && !(await hasPermission(supabase, userId, roleId, 'edit_tasks', projectId))) {
+  if (!(await canUserUpload(supabase, userId, roleId, projectId))) {
     return c.json({ error: 'غير مصرح لك برفع مستندات لهذا المشروع' }, 403);
   }
 
   try {
+    let finalStatus = ['draft', 'review', 'approved', 'superseded'].includes(body.status) ? body.status : 'draft';
+    if (finalStatus === 'approved') {
+      const authorized = await canUserApprove(supabase, userId, roleId, projectId);
+      if (!authorized) {
+        finalStatus = 'review';
+      }
+    }
+
     const arrayBuffer = await file.arrayBuffer();
     const targetFolderId = await resolveTargetFolder(c.env, supabase, { projectId, taskId });
     const driveResult = await uploadToGoogleDrive(c.env, arrayBuffer, compiledName, file.type, targetFolderId);
@@ -286,15 +405,23 @@ app.post('/', async (c) => {
       disk_filename: driveResult.webViewLink,
       mime_type: file.type,
       size: file.size,
-      status: ['draft', 'review', 'approved', 'superseded'].includes(body.status) ? body.status : 'draft'
+      status: finalStatus
     };
     
     const { data, error } = await supabase.from('documents').insert([docData]).select().single();
     if (error) throw error;
+
+    if (finalStatus === 'approved' && projectId) {
+      await autoSupersedePriorVersions(supabase, projectId, docId, compiledName);
+    }
     
     supabase.from('audit_logs').insert([{
-      user_id: userId, action: 'create', entity_type: 'document', entity_id: docId, details: { name: compiledName, link: driveResult.webViewLink }
-    }]).then().catch(()=>{});
+      user_id: userId,
+      action: 'create',
+      entity_type: 'document',
+      entity_id: docId,
+      details: { name: compiledName, link: driveResult.webViewLink, status: finalStatus }
+    }]).then().catch(() => {});
 
     return c.json({ ok: true, document: toCamelCase(data) }, 201);
   } catch (error) {
@@ -303,7 +430,7 @@ app.post('/', async (c) => {
   }
 });
 
-// PATCH /api/documents/:id -> Rename Document
+// PATCH /api/documents/:id -> Update Document Name or Status
 app.patch('/:id', async (c) => {
   const docId = c.req.param('id');
   const body = await c.req.json();
@@ -311,7 +438,7 @@ app.patch('/:id', async (c) => {
   const userId = c.get('userId');
   const roleId = c.get('roleId');
 
-  const { data: doc } = await supabase.from('documents').select('project_id, uploader_id').eq('id', docId).single();
+  const { data: doc } = await supabase.from('documents').select('project_id, uploader_id, original_name').eq('id', docId).single();
   if (!doc) return c.json({ error: 'المستند غير موجود' }, 404);
   
   if (doc.uploader_id !== userId && !(await hasPermission(supabase, userId, roleId, 'edit_tasks', doc.project_id))) {
@@ -320,10 +447,23 @@ app.patch('/:id', async (c) => {
   
   const updates = {};
   if (body.originalName) updates.original_name = body.originalName;
-  if (body.status) updates.status = body.status;
+  if (body.status) {
+    if (body.status === 'approved') {
+      const authorized = await canUserApprove(supabase, userId, roleId, doc.project_id);
+      if (!authorized) {
+        return c.json({ error: 'غير مصرح لك باعتماد هذا المخطط (صلاحية مدير أو قائد مشروع فقط)' }, 403);
+      }
+    }
+    updates.status = body.status;
+  }
+  updates.updated_at = new Date().toISOString();
   
   const { data, error } = await supabase.from('documents').update(updates).eq('id', docId).select().single();
   if (error) throw error;
+
+  if (body.status === 'approved' && doc.project_id) {
+    await autoSupersedePriorVersions(supabase, doc.project_id, docId, updates.original_name || doc.original_name);
+  }
   
   return c.json({ ok: true, document: toCamelCase(data) });
 });

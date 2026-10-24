@@ -345,14 +345,16 @@ export async function finalizeGoogleDrivePermissions(env, fileId) {
     body: JSON.stringify({ role: 'reader', type: 'anyone' })
   });
 
-  const fileRes = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?fields=webViewLink,webContentLink`, {
+  const fileRes = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?fields=webViewLink,webContentLink,size,md5Checksum`, {
     headers: { 'Authorization': `Bearer ${token}` }
   });
-  const fileInfo = await fileRes.json();
+  const fileInfo = await fileRes.json().catch(() => ({}));
 
   return {
     id: fileId,
     webViewLink: fileInfo.webViewLink,
-    webContentLink: fileInfo.webContentLink
+    webContentLink: fileInfo.webContentLink,
+    size: fileInfo.size ? Number(fileInfo.size) : null,
+    md5Checksum: fileInfo.md5Checksum || null
   };
 }
