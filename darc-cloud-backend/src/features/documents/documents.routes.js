@@ -108,6 +108,110 @@ async function autoSupersedePriorVersions(supabase, projectId, docId, filename) 
   }
 }
 
+/**
+ * Sends notifications to Project Manager, Team Leads, and Admins when a drawing is uploaded/submitted for review
+ */
+async function notifyReviewersOfDocument(supabase, { docId, docName, projectId, taskId, uploaderId }) {
+  if (!projectId) return;
+
+  try {
+    // 1. Get Project Details
+    const { data: project } = await supabase
+      .from('projects')
+      .select('name_ar, name_en, code, manager_id')
+      .eq('id', projectId)
+      .single();
+
+    if (!project) return;
+    const projTitle = project.name_ar || project.name_en || project.code || 'المشروع';
+
+    // 2. Identify Approvers / Reviewers to notify (exclude the uploader)
+    const recipientIds = new Set();
+
+    // 2a. Project Manager
+    if (project.manager_id && project.manager_id !== uploaderId) {
+      recipientIds.add(project.manager_id);
+    }
+
+    // 2b. Project Members with leader/manager roles
+    const { data: leadMembers } = await supabase
+      .from('project_members')
+      .select('user_id')
+      .eq('project_id', projectId)
+      .in('role_id', ['team_lead', 'admin', 'manager']);
+
+    if (leadMembers) {
+      leadMembers.forEach(m => {
+        if (m.user_id && m.user_id !== uploaderId) {
+          recipientIds.add(m.user_id);
+        }
+      });
+    }
+
+    // 2c. System Admins
+    const { data: admins } = await supabase
+      .from('users')
+      .select('id')
+      .eq('role_id', 'admin')
+      .is('deleted_at', null);
+
+    if (admins) {
+      admins.forEach(a => {
+        if (a.id && a.id !== uploaderId) {
+          recipientIds.add(a.id);
+        }
+      });
+    }
+
+    if (recipientIds.size === 0) return;
+
+    // 3. Fetch uploader name for friendly notification text
+    let uploaderName = 'مهندس في الفريق';
+    if (uploaderId) {
+      const { data: uploader } = await supabase
+        .from('users')
+        .select('name, name_en')
+        .eq('id', uploaderId)
+        .single();
+      if (uploader && (uploader.name || uploader.name_en)) {
+        uploaderName = uploader.name || uploader.name_en;
+      }
+    }
+
+    const titleAr = 'مخطط جديد بانتظار مراجعتك واعتمادك 📐';
+    const titleEn = 'New Drawing Pending Review & Approval 📐';
+    const messageAr = `قام ${uploaderName} برفع المخطط "${docName}" في مشروع "${projTitle}" وهو الآن بانتظار مراجعتك الفنية واعتمادك.`;
+    const messageEn = `${uploaderName} uploaded drawing "${docName}" in project "${projTitle}". It is awaiting your technical review & approval.`;
+
+    // 4. Batch insert notifications
+    const notifications = Array.from(recipientIds).map(userId => {
+      const notifId = generateSecureId('notif_');
+      return {
+        id: notifId,
+        user_id: userId,
+        type: 'document_review',
+        title_ar: titleAr,
+        title_en: titleEn,
+        message_ar: messageAr,
+        message_en: messageEn,
+        body_ar: messageAr,
+        body_en: messageEn,
+        content: messageAr,
+        project_id: projectId,
+        task_id: taskId || null,
+        read: false,
+        read_at: null,
+        created_at: new Date().toISOString()
+      };
+    });
+
+    await supabase.from('notifications').insert(notifications);
+    invalidateBootstrapCache();
+  } catch (err) {
+    console.warn('[Documents] Failed to notify reviewers:', err.message);
+  }
+}
+
 const app = new Hono();
 
 app.use('*', async (c, next) => {
@@ -222,6 +326,14 @@ app.post('/finalize', async (c) => {
 
     if (finalStatus === 'approved' && projectId) {
       await autoSupersedePriorVersions(supabase, projectId, docId, docData.original_name);
+    } else if (finalStatus === 'review' && projectId) {
+      notifyReviewersOfDocument(supabase, {
+        docId,
+        docName: docData.original_name,
+        projectId,
+        taskId,
+        uploaderId: userId
+      }).catch(() => {});
     }
 
     supabase.from('audit_logs').insert([{
@@ -331,6 +443,14 @@ app.put('/chunk', async (c) => {
 
       if (finalStatus === 'approved' && projectId) {
         await autoSupersedePriorVersions(supabase, projectId, docId, fileName);
+      } else if (finalStatus === 'review' && projectId) {
+        notifyReviewersOfDocument(supabase, {
+          docId,
+          docName: docData.original_name,
+          projectId,
+          taskId: docMeta.taskId || null,
+          uploaderId: userId
+        }).catch(() => {});
       }
 
       supabase.from('audit_logs').insert([{
@@ -413,6 +533,14 @@ app.post('/', async (c) => {
 
     if (finalStatus === 'approved' && projectId) {
       await autoSupersedePriorVersions(supabase, projectId, docId, compiledName);
+    } else if (finalStatus === 'review' && projectId) {
+      notifyReviewersOfDocument(supabase, {
+        docId,
+        docName: compiledName,
+        projectId,
+        taskId,
+        uploaderId: userId
+      }).catch(() => {});
     }
     
     supabase.from('audit_logs').insert([{
@@ -463,6 +591,14 @@ app.patch('/:id', async (c) => {
 
   if (body.status === 'approved' && doc.project_id) {
     await autoSupersedePriorVersions(supabase, doc.project_id, docId, updates.original_name || doc.original_name);
+  } else if (body.status === 'review' && doc.status !== 'review' && doc.project_id) {
+    notifyReviewersOfDocument(supabase, {
+      docId,
+      docName: updates.original_name || doc.original_name,
+      projectId: doc.project_id,
+      taskId: doc.task_id,
+      uploaderId: userId
+    }).catch(() => {});
   }
   
   return c.json({ ok: true, document: toCamelCase(data) });
