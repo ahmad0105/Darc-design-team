@@ -63,7 +63,7 @@ export function navItem(view, label, iconName) {
 }
 
 export function renderApp() {
-  if (!canAccessView(state.view)) {
+  if (state.data && !canAccessView(state.view)) {
     state.view = getFirstAllowedView();
   }
 
@@ -74,6 +74,8 @@ export function renderApp() {
       let targetHash = state.view;
       if (state.view === 'project-detail' && state.activeProjectId) {
         targetHash = `project-detail?id=${encodeURIComponent(state.activeProjectId)}${state.projectTab ? `&tab=${encodeURIComponent(state.projectTab)}` : ''}`;
+      } else if (state.view === 'settings' && state.settingsSection) {
+        targetHash = `settings?section=${encodeURIComponent(state.settingsSection)}`;
       }
       window._isInternalNav = true;
       if (window.history && window.history.replaceState) {
@@ -188,12 +190,12 @@ export function renderView() {
 }
 
 export function switchView(view, projectId = undefined) {
-  if (!canAccessView(view)) {
+  if (state.data && !canAccessView(view)) {
     view = getFirstAllowedView();
   }
   state.view = view;
   if (projectId !== undefined) state.activeProjectId = projectId;
-  if (view === 'settings') state.settingsSection = 'profile';
+  if (view === 'settings' && !state.settingsSection) state.settingsSection = 'profile';
   state.sidebarOpen = false;
   document.querySelector('.sidebar')?.classList.remove('open');
 
@@ -211,6 +213,8 @@ export function switchView(view, projectId = undefined) {
     let hashStr = view;
     if (view === 'project-detail' && state.activeProjectId) {
       hashStr = `project-detail?id=${encodeURIComponent(state.activeProjectId)}${state.projectTab ? `&tab=${encodeURIComponent(state.projectTab)}` : ''}`;
+    } else if (view === 'settings' && state.settingsSection) {
+      hashStr = `settings?section=${encodeURIComponent(state.settingsSection)}`;
     }
     if (typeof window !== 'undefined' && window.location.hash.replace(/^#/, '') !== hashStr) {
       window._isInternalNav = true;

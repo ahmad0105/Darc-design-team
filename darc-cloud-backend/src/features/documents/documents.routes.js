@@ -96,13 +96,16 @@ async function autoSupersedePriorVersions(supabase, projectId, docId, filename) 
   const basePrefix = filename.replace(/(_v\d+)?\.[^.]+$/i, '').trim();
   if (!basePrefix || basePrefix.length < 3) return;
 
+  // Escape special SQL ILIKE wildcard characters (% and _) to prevent wildcard injection
+  const safePrefix = basePrefix.replace(/[%_\\]/g, '\\$&');
+
   try {
     await supabase.from('documents')
       .update({ status: 'superseded', updated_at: new Date().toISOString() })
       .eq('project_id', projectId)
       .eq('status', 'approved')
       .neq('id', docId)
-      .ilike('original_name', `${basePrefix}%`);
+      .ilike('original_name', `${safePrefix}%`);
   } catch (err) {
     console.warn('[Documents] Auto-supersede warning:', err.message);
   }
@@ -245,18 +248,36 @@ app.get('/:id', async (c) => {
 
 // POST /api/documents/session -> Create Direct Resumable Upload Session for Google Drive
 app.post('/session', async (c) => {
+  const isDemo = c.get('isDemo');
   const body = await c.req.json();
   const { compiledName, mimeType, projectId, taskId, size } = body;
   const userId = c.get('userId');
   const roleId = c.get('roleId');
   const supabase = c.get('supabase');
 
-  if (!(await canUserUpload(supabase, userId, roleId, projectId))) {
-    return c.json({ error: 'غير مصرح لك برفع مستندات لهذا المشروع' }, 403);
+  const MAX_PROD_UPLOAD_SIZE = 250 * 1024 * 1024; // 250MB for production
+  const MAX_DEMO_UPLOAD_SIZE = 10 * 1024 * 1024;  // 10MB strictly for demo account
+  const maxSize = isDemo ? MAX_DEMO_UPLOAD_SIZE : MAX_PROD_UPLOAD_SIZE;
+
+  if (size && Number(size) > maxSize) {
+    const limitLabel = isDemo ? '10MB (بيئة العرض التجريبية)' : '250MB';
+    return c.json({ error: `حجم الملف يتجاوز الحد الأقصى المسموح به (${limitLabel}).` }, 413);
   }
 
   if (isDangerousFile(compiledName, mimeType)) {
     return c.json({ error: 'صيغة الملف غير مسموح برفعها لأسباب أمنية.' }, 400);
+  }
+
+  if (isDemo) {
+    return c.json({
+      sessionUrl: 'https://demo-mock-upload.darc-design.bond/upload',
+      folderId: 'fld_demo_mock',
+      isDemo: true
+    });
+  }
+
+  if (!(await canUserUpload(supabase, userId, roleId, projectId))) {
+    return c.json({ error: 'غير مصرح لك برفع مستندات لهذا المشروع' }, 403);
   }
 
   const origin = c.req.header('origin') || 'http://127.0.0.1:8787';
@@ -280,11 +301,28 @@ app.post('/session', async (c) => {
 
 // POST /api/documents/finalize -> Finalize Google Drive permissions and save metadata
 app.post('/finalize', async (c) => {
+  const isDemo = c.get('isDemo');
   const body = await c.req.json();
   const { driveFileId, projectId, taskId, compiledName, mimeType, size } = body;
   const userId = c.get('userId');
   const roleId = c.get('roleId');
   const supabase = c.get('supabase');
+
+  if (isDemo) {
+    return c.json({
+      ok: true,
+      isDemo: true,
+      document: {
+        id: 'doc_demo_' + Math.random().toString(36).substr(2, 6),
+        originalName: compiledName || 'مستند تجريبي جديد.pdf',
+        mimeType: mimeType || 'application/pdf',
+        size: Number(size) || 1024 * 1024,
+        diskFilename: 'https://drive.google.com/file/d/demo_showcase_file/view',
+        status: 'review',
+        createdAt: new Date().toISOString()
+      }
+    });
+  }
 
   if (!driveFileId) return c.json({ error: 'معرف الملف مفقود' }, 400);
 
@@ -494,8 +532,31 @@ app.post('/', async (c) => {
   
   if (!file) return c.json({ error: 'لم يتم إرفاق ملف' }, 400);
 
+  const isDemo = c.get('isDemo');
+  const maxMultipartSize = isDemo ? 10 * 1024 * 1024 : 25 * 1024 * 1024;
+  if (file.size > maxMultipartSize) {
+    const limitLabel = isDemo ? '10MB (بيئة العرض التجريبية)' : '25MB (للرفع المباشر - يرجى استخدام الرفع المقسم)';
+    return c.json({ error: `حجم الملف يتجاوز الحد الأقصى (${limitLabel}).` }, 413);
+  }
+
   if (isDangerousFile(compiledName || file?.name, file?.type)) {
     return c.json({ error: 'صيغة الملف غير مسموح برفعها لأسباب أمنية.' }, 400);
+  }
+
+  if (isDemo) {
+    return c.json({
+      ok: true,
+      isDemo: true,
+      document: {
+        id: 'doc_demo_' + Math.random().toString(36).substr(2, 6),
+        originalName: compiledName || file?.name || 'مستند تجريبي جديد.pdf',
+        mimeType: file?.type || 'application/pdf',
+        size: file?.size || 1024 * 1024,
+        diskFilename: 'https://drive.google.com/file/d/demo_showcase_file/view',
+        status: 'review',
+        createdAt: new Date().toISOString()
+      }
+    });
   }
 
   if (!(await canUserUpload(supabase, userId, roleId, projectId))) {

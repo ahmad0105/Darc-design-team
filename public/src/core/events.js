@@ -775,6 +775,20 @@ export async function handleClick(event) {
   }
   if (action === 'project-tab') {
     state.projectTab = target.dataset.tab;
+    try {
+      if (typeof window !== 'undefined' && state.activeProjectId) {
+        window._isInternalNav = true;
+        window.location.hash = `project-detail?id=${encodeURIComponent(state.activeProjectId)}&tab=${encodeURIComponent(state.projectTab)}`;
+      }
+      if (typeof sessionStorage !== 'undefined') {
+        const saved = sessionStorage.getItem('darc_last_route');
+        const parsed = saved ? JSON.parse(saved) : {};
+        parsed.view = 'project-detail';
+        parsed.activeProjectId = state.activeProjectId;
+        parsed.projectTab = state.projectTab;
+        sessionStorage.setItem('darc_last_route', JSON.stringify(parsed));
+      }
+    } catch (e) {}
     target.closest('.detail-tabs')?.querySelectorAll('.detail-tab').forEach(b => b.classList.toggle('active', b === target));
     const main = document.getElementById('main-content');
     if (main) main.scrollTop = 0;
@@ -866,11 +880,16 @@ export async function handleClick(event) {
     return; 
   }
   if (action === 'settings-section') { 
-    state.settingsSection = target.dataset.section; 
+    state.settingsSection = target.dataset.section || 'profile'; 
     try {
+      if (typeof window !== 'undefined') {
+        window._isInternalNav = true;
+        window.location.hash = `settings?section=${encodeURIComponent(state.settingsSection)}`;
+      }
       if (typeof sessionStorage !== 'undefined') {
         const saved = sessionStorage.getItem('darc_last_route');
         const parsed = saved ? JSON.parse(saved) : {};
+        parsed.view = 'settings';
         parsed.settingsSection = state.settingsSection;
         sessionStorage.setItem('darc_last_route', JSON.stringify(parsed));
       }
@@ -2117,6 +2136,8 @@ if (typeof window !== 'undefined' && !window._hashChangeListenerSet) {
       }
       if (state.view !== viewPart || state.activeProjectId !== pid) {
         switchView(viewPart, pid);
+      } else {
+        renderView();
       }
     }
   });

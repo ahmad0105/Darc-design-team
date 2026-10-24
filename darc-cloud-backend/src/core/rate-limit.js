@@ -42,6 +42,19 @@ export function getClientIp(c) {
 }
 
 /**
+ * Normalizes IP addresses for rate limiting:
+ * Groups IPv6 into /64 subnets to prevent rotating ephemeral interface ID attacks.
+ */
+export function getIpRateLimitKey(ip) {
+  if (!ip) return '127.0.0.1';
+  if (ip.includes(':')) {
+    const parts = ip.split(':');
+    return parts.slice(0, 4).join(':') + '::/64';
+  }
+  return ip;
+}
+
+/**
  * Checks if the IP has exceeded allowed failed login attempts.
  */
 export function authRateLimiter() {
@@ -49,7 +62,8 @@ export function authRateLimiter() {
     if (c.req.method === 'OPTIONS') return next();
     maybeCleanup();
 
-    const ip = getClientIp(c);
+    const rawIp = getClientIp(c);
+    const ip = getIpRateLimitKey(rawIp);
     const now = Date.now();
     const entry = _authFailures.get(ip);
 
@@ -78,7 +92,8 @@ export function authRateLimiter() {
 /**
  * Record a failed authentication attempt for this IP.
  */
-export function recordAuthFailure(ip) {
+export function recordAuthFailure(rawIp) {
+  const ip = getIpRateLimitKey(rawIp);
   const now = Date.now();
   const entry = _authFailures.get(ip);
 
@@ -92,7 +107,8 @@ export function recordAuthFailure(ip) {
 /**
  * Clear failure counter upon successful login.
  */
-export function clearAuthFailure(ip) {
+export function clearAuthFailure(rawIp) {
+  const ip = getIpRateLimitKey(rawIp);
   _authFailures.delete(ip);
 }
 
