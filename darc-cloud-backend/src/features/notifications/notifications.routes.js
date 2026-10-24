@@ -17,6 +17,14 @@ app.get('/', async (c) => {
   return c.json({ notifications: toCamelCase(data || []) });
 });
 
+app.post('/read-all', async (c) => {
+  const userId = c.get('userId');
+  const supabase = c.get('supabase');
+  const now = new Date().toISOString();
+  await supabase.from('notifications').update({ read: true, read_at: now }).eq('user_id', userId).eq('read', false);
+  return c.json({ ok: true });
+});
+
 app.patch('/:id', async (c) => {
   const notificationId = c.req.param('id');
   const userId = c.get('userId');

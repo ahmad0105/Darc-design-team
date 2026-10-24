@@ -433,7 +433,42 @@ export async function handleClick(event) {
   if (action === 'open-cheatsheet') { openShortcutsCheatsheet(); return; }
   if (action === 'close-modal') { closeModal(); return; }
   if (action === 'show-notifications') { showNotifications(); return; }
-  if (action === 'read-notification') { try { await api(`/api/notifications/${target.dataset.notificationId}`, { method: 'PATCH', body: JSON.stringify({}) }); await refreshView(); showNotifications(); } catch (error) { showToast(error.message, true); } return; }
+  if (action === 'read-notification') {
+    const notifId = target.dataset.notificationId;
+    const notif = (state.data?.notifications || []).find(n => n.id === notifId);
+    try {
+      await api(`/api/notifications/${notifId}`, { method: 'PATCH', body: JSON.stringify({}) });
+      if (notif) notif.read = true;
+      closeModal();
+      if (notif?.taskId) {
+        const task = (state.data?.tasks || []).find(t => t.id === notif.taskId);
+        if (task) {
+          openTaskModal(task);
+          return;
+        }
+      }
+      if (notif?.projectId) {
+        switchView('project-detail', notif.projectId);
+        return;
+      }
+      await refreshView();
+    } catch (error) {
+      showToast(error.message, true);
+    }
+    return;
+  }
+  if (action === 'mark-all-notifications-read') {
+    try {
+      await api('/api/notifications/read-all', { method: 'POST' });
+      (state.data?.notifications || []).forEach(n => { n.read = true; n.readAt = new Date().toISOString(); });
+      showNotifications();
+      renderApp();
+      showToast(choose('تم تحديد كافة التنبيهات كمقروءة.', 'All notifications marked as read.'));
+    } catch (e) {
+      showToast(e.message, true);
+    }
+    return;
+  }
   if (action === 'toggle-project-menu') {
     if (projectMenu) projectMenu.style.display = projectMenu.style.display === 'none' ? 'block' : 'none';
     return;
@@ -549,9 +584,8 @@ export async function handleClick(event) {
     // Optimistic UI update for instant feedback
     const originalProjects = [...(state.data.projects || [])];
     state.data.projects = state.data.projects.filter(p => p.id !== target.dataset.projectId);
-    state.view = 'projects';
-    state.activeProjectId = null;
-    renderView(); // Update UI immediately
+    closeModal();
+    switchView('projects');
     showToast(choose('جاري حذف المشروع...', 'Deleting project...'));
     
     try {

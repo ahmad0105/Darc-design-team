@@ -34,7 +34,7 @@ app.get('/', async (c) => {
   // 1. Fetch soft-deleted records and deletion audit logs in parallel
   const [projRes, taskRes, docRes, auditRes] = await Promise.all([
     supabase.from('projects')
-      .select('id, name_ar, name_en, code, status, client_name, manager_id, deleted_at, created_at')
+      .select('id, name_ar, name_en, code, lifecycle, client_ar, client_en, manager_id, deleted_at, created_at')
       .not('deleted_at', 'is', null)
       .order('deleted_at', { ascending: false }),
     supabase.from('tasks')
@@ -114,8 +114,10 @@ app.get('/', async (c) => {
     name_ar: p.name_ar,
     name_en: p.name_en,
     code: p.code,
-    status: p.status,
-    client_name: p.client_name,
+    lifecycle: p.lifecycle,
+    status: p.lifecycle,
+    client_ar: p.client_ar,
+    client_name: p.client_ar || p.client_en,
     deleted_at: p.deleted_at,
     created_at: p.created_at,
     type: 'project'

@@ -412,11 +412,17 @@ document.addEventListener('touchend', async (e) => {
     const column = elUnder?.closest('.board-column') || (placeholder && placeholder.closest('.board-column'));
     const draggedId = activeDraggedTaskId;
 
-    cleanTouchDrag();
+    // Immediately remove ghost clone from DOM for crisp responsive touch release
+    if (touchGhost && touchGhost.parentNode) {
+      touchGhost.parentNode.removeChild(touchGhost);
+    }
+    touchGhost = null;
 
     if (column && draggedId) {
+      // Let handleTaskDrop calculate exact slot relative to placeholder before removing it
       await handleTaskDrop(column, touch.clientY, draggedId);
     }
+    cleanTouchDrag();
   } else {
     cleanTouchDrag();
   }
