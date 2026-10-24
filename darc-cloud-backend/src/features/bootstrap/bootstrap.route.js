@@ -67,6 +67,20 @@ function toCamelCase(obj) {
 app.get('/', async (c) => {
   const userId = c.get('userId');
   const roleId = c.get('roleId');
+  const cacheKey = `${userId}:${roleId}`;
+  const clientEtag = c.req.header('if-none-match');
+
+  // 1. High-Performance In-Memory Micro-Cache: Serves sub-5ms responses during active sessions
+  const cached = getBootstrapCache(cacheKey);
+  if (cached) {
+    c.header('ETag', cached.etag);
+    c.header('Cache-Control', 'private, no-cache');
+    if (clientEtag && clientEtag === cached.etag) {
+      return c.body(null, 304);
+    }
+    return c.json(cached.payload);
+  }
+
   const supabase = getDB(c.env);
 
   try {
@@ -92,8 +106,8 @@ app.get('/', async (c) => {
         supabase.from('active_tasks').select(TASK_COLUMNS),
         supabase.from('documents').select(DOCUMENT_COLUMNS).is('deleted_at', null),
         supabase.from('project_members').select(MEMBER_COLUMNS),
-        supabase.from('comments').select(COMMENT_COLUMNS).is('deleted_at', null),
-        supabase.from('audit_logs').select('id, user_id, action, entity_type, entity_id, details, created_at').order('created_at', { ascending: false }).limit(100),
+        supabase.from('comments').select(COMMENT_COLUMNS).is('deleted_at', null).order('created_at', { ascending: false }).limit(200),
+        supabase.from('audit_logs').select('id, user_id, action, entity_type, entity_id, details, created_at').order('created_at', { ascending: false }).limit(50),
         supabase.from('notifications').select(NOTIFICATION_COLUMNS).eq('user_id', userId).order('created_at', { ascending: false }).limit(25)
       ]);
     } else {
@@ -338,7 +352,16 @@ app.get('/', async (c) => {
       auditLogs: toCamelCase(exposedAuditLogs)
     };
 
-    c.header('Cache-Control', 'private, no-cache, no-store, must-revalidate');
+    const etag = `W/"${computedUpdatedAt}-${projects.length}-${tasks.length}-${comments.length}-${auditLogs.length}-${getCacheVersion()}"`;
+    setBootstrapCache(cacheKey, responsePayload, etag);
+
+    c.header('ETag', etag);
+    c.header('Cache-Control', 'private, no-cache');
+
+    if (clientEtag && clientEtag === etag) {
+      return c.body(null, 304);
+    }
+
     return c.json(responsePayload);
   } catch (error) {
     console.error('[Bootstrap] Error:', error.message);

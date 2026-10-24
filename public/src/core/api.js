@@ -94,6 +94,7 @@ export async function api(path, options = {}) {
   const headers = {
     ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
     ...(options.body ? { 'Content-Type': 'application/json' } : {}),
+    ...(path === '/api/bootstrap' && _lastBootstrapEtag ? { 'If-None-Match': _lastBootstrapEtag } : {}),
     ...(options.headers || {})
   };
 
@@ -159,8 +160,9 @@ export async function api(path, options = {}) {
   
   const result = await response.json();
 
-  // On successful mutations, broadcast to other open tabs to trigger immediate sync
+  // On successful mutations, invalidate local ETag and broadcast to other open tabs to trigger immediate sync
   if (['POST', 'PATCH', 'PUT', 'DELETE'].includes(options.method)) {
+    invalidateBootstrapEtag();
     if (path !== '/api/auth/login' && path !== '/api/auth/logout') {
       import('./realtime.js').then(m => m.notifyStateMutation()).catch(() => {});
     }

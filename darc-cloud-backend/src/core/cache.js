@@ -9,9 +9,9 @@ let _templatesCacheTime = 0;
 let _usersCache = null;
 let _usersCacheTime = 0;
 
-// Dynamic entity bootstrap is always pulled fresh from Supabase to prevent cross-isolate stale cache desync on Cloudflare Workers.
-// Static definitions (roles, templates, company metadata) are retained in memory with long TTLs.
-const BOOTSTRAP_TTL = 0; 
+// Dynamic entity bootstrap micro-cache: 3.5s in-memory TTL protects Supabase from polling floods
+// and delivers instant sub-5ms responses. Invalided immediately on any state mutation.
+const BOOTSTRAP_TTL = 3500; 
 const STATIC_TTL = 600000;   // 10 minutes
 const USERS_TTL = 120000;    // 2 minutes
 
@@ -44,12 +44,18 @@ export function incrementCacheVersion() {
 }
 
 export function getBootstrapCache(key) {
-  // Always return null so each request receives the latest live state from Supabase
-  return null;
+  const item = _bootstrapCache.get(key);
+  if (!item) return null;
+  if (Date.now() - item.time > BOOTSTRAP_TTL) {
+    _bootstrapCache.delete(key);
+    return null;
+  }
+  return item;
 }
 
-export function setBootstrapCache(key, data) {
-  // No-op for cross-isolate safety
+export function setBootstrapCache(key, payload, etag) {
+  if (_bootstrapCache.size > 150) _bootstrapCache.clear();
+  _bootstrapCache.set(key, { payload, etag, time: Date.now() });
 }
 
 export function invalidateBootstrapCache() {

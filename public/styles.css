@@ -695,7 +695,7 @@ a { color: inherit; text-decoration: none; }
 }
 
 .project-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; align-items: stretch; }
-.project-card { display: flex; flex-direction: column; justify-content: space-between; height: 100%; box-sizing: border-box; padding: 18px 20px; border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--surface, #fff); box-shadow: var(--shadow-sm); transition: transform .2s, box-shadow .2s, border-color .2s; }
+.project-card { display: flex; flex-direction: column; justify-content: space-between; height: 100%; box-sizing: border-box; padding: 18px 20px; border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--surface, #fff); box-shadow: var(--shadow-sm); transition: transform .2s, box-shadow .2s, border-color .2s; contain: layout style; }
 .project-card:hover { transform: translateY(-2px); border-color: #cfe5e1; box-shadow: var(--shadow); }
 .project-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; min-height: 44px; }
 .project-card-symbol { width: 40px; height: 40px; display: grid; place-items: center; border-radius: 13px; color: var(--teal); background: var(--mint); flex-shrink: 0; }
@@ -751,7 +751,7 @@ a { color: inherit; text-decoration: none; }
 .column-dot.green { background: var(--mint-strong); }
 .board-count { min-width: 21px; padding: 3px 6px; border-radius: 7px; color: var(--muted); background: #e9efed; text-align: center; font-size: 9px; font-weight: 900; }
 .board-cards { display: grid; gap: 8px; }
-.task-card { padding: 13px; border: 1px solid #e5ecea; border-radius: 13px; background: #fff; box-shadow: 0 3px 10px rgba(30, 65, 65, .035); cursor: pointer; user-select: none; -webkit-user-select: none; touch-action: pan-y; transition: transform 0.15s ease, box-shadow 0.15s ease; }
+.task-card { padding: 13px; border: 1px solid #e5ecea; border-radius: 13px; background: #fff; box-shadow: 0 3px 10px rgba(30, 65, 65, .035); cursor: pointer; user-select: none; -webkit-user-select: none; touch-action: pan-y; transition: transform 0.15s ease, box-shadow 0.15s ease; contain: layout style; }
 .task-card:hover { border-color: #cde4df; transform: translateY(-1px); box-shadow: 0 5px 15px rgba(30, 65, 65, .06); }
 @keyframes dropPop {
   0% { transform: scale(0.96); background: rgba(13, 98, 105, 0.08); border-color: var(--teal); }
