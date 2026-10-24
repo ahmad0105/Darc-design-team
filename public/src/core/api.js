@@ -50,7 +50,7 @@ export async function api(path, options = {}) {
   // Check if browser is actively offline before hitting network for mutations
   if (typeof navigator !== 'undefined' && !navigator.onLine && isMutation && !isAuth) {
     if (isReplay) {
-      throw new Error('تعذر الاتصال بالخادم، ما زال النظام دون اتصال.');
+      throw new Error(choose('تعذر الاتصال بالخادم، ما زال النظام دون اتصال.', 'Unable to connect to server. System is still offline.'));
     }
     const item = enqueueOfflineMutation({
       path,
@@ -93,7 +93,7 @@ export async function api(path, options = {}) {
       showToast(choose('تعذر الاتصال بالخادم: تم حفظ العملية محلياً للمزامنة التلقائية 📡', 'Connection lost: action saved locally for auto-sync 📡'), false);
       return { ok: true, queued: true, offline: true, id: item?.id, ...simResult };
     }
-    throw new Error('تعذر الاتصال بالخادم، يرجى التحقق من اتصال الإنترنت.');
+    throw new Error(choose('تعذر الاتصال بالخادم، يرجى التحقق من اتصال الإنترنت.', 'Unable to connect to server. Please check your internet connection.'));
   }
 
   if (response.status === 304) {
