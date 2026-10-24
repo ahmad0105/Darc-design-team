@@ -61,27 +61,33 @@ export function renderDocuments() {
       </div>
     </div>
 
-    <!-- Filters Bar -->
-    <div class="filters-bar" style="display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap;align-items:center;">
-      <div class="search-input" style="flex:1;min-width:240px;position:relative;">
-        <input 
-          type="search" 
-          placeholder="${choose('بحث برقم المخطط أو الاسم أو الامتداد (DWG, PDF, RVT)...', 'Search by drawing name, code, or format (DWG, PDF, RVT)...')}" 
-          value="${esc(state.searches?.documents || '')}" 
-          data-action="search-documents" 
-          style="width:100%;padding:9px 12px;padding-inline-start:34px;background:var(--surface);border:1px solid var(--line);border-radius:10px;font-size:13px;"
-        />
-        <span style="position:absolute;inset-inline-start:10px;top:50%;transform:translateY(-50%);color:var(--ink-soft);pointer-events:none;">
+    <!-- Filters Bar (Unified View Toolbar) -->
+    <div class="view-toolbar" style="margin-bottom:20px;">
+      <div class="view-toolbar-start" style="flex:1;">
+        <div class="search-box" style="flex:1;max-width:440px;">
           ${icon('search', 15)}
-        </span>
+          <input 
+            type="search" 
+            placeholder="${choose('بحث برقم المخطط أو الاسم أو الامتداد (DWG, PDF, RVT)...', 'Search by drawing name, code, or format (DWG, PDF, RVT)...')}" 
+            value="${esc(state.searches?.documents || '')}" 
+            data-search="documents" 
+            data-action="search-documents" 
+          />
+        </div>
+
+        <div class="sort-box">
+          <span>${choose('المشروع:', 'Project:')}</span>
+          <select data-action="doc-project-filter" class="filter-select select-compact" style="min-width:180px;">
+            <option value="all" ${projectFilter === 'all' ? 'selected' : ''}>${choose('— جميع المشاريع —', '— All Projects —')}</option>
+            ${projects.map(p => `<option value="${esc(p.id)}" ${projectFilter === p.id ? 'selected' : ''}>${esc(p.code)} - ${esc(choose(p.nameAr, p.nameEn))}</option>`).join('')}
+          </select>
+        </div>
       </div>
 
-      <div style="display:flex;align-items:center;gap:8px;">
-        <span style="font-size:12px;color:var(--ink-soft);">${choose('المشروع:', 'Project:')}</span>
-        <select data-action="doc-project-filter" class="filter-select select-compact" style="min-width:180px;">
-          <option value="all" ${projectFilter === 'all' ? 'selected' : ''}>${choose('— جميع المشاريع —', '— All Projects —')}</option>
-          ${projects.map(p => `<option value="${esc(p.id)}" ${projectFilter === p.id ? 'selected' : ''}>${esc(p.code)} - ${esc(choose(p.nameAr, p.nameEn))}</option>`).join('')}
-        </select>
+      <div class="view-toolbar-end">
+        <span class="mini-badge" style="padding:8px 10px;color:var(--ink-soft);background:var(--surface-soft)">
+          ${filteredDocs.length} ${choose('مخرجات', 'deliverables')}
+        </span>
       </div>
     </div>
 
