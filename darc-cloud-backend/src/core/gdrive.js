@@ -69,8 +69,8 @@ export async function getAccessToken(env) {
   }
 
   // 2. Fallback to Service Account
-  const clientEmail = env.GDRIVE_CLIENT_EMAIL;
-  let privateKey = env.GDRIVE_PRIVATE_KEY;
+  const clientEmail = await resolveEnv(env, 'GDRIVE_CLIENT_EMAIL');
+  let privateKey = await resolveEnv(env, 'GDRIVE_PRIVATE_KEY');
   if (!privateKey) throw new Error("GDRIVE credentials (OAuth or Service Account) are missing");
   
   privateKey = privateKey.replace(/\\n/g, '\n');
@@ -114,7 +114,8 @@ export async function uploadToGoogleDrive(env, fileBuffer, fileName, mimeType, p
   const token = await getAccessToken(env);
   
   // Clean up the folder ID just in case it has URL params
-  let rootFolderId = (env.GDRIVE_ROOT_FOLDER_ID || '').split('?')[0];
+  const rawRootId = await resolveEnv(env, 'GDRIVE_ROOT_FOLDER_ID');
+  let rootFolderId = (rawRootId || '').split('?')[0];
   const targetFolder = parentFolderId || rootFolderId;
 
   const metadata = {
