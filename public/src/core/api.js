@@ -14,39 +14,11 @@ export function invalidateBootstrapEtag() {
   _lastBootstrapEtag = null;
 }
 
-let _activeRequestsCount = 0;
-let _topProgressBar = null;
+export function showGlobalLoading() {}
+export function hideGlobalLoading() {}
 
-function ensureTopProgressBar() {
-  if (typeof document === 'undefined') return null;
-  if (!_topProgressBar) {
-    _topProgressBar = document.getElementById('darc-global-progress');
-    if (!_topProgressBar) {
-      _topProgressBar = document.createElement('div');
-      _topProgressBar.id = 'darc-global-progress';
-      _topProgressBar.className = 'global-top-progress';
-      document.body.appendChild(_topProgressBar);
-    }
-  }
-  return _topProgressBar;
-}
-
-export function showGlobalLoading() {
-  _activeRequestsCount++;
-  const bar = ensureTopProgressBar();
-  if (bar) {
-    bar.classList.add('active');
-  }
-}
-
-export function hideGlobalLoading() {
-  _activeRequestsCount = Math.max(0, _activeRequestsCount - 1);
-  if (_activeRequestsCount === 0) {
-    const bar = ensureTopProgressBar();
-    if (bar) {
-      bar.classList.remove('active');
-    }
-  }
+if (typeof document !== 'undefined') {
+  document.getElementById('darc-global-progress')?.remove();
 }
 
 export async function api(path, options = {}) {
@@ -108,11 +80,9 @@ export async function api(path, options = {}) {
 
   options.credentials = 'include';
   let response;
-  if (!isSilent) showGlobalLoading();
   try {
     response = await fetch(API_BASE + path, { ...options, headers });
   } catch (networkError) {
-    if (!isSilent) hideGlobalLoading();
     if (isMutation && !isAuth && !isReplay) {
       const item = enqueueOfflineMutation({
         path,
@@ -126,8 +96,6 @@ export async function api(path, options = {}) {
     throw new Error('تعذر الاتصال بالخادم، يرجى التحقق من اتصال الإنترنت.');
   }
 
-  if (!isSilent) hideGlobalLoading();
-  
   if (response.status === 304) {
     return null; // HTTP 304 Not Modified: Data is identical, 0 bytes transferred
   }
