@@ -1226,6 +1226,13 @@ function uploadChunkXHR({ url, chunk, contentRange, headers = {}, onProgress }) 
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open('PUT', url, true);
+    if (url.includes('/api/')) {
+      xhr.withCredentials = true;
+      const token = (typeof localStorage !== 'undefined') ? localStorage.getItem('darc_token') : null;
+      if (token && !headers['Authorization']) {
+        xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+      }
+    }
     for (const [k, v] of Object.entries(headers)) {
       xhr.setRequestHeader(k, v);
     }
@@ -1550,8 +1557,13 @@ export async function uploadDirectFiles({ files, projectId = null, taskId = null
       const ext = lastDot !== -1 ? file.name.substring(lastDot).toLowerCase() : '';
       const baseName = lastDot !== -1 ? file.name.substring(0, lastDot) : file.name;
       
+      const sanitizePart = (s) => (s || '').replace(/[/\\:*?"<>|\x00-\x1f\x7f-\x9f\u202A-\u202E\u2066-\u2069]/g, '-').replace(/\s+/g, '_').trim();
+      const safeProj = sanitizePart(projName) || 'Project';
+      const safeTask = sanitizePart(taskName) || 'General';
+      const safeBase = sanitizePart(baseName) || 'Drawing';
+
       const v = getNextVersion(ext);
-      const compiledName = `${projName}_${taskName}_${baseName}_v${v}${ext}`;
+      const compiledName = `${safeProj}_${safeTask}_${safeBase}_v${v}${ext}`;
       const fileSizeMB = file.size >= 1024 * 1024 * 1024
         ? `${(file.size / (1024 * 1024 * 1024)).toFixed(2)} GB`
         : `${(file.size / (1024 * 1024)).toFixed(1)} MB`;
@@ -1569,10 +1581,8 @@ export async function uploadDirectFiles({ files, projectId = null, taskId = null
       });
 
       // 1. Request Resumable Session with Google Drive
-      const sessionRes = await fetch(`${API_BASE}/api/documents/session`, {
+      const sessionData = await api('/api/documents/session', {
         method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           compiledName,
           mimeType: file.type || 'application/octet-stream',
@@ -1581,8 +1591,6 @@ export async function uploadDirectFiles({ files, projectId = null, taskId = null
           size: file.size
         })
       });
-      const sessionData = await sessionRes.json();
-      if (!sessionRes.ok) throw new Error(sessionData.error || 'Failed to start upload session');
       const sessionUrl = sessionData.sessionUrl;
 
       // 2. Dynamic Chunk Sizing for optimal throughput:
