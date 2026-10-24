@@ -197,36 +197,6 @@ export function renderLogin(errorMessage = '', mode = 'login', isSuccess = false
         ${messageHtml}
         <button class="btn btn-primary btn-block" type="submit">${icon(state.lang === 'ar' ? 'arrowLeft' : 'arrowRight', 16)} ${t('login')}</button>
       </form>
-      <div class="login-demo" style="flex-direction:column;gap:10px;padding:14px 16px;">
-        <div style="display:flex;align-items:center;gap:8px;font-weight:700;color:var(--teal);font-size:12px;">
-          ${icon('info', 15)}
-          <span>${choose('بيانات الحسابات التجريبية (جاهزة للتجربة):', 'Demo Workspace Accounts (Ready to test):')}</span>
-        </div>
-        <div style="display:flex;flex-direction:column;gap:8px;width:100%;">
-          <div class="demo-acc-card" style="display:flex;align-items:center;justify-content:space-between;background:var(--surface);border:1px solid rgba(27,157,143,0.22);padding:8px 12px;border-radius:10px;gap:8px;flex-wrap:wrap;">
-            <div style="display:flex;align-items:center;gap:8px;font-size:11px;flex-wrap:wrap;">
-              <span class="status-badge done" style="font-size:10px;padding:2px 7px;">${choose('مدير النظام', 'Admin')}</span>
-              <code dir="ltr" style="font-family:monospace;font-size:11px;font-weight:600;color:var(--ink);unicode-bidi:isolate;">admin@darc.local</code>
-              <span style="color:var(--muted);font-size:10px;">/</span>
-              <code dir="ltr" style="font-family:monospace;font-size:11px;font-weight:600;color:var(--ink);unicode-bidi:isolate;">DARC-Admin-2026!</code>
-            </div>
-            <button type="button" class="btn btn-soft btn-xs" data-action="quick-fill-login" data-email="admin@darc.local" data-pass="DARC-Admin-2026!" style="padding:3px 9px;font-size:11px;cursor:pointer;">
-              ${choose('تعبئة سريعة', 'Quick Fill')}
-            </button>
-          </div>
-          <div class="demo-acc-card" style="display:flex;align-items:center;justify-content:space-between;background:var(--surface);border:1px solid rgba(27,157,143,0.22);padding:8px 12px;border-radius:10px;gap:8px;flex-wrap:wrap;">
-            <div style="display:flex;align-items:center;gap:8px;font-size:11px;flex-wrap:wrap;">
-              <span class="status-badge in_progress" style="font-size:10px;padding:2px 7px;">${choose('جهاد (مصمم)', 'Jihad (Designer)')}</span>
-              <code dir="ltr" style="font-family:monospace;font-size:11px;font-weight:600;color:var(--ink);unicode-bidi:isolate;">jihad@darc.local</code>
-              <span style="color:var(--muted);font-size:10px;">/</span>
-              <code dir="ltr" style="font-family:monospace;font-size:11px;font-weight:600;color:var(--ink);unicode-bidi:isolate;">DARC-Jihad-2026!</code>
-            </div>
-            <button type="button" class="btn btn-soft btn-xs" data-action="quick-fill-login" data-email="jihad@darc.local" data-pass="DARC-Jihad-2026!" style="padding:3px 9px;font-size:11px;cursor:pointer;">
-              ${choose('تعبئة سريعة', 'Quick Fill')}
-            </button>
-          </div>
-        </div>
-      </div>
     `;
   } else if (mode === 'forgot') {
     formContent = `
