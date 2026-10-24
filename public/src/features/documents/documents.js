@@ -263,7 +263,7 @@ export function openUploadDrawingModal(preselectedProjectId = null) {
           <div id="drawing-dropzone" style="border:2px dashed var(--line);border-radius:12px;padding:24px 16px;text-align:center;background:var(--surface);cursor:pointer;transition:border-color 0.2s;">
             <div style="color:var(--teal);margin-bottom:8px;">${icon('upload', 28)}</div>
             <p style="margin:0 0 4px;font-size:13px;font-weight:700;color:var(--ink);">${choose('اسحب وأفلت المخططات هنا أو انقر للاختيار', 'Drag & drop drawings here or click to browse')}</p>
-            <p style="margin:0;font-size:11px;color:var(--muted);">${choose('يدعم ملفات: DWG, DXF, RVT, IFC, SKP, PDF, ZIP (حتى 2GB للملف)', 'Supports: DWG, DXF, RVT, IFC, SKP, PDF, ZIP (Up to 2GB per file)')}</p>
+            <p style="margin:0;font-size:11px;color:var(--muted);">${choose('يدعم ملفات هندسية عملاقة: DWG, DXF, RVT, IFC, SKP, PDF, ZIP (يدعم 10GB - 50GB+ برفع مستأنف فائق السرعة)', 'Supports massive engineering files: DWG, DXF, RVT, IFC, SKP, PDF, ZIP (Supports 10GB - 50GB+ with high-speed resumable chunks)')}</p>
             <input type="file" multiple id="drawing-file-input" style="display:none;" />
           </div>
           <div id="drawing-selected-files-list" style="margin-top:10px;display:grid;gap:6px;"></div>

@@ -1509,6 +1509,21 @@ export async function uploadDirectFiles({ files, projectId = null, taskId = null
     totalFiles: files.length
   });
 
+  // Screen WakeLock & Tab Close Protection for massive 10GB+ engineering files
+  let wakeLock = null;
+  const preventTabClose = (e) => {
+    e.preventDefault();
+    e.returnValue = choose('جاري رفع ملفات هندسية كبيرة. مغادرة الصفحة ستوقف الرفع.', 'Uploading large engineering files. Leaving will abort upload.');
+    return e.returnValue;
+  };
+
+  if (typeof window !== 'undefined') {
+    window.addEventListener('beforeunload', preventTabClose);
+    if ('wakeLock' in navigator) {
+      try { navigator.wakeLock.request('screen').then(wl => { wakeLock = wl; }).catch(() => {}); } catch (e) {}
+    }
+  }
+
   try {
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
@@ -1516,8 +1531,9 @@ export async function uploadDirectFiles({ files, projectId = null, taskId = null
         showToast(choose(`الملف "${file.name}" فارغ لا يحتوي على بيانات.`, `File "${file.name}" is empty.`), true);
         continue;
       }
-      if (file.size > 2 * 1024 * 1024 * 1024) {
-        showToast(choose(`حجم الملف "${file.name}" يتجاوز الحد الأقصى (2GB).`, `File "${file.name}" exceeds 2GB limit.`), true);
+      // Enterprise Limit: Supports massive engineering point-clouds, BIM models, and CAD sets up to 100GB
+      if (file.size > 100 * 1024 * 1024 * 1024) {
+        showToast(choose(`حجم الملف "${file.name}" يتجاوز الحد الأقصى المسموح (100GB).`, `File "${file.name}" exceeds 100GB limit.`), true);
         continue;
       }
       const rawExt = file.name.split('.').pop()?.toLowerCase() || '';
@@ -1532,7 +1548,9 @@ export async function uploadDirectFiles({ files, projectId = null, taskId = null
       
       const v = getNextVersion(ext);
       const compiledName = `${projName}_${taskName}_${baseName}_v${v}${ext}`;
-      const fileSizeMB = (file.size / (1024 * 1024)).toFixed(1);
+      const fileSizeMB = file.size >= 1024 * 1024 * 1024
+        ? `${(file.size / (1024 * 1024 * 1024)).toFixed(2)} GB`
+        : `${(file.size / (1024 * 1024)).toFixed(1)} MB`;
 
       updateFloatingUploadWidget({
         fileName: file.name,
@@ -1563,11 +1581,12 @@ export async function uploadDirectFiles({ files, projectId = null, taskId = null
       if (!sessionRes.ok) throw new Error(sessionData.error || 'Failed to start upload session');
       const sessionUrl = sessionData.sessionUrl;
 
-      // 2. Dynamic Chunk Sizing for optimal performance:
-      // <= 10MB: Single chunk (1 request, no chunk overhead)
-      // <= 100MB: 8MB (32 * 256KB)
-      // <= 500MB: 16MB (64 * 256KB)
-      // > 500MB (up to 5GB): 32MB (128 * 256KB)
+      // 2. Dynamic Chunk Sizing for optimal throughput:
+      // <= 10MB: Single chunk
+      // <= 100MB: 8MB
+      // <= 500MB: 16MB
+      // <= 2GB: 32MB
+      // > 2GB (10GB - 100GB): 64MB (256 * 256KB) for ultra-fast streaming
       let CHUNK_SIZE = 8 * 1024 * 1024;
       if (file.size <= 10 * 1024 * 1024) {
         CHUNK_SIZE = file.size;
@@ -1575,8 +1594,10 @@ export async function uploadDirectFiles({ files, projectId = null, taskId = null
         CHUNK_SIZE = 8 * 1024 * 1024;
       } else if (file.size <= 500 * 1024 * 1024) {
         CHUNK_SIZE = 16 * 1024 * 1024;
-      } else {
+      } else if (file.size <= 2 * 1024 * 1024 * 1024) {
         CHUNK_SIZE = 32 * 1024 * 1024;
+      } else {
+        CHUNK_SIZE = 64 * 1024 * 1024; // 64MB chunks for massive files
       }
 
       const fileStartTime = Date.now();
@@ -1585,6 +1606,9 @@ export async function uploadDirectFiles({ files, projectId = null, taskId = null
       const updateProgressUI = (currentChunkLoaded) => {
         const totalUploaded = Math.min(file.size, uploadedSoFar + currentChunkLoaded);
         const pct = Math.min(100, Math.round((totalUploaded / file.size) * 100));
+        const loadedFormatted = totalUploaded >= 1024 * 1024 * 1024
+          ? `${(totalUploaded / (1024 * 1024 * 1024)).toFixed(2)} GB`
+          : `${(totalUploaded / (1024 * 1024)).toFixed(1)} MB`;
 
         if (isTaskModal) {
           const bar = document.getElementById('upload-progress-bar');
@@ -1606,10 +1630,8 @@ export async function uploadDirectFiles({ files, projectId = null, taskId = null
             ? `${etaSeconds} ${choose('ثانية', 's')}`
             : `${Math.floor(etaSeconds / 60)}:${String(etaSeconds % 60).padStart(2, '0')} ${choose('دقيقة', 'min')}`;
 
-          const loadedMB = (totalUploaded / (1024 * 1024)).toFixed(1);
-
           if (pText) {
-            pText.textContent = `${choose('رفع إلى الخادم', 'Uploading to server')} (${i + 1}/${files.length}): ${file.name} — ${loadedMB} / ${fileSizeMB} MB (${pct}%) • ${speedMBs} MB/s • ${choose('متبقي:', 'ETA:')} ${etaText}`;
+            pText.textContent = `${choose('رفع إلى الخادم', 'Uploading to server')} (${i + 1}/${files.length}): ${file.name} — ${loadedFormatted} / ${fileSizeMB} (${pct}%) • ${speedMBs} MB/s • ${choose('متبقي:', 'ETA:')} ${etaText}`;
           }
         }
 
@@ -1619,14 +1641,13 @@ export async function uploadDirectFiles({ files, projectId = null, taskId = null
         const remainingBytes = Math.max(0, file.size - totalUploaded);
         const etaSeconds = Math.round(remainingBytes / Math.max(speedBps, 1));
         const etaText = etaSeconds < 60 ? `${etaSeconds} s` : `${Math.floor(etaSeconds / 60)}m`;
-        const loadedMB = (totalUploaded / (1024 * 1024)).toFixed(1);
 
         updateFloatingUploadWidget({
           fileName: file.name,
           fileIndex: i + 1,
           totalFiles: files.length,
           pct,
-          loadedMB,
+          loadedMB: loadedFormatted,
           fileSizeMB,
           speedMBs,
           etaText
@@ -1778,6 +1799,13 @@ export async function uploadDirectFiles({ files, projectId = null, taskId = null
     });
     showToast(err.message, true);
   } finally {
+    if (typeof window !== 'undefined') {
+      window.removeEventListener('beforeunload', preventTabClose);
+    }
+    if (wakeLock) {
+      try { wakeLock.release(); } catch (e) {}
+      wakeLock = null;
+    }
     if (isTaskModal) {
       const pContainer = document.getElementById('upload-progress-container');
       const bar = document.getElementById('upload-progress-bar');
