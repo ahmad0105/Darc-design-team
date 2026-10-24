@@ -212,10 +212,15 @@ export function switchView(view, projectId = undefined) {
   } catch (e) {}
 
   requestAnimationFrame(() => {
-    const main = document.getElementById('main-content');
-    if (main) main.scrollTop = 0;
-    if (typeof window !== 'undefined') window.scrollTo(0, 0);
     renderView();
+    const main = document.getElementById('main-content');
+    if (main) {
+      main.scrollTop = 0;
+      main.scrollLeft = 0;
+    }
+    if (typeof window !== 'undefined') {
+      window.scrollTo(0, 0);
+    }
   });
 }
 
