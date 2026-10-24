@@ -91,15 +91,22 @@ export async function api(path, options = {}) {
   }
 
   const token = (typeof localStorage !== 'undefined') ? localStorage.getItem('darc_token') : null;
+  const isSilent = Boolean(options.silent || (options.headers && options.headers['X-Silent']));
+  const shouldSendEtag = isSilent && Boolean(state.data) && Boolean(_lastBootstrapEtag);
+
   const headers = {
     ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
     ...(options.body ? { 'Content-Type': 'application/json' } : {}),
-    ...(path === '/api/bootstrap' && _lastBootstrapEtag ? { 'If-None-Match': _lastBootstrapEtag } : {}),
+    ...(path === '/api/bootstrap' && shouldSendEtag ? { 'If-None-Match': _lastBootstrapEtag } : {}),
+    ...(path === '/api/bootstrap' && !shouldSendEtag ? { 'Cache-Control': 'no-cache, no-store' } : {}),
     ...(options.headers || {})
   };
 
+  if (path === '/api/bootstrap' && !shouldSendEtag) {
+    options.cache = 'no-cache';
+  }
+
   options.credentials = 'include';
-  const isSilent = Boolean(options.silent || (options.headers && options.headers['X-Silent']));
   let response;
   if (!isSilent) showGlobalLoading();
   try {

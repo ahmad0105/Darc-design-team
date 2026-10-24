@@ -228,10 +228,21 @@ export async function refreshView(silent = false) { try { await loadData(silent)
 
 export async function loadData(silent = false) {
   try {
-    const payload = await api('/api/bootstrap', { silent });
+    let payload = await api('/api/bootstrap', { silent });
     if (payload === null) {
-      // HTTP 304 Not Modified: Cache is completely identical, 0ms CPU & 0 DOM ops!
-      return;
+      // HTTP 304 Not Modified
+      if (state.data) {
+        // Cache is completely identical and data is in memory: 0ms CPU & 0 DOM ops
+        return;
+      }
+      // Memory is empty (fresh page load or hard reload): recover from offline storage
+      const offline = await getOfflineBootstrapAsync();
+      if (offline && offline.user) {
+        payload = offline;
+      } else {
+        payload = await api('/api/bootstrap', { silent: false, headers: { 'Cache-Control': 'no-cache, no-store' } });
+      }
+      if (!payload) return;
     }
     
     // Save to offline storage non-blockingly for instant access when offline

@@ -5,7 +5,7 @@ import { switchView, refreshView, renderView, renderApp, canAccessView, getFirst
 import { openOmnisearch, closeOmnisearch, openShortcutsCheatsheet } from '../features/dashboard/omnisearch.js';
 import { playSuccessChime } from './utils.js';
 import { setSavedTaskSort, openDocumentPreviewModal, renderTaskDocuments } from '../features/tasks/tasks.js';
-import { getPendingMutations, syncPendingMutations } from './offline.js';
+import { getPendingMutations, syncPendingMutations, getOfflineBootstrap } from './offline.js';
 
 export async function handleSubmit(event) {
   const form = event.target;
@@ -1859,7 +1859,6 @@ if (typeof window !== 'undefined' && !window._taskDropzoneListenersSet) {
 }
 
 export async function init() {
-  renderLoading();
   const rawHash = typeof window !== 'undefined' ? window.location.hash.replace(/^#/, '') : '';
   const hashParams = new URLSearchParams(rawHash.includes('?') ? rawHash.split('?')[1] : (rawHash.includes('=') ? rawHash : ''));
   const activationToken = hashParams.get('activate');
@@ -1868,6 +1867,18 @@ export async function init() {
   if (resetToken) return renderResetPassword(resetToken);
   if (rawHash === 'forgot') return renderLogin('', 'forgot');
   if (rawHash === 'login') return renderLogin();
+
+  // Instant 0ms Paint: If offline cache is available, pre-render workspace immediately
+  const cachedData = getOfflineBootstrap();
+  if (cachedData && cachedData.user) {
+    state.data = cachedData;
+    if (!canAccessView(state.view)) {
+      state.view = getFirstAllowedView();
+    }
+    renderApp();
+  } else {
+    renderLoading();
+  }
 
   // Restore route from hash or session storage on refresh
   try {

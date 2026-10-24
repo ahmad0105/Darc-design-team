@@ -69,13 +69,15 @@ app.get('/', async (c) => {
   const roleId = c.get('roleId');
   const cacheKey = `${userId}:${roleId}`;
   const clientEtag = c.req.header('if-none-match');
+  const cacheControl = (c.req.header('cache-control') || '').toLowerCase();
+  const bypassEtag = cacheControl.includes('no-cache') || cacheControl.includes('no-store');
 
   // 1. High-Performance In-Memory Micro-Cache: Serves sub-5ms responses during active sessions
   const cached = getBootstrapCache(cacheKey);
   if (cached) {
     c.header('ETag', cached.etag);
     c.header('Cache-Control', 'private, no-cache');
-    if (clientEtag && clientEtag === cached.etag) {
+    if (!bypassEtag && clientEtag && clientEtag === cached.etag) {
       return c.body(null, 304);
     }
     return c.json(cached.payload);
@@ -362,7 +364,7 @@ app.get('/', async (c) => {
   c.header('ETag', etag);
   c.header('Cache-Control', 'private, no-cache');
 
-  if (clientEtag && clientEtag === etag) {
+  if (!bypassEtag && clientEtag && clientEtag === etag) {
     return c.body(null, 304);
   }
 
