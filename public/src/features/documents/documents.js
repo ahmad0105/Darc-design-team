@@ -206,14 +206,14 @@ export function openUploadDrawingModal(preselectedProjectId = null) {
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
         <div class="field">
           <label style="font-size:12px;font-weight:700;">${choose('المشروع المستهدف *', 'Target Project *')}</label>
-          <select id="drawing-upload-project" class="filter-select" style="width:100%;height:38px;" required>
+          <select id="drawing-upload-project" style="width:100%;min-height:44px;padding:8px 12px;font-size:13px;line-height:1.6;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);box-sizing:border-box;" required>
             ${projects.map(p => `<option value="${esc(p.id)}" ${p.id === selectedProjId ? 'selected' : ''}>${esc(p.code)} - ${esc(choose(p.nameAr, p.nameEn))}</option>`).join('')}
           </select>
         </div>
 
         <div class="field">
           <label style="font-size:12px;font-weight:700;">${choose('المهمة الهندسية (اختياري)', 'Engineering Task (Optional)')}</label>
-          <select id="drawing-upload-task" class="filter-select" style="width:100%;height:38px;">
+          <select id="drawing-upload-task" style="width:100%;min-height:44px;padding:8px 12px;font-size:13px;line-height:1.6;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);box-sizing:border-box;">
             <option value="">${choose('— مخطط عام لكامل المشروع —', '— General Project Drawing —')}</option>
             ${filteredTasks.map(t => `<option value="${esc(t.id)}">${esc(choose(t.titleAr, t.titleEn))}</option>`).join('')}
           </select>
@@ -223,7 +223,7 @@ export function openUploadDrawingModal(preselectedProjectId = null) {
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
         <div class="field">
           <label style="font-size:12px;font-weight:700;">${choose('التخصص الهندسي', 'Engineering Discipline')}</label>
-          <select id="drawing-upload-discipline" class="filter-select" style="width:100%;height:38px;">
+          <select id="drawing-upload-discipline" style="width:100%;min-height:44px;padding:8px 12px;font-size:13px;line-height:1.6;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);box-sizing:border-box;">
             <option value="معماري">🏛️ ${choose('معماري (Architectural)', 'Architectural')}</option>
             <option value="إنشائي">🏗️ ${choose('إنشائي (Structural)', 'Structural')}</option>
             <option value="كهرباء">⚡ ${choose('كهرباء (Electrical)', 'Electrical')}</option>
@@ -236,7 +236,7 @@ export function openUploadDrawingModal(preselectedProjectId = null) {
 
         <div class="field">
           <label style="font-size:12px;font-weight:700;">${choose('الحالة الهندسية المبدئية', 'Initial Approval Status')}</label>
-          <select id="drawing-upload-status" class="filter-select" style="width:100%;height:38px;">
+          <select id="drawing-upload-status" style="width:100%;min-height:44px;padding:8px 12px;font-size:13px;line-height:1.6;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);box-sizing:border-box;">
             <option value="draft">📝 ${choose('مسودة عمل (Draft)', 'Draft')}</option>
             <option value="review" selected>🔍 ${choose('قيد المراجعة الفنية (Under Review)', 'Under Review')}</option>
             <option value="approved">✅ ${choose('معتمد للتنفيذ (Approved for Construction)', 'Approved for Construction')}</option>
