@@ -22,7 +22,8 @@ const DEFAULT_PERMISSIONS_CATALOG = [
 
   // 📊 المؤشرات والتقارير (Analytics & Reports)
   { id: 'view_dashboard', category: 'reports', categoryAr: 'المؤشرات والتقارير', categoryEn: 'Analytics & Reports', nameAr: 'عرض لوحة التحكم والمؤشرات', nameEn: 'View Dashboard' },
-  { id: 'view_reports', category: 'reports', categoryAr: 'المؤشرات والتقارير', categoryEn: 'Analytics & Reports', nameAr: 'عرض وتصدير التقارير', nameEn: 'View Reports' },
+  { id: 'view_reports', category: 'reports', categoryAr: 'المؤشرات والتقارير', categoryEn: 'Analytics & Reports', nameAr: 'عرض صفحة التقارير والمؤشرات', nameEn: 'View Reports & Analytics' },
+  { id: 'export_reports', category: 'reports', categoryAr: 'المؤشرات والتقارير', categoryEn: 'Analytics & Reports', nameAr: 'تصدير التقارير (Excel)', nameEn: 'Export Reports (Excel)' },
 
   // 🛡️ النظام والأمان (Administration & Governance)
   { id: 'manage_users', category: 'admin', categoryAr: 'النظام والأمان', categoryEn: 'Administration & Governance', nameAr: 'إدارة حسابات المستخدمين', nameEn: 'Manage Users' },

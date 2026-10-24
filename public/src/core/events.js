@@ -915,8 +915,22 @@ export async function handleClick(event) {
     } 
     return; 
   }
-  if (action === 'export-csv') { exportPortfolioXLS(); return; }
-  if (action === 'export-project') { exportProjectXLS(target.dataset.projectId); return; }
+  if (action === 'export-csv') {
+    if (!can('export_reports') && !isAdmin()) {
+      showToast(choose('ليس لديك صلاحية لتصدير التقارير.', 'You do not have permission to export reports.'), true);
+      return;
+    }
+    exportPortfolioXLS();
+    return;
+  }
+  if (action === 'export-project') {
+    if (!can('export_reports') && !isAdmin()) {
+      showToast(choose('ليس لديك صلاحية لتصدير التقارير.', 'You do not have permission to export reports.'), true);
+      return;
+    }
+    exportProjectXLS(target.dataset.projectId);
+    return;
+  }
 }
 
 let _searchDebounceTimer = null;
