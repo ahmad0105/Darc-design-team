@@ -1,5 +1,6 @@
 import { state } from '../../core/state.js';
 import { api } from '../../core/api.js';
+import { savePreferencesCookies } from '../../core/utils.js';
 
 // Calculate password strength score (0 to 4)
 export function calculatePasswordStrength(pass) {
@@ -293,6 +294,7 @@ export function renderLogin(errorMessage = '', mode = 'login', isSuccess = false
           localStorage.removeItem('darc_last_email');
         }
       }
+      savePreferencesCookies({ theme: state.theme, lang: state.lang });
       await loadData();
     } catch (error) {
       console.error("Login Error:", error);

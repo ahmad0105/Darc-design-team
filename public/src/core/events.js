@@ -3,7 +3,7 @@ import { state } from './state.js';
 import { api, API_BASE, invalidateBootstrapEtag } from './api.js';
 import { switchView, refreshView, renderView, renderApp, canAccessView, getFirstAllowedView } from './router.js';
 import { openOmnisearch, closeOmnisearch, openShortcutsCheatsheet } from '../features/dashboard/omnisearch.js';
-import { playSuccessChime } from './utils.js';
+import { playSuccessChime, savePreferencesCookies } from './utils.js';
 import { setSavedTaskSort, openDocumentPreviewModal, renderTaskDocuments } from '../features/tasks/tasks.js';
 import { getPendingMutations, syncPendingMutations, getOfflineBootstrap, clearOfflineBootstrap } from './offline.js';
 
@@ -331,7 +331,7 @@ export async function handleClick(event) {
 
   if (action === 'toggle-theme') {
     state.theme = state.theme === 'dark' ? 'light' : 'dark';
-    window.localStorage.setItem('darc-theme', state.theme);
+    savePreferencesCookies({ theme: state.theme });
     document.documentElement.dataset.theme = state.theme;
     const themeBtn = document.querySelector('[data-action="toggle-theme"]');
     if (themeBtn) themeBtn.textContent = state.theme === 'dark' ? '☀️' : '🌙';
@@ -339,7 +339,7 @@ export async function handleClick(event) {
   }
   if (action === 'toggle-lang') {
     state.lang = state.lang === 'ar' ? 'en' : 'ar';
-    window.localStorage.setItem('darc-locale', state.lang);
+    savePreferencesCookies({ lang: state.lang });
     document.documentElement.lang = state.lang;
     document.documentElement.dir = state.lang === 'ar' ? 'rtl' : 'ltr';
     document.body.classList.toggle('is-ltr', state.lang === 'en');
@@ -1864,6 +1864,25 @@ if (typeof window !== 'undefined' && !window._taskDropzoneListenersSet) {
 }
 
 export async function init() {
+  savePreferencesCookies({ theme: state.theme, lang: state.lang });
+
+  if (typeof window !== 'undefined' && window.matchMedia && !window._darcThemeListenerBound) {
+    window._darcThemeListenerBound = true;
+    try {
+      window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+        try {
+          const explicit = localStorage.getItem('darc-theme');
+          if (!explicit) {
+            state.theme = e.matches ? 'dark' : 'light';
+            document.documentElement.dataset.theme = state.theme;
+            const themeBtn = document.querySelector('[data-action="toggle-theme"]');
+            if (themeBtn) themeBtn.textContent = state.theme === 'dark' ? '☀️' : '🌙';
+          }
+        } catch (err) {}
+      });
+    } catch (err) {}
+  }
+
   const rawHash = typeof window !== 'undefined' ? window.location.hash.replace(/^#/, '') : '';
   const hashParams = new URLSearchParams(rawHash.includes('?') ? rawHash.split('?')[1] : (rawHash.includes('=') ? rawHash : ''));
   const activationToken = hashParams.get('activate');

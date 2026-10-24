@@ -12,6 +12,40 @@ export const I18N = {
 
 export function t(key) { return I18N[state.lang][key] || I18N.ar[key] || key; }
 export function choose(ar, en) { return state.lang === 'ar' ? ar : en; }
+
+export function getCookieVal(key) {
+  if (typeof document === 'undefined') return null;
+  const m = document.cookie.match(new RegExp('(?:^|; )' + key + '=([^;]*)'));
+  return m ? decodeURIComponent(m[1]) : null;
+}
+
+export function savePreferencesCookies({ theme, lang } = {}) {
+  if (typeof document === 'undefined') return;
+  const maxAge = 31536000; // 1 year
+  const secure = (typeof window !== 'undefined' && window.location.protocol === 'https:') ? '; Secure' : '';
+
+  let domainPart = '';
+  if (typeof window !== 'undefined') {
+    const host = window.location.hostname;
+    if (host === 'darc-design.bond' || host.endsWith('.darc-design.bond')) {
+      domainPart = '; Domain=.darc-design.bond';
+    }
+  }
+
+  if (theme) {
+    document.cookie = `darc_theme=${encodeURIComponent(theme)}; Path=/; Max-Age=${maxAge}; SameSite=Lax${secure}${domainPart}`;
+    try { window.localStorage.setItem('darc-theme', theme); } catch (e) {}
+  }
+  if (lang) {
+    document.cookie = `darc_lang=${encodeURIComponent(lang)}; Path=/; Max-Age=${maxAge}; SameSite=Lax${secure}${domainPart}`;
+    try { window.localStorage.setItem('darc-locale', lang); } catch (e) {}
+  }
+
+  const currentTheme = theme || (state && state.theme) || getCookieVal('darc_theme') || 'light';
+  const currentLang = lang || (state && state.lang) || getCookieVal('darc_lang') || 'ar';
+  const prefsJson = JSON.stringify({ theme: currentTheme, lang: currentLang });
+  document.cookie = `darc_prefs=${encodeURIComponent(prefsJson)}; Path=/; Max-Age=${maxAge}; SameSite=Lax${secure}${domainPart}`;
+}
 export function esc(value) {
   return String(value ?? '').replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[character]));
 }

@@ -41,17 +41,44 @@
     <!-- Pre-Flight: Storage Guard, Theme Pre-Paint & Silent Auto-Healing -->
     <script>
       (function() {
-        // 1. Safe Theme & Locale Pre-Paint
+        // 1. Safe Theme & Locale Pre-Paint (Cookies -> LocalStorage -> Device Default)
         try {
-          var savedLocale = localStorage.getItem('darc-locale');
-          if (savedLocale === 'en') {
-            document.documentElement.lang = 'en';
-            document.documentElement.dir = 'ltr';
+          function getCookieVal(key) {
+            var m = document.cookie.match(new RegExp('(?:^|; )' + key + '=([^;]*)'));
+            return m ? decodeURIComponent(m[1]) : null;
           }
-          var savedTheme = localStorage.getItem('darc-theme');
-          if (savedTheme) {
-            document.documentElement.dataset.theme = savedTheme;
+
+          // A. Language: Cookie -> LocalStorage -> Device Language
+          var effectiveLang = getCookieVal('darc_lang') || localStorage.getItem('darc-locale');
+          if (!effectiveLang) {
+            var prefsCookie = getCookieVal('darc_prefs');
+            if (prefsCookie) {
+              try { effectiveLang = JSON.parse(prefsCookie).lang; } catch (e) {}
+            }
           }
+          if (!effectiveLang) {
+            var navLang = (navigator.languages && navigator.languages[0]) || navigator.language || '';
+            effectiveLang = navLang.toLowerCase().startsWith('ar') ? 'ar' : 'en';
+          }
+          document.documentElement.lang = effectiveLang;
+          document.documentElement.dir = (effectiveLang === 'ar' ? 'rtl' : 'ltr');
+
+          // B. Theme: Cookie -> LocalStorage -> Device Theme
+          var effectiveTheme = getCookieVal('darc_theme') || localStorage.getItem('darc-theme');
+          if (!effectiveTheme) {
+            var prefsCookie = getCookieVal('darc_prefs');
+            if (prefsCookie) {
+              try { effectiveTheme = JSON.parse(prefsCookie).theme; } catch (e) {}
+            }
+          }
+          if (!effectiveTheme) {
+            if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+              effectiveTheme = 'dark';
+            } else {
+              effectiveTheme = 'light';
+            }
+          }
+          document.documentElement.dataset.theme = effectiveTheme;
         } catch (e) {}
 
         // 2. Silent Auto-Healing Boundary for Stale Module Cache
