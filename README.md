@@ -1,42 +1,55 @@
 # DARC Design Team Workspace
 
-A unified project operations dashboard for the DARC Design Team, built with Vanilla Node.js and Vanilla JS.
+A unified, high-performance architectural and engineering operations platform for the DARC Design Team.
 
-## Prerequisites
-- **Node.js**: version 20.6.0 or higher is **required** (relies on native `--env-file` support).
+## Architecture
 
-## Setup & Running
+- **Frontend:** Single Page Application (SPA) built with Vanilla JavaScript (ES Modules), styled with responsive modern CSS, bundled via **Vite**, and deployed globally on **Cloudflare Workers Assets**.
+  - Production URL: `https://panel.darc-design.bond`
+- **Backend:** High-performance RESTful API powered by **Hono** running on **Cloudflare Workers** with zero cold starts, global edge caching, and ETag-driven synchronization.
+  - Production URL: `https://api.darc-design.bond`
+- **Database:** Supabase PostgreSQL with Row Level Security (RLS) and connection pooling.
+- **File Storage:** Google Drive API Integration (5TB Quota) for drawings and deliverables.
 
-1. **Configure Environment Variables**
-   Create a `.env` file in the root directory (optional, but recommended for production):
-   ```env
-   PORT=5555
-   COOKIE_SECRET=your_secure_random_string_here
-   # Email functionality (for invites & notifications)
-   RESEND_API_KEY=re_your_resend_api_key
-   EMAIL_FROM=DARC <hello@darc.com>
-   ```
+## Quick Start (Development)
 
-2. **Start the Server**
-   ```bash
-   node --env-file=.env server.js
-   ```
-   *(If you don't have a `.env` file, simply run `node server.js`)*
+### Prerequisites
+- **Node.js**: version 20.0.0 or higher
 
-3. **Access the Dashboard**
-   Open your browser and navigate to `http://localhost:5555`
-
-   **Demo Account:**
-   - Email: `admin@darc.local`
-   - Password: `DARC-Admin-2026!`
-
-## Data Storage
-- Data is stored in `data/db.json` (created automatically on first run).
-- Uploaded files/documents are saved to `data/uploads/`.
-
-## Running Tests
-An automated integration test suite is included:
+### 1. Frontend Development
 ```bash
-node tests/api.test.js
+npm install
+npm run dev
 ```
-The test suite spans a temporary test server and database (`data/test-db.json`) ensuring no disruption to real data.
+Runs the Vite development server with hot-module reloading on `http://localhost:5173`.
+
+### 2. Backend Development
+```bash
+cd darc-cloud-backend
+npm install
+npx wrangler dev
+```
+Runs the Cloudflare Worker API locally on `http://localhost:8787`.
+
+## Production Build & Deployment
+
+### Build Frontend
+```bash
+npm run build
+```
+
+### Deploy to Cloudflare
+- **Frontend:**
+  ```bash
+  npm run deploy
+  ```
+- **Backend:**
+  ```bash
+  npm run deploy:backend
+  ```
+
+## Security & Reliability
+- Strict CORS guard permitting only authorized origins.
+- Resilient Offline Outbox with automatic background replay upon network reconnection.
+- Automatic document review notifications and drawing versioning (V1, V2, V3).
+- Real-time tab-to-tab sync via `BroadcastChannel` and ETag validation.

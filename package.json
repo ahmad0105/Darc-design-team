@@ -8,7 +8,9 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "start": "node server.js"
+    "start": "vite preview",
+    "deploy": "wrangler deploy",
+    "deploy:backend": "cd darc-cloud-backend && npx wrangler deploy --config wrangler.toml"
   },
   "engines": {
     "node": ">=20"
