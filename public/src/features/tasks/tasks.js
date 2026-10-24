@@ -395,7 +395,54 @@ export function renderTasks() {
   const tasks = filterTasks(state.data.tasks);
   const tabs = [['all', t('all')], ['mine', choose('مسندة لي', 'Assigned to me')], ['overdue', t('overdue')], ['blocked', t('blocked')]];
   const currentSort = state.myTaskSort || getSavedTaskSort();
-  return `<div class="page-head"><div><p class="eyebrow">${choose('حركة التنفيذ', 'EXECUTION')}</p><h1>${t('myTasks')}</h1><p>${choose('نظّم العمل حسب الحالة، الموعد، والمسؤولية.', 'Organize work by status, deadline, and ownership.')}</p></div><div class="page-actions">${can('create_tasks') ? `<button class="btn btn-primary" data-action="new-task">${icon('plus', 15)} ${t('addTask')}</button>` : ''}</div></div><div class="view-toolbar"><div class="view-toolbar-start"><div class="search-box">${icon('search', 15)}<input data-search="tasks" value="${esc(state.searches.tasks)}" placeholder="${t('search')}" /></div>${tabs.map(([key, label]) => `<button class="filter-tab ${state.taskFilter === key ? 'active' : ''}" data-action="task-filter" data-filter="${key}">${label}</button>`).join('')}</div><div class="view-toolbar-end" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">${renderTaskSortSelect(currentSort, 'sort-my-tasks')}<select class="filter-select" data-action="task-priority-filter"><option value="all">${choose('كل الأولويات', 'All Priorities')}</option><option value="urgent" ${state.taskPriorityFilter === 'urgent' ? 'selected' : ''}>🔥 ${choose('عاجلة', 'Urgent')}</option><option value="high" ${state.taskPriorityFilter === 'high' ? 'selected' : ''}>⚡ ${choose('عالية', 'High')}</option><option value="medium" ${state.taskPriorityFilter === 'medium' ? 'selected' : ''}>🔹 ${choose('متوسطة', 'Medium')}</option><option value="low" ${state.taskPriorityFilter === 'low' ? 'selected' : ''}>☕ ${choose('منخفضة', 'Low')}</option></select><select class="filter-select" data-action="task-project-filter"><option value="all">${t('all')} ${t('projects')}</option>${state.data.projects.map((project) => `<option value="${esc(project.id)}" ${state.taskProjectFilter === project.id ? 'selected' : ''}>${esc(choose(project.nameAr, project.nameEn))}</option>`).join('')}</select></div></div>${tasks.length ? renderBoard(tasks, currentSort) : `<section class="panel"><div class="empty">${icon('checklist', 18)}<span>${t('noTasks')}</span></div></section>`}`;
+  return `
+    <div class="page-head">
+      <div>
+        <p class="eyebrow">${choose('حركة التنفيذ', 'EXECUTION')}</p>
+        <h1>${t('myTasks')}</h1>
+        <p>${choose('نظّم العمل حسب الحالة، الموعد، والمسؤولية.', 'Organize work by status, deadline, and ownership.')}</p>
+      </div>
+      <div class="page-actions">
+        ${can('create_tasks') ? `<button class="btn btn-primary" data-action="new-task">${icon('plus', 15)} ${t('addTask')}</button>` : ''}
+      </div>
+    </div>
+
+    <div class="tasks-toolbar">
+      <div class="tasks-toolbar-row tasks-toolbar-row-top">
+        <div class="segmented-control" role="tablist">
+          ${tabs.map(([key, label]) => `
+            <button class="segmented-tab ${state.taskFilter === key ? 'active' : ''}" data-action="task-filter" data-filter="${key}" role="tab">
+              ${label}
+            </button>
+          `).join('')}
+        </div>
+        <div class="search-box tasks-search-box">
+          ${icon('search', 15)}
+          <input data-search="tasks" value="${esc(state.searches.tasks)}" placeholder="${choose('بحث في المهام...', 'Search tasks...')}" />
+        </div>
+      </div>
+      <div class="tasks-toolbar-row tasks-toolbar-row-bottom">
+        <div class="tasks-toolbar-filters">
+          <select class="filter-select select-compact" data-action="task-project-filter" style="min-width:180px;">
+            <option value="all">${choose('📁 كل المشاريع', '📁 All Projects')}</option>
+            ${state.data.projects.map((project) => `<option value="${esc(project.id)}" ${state.taskProjectFilter === project.id ? 'selected' : ''}>${esc(choose(project.nameAr, project.nameEn))}</option>`).join('')}
+          </select>
+          <select class="filter-select select-compact" data-action="task-priority-filter" style="min-width:140px;">
+            <option value="all">${choose('⚡ كل الأولويات', '⚡ All Priorities')}</option>
+            <option value="urgent" ${state.taskPriorityFilter === 'urgent' ? 'selected' : ''}>🔥 ${choose('عاجلة', 'Urgent')}</option>
+            <option value="high" ${state.taskPriorityFilter === 'high' ? 'selected' : ''}>⚡ ${choose('عالية', 'High')}</option>
+            <option value="medium" ${state.taskPriorityFilter === 'medium' ? 'selected' : ''}>🔹 ${choose('متوسطة', 'Medium')}</option>
+            <option value="low" ${state.taskPriorityFilter === 'low' ? 'selected' : ''}>☕ ${choose('منخفضة', 'Low')}</option>
+          </select>
+        </div>
+        <div class="tasks-toolbar-sort">
+          ${renderTaskSortSelect(currentSort, 'sort-my-tasks')}
+        </div>
+      </div>
+    </div>
+
+    ${tasks.length ? renderBoard(tasks, currentSort) : `<section class="panel"><div class="empty">${icon('checklist', 18)}<span>${t('noTasks')}</span></div></section>`}
+  `;
 }
 
 export function formatRemindAtDate(isoStr) {
