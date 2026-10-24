@@ -362,6 +362,16 @@ export async function handleClick(event) {
     if (passInput && btn?.dataset?.pass) {
       passInput.value = btn.dataset.pass;
     }
+    if (btn?.dataset?.autosubmit === 'true') {
+      const loginForm = document.getElementById('login-form');
+      if (loginForm) {
+        if (typeof loginForm.requestSubmit === 'function') {
+          loginForm.requestSubmit();
+        } else {
+          loginForm.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+        }
+      }
+    }
     return;
   }
   if (action === 'goto-forgot') { 

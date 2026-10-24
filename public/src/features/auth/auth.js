@@ -197,6 +197,25 @@ export function renderLogin(errorMessage = '', mode = 'login', isSuccess = false
         ${messageHtml}
         <button class="btn btn-primary btn-block" type="submit">${icon(state.lang === 'ar' ? 'arrowLeft' : 'arrowRight', 16)} ${t('login')}</button>
       </form>
+      <div class="demo-showcase-box" style="margin-top:20px;padding:14px 16px;border-radius:10px;background:var(--surface-soft, rgba(13,98,105,0.06));border:1px dashed rgba(20,184,166,0.4);display:flex;flex-direction:column;gap:10px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+          <div style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--brand-teal, #0d6269);">
+            <span>✨</span>
+            <span>${choose('بيئة العرض التجريبي (Demo Showcase)', 'Live Demo Showcase')}</span>
+          </div>
+          <span style="font-size:10px;background:rgba(20,184,166,0.15);color:var(--brand-teal, #0d6269);padding:2px 8px;border-radius:12px;font-weight:600;">
+            ${choose('للزوار ومدراء التوظيف', 'For Visitors & Hiring Managers')}
+          </span>
+        </div>
+        <div style="font-size:11px;color:var(--ink-soft);display:flex;flex-direction:column;gap:3px;font-family:var(--font-mono, monospace);">
+          <div><strong>${choose('البريد:', 'Email:')}</strong> <code>demo@darc-design.bond</code></div>
+          <div><strong>${choose('كلمة المرور:', 'Password:')}</strong> <code>demo123456</code></div>
+        </div>
+        <button type="button" class="btn btn-sm btn-soft" data-action="quick-fill-login" data-email="demo@darc-design.bond" data-pass="demo123456" data-autosubmit="true" style="width:100%;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:6px;padding:8px 12px;border-radius:6px;cursor:pointer;">
+          <span>⚡</span>
+          <span>${choose('تعبئة تلقائية ودخول فوري', 'Auto-fill & Sign In')}</span>
+        </button>
+      </div>
     `;
   } else if (mode === 'forgot') {
     formContent = `

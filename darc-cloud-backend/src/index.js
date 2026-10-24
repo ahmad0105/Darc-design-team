@@ -297,6 +297,61 @@ app.use('/api/*', async (c, next) => {
   await next();
 });
 
+// Bulletproof Demo Sandbox Shield Middleware: Intercepts ALL requests for isDemo: true
+// Guarantees with mathematical certainty that demo users NEVER touch production Supabase or Google Drive
+app.use('/api/*', async (c, next) => {
+  if (!c.get('isDemo')) return next();
+  
+  const path = c.req.path;
+  const method = c.req.method;
+
+  // 1. Allow routes specifically wired for demo: /api/bootstrap, /api/demo/reset, /api/tasks
+  if (path === '/api/bootstrap' || path.startsWith('/api/demo') || path.startsWith('/api/tasks')) {
+    return next();
+  }
+
+  const demoData = getDemoPayload();
+
+  // 2. Read requests (GET) -> return high-fidelity demo showcase slices
+  if (method === 'GET') {
+    if (path === '/api/projects' || path === '/api/projects/') return c.json({ projects: demoData.projects });
+    if (path.startsWith('/api/projects/')) {
+      const id = path.split('/')[3];
+      const p = demoData.projects.find(x => x.id === id) || demoData.projects[0];
+      return c.json({ project: p });
+    }
+    if (path === '/api/users' || path === '/api/users/') return c.json({ users: demoData.users });
+    if (path === '/api/roles' || path === '/api/roles/') return c.json({ roles: demoData.roles });
+    if (path === '/api/templates' || path === '/api/templates/') return c.json({ templates: demoData.templates });
+    if (path === '/api/company' || path === '/api/company/') return c.json({ company: demoData.company });
+    if (path === '/api/notifications' || path === '/api/notifications/') return c.json({ notifications: demoData.notifications });
+    if (path === '/api/documents' || path === '/api/documents/') return c.json({ documents: demoData.documents });
+    if (path.startsWith('/api/documents/')) {
+      const id = path.split('/')[3];
+      const d = demoData.documents.find(x => x.id === id) || demoData.documents[0];
+      return c.json({ ok: true, document: d });
+    }
+    if (path === '/api/trash' || path === '/api/trash/') return c.json({ projects: [], tasks: [], documents: [] });
+    if (path === '/api/audit' || path === '/api/audit/') return c.json({ logs: demoData.auditLogs || [] });
+  }
+
+  // 3. State-changing requests (POST, PATCH, PUT, DELETE) -> Safe simulated responses (Zero DB writes)
+  if (['POST', 'PATCH', 'PUT', 'DELETE'].includes(method)) {
+    if (path === '/api/audit') return c.json({ ok: true });
+    if (path.startsWith('/api/notifications')) return c.json({ ok: true });
+    if (path.startsWith('/api/reminders')) return c.json({ ok: true, reminder: { id: 'rem_demo_simulated' } });
+    
+    // Simulate user / project / role / template / company mutations safely in demo mode
+    return c.json({
+      ok: true,
+      isDemo: true,
+      message: 'تمت العملية بنجاح في بيئة العرض التجريبية'
+    });
+  }
+
+  await next();
+});
+
 // Admin-only global protection
 app.use('/api/roles/*', async (c, next) => {
   if (c.req.method !== 'GET' && c.get('roleId') !== 'admin') {

@@ -31,12 +31,17 @@ export async function getUserTokenRecord(supabase, userId) {
     return cached;
   }
   return supabase.from('users').select('status, custom_fields').eq('id', userId).single().then(({ data }) => {
+    if (!data) {
+      const record = { ver: 0, status: 'inactive', notFound: true, time: now };
+      _userTokenVersions.set(userId, record);
+      return record;
+    }
     const ver = Number(data?.custom_fields?.tokenVersion || 1);
     const status = data?.status || 'active';
     const record = { ver, status, time: now };
     _userTokenVersions.set(userId, record);
     return record;
-  }).catch(() => ({ ver: 1, status: 'active', time: now }));
+  }).catch(() => ({ ver: 0, status: 'inactive', time: now }));
 }
 
 export async function getUserTokenVersion(supabase, userId) {
