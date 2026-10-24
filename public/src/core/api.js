@@ -171,9 +171,19 @@ export async function api(path, options = {}) {
   if (['POST', 'PATCH', 'PUT', 'DELETE'].includes(options.method)) {
     invalidateBootstrapEtag();
     if (path !== '/api/auth/login' && path !== '/api/auth/logout') {
-      import('./realtime.js').then(m => m.notifyStateMutation()).catch(() => {});
+      if (typeof window !== 'undefined') {
+        if (typeof window.notifyStateMutation === 'function') {
+          window.notifyStateMutation();
+        } else if (window._darcBroadcastChannel) {
+          try { window._darcBroadcastChannel.postMessage({ type: 'STATE_MUTATION', timestamp: Date.now() }); } catch (e) {}
+        }
+      }
     }
   }
 
   return result;
+}
+
+if (typeof window !== 'undefined') {
+  window.api = api;
 }

@@ -375,15 +375,6 @@ export function openUploadDrawingModal(preselectedProjectId = null) {
             discipline,
             status
           });
-        } else {
-          const { uploadDirectFiles } = await import('../../core/events.js');
-          uploadDirectFiles({
-            files: _selectedFiles,
-            projectId,
-            taskId,
-            discipline,
-            status
-          });
         }
       });
     }

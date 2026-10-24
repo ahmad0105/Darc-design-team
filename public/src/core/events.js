@@ -5,7 +5,7 @@ import { switchView, refreshView, renderView, renderApp, canAccessView, getFirst
 import { openOmnisearch, closeOmnisearch, openShortcutsCheatsheet } from '../features/dashboard/omnisearch.js';
 import { playSuccessChime } from './utils.js';
 import { setSavedTaskSort, openDocumentPreviewModal, renderTaskDocuments } from '../features/tasks/tasks.js';
-import { getPendingMutations, syncPendingMutations, getOfflineBootstrap } from './offline.js';
+import { getPendingMutations, syncPendingMutations, getOfflineBootstrap, clearOfflineBootstrap } from './offline.js';
 
 export async function handleSubmit(event) {
   const form = event.target;
@@ -384,8 +384,7 @@ export async function handleClick(event) {
     await api('/api/auth/logout', { method: 'POST' }).catch(() => {});
     try {
       if (typeof localStorage !== 'undefined') localStorage.removeItem('darc_token');
-      const off = await import('./offline.js');
-      if (off && typeof off.clearOfflineBootstrap === 'function') await off.clearOfflineBootstrap();
+      await clearOfflineBootstrap();
     } catch (e) {
       try {
         localStorage.removeItem('darc_token');
@@ -408,8 +407,7 @@ export async function handleClick(event) {
     await api('/api/auth/logout-all', { method: 'POST' }).catch(() => {});
     try {
       if (typeof localStorage !== 'undefined') localStorage.removeItem('darc_token');
-      const off = await import('./offline.js');
-      if (off && typeof off.clearOfflineBootstrap === 'function') await off.clearOfflineBootstrap();
+      await clearOfflineBootstrap();
     } catch (e) {
       try {
         localStorage.removeItem('darc_token');
@@ -521,9 +519,8 @@ export async function handleClick(event) {
   if (action === 'open-upload-drawing-modal') {
     if (typeof openUploadDrawingModal === 'function') {
       openUploadDrawingModal(target.dataset.projectId || null);
-    } else {
-      const mod = await import('../features/documents/documents.js');
-      mod.openUploadDrawingModal(target.dataset.projectId || null);
+    } else if (typeof window.openUploadDrawingModal === 'function') {
+      window.openUploadDrawingModal(target.dataset.projectId || null);
     }
     return;
   }

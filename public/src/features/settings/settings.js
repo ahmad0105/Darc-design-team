@@ -487,7 +487,7 @@ export function renderSettings() {
   if (state.settingsSection === 'trash') {
     if (!state.trashLoaded && !state._trashFetching) {
       state._trashFetching = true;
-      import('../../core/api.js').then(({ api }) => api('/api/trash')).then(data => {
+      api('/api/trash').then(data => {
         state.trash = Array.isArray(data) ? data : (data.trash || [
           ...(data.projects || []).map(p => ({...p, type:'project'})),
           ...(data.tasks || []).map(t => ({...t, type:'task'})),
@@ -495,7 +495,7 @@ export function renderSettings() {
         ]);
         state.trashLoaded = true;
         state._trashFetching = false;
-        import('../../core/router.js').then(r => r.renderView());
+        if (typeof window.renderView === 'function') window.renderView();
       }).catch(err => {
         state._trashFetching = false;
         console.error('[Trash fetch error]', err);
