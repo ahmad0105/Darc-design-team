@@ -60,8 +60,8 @@ app.use('*', cors({
       origin === 'https://panel.darc-design.bond' ||
       origin === 'https://darc-design-team.netlify.app' ||
       origin.endsWith('.darc-design-team.netlify.app') ||
-      origin.endsWith('.workers.dev') ||
-      origin.endsWith('.pages.dev') ||
+      origin === 'https://darc-design-team.workers.dev' ||
+      origin === 'https://darc-design-team.pages.dev' ||
       origin.startsWith('http://localhost:') ||
       origin.startsWith('http://127.0.0.1:')
     ) return origin;

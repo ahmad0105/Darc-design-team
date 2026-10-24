@@ -335,7 +335,7 @@ app.get('/', async (c) => {
       roles: toCamelCase(roles),
       permissionsCatalog: DEFAULT_PERMISSIONS_CATALOG,
       notifications: toCamelCase(notifications),
-      emailConfigured: true,
+      emailConfigured: Boolean(c.env?.RESEND_API_KEY && c.env?.EMAIL_FROM),
       stats: {
         activeProjects,
         delayedProjects,

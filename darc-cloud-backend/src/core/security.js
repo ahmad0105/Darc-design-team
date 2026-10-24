@@ -100,8 +100,8 @@ export function csrfGuardMiddleware() {
         origin.startsWith('http://127.0.0.1:') ||
         origin === 'https://darc-design-team.netlify.app' ||
         origin.endsWith('.darc-design-team.netlify.app') ||
-        origin.endsWith('.workers.dev') ||
-        origin.endsWith('.pages.dev') ||
+        origin === 'https://darc-design-team.workers.dev' ||
+        origin === 'https://darc-design-team.pages.dev' ||
         origin.endsWith('.darc-design.bond') ||
         origin === 'https://darc-design.bond' ||
         origin === 'https://panel.darc-design.bond' ||

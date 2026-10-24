@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { getDB } from '../../core/db.js';
 import { invalidateCompanyCache, setCompanyCacheDirect, getCachedCompany } from '../../core/cache.js';
 import { toCamelCase } from '../../utils/transformers.js';
+import { hasPermission } from '../../utils/permissions.js';
 
 const app = new Hono();
 
@@ -11,12 +12,18 @@ app.use('*', async (c, next) => {
 });
 
 app.patch('/', async (c) => {
+  const userId = c.get('userId');
   const roleId = c.get('roleId');
-  if (roleId !== 'admin') {
+  const supabase = c.get('supabase');
+
+  const canManage = roleId === 'admin' || 
+    (await hasPermission(supabase, userId, roleId, 'manage_settings')) || 
+    (await hasPermission(supabase, userId, roleId, 'manage_company'));
+
+  if (!canManage) {
     return c.json({ error: 'غير مصرح لك بتعديل بيانات الشركة، هذه الصلاحية للمشرف فقط' }, 403);
   }
   const body = await c.req.json();
-  const supabase = c.get('supabase');
   
   const current = await getCachedCompany(supabase);
   const updates = {

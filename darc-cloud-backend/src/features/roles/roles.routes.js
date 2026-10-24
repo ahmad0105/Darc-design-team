@@ -92,6 +92,12 @@ app.delete('/:id', requireAdmin, async (c) => {
     return c.json({ error: 'لا يمكن حذف الأدوار الأساسية المضمنة في النظام.' }, 400);
   }
 
+  // Prevent leaving orphan accounts by verifying no active users are assigned to this role
+  const { count } = await supabase.from('users').select('id', { count: 'exact', head: true }).eq('role_id', roleId);
+  if (count && count > 0) {
+    return c.json({ error: `لا يمكن حذف هذا الدور لوجود ${count} مستخدم(ين) مسندين له حالياً. يرجى نقل المستخدمين إلى دور آخر قبل الحذف.` }, 400);
+  }
+
   const { error } = await supabase.from('roles').delete().eq('id', roleId);
   if (error) throw error;
   

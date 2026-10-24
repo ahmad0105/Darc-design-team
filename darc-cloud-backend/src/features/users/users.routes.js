@@ -122,19 +122,34 @@ app.post('/', requireAdmin, async (c) => {
   // Creating a new user
   const body = await c.req.json();
   const supabase = c.get('supabase');
+
+  const email = String(body.email || '').trim().toLowerCase();
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return c.json({ error: 'صيغة البريد الإلكتروني غير صالحة.' }, 400);
+  }
+  const name = String(body.nameAr || body.name || '').trim();
+  if (!name) {
+    return c.json({ error: 'اسم العضو مطلوب.' }, 400);
+  }
+
+  const { data: existingUser } = await supabase.from('users').select('id').eq('email', email).maybeSingle();
+  if (existingUser) {
+    return c.json({ error: 'هذا البريد الإلكتروني مسجل مسبقاً لمستخدم آخر.' }, 400);
+  }
+
   const { default: cryptoMod } = await import('node:crypto');
   const id = 'usr_' + cryptoMod.randomBytes(6).toString('hex');
   
   const userData = {
     id,
-    name: body.nameAr || body.name,
-    name_en: body.nameEn,
-    email: body.email,
-    job_title_ar: body.jobTitleAr,
-    job_title_en: body.jobTitleEn,
-    role_id: body.roleId,
+    name,
+    name_en: body.nameEn || name,
+    email,
+    job_title_ar: body.jobTitleAr || '',
+    job_title_en: body.jobTitleEn || '',
+    role_id: body.roleId || 'member',
     status: 'pending',
-    avatar_color: body.avatarColor || '#ccc'
+    avatar_color: body.avatarColor || '#0d6269'
   };
   
   const { data, error } = await supabase.from('users').insert([userData]).select().single();
@@ -183,7 +198,17 @@ app.patch('/:id', async (c) => {
   const updates = {};
   if (body.nameAr !== undefined || body.name !== undefined) updates.name = body.nameAr || body.name;
   if (body.nameEn !== undefined) updates.name_en = body.nameEn;
-  if (body.email !== undefined) updates.email = body.email;
+  if (body.email !== undefined) {
+    const newEmail = String(body.email || '').trim().toLowerCase();
+    if (!newEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)) {
+      return c.json({ error: 'صيغة البريد الإلكتروني غير صالحة.' }, 400);
+    }
+    const { data: duplicate } = await supabase.from('users').select('id').eq('email', newEmail).neq('id', userId).maybeSingle();
+    if (duplicate) {
+      return c.json({ error: 'هذا البريد الإلكتروني مسجل مسبقاً لمستخدم آخر.' }, 400);
+    }
+    updates.email = newEmail;
+  }
   if (body.jobTitleAr !== undefined) updates.job_title_ar = body.jobTitleAr;
   if (body.jobTitleEn !== undefined) updates.job_title_en = body.jobTitleEn;
   if (body.roleId !== undefined) updates.role_id = body.roleId;

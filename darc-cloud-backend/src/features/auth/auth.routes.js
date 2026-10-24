@@ -74,8 +74,11 @@ app.post('/forgot-password', authRateLimiter(), async (c) => {
 app.post('/reset-password', authRateLimiter(), async (c) => {
   const body = await c.req.json();
   const supabase = c.get('supabase');
-  const token = String(body.token || '');
+  const token = String(body.token || '').trim();
   const newPassword = String(body.newPassword || '');
+  if (!token || token.length < 24) {
+    return c.json({ error: 'الرابط غير صالح أو منتهي الصلاحية.' }, 400);
+  }
   if (newPassword.length < 10) return c.json({ error: 'كلمة المرور يجب أن تكون 10 أحرف على الأقل.' }, 400);
 
   const { data: user } = await supabase.from('users').select('id, role_id, custom_fields').eq('custom_fields->>resetToken', token).single();
@@ -164,8 +167,8 @@ app.post('/activate', authRateLimiter(), async (c) => {
   const password = String(body.password || '');
   const supabase = c.get('supabase');
 
-  if (!token) {
-    return c.json({ error: 'رمز التفعيل مطلوب.' }, 400);
+  if (!token || token.length < 24) {
+    return c.json({ error: 'رمز التفعيل غير صالح.' }, 400);
   }
   if (password.length < 10) {
     return c.json({ error: 'كلمة المرور يجب ألا تقل عن 10 أحرف' }, 400);
