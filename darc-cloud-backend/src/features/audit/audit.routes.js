@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { getDB } from '../../core/db.js';
 import { getDemoPayload } from '../demo/demo.service.js';
 import { toCamelCase } from '../../utils/transformers.js';
+import { getCachedUsers } from '../../core/cache.js';
 
 const auditApp = new Hono();
 
@@ -92,12 +93,12 @@ auditApp.get('/', async (c) => {
     }
   }
 
-  // Fetch users for joining
-  const { data: dbUsers } = await supabase.from('users').select('id, name, name_ar, name_en, role_id, avatar_color, avatar_url');
+  // Fetch users for joining via in-memory cache (eliminates redundant DB query)
+  const dbUsers = await getCachedUsers(supabase);
   const userMap = new Map((dbUsers || []).map(u => [u.id, {
     id: u.id,
-    name: u.name || u.name_ar,
-    nameEn: u.name_en || u.name,
+    name: u.name,
+    nameEn: u.nameEn || u.name_en || u.name,
     roleId: u.role_id,
     avatarColor: u.avatar_color,
     avatarUrl: u.avatar_url

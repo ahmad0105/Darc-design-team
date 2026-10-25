@@ -145,7 +145,7 @@ app.post('/', async (c) => {
   return c.json({ task: toCamelCase(task) }, 201);
 });
 
-// PATCH /api/tasks/reorder - Batch update task sort orders & statuses
+// PATCH /api/tasks/reorder - Batch update task sort orders & statuses (Anti-N+1 Optimized)
 app.patch('/reorder', async (c) => {
   const body = await c.req.json();
   const items = Array.isArray(body.items) ? body.items : [];
@@ -162,18 +162,62 @@ app.patch('/reorder', async (c) => {
   if (!items.length) return c.json({ ok: true });
 
   const now = new Date().toISOString();
-  await Promise.all(items.map(async (item) => {
-    if (!item.id) return;
-    const { data: existing } = await supabase.from('tasks').select('id, project_id, assignee_id, custom_fields, status').eq('id', item.id).single();
-    if (!existing) return;
-    
-    // Check permission
-    const isVisible = await isProjectVisible(supabase, userId, roleId, existing.project_id);
-    const canEdit = isVisible && (
-      (await hasPermission(supabase, userId, roleId, 'edit_tasks', existing.project_id)) ||
-      existing.assignee_id === userId
-    );
-    if (!canEdit) return;
+  const taskIds = Array.from(new Set(items.map(i => i.id).filter(Boolean)));
+  if (!taskIds.length) return c.json({ ok: true });
+
+  // 1. Anti-N+1: Batch fetch all relevant tasks in a single query
+  const { data: existingTasks, error: fetchErr } = await supabase
+    .from('tasks')
+    .select('id, project_id, assignee_id, custom_fields, status')
+    .in('id', taskIds);
+
+  if (fetchErr || !existingTasks || !existingTasks.length) {
+    return c.json({ ok: true });
+  }
+
+  const taskMap = new Map(existingTasks.map(t => [t.id, t]));
+  const projectIds = Array.from(new Set(existingTasks.map(t => t.project_id).filter(Boolean)));
+
+  // 2. Anti-N+1: Batch check project visibility and editing permissions
+  const projectEditAllowed = new Map();
+  const isGlobalAdmin = roleId === 'admin' || roleId === 'account_permissions_manager';
+
+  if (isGlobalAdmin) {
+    for (const pid of projectIds) projectEditAllowed.set(pid, true);
+  } else {
+    // Single query to fetch user memberships across all distinct projects in this batch
+    const { data: memberships } = await supabase
+      .from('project_members')
+      .select('project_id, role_id')
+      .eq('user_id', userId)
+      .in('project_id', projectIds);
+
+    const memberRoleMap = new Map((memberships || []).map(m => [m.project_id, m.role_id]));
+
+    for (const pid of projectIds) {
+      const activeRole = memberRoleMap.get(pid);
+      if (activeRole) {
+        const canEdit = await hasPermission(supabase, userId, activeRole, 'edit_tasks', pid);
+        projectEditAllowed.set(pid, canEdit);
+      } else {
+        projectEditAllowed.set(pid, false);
+      }
+    }
+  }
+
+  // 3. Process updates and aggregate status-change audit logs
+  const auditLogsToInsert = [];
+  const updatePromises = [];
+
+  for (const item of items) {
+    if (!item.id) continue;
+    const existing = taskMap.get(item.id);
+    if (!existing) continue;
+
+    // Check project-level permission or assignee self-update
+    const canEditProject = projectEditAllowed.get(existing.project_id) || false;
+    const canEdit = canEditProject || existing.assignee_id === userId;
+    if (!canEdit) continue;
 
     const existingCF = (existing.custom_fields && typeof existing.custom_fields === 'object') ? existing.custom_fields : {};
     const incomingCF = (item.customFields || item.custom_fields || {});
@@ -189,24 +233,31 @@ app.patch('/reorder', async (c) => {
       custom_fields: sanitizeCustomFields(mergedCF),
       updated_at: now
     };
+
     if (item.status && ['not_started', 'in_progress', 'review', 'approval', 'done', 'blocked', 'canceled'].includes(item.status)) {
       if (existing.status !== item.status) {
-        supabase.from('audit_logs').insert([{
+        auditLogsToInsert.push({
           user_id: userId,
           action: 'status_change',
           entity_type: 'task',
           entity_id: item.id,
           details: { oldStatus: existing.status, newStatus: item.status }
-        }]).then().catch(() => {});
+        });
       }
       updates.status = item.status;
       const autoP = calculateAutoProgress(item.status);
       if (autoP !== null) updates.progress = autoP;
     }
 
-    await supabase.from('tasks').update(updates).eq('id', item.id);
-  }));
+    updatePromises.push(supabase.from('tasks').update(updates).eq('id', item.id));
+  }
 
+  // 4. Execute updates and batch insert audit logs in parallel
+  if (auditLogsToInsert.length > 0) {
+    updatePromises.push(supabase.from('audit_logs').insert(auditLogsToInsert));
+  }
+
+  await Promise.all(updatePromises);
   invalidateBootstrapCache();
   return c.json({ ok: true });
 });
