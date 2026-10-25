@@ -187,6 +187,7 @@ CREATE TABLE IF NOT EXISTS tasks (
     assignee_id VARCHAR(50) REFERENCES users(id),
     reviewer_id VARCHAR(50) REFERENCES users(id),
     approver_id VARCHAR(50) REFERENCES users(id),
+    parent_task_id VARCHAR(50) REFERENCES tasks(id) ON DELETE CASCADE,
     start_date DATE,
     due_date DATE,
     description_ar TEXT,
@@ -196,6 +197,7 @@ CREATE TABLE IF NOT EXISTS tasks (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     deleted_at TIMESTAMP WITH TIME ZONE
 );
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS parent_task_id VARCHAR(50) REFERENCES tasks(id) ON DELETE CASCADE;
 
 -- 3.8 Documents, Blueprints & CAD/BIM File Deliverables
 CREATE TABLE IF NOT EXISTS documents (
@@ -414,14 +416,15 @@ DROP INDEX IF EXISTS idx_active_tasks_parent;
 DROP INDEX IF EXISTS idx_active_documents_task;
 DROP INDEX IF EXISTS idx_notifications_user_unread;
 DROP INDEX IF EXISTS idx_tasks_due_date;
-DROP INDEX IF EXISTS idx_tasks_reviewer_id;
-DROP INDEX IF EXISTS idx_tasks_approver_id;
 DROP INDEX IF EXISTS idx_email_outbox_status_created;
 DROP INDEX IF EXISTS idx_reminders_remind_at;
 
 -- Foreign Keys & Primary Relational Indexes (100% Covered)
 CREATE INDEX IF NOT EXISTS idx_tasks_project_id ON tasks(project_id);
 CREATE INDEX IF NOT EXISTS idx_tasks_assignee_id ON tasks(assignee_id);
+CREATE INDEX IF NOT EXISTS idx_tasks_reviewer_id ON tasks(reviewer_id);
+CREATE INDEX IF NOT EXISTS idx_tasks_approver_id ON tasks(approver_id);
+CREATE INDEX IF NOT EXISTS idx_tasks_parent_task_id ON tasks(parent_task_id);
 CREATE INDEX IF NOT EXISTS idx_tasks_template_id ON tasks(template_id);
 CREATE INDEX IF NOT EXISTS idx_documents_project_id ON documents(project_id);
 CREATE INDEX IF NOT EXISTS idx_documents_task_id ON documents(task_id);
