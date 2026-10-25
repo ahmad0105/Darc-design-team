@@ -208,10 +208,12 @@ CREATE TABLE IF NOT EXISTS documents (
     mime_type VARCHAR(100),
     size BIGINT DEFAULT 0,
     status VARCHAR(50) DEFAULT 'draft' CHECK (status IN ('draft', 'review', 'approved', 'superseded')),
+    superseded_by VARCHAR(50) REFERENCES documents(id),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     deleted_at TIMESTAMP WITH TIME ZONE
 );
+ALTER TABLE documents ADD COLUMN IF NOT EXISTS superseded_by VARCHAR(50) REFERENCES documents(id);
 
 -- 3.9 Comments & Architectural Collaborations
 CREATE TABLE IF NOT EXISTS comments (
@@ -399,27 +401,42 @@ EXECUTE FUNCTION fn_recalculate_project_progress();
 -- 6. PERFORMANCE & SEARCH INDEXES (100% NON-DUPLICATE)
 -- ==============================================================================
 
--- Clean up any duplicate legacy indexes first
+-- Clean up duplicate & obsolete prototype indexes first
 DROP INDEX IF EXISTS idx_audit_logs_created_at_desc;
 DROP INDEX IF EXISTS idx_active_docs_project;
 DROP INDEX IF EXISTS idx_active_docs_task;
 DROP INDEX IF EXISTS idx_project_members_proj;
 DROP INDEX IF EXISTS idx_project_members_user;
+DROP INDEX IF EXISTS projects_fts_idx;
+DROP INDEX IF EXISTS tasks_fts_idx;
+DROP INDEX IF EXISTS idx_trash_documents;
+DROP INDEX IF EXISTS idx_active_tasks_parent;
+DROP INDEX IF EXISTS idx_active_documents_task;
+DROP INDEX IF EXISTS idx_notifications_user_unread;
+DROP INDEX IF EXISTS idx_tasks_due_date;
+DROP INDEX IF EXISTS idx_tasks_reviewer_id;
+DROP INDEX IF EXISTS idx_tasks_approver_id;
+DROP INDEX IF EXISTS idx_email_outbox_status_created;
+DROP INDEX IF EXISTS idx_reminders_remind_at;
 
--- Foreign Keys & Primary Relational Indexes
+-- Foreign Keys & Primary Relational Indexes (100% Covered)
 CREATE INDEX IF NOT EXISTS idx_tasks_project_id ON tasks(project_id);
 CREATE INDEX IF NOT EXISTS idx_tasks_assignee_id ON tasks(assignee_id);
 CREATE INDEX IF NOT EXISTS idx_tasks_template_id ON tasks(template_id);
 CREATE INDEX IF NOT EXISTS idx_documents_project_id ON documents(project_id);
 CREATE INDEX IF NOT EXISTS idx_documents_task_id ON documents(task_id);
 CREATE INDEX IF NOT EXISTS idx_documents_uploader_id ON documents(uploader_id);
+CREATE INDEX IF NOT EXISTS idx_documents_superseded_by ON documents(superseded_by);
 CREATE INDEX IF NOT EXISTS idx_projects_manager_id ON projects(manager_id);
 CREATE INDEX IF NOT EXISTS idx_project_members_project_id ON project_members(project_id);
 CREATE INDEX IF NOT EXISTS idx_project_members_user_id ON project_members(user_id);
+CREATE INDEX IF NOT EXISTS idx_project_members_role_id ON project_members(role_id);
 CREATE INDEX IF NOT EXISTS idx_users_role_id ON users(role_id);
 CREATE INDEX IF NOT EXISTS idx_comments_task_id ON comments(task_id);
 CREATE INDEX IF NOT EXISTS idx_comments_user_id ON comments(user_id);
+CREATE INDEX IF NOT EXISTS idx_reminders_created_by ON reminders(created_by);
 CREATE INDEX IF NOT EXISTS idx_history_task_id ON task_history(task_id);
+CREATE INDEX IF NOT EXISTS idx_task_history_user_id ON task_history(user_id);
 CREATE INDEX IF NOT EXISTS idx_notifications_user_read ON notifications(user_id, read);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_user_id ON audit_logs(user_id);
 
