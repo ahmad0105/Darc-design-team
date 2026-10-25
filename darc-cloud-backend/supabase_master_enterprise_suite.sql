@@ -7,12 +7,37 @@
 BEGIN;
 
 -- ==============================================================================
--- 1. EXTENSIONS & SEARCH ACCELERATORS
+-- 1. SCHEMAS, EXTENSIONS & SEARCH ACCELERATORS
+-- Installs extensions in dedicated "extensions" schema (Clean Linter)
 -- ==============================================================================
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-CREATE EXTENSION IF NOT EXISTS "pgcrypto";
-CREATE EXTENSION IF NOT EXISTS "pg_trgm";
-CREATE EXTENSION IF NOT EXISTS "btree_gin";
+CREATE SCHEMA IF NOT EXISTS extensions;
+GRANT USAGE ON SCHEMA extensions TO authenticated, anon, service_role, postgres;
+
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp" SCHEMA extensions;
+CREATE EXTENSION IF NOT EXISTS "pgcrypto" SCHEMA extensions;
+CREATE EXTENSION IF NOT EXISTS "pg_trgm" SCHEMA extensions;
+CREATE EXTENSION IF NOT EXISTS "btree_gin" SCHEMA extensions;
+
+-- Relocate extensions to "extensions" schema if previously installed in "public"
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'pg_trgm' AND extnamespace = 'public'::regnamespace) THEN
+    ALTER EXTENSION "pg_trgm" SET SCHEMA extensions;
+  END IF;
+  IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'btree_gin' AND extnamespace = 'public'::regnamespace) THEN
+    ALTER EXTENSION "btree_gin" SET SCHEMA extensions;
+  END IF;
+  IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'uuid-ossp' AND extnamespace = 'public'::regnamespace) THEN
+    ALTER EXTENSION "uuid-ossp" SET SCHEMA extensions;
+  END IF;
+  IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'pgcrypto' AND extnamespace = 'public'::regnamespace) THEN
+    ALTER EXTENSION "pgcrypto" SET SCHEMA extensions;
+  END IF;
+END $$;
+
+-- Dedicated private schema for internal security & RLS helper routines (Prevents public RPC exposure)
+CREATE SCHEMA IF NOT EXISTS auth_helpers;
+GRANT USAGE ON SCHEMA auth_helpers TO authenticated, anon, service_role, postgres;
 
 -- ==============================================================================
 -- 2. CORE SYSTEM FUNCTIONS & GENERATORS
@@ -25,7 +50,7 @@ BEGIN
     RETURN prefix || '_' || substr(replace(gen_random_uuid()::text, '-', ''), 1, 16);
 END;
 $$ LANGUAGE plpgsql VOLATILE
-SET search_path = public, pg_temp;
+SET search_path = public, extensions, pg_temp;
 
 -- Auto-timestamp maintainer for updated_at
 CREATE OR REPLACE FUNCTION set_updated_at() 
@@ -326,7 +351,7 @@ BEGIN
 END;
 $$;
 
--- 5.2 Auto-Calculate Weighted Project Progress Trigger
+-- 5.2 Auto-Calculate Weighted Project Progress Trigger (Explicit Search Path Enforced)
 CREATE OR REPLACE FUNCTION fn_recalculate_project_progress()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -361,7 +386,8 @@ BEGIN
 
   RETURN COALESCE(NEW, OLD);
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql
+SET search_path = public, pg_temp;
 
 DROP TRIGGER IF EXISTS trg_recalculate_project_progress ON tasks;
 CREATE TRIGGER trg_recalculate_project_progress
@@ -409,12 +435,13 @@ CREATE INDEX IF NOT EXISTS idx_tasks_custom_fields_gin ON tasks USING gin (custo
 CREATE INDEX IF NOT EXISTS idx_audit_logs_details_gin ON audit_logs USING gin (details);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON audit_logs (created_at DESC);
 
--- Native Multi-Language Trigram Search
-CREATE INDEX IF NOT EXISTS idx_tasks_trgm_title_ar ON tasks USING gin (title_ar gin_trgm_ops);
-CREATE INDEX IF NOT EXISTS idx_tasks_trgm_title_en ON tasks USING gin (title_en gin_trgm_ops);
-CREATE INDEX IF NOT EXISTS idx_docs_trgm_filename ON documents USING gin (original_name gin_trgm_ops);
-CREATE INDEX IF NOT EXISTS idx_projects_trgm_name_ar ON projects USING gin (name_ar gin_trgm_ops);
-CREATE INDEX IF NOT EXISTS idx_projects_trgm_code ON projects USING gin (code gin_trgm_ops);
+-- Native Multi-Language Trigram Search (Operators loaded from extensions schema)
+SET search_path = public, extensions, pg_temp;
+CREATE INDEX IF NOT EXISTS idx_tasks_trgm_title_ar ON tasks USING gin (title_ar extensions.gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS idx_tasks_trgm_title_en ON tasks USING gin (title_en extensions.gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS idx_docs_trgm_filename ON documents USING gin (original_name extensions.gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS idx_projects_trgm_name_ar ON projects USING gin (name_ar extensions.gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS idx_projects_trgm_code ON projects USING gin (code extensions.gin_trgm_ops);
 
 -- ==============================================================================
 -- 7. MATHEMATICAL INTEGRITY CONSTRAINTS
@@ -491,13 +518,32 @@ DROP POLICY IF EXISTS authenticated_notifications_select ON notifications;
 DROP POLICY IF EXISTS authenticated_notifications_update ON notifications;
 DROP POLICY IF EXISTS authenticated_task_history_select ON task_history;
 DROP POLICY IF EXISTS authenticated_users_update_self ON users;
+DROP POLICY IF EXISTS authenticated_users_select ON users;
+DROP POLICY IF EXISTS authenticated_roles_select ON roles;
 
--- Optimized Security Helper Functions with InitPlan Caching
-CREATE OR REPLACE FUNCTION is_admin() 
+-- Drop previous modify policies that used FOR ALL to prevent multiple permissive SELECT clashes
+DROP POLICY IF EXISTS company_modify_policy ON company;
+DROP POLICY IF EXISTS roles_modify_policy ON roles;
+DROP POLICY IF EXISTS templates_modify_policy ON templates;
+DROP POLICY IF EXISTS project_members_modify_policy ON project_members;
+
+-- Revoke execute on legacy public functions so they are NOT callable as RPC endpoints
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'is_admin' AND pronamespace = 'public'::regnamespace) THEN
+    REVOKE EXECUTE ON FUNCTION public.is_admin() FROM anon, authenticated, PUBLIC;
+  END IF;
+  IF EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'is_project_member' AND pronamespace = 'public'::regnamespace) THEN
+    REVOKE EXECUTE ON FUNCTION public.is_project_member(TEXT) FROM anon, authenticated, PUBLIC;
+  END IF;
+END $$;
+
+-- Internal Security Helper Routines inside "auth_helpers" schema (Completely isolated from PostgREST RPC)
+CREATE OR REPLACE FUNCTION auth_helpers.is_admin() 
 RETURNS BOOLEAN AS $$
 BEGIN
   RETURN EXISTS (
-    SELECT 1 FROM users 
+    SELECT 1 FROM public.users 
     WHERE id = (SELECT auth.uid())::text 
       AND (role_id = 'admin' OR id = 'usr_ahmad')
   );
@@ -505,11 +551,11 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER
 SET search_path = public, pg_temp;
 
-CREATE OR REPLACE FUNCTION is_project_member(p_id TEXT)
+CREATE OR REPLACE FUNCTION auth_helpers.is_project_member(p_id TEXT)
 RETURNS BOOLEAN AS $$
 BEGIN
   RETURN EXISTS (
-    SELECT 1 FROM project_members 
+    SELECT 1 FROM public.project_members 
     WHERE project_id = p_id 
       AND user_id = (SELECT auth.uid())::text
   );
@@ -517,31 +563,64 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER
 SET search_path = public, pg_temp;
 
+GRANT EXECUTE ON FUNCTION auth_helpers.is_admin() TO authenticated, service_role, postgres;
+GRANT EXECUTE ON FUNCTION auth_helpers.is_project_member(TEXT) TO authenticated, service_role, postgres;
+
 -- 9.1 COMPANY
 DROP POLICY IF EXISTS company_select_policy ON company;
 CREATE POLICY company_select_policy ON company FOR SELECT USING (true);
 
-DROP POLICY IF EXISTS company_modify_policy ON company;
-CREATE POLICY company_modify_policy ON company FOR ALL USING (
-  is_admin() OR (SELECT auth.role()) = 'service_role'
+DROP POLICY IF EXISTS company_insert_policy ON company;
+CREATE POLICY company_insert_policy ON company FOR INSERT WITH CHECK (
+  auth_helpers.is_admin() OR (SELECT auth.role()) = 'service_role'
+);
+
+DROP POLICY IF EXISTS company_update_policy ON company;
+CREATE POLICY company_update_policy ON company FOR UPDATE USING (
+  auth_helpers.is_admin() OR (SELECT auth.role()) = 'service_role'
+);
+
+DROP POLICY IF EXISTS company_delete_policy ON company;
+CREATE POLICY company_delete_policy ON company FOR DELETE USING (
+  auth_helpers.is_admin() OR (SELECT auth.role()) = 'service_role'
 );
 
 -- 9.2 ROLES
 DROP POLICY IF EXISTS roles_select_policy ON roles;
 CREATE POLICY roles_select_policy ON roles FOR SELECT USING (true);
 
-DROP POLICY IF EXISTS roles_modify_policy ON roles;
-CREATE POLICY roles_modify_policy ON roles FOR ALL USING (
-  is_admin() OR (SELECT auth.role()) = 'service_role'
+DROP POLICY IF EXISTS roles_insert_policy ON roles;
+CREATE POLICY roles_insert_policy ON roles FOR INSERT WITH CHECK (
+  auth_helpers.is_admin() OR (SELECT auth.role()) = 'service_role'
+);
+
+DROP POLICY IF EXISTS roles_update_policy ON roles;
+CREATE POLICY roles_update_policy ON roles FOR UPDATE USING (
+  auth_helpers.is_admin() OR (SELECT auth.role()) = 'service_role'
+);
+
+DROP POLICY IF EXISTS roles_delete_policy ON roles;
+CREATE POLICY roles_delete_policy ON roles FOR DELETE USING (
+  auth_helpers.is_admin() OR (SELECT auth.role()) = 'service_role'
 );
 
 -- 9.3 TEMPLATES
 DROP POLICY IF EXISTS templates_select_policy ON templates;
 CREATE POLICY templates_select_policy ON templates FOR SELECT USING (true);
 
-DROP POLICY IF EXISTS templates_modify_policy ON templates;
-CREATE POLICY templates_modify_policy ON templates FOR ALL USING (
-  is_admin() OR (SELECT auth.role()) = 'service_role'
+DROP POLICY IF EXISTS templates_insert_policy ON templates;
+CREATE POLICY templates_insert_policy ON templates FOR INSERT WITH CHECK (
+  auth_helpers.is_admin() OR (SELECT auth.role()) = 'service_role'
+);
+
+DROP POLICY IF EXISTS templates_update_policy ON templates;
+CREATE POLICY templates_update_policy ON templates FOR UPDATE USING (
+  auth_helpers.is_admin() OR (SELECT auth.role()) = 'service_role'
+);
+
+DROP POLICY IF EXISTS templates_delete_policy ON templates;
+CREATE POLICY templates_delete_policy ON templates FOR DELETE USING (
+  auth_helpers.is_admin() OR (SELECT auth.role()) = 'service_role'
 );
 
 -- 9.4 USERS
@@ -550,91 +629,101 @@ CREATE POLICY users_select_policy ON users FOR SELECT USING (true);
 
 DROP POLICY IF EXISTS users_insert_policy ON users;
 CREATE POLICY users_insert_policy ON users FOR INSERT WITH CHECK (
-  is_admin() OR (SELECT auth.role()) = 'service_role'
+  auth_helpers.is_admin() OR (SELECT auth.role()) = 'service_role'
 );
 
 DROP POLICY IF EXISTS users_update_self_policy ON users;
 CREATE POLICY users_update_self_policy ON users FOR UPDATE USING (
-  is_admin() OR id = (SELECT auth.uid())::text OR (SELECT auth.role()) = 'service_role'
+  auth_helpers.is_admin() OR id = (SELECT auth.uid())::text OR (SELECT auth.role()) = 'service_role'
 );
 
 DROP POLICY IF EXISTS users_delete_policy ON users;
 CREATE POLICY users_delete_policy ON users FOR DELETE USING (
-  is_admin() OR (SELECT auth.role()) = 'service_role'
+  auth_helpers.is_admin() OR (SELECT auth.role()) = 'service_role'
 );
 
 -- 9.5 PROJECTS
 DROP POLICY IF EXISTS projects_select_policy ON projects;
 CREATE POLICY projects_select_policy ON projects FOR SELECT USING (
-  is_admin() OR is_project_member(id) OR (demo = true) OR (SELECT auth.role()) = 'service_role'
+  auth_helpers.is_admin() OR auth_helpers.is_project_member(id) OR (demo = true) OR (SELECT auth.role()) = 'service_role'
 );
 
 DROP POLICY IF EXISTS projects_insert_policy ON projects;
 CREATE POLICY projects_insert_policy ON projects FOR INSERT WITH CHECK (
-  is_admin() OR (SELECT auth.role()) = 'service_role'
+  auth_helpers.is_admin() OR (SELECT auth.role()) = 'service_role'
 );
 
 DROP POLICY IF EXISTS projects_update_policy ON projects;
 CREATE POLICY projects_update_policy ON projects FOR UPDATE USING (
-  is_admin() OR manager_id = (SELECT auth.uid())::text OR (SELECT auth.role()) = 'service_role'
+  auth_helpers.is_admin() OR manager_id = (SELECT auth.uid())::text OR (SELECT auth.role()) = 'service_role'
 );
 
 DROP POLICY IF EXISTS projects_delete_policy ON projects;
 CREATE POLICY projects_delete_policy ON projects FOR DELETE USING (
-  is_admin() OR (SELECT auth.role()) = 'service_role'
+  auth_helpers.is_admin() OR (SELECT auth.role()) = 'service_role'
 );
 
 -- 9.6 PROJECT MEMBERS
 DROP POLICY IF EXISTS project_members_select_policy ON project_members;
 CREATE POLICY project_members_select_policy ON project_members FOR SELECT USING (
-  is_admin() OR user_id = (SELECT auth.uid())::text OR is_project_member(project_id) OR (SELECT auth.role()) = 'service_role'
+  auth_helpers.is_admin() OR user_id = (SELECT auth.uid())::text OR auth_helpers.is_project_member(project_id) OR (SELECT auth.role()) = 'service_role'
 );
 
-DROP POLICY IF EXISTS project_members_modify_policy ON project_members;
-CREATE POLICY project_members_modify_policy ON project_members FOR ALL USING (
-  is_admin() OR (SELECT auth.role()) = 'service_role'
+DROP POLICY IF EXISTS project_members_insert_policy ON project_members;
+CREATE POLICY project_members_insert_policy ON project_members FOR INSERT WITH CHECK (
+  auth_helpers.is_admin() OR (SELECT auth.role()) = 'service_role'
+);
+
+DROP POLICY IF EXISTS project_members_update_policy ON project_members;
+CREATE POLICY project_members_update_policy ON project_members FOR UPDATE USING (
+  auth_helpers.is_admin() OR (SELECT auth.role()) = 'service_role'
+);
+
+DROP POLICY IF EXISTS project_members_delete_policy ON project_members;
+CREATE POLICY project_members_delete_policy ON project_members FOR DELETE USING (
+  auth_helpers.is_admin() OR (SELECT auth.role()) = 'service_role'
 );
 
 -- 9.7 TASKS
 DROP POLICY IF EXISTS tasks_select_policy ON tasks;
 CREATE POLICY tasks_select_policy ON tasks FOR SELECT USING (
-  is_admin() OR is_project_member(project_id) OR (SELECT auth.role()) = 'service_role'
+  auth_helpers.is_admin() OR auth_helpers.is_project_member(project_id) OR (SELECT auth.role()) = 'service_role'
 );
 
 DROP POLICY IF EXISTS tasks_insert_policy ON tasks;
 CREATE POLICY tasks_insert_policy ON tasks FOR INSERT WITH CHECK (
-  is_admin() OR is_project_member(project_id) OR (SELECT auth.role()) = 'service_role'
+  auth_helpers.is_admin() OR auth_helpers.is_project_member(project_id) OR (SELECT auth.role()) = 'service_role'
 );
 
 DROP POLICY IF EXISTS tasks_update_policy ON tasks;
 CREATE POLICY tasks_update_policy ON tasks FOR UPDATE USING (
-  is_admin() OR assignee_id = (SELECT auth.uid())::text OR is_project_member(project_id) OR (SELECT auth.role()) = 'service_role'
+  auth_helpers.is_admin() OR assignee_id = (SELECT auth.uid())::text OR auth_helpers.is_project_member(project_id) OR (SELECT auth.role()) = 'service_role'
 );
 
 DROP POLICY IF EXISTS tasks_delete_policy ON tasks;
 CREATE POLICY tasks_delete_policy ON tasks FOR DELETE USING (
-  is_admin() OR (SELECT auth.role()) = 'service_role'
+  auth_helpers.is_admin() OR (SELECT auth.role()) = 'service_role'
 );
 
 -- 9.8 DOCUMENTS
 DROP POLICY IF EXISTS documents_select_policy ON documents;
 CREATE POLICY documents_select_policy ON documents FOR SELECT USING (
-  is_admin() OR is_project_member(project_id) OR (SELECT auth.role()) = 'service_role'
+  auth_helpers.is_admin() OR auth_helpers.is_project_member(project_id) OR (SELECT auth.role()) = 'service_role'
 );
 
 DROP POLICY IF EXISTS documents_insert_policy ON documents;
 CREATE POLICY documents_insert_policy ON documents FOR INSERT WITH CHECK (
-  is_admin() OR is_project_member(project_id) OR (SELECT auth.role()) = 'service_role'
+  auth_helpers.is_admin() OR auth_helpers.is_project_member(project_id) OR (SELECT auth.role()) = 'service_role'
 );
 
 DROP POLICY IF EXISTS documents_update_policy ON documents;
 CREATE POLICY documents_update_policy ON documents FOR UPDATE USING (
-  is_admin() OR uploader_id = (SELECT auth.uid())::text OR (SELECT auth.role()) = 'service_role'
+  auth_helpers.is_admin() OR uploader_id = (SELECT auth.uid())::text OR (SELECT auth.role()) = 'service_role'
 );
 
 DROP POLICY IF EXISTS documents_delete_policy ON documents;
 CREATE POLICY documents_delete_policy ON documents FOR DELETE USING (
-  is_admin() OR uploader_id = (SELECT auth.uid())::text OR (SELECT auth.role()) = 'service_role'
+  auth_helpers.is_admin() OR uploader_id = (SELECT auth.uid())::text OR (SELECT auth.role()) = 'service_role'
 );
 
 -- 9.9 COMMENTS
@@ -643,46 +732,46 @@ CREATE POLICY comments_select_policy ON comments FOR SELECT USING (true);
 
 DROP POLICY IF EXISTS comments_insert_policy ON comments;
 CREATE POLICY comments_insert_policy ON comments FOR INSERT WITH CHECK (
-  is_admin() OR (SELECT auth.uid()) IS NOT NULL OR (SELECT auth.role()) = 'service_role'
+  auth_helpers.is_admin() OR (SELECT auth.uid()) IS NOT NULL OR (SELECT auth.role()) = 'service_role'
 );
 
 DROP POLICY IF EXISTS comments_update_policy ON comments;
 CREATE POLICY comments_update_policy ON comments FOR UPDATE USING (
-  is_admin() OR user_id = (SELECT auth.uid())::text OR (SELECT auth.role()) = 'service_role'
+  auth_helpers.is_admin() OR user_id = (SELECT auth.uid())::text OR (SELECT auth.role()) = 'service_role'
 );
 
 DROP POLICY IF EXISTS comments_delete_policy ON comments;
 CREATE POLICY comments_delete_policy ON comments FOR DELETE USING (
-  is_admin() OR user_id = (SELECT auth.uid())::text OR (SELECT auth.role()) = 'service_role'
+  auth_helpers.is_admin() OR user_id = (SELECT auth.uid())::text OR (SELECT auth.role()) = 'service_role'
 );
 
 -- 9.10 REMINDERS
 DROP POLICY IF EXISTS reminders_all_policy ON reminders;
 CREATE POLICY reminders_all_policy ON reminders FOR ALL USING (
-  is_admin() OR user_id = (SELECT auth.uid())::text OR created_by = (SELECT auth.uid())::text OR (SELECT auth.role()) = 'service_role'
+  auth_helpers.is_admin() OR user_id = (SELECT auth.uid())::text OR created_by = (SELECT auth.uid())::text OR (SELECT auth.role()) = 'service_role'
 );
 
 -- 9.11 NOTIFICATIONS
 DROP POLICY IF EXISTS notifications_all_policy ON notifications;
 CREATE POLICY notifications_all_policy ON notifications FOR ALL USING (
-  is_admin() OR user_id = (SELECT auth.uid())::text OR (SELECT auth.role()) = 'service_role'
+  auth_helpers.is_admin() OR user_id = (SELECT auth.uid())::text OR (SELECT auth.role()) = 'service_role'
 );
 
 -- 9.12 AUDIT LOGS
 DROP POLICY IF EXISTS audit_logs_select_policy ON audit_logs;
 CREATE POLICY audit_logs_select_policy ON audit_logs FOR SELECT USING (
-  is_admin() OR user_id = (SELECT auth.uid())::text OR (SELECT auth.role()) = 'service_role'
+  auth_helpers.is_admin() OR user_id = (SELECT auth.uid())::text OR (SELECT auth.role()) = 'service_role'
 );
 
 DROP POLICY IF EXISTS audit_logs_insert_policy ON audit_logs;
 CREATE POLICY audit_logs_insert_policy ON audit_logs FOR INSERT WITH CHECK (
-  (SELECT auth.role()) = 'service_role' OR is_admin() OR (SELECT auth.uid()) IS NOT NULL
+  (SELECT auth.role()) = 'service_role' OR auth_helpers.is_admin() OR (SELECT auth.uid()) IS NOT NULL
 );
 
 -- 9.13 TASK HISTORY
 DROP POLICY IF EXISTS task_history_select_policy ON task_history;
 CREATE POLICY task_history_select_policy ON task_history FOR SELECT USING (
-  is_admin() OR (SELECT auth.role()) = 'service_role' OR (SELECT auth.uid()) IS NOT NULL
+  auth_helpers.is_admin() OR (SELECT auth.role()) = 'service_role' OR (SELECT auth.uid()) IS NOT NULL
 );
 
 DROP POLICY IF EXISTS task_history_insert_policy ON task_history;
@@ -693,7 +782,7 @@ CREATE POLICY task_history_insert_policy ON task_history FOR INSERT WITH CHECK (
 -- 9.14 EMAIL OUTBOX
 DROP POLICY IF EXISTS email_outbox_all_policy ON email_outbox;
 CREATE POLICY email_outbox_all_policy ON email_outbox FOR ALL USING (
-  is_admin() OR (SELECT auth.role()) = 'service_role'
+  auth_helpers.is_admin() OR (SELECT auth.role()) = 'service_role'
 );
 
 -- ==============================================================================
@@ -702,6 +791,10 @@ CREATE POLICY email_outbox_all_policy ON email_outbox FOR ALL USING (
 GRANT ALL ON ALL TABLES IN SCHEMA public TO service_role, postgres;
 GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO service_role, postgres;
 GRANT ALL ON ALL ROUTINES IN SCHEMA public TO service_role, postgres;
+
+GRANT USAGE ON SCHEMA auth_helpers TO authenticated, anon, service_role, postgres;
+GRANT ALL ON ALL ROUTINES IN SCHEMA auth_helpers TO service_role, postgres;
+GRANT EXECUTE ON ALL ROUTINES IN SCHEMA auth_helpers TO authenticated;
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO authenticated;
 GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO authenticated;
