@@ -38,8 +38,8 @@ app.patch('/', async (c) => {
     if (typeof rawLogo !== 'string') {
       return c.json({ error: 'صيغة رابط شعار الشركة غير صالحة' }, 400);
     }
-    if (rawLogo.length > 4 * 1024 * 1024) {
-      return c.json({ error: 'حجم ملف الشعار يتجاوز الحد المسموح (3MB)' }, 400);
+    if (rawLogo.length > 350 * 1024) {
+      return c.json({ error: 'حجم ملف الشعار كبير جداً ويتجاوز الحد الأقصى المسموح (350KB). يرجى ضغط الشعار.' }, 400);
     }
     const isSafeRaster = /^data:image\/(png|jpeg|jpg|webp|gif);base64,/i.test(rawLogo);
     const isHttps = rawLogo.startsWith('https://');

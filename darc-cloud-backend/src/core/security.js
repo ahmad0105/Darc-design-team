@@ -78,9 +78,31 @@ export function payloadLimitMiddleware(maxBytes = 2.5 * 1024 * 1024) {
   };
 }
 
+function isAllowedOrigin(originStr) {
+  if (!originStr || typeof originStr !== 'string') return false;
+  try {
+    const parsed = originStr.startsWith('http') ? new URL(originStr).origin : originStr;
+    return (
+      ALLOWED_ORIGINS.includes(parsed) ||
+      parsed.startsWith('http://localhost:') ||
+      parsed.startsWith('http://127.0.0.1:') ||
+      parsed === 'https://darc-design-team.netlify.app' ||
+      parsed.endsWith('.darc-design-team.netlify.app') ||
+      parsed === 'https://darc-design-team.workers.dev' ||
+      parsed === 'https://darc-design-team.pages.dev' ||
+      parsed.endsWith('.darc-design.bond') ||
+      parsed === 'https://darc-design.bond' ||
+      parsed === 'https://panel.darc-design.bond' ||
+      parsed.endsWith('.darc.local')
+    );
+  } catch {
+    return false;
+  }
+}
+
 /**
- * Origin / CSRF Shield for state-changing requests (POST, PUT, PATCH, DELETE).
- * Ensures requests originate only from approved web domains.
+ * Origin & Referer CSRF Shield for state-changing requests (POST, PUT, PATCH, DELETE).
+ * Protects against cross-site request forgery and origin stripping attacks.
  */
 export function csrfGuardMiddleware() {
   return async (c, next) => {
@@ -92,27 +114,47 @@ export function csrfGuardMiddleware() {
     }
 
     const origin = c.req.header('origin');
+    const referer = c.req.header('referer');
+    const secFetchSite = c.req.header('sec-fetch-site');
 
+    // 1. Block explicit cross-site fetch metadata
+    if (secFetchSite === 'cross-site') {
+      return c.json(
+        { error: 'طلب محجوب: مصدر غير مصرح به (Cross-Site Request Blocked).' },
+        403
+      );
+    }
+
+    // 2. Validate Origin if present
     if (origin) {
-      const isAllowed =
-        ALLOWED_ORIGINS.includes(origin) ||
-        origin.startsWith('http://localhost:') ||
-        origin.startsWith('http://127.0.0.1:') ||
-        origin === 'https://darc-design-team.netlify.app' ||
-        origin.endsWith('.darc-design-team.netlify.app') ||
-        origin === 'https://darc-design-team.workers.dev' ||
-        origin === 'https://darc-design-team.pages.dev' ||
-        origin.endsWith('.darc-design.bond') ||
-        origin === 'https://darc-design.bond' ||
-        origin === 'https://panel.darc-design.bond' ||
-        origin.endsWith('.darc.local');
-
-      if (!isAllowed) {
+      if (!isAllowedOrigin(origin)) {
         return c.json(
           { error: 'طلب محجوب: مصدر غير مصرح به لمنع تزوير الطلبات (CSRF / Origin Rejected).' },
           403
         );
       }
+      return next();
+    }
+
+    // 3. Fallback: Validate Referer if Origin is omitted
+    if (referer) {
+      if (!isAllowedOrigin(referer)) {
+        return c.json(
+          { error: 'طلب محجوب: ترويسة المرجع غير مصرح بها (CSRF / Referer Rejected).' },
+          403
+        );
+      }
+      return next();
+    }
+
+    // 4. If neither Origin nor Referer is provided:
+    // Only allow if client provides explicit non-cookie credentials (Authorization header)
+    const hasAuthHeader = !!c.req.header('authorization');
+    if (!hasAuthHeader) {
+      return c.json(
+        { error: 'طلب محجوب: يجب تحديد مصدر الطلب (Missing Origin/Referer in state-changing request).' },
+        403
+      );
     }
 
     await next();

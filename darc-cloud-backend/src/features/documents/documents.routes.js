@@ -13,6 +13,7 @@ import { generateSecureId } from '../../core/security.js';
 import { invalidateBootstrapCache } from '../../core/cache.js';
 import { inspectFileBuffer } from '../../core/antivirus.js';
 import { addDemoDocument } from '../demo/demo.service.js';
+import { uploadRateLimiter } from '../../core/rate-limit.js';
 
 const DANGEROUS_EXTENSIONS = new Set([
   'exe', 'bat', 'cmd', 'sh', 'bash', 'ps1', 'vbs', 'js', 'mjs', 'cjs',
@@ -250,7 +251,7 @@ app.get('/:id', async (c) => {
 });
 
 // POST /api/documents/session -> Create Direct Resumable Upload Session for Google Drive
-app.post('/session', async (c) => {
+app.post('/session', uploadRateLimiter(), async (c) => {
   const isDemo = c.get('isDemo');
   const body = await c.req.json();
   const { compiledName, mimeType, projectId, taskId, size } = body;
@@ -521,7 +522,7 @@ app.put('/chunk', async (c) => {
 
 
 // POST /api/documents -> Upload file to GDrive with Smart Naming (Legacy Fallback)
-app.post('/', async (c) => {
+app.post('/', uploadRateLimiter(), async (c) => {
   const userId = c.get('userId');
   const roleId = c.get('roleId');
   const supabase = c.get('supabase');

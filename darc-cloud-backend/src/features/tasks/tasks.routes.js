@@ -239,6 +239,19 @@ app.patch('/:id', async (c) => {
     return c.json({ error: 'لا تملك الصلاحية المطلوبة لهذه العملية' }, 403);
   }
 
+  // Optimistic Locking: Prevent silent concurrent overwrites between team members
+  if (body.expectedUpdatedAt && !body.forceOverwrite && task.updated_at) {
+    const serverUpdatedMs = new Date(task.updated_at).getTime();
+    const clientExpectedMs = new Date(body.expectedUpdatedAt).getTime();
+    if (serverUpdatedMs - clientExpectedMs > 2000) {
+      return c.json({
+        error: 'تعارض في التعديل: قام عضو آخر في الفريق بتحديث هذه المهمة أثناء قيامك بالعمل عليها. تم منع الكتابة فوق التعديل الأحدث للحفاظ على سلامة البيانات.',
+        code: 'CONCURRENT_MODIFICATION_CONFLICT',
+        latestTask: toCamelCase(task)
+      }, 409);
+    }
+  }
+
   const updates = {};
   
   const fieldMap = { 

@@ -86,8 +86,8 @@ app.patch('/me', async (c) => {
     if (typeof body.avatarUrl !== 'string') {
       return c.json({ error: 'صيغة رابط الصورة الشخصية غير صالحة' }, 400);
     }
-    if (body.avatarUrl.length > 3.5 * 1024 * 1024) {
-      return c.json({ error: 'حجم الصورة يتجاوز الحد الأقصى المسموح به (2MB)' }, 400);
+    if (body.avatarUrl.length > 250 * 1024) {
+      return c.json({ error: 'حجم بيانات الصورة كبير جداً ويتجاوز الحد الأقصى المسموح به (250KB). يرجى ضغط الصورة.' }, 400);
     }
     const isSafeRaster = /^data:image\/(png|jpeg|jpg|webp|gif);base64,/i.test(body.avatarUrl);
     const isHttps = body.avatarUrl.startsWith('https://');

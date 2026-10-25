@@ -108,7 +108,24 @@ export async function handleSubmit(event) {
       }
 
       const isEdit = !!taskId;
-      const result = await api(isEdit ? `/api/tasks/${taskId}` : '/api/tasks', { method: isEdit ? 'PATCH' : 'POST', body: JSON.stringify(values) });
+      if (isEdit) {
+        const existing = (state.data?.tasks || []).find(t => t.id === taskId);
+        if (existing?.updatedAt) {
+          values.expectedUpdatedAt = existing.updatedAt;
+        }
+      }
+
+      let result;
+      try {
+        result = await api(isEdit ? `/api/tasks/${taskId}` : '/api/tasks', { method: isEdit ? 'PATCH' : 'POST', body: JSON.stringify(values) });
+      } catch (err) {
+        if (err.message && err.message.includes('تعارض')) {
+          await refreshView(true);
+          showToast(err.message, true);
+          return;
+        }
+        throw err;
+      }
       if (result.task) {
         if (!state.data.tasks) state.data.tasks = [];
         if (isEdit) {
@@ -1331,26 +1348,53 @@ export async function handleChange(event) {
 function fileToDataUrl(file, maxWidth = 300, maxHeight = 300) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onerror = reject;
+    reader.onerror = () => reject(new Error(choose('فشل قراءة ملف الصورة.', 'Failed to read image file.')));
     reader.onload = () => {
       const img = new Image();
-      img.onerror = () => resolve(reader.result);
+      img.onerror = () => reject(new Error(choose('صيغة الصورة تالفة أو غير صالحة.', 'Corrupted or invalid image format.')));
       img.onload = () => {
         try {
-          let { width, height } = img;
+          const natW = img.naturalWidth || img.width;
+          const natH = img.naturalHeight || img.height;
+
+          // 1. Guard against Image Decompression Bombs & Pixel Flood attacks
+          if (natW > 4096 || natH > 4096 || (natW * natH > 16000000)) {
+            reject(new Error(choose('أبعاد الصورة ضخمة جداً وغير آمنة (Pixel Flood Blocked). يرجى اختيار صورة قياسية.', 'Image dimensions too large (Pixel Flood Blocked). Please select a standard image.')));
+            return;
+          }
+
+          let width = natW;
+          let height = natH;
           if (width > maxWidth || height > maxHeight) {
             const ratio = Math.min(maxWidth / width, maxHeight / height);
             width = Math.round(width * ratio);
             height = Math.round(height * ratio);
           }
+
           const canvas = document.createElement('canvas');
           canvas.width = width;
           canvas.height = height;
           const ctx = canvas.getContext('2d');
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = 'high';
           ctx.drawImage(img, 0, 0, width, height);
-          resolve(canvas.toDataURL(file.type === 'image/png' ? 'image/png' : 'image/jpeg', 0.88));
+
+          // 2. Compress to modern lightweight WebP (or JPEG fallback)
+          let outputFormat = 'image/webp';
+          let dataUrl = canvas.toDataURL(outputFormat, 0.82);
+          if (!dataUrl.startsWith('data:image/webp')) {
+            outputFormat = 'image/jpeg';
+            dataUrl = canvas.toDataURL(outputFormat, 0.82);
+          }
+
+          // 3. Enforce strict Base64 payload limit to eliminate Database Bloat
+          if (dataUrl.length > 180 * 1024) {
+            dataUrl = canvas.toDataURL(outputFormat, 0.65);
+          }
+
+          resolve(dataUrl);
         } catch (e) {
-          resolve(reader.result);
+          reject(new Error(choose('تعذر معالجة وضغط الصورة.', 'Failed to process and compress image.')));
         }
       };
       img.src = reader.result;
