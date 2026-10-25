@@ -409,12 +409,13 @@ BEGIN
 END $$;
 
 -- ==============================================================================
--- 8. HIGH-PERFORMANCE ACTIVE RECORD VIEWS
+-- 8. HIGH-PERFORMANCE ACTIVE RECORD VIEWS (SECURITY INVOKER ENABLED)
+-- Enforces Postgres RLS policies of the querying user rather than the view creator
 -- ==============================================================================
-CREATE OR REPLACE VIEW active_projects AS SELECT * FROM projects WHERE deleted_at IS NULL;
-CREATE OR REPLACE VIEW active_tasks AS SELECT * FROM tasks WHERE deleted_at IS NULL;
-CREATE OR REPLACE VIEW active_documents AS SELECT * FROM documents WHERE deleted_at IS NULL;
-CREATE OR REPLACE VIEW active_users AS SELECT * FROM users WHERE deleted_at IS NULL;
+CREATE OR REPLACE VIEW active_projects WITH (security_invoker = true) AS SELECT * FROM projects WHERE deleted_at IS NULL;
+CREATE OR REPLACE VIEW active_tasks WITH (security_invoker = true) AS SELECT * FROM tasks WHERE deleted_at IS NULL;
+CREATE OR REPLACE VIEW active_documents WITH (security_invoker = true) AS SELECT * FROM documents WHERE deleted_at IS NULL;
+CREATE OR REPLACE VIEW active_users WITH (security_invoker = true) AS SELECT * FROM users WHERE deleted_at IS NULL;
 
 -- ==============================================================================
 -- 9. ROW LEVEL SECURITY (RLS) & DEFENSE-IN-DEPTH SUITE
