@@ -305,8 +305,8 @@ app.use('/api/*', async (c, next) => {
   const path = c.req.path;
   const method = c.req.method;
 
-  // 1. Allow routes specifically wired for demo: /api/bootstrap, /api/demo/reset, /api/tasks
-  if (path === '/api/bootstrap' || path.startsWith('/api/demo') || path.startsWith('/api/tasks')) {
+  // 1. Allow routes specifically wired for demo: /api/bootstrap, /api/demo/reset, /api/tasks, /api/documents
+  if (path === '/api/bootstrap' || path.startsWith('/api/demo') || path.startsWith('/api/tasks') || path.startsWith('/api/documents')) {
     return next();
   }
 

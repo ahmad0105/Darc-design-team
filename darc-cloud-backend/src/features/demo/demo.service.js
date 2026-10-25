@@ -1,18 +1,40 @@
 import { createDemoDataset } from './demo.data.js';
 
-// In-memory isolated state for demo sessions
+// Auto-cleanup interval: Exactly 15 minutes (900,000 ms)
+// Automatically purges all demo mutations and restores pristine showcase state
+export const DEMO_RESET_INTERVAL_MS = 15 * 60 * 1000;
+let _lastResetTime = Date.now();
 let _demoStore = createDemoDataset();
 
+export function checkAndAutoReset() {
+  const now = Date.now();
+  if (now - _lastResetTime >= DEMO_RESET_INTERVAL_MS) {
+    _demoStore = createDemoDataset();
+    _lastResetTime = now;
+    return true;
+  }
+  return false;
+}
+
 export function getDemoPayload() {
-  return JSON.parse(JSON.stringify(_demoStore));
+  checkAndAutoReset();
+  const payload = JSON.parse(JSON.stringify(_demoStore));
+  payload.isDemo = true;
+  payload.demoExpiresIn = Math.max(0, Math.floor((_lastResetTime + DEMO_RESET_INTERVAL_MS - Date.now()) / 1000));
+  return payload;
 }
 
 export function resetDemoPayload() {
   _demoStore = createDemoDataset();
-  return JSON.parse(JSON.stringify(_demoStore));
+  _lastResetTime = Date.now();
+  const payload = JSON.parse(JSON.stringify(_demoStore));
+  payload.isDemo = true;
+  payload.demoExpiresIn = Math.floor(DEMO_RESET_INTERVAL_MS / 1000);
+  return payload;
 }
 
 export function applyDemoTaskUpdate(taskId, updates) {
+  checkAndAutoReset();
   const task = _demoStore.tasks.find(t => t.id === taskId);
   if (task) {
     Object.assign(task, updates, { updatedAt: new Date().toISOString() });
@@ -34,6 +56,7 @@ export function applyDemoTaskUpdate(taskId, updates) {
 }
 
 export function createDemoTask(taskData) {
+  checkAndAutoReset();
   const newTask = {
     id: 'tsk_demo_' + Math.random().toString(36).substr(2, 6),
     projectId: taskData.projectId || 'prj_demo_villa',
@@ -54,4 +77,22 @@ export function createDemoTask(taskData) {
   };
   _demoStore.tasks.unshift(newTask);
   return newTask;
+}
+
+export function addDemoDocument(docData) {
+  checkAndAutoReset();
+  const newDoc = {
+    id: 'doc_demo_' + Math.random().toString(36).substr(2, 6),
+    projectId: docData.projectId || 'prj_demo_villa',
+    taskId: docData.taskId || null,
+    uploaderId: 'usr_demo',
+    originalName: docData.originalName || docData.compiledName || docData.name || 'مخطط معماري تجريبي.pdf',
+    diskFilename: 'https://demo-mock-files.darc-design.bond/samples/drawing_sample.pdf',
+    mimeType: docData.mimeType || 'application/pdf',
+    size: Number(docData.size) || 1024 * 512,
+    status: 'review',
+    createdAt: new Date().toISOString()
+  };
+  _demoStore.documents.unshift(newDoc);
+  return newDoc;
 }

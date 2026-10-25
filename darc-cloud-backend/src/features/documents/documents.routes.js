@@ -11,13 +11,16 @@ import { hasPermission, isProjectVisible } from '../../utils/permissions.js';
 import { toCamelCase } from '../../utils/transformers.js';
 import { generateSecureId } from '../../core/security.js';
 import { invalidateBootstrapCache } from '../../core/cache.js';
+import { inspectFileBuffer } from '../../core/antivirus.js';
+import { addDemoDocument } from '../demo/demo.service.js';
 
 const DANGEROUS_EXTENSIONS = new Set([
   'exe', 'bat', 'cmd', 'sh', 'bash', 'ps1', 'vbs', 'js', 'mjs', 'cjs',
   'py', 'php', 'phtml', 'php3', 'php4', 'php5', 'phps', 'html', 'htm',
   'xhtml', 'jar', 'msi', 'dll', 'com', 'scr', 'hta', 'svg', 'apk', 'app',
   'deb', 'rpm', 'vbe', 'wsf', 'wsh', 'jsp', 'asp', 'aspx', 'cgi', 'pl',
-  'elf', 'bin', 'reg', 'gadget'
+  'elf', 'bin', 'reg', 'gadget', 'docm', 'xlsm', 'pptm', 'dotm', 'xltm',
+  'inf', 'ins', 'sct', 'wsc', 'cpl', 'msc', 'msp', 'mst', 'pif', 'application'
 ]);
 
 export function isDangerousFile(filename, mimeType = '') {
@@ -309,18 +312,17 @@ app.post('/finalize', async (c) => {
   const supabase = c.get('supabase');
 
   if (isDemo) {
+    const demoDoc = addDemoDocument({
+      projectId,
+      taskId,
+      compiledName,
+      mimeType,
+      size
+    });
     return c.json({
       ok: true,
       isDemo: true,
-      document: {
-        id: 'doc_demo_' + Math.random().toString(36).substr(2, 6),
-        originalName: compiledName || 'مستند تجريبي جديد.pdf',
-        mimeType: mimeType || 'application/pdf',
-        size: Number(size) || 1024 * 1024,
-        diskFilename: 'https://drive.google.com/file/d/demo_showcase_file/view',
-        status: 'review',
-        createdAt: new Date().toISOString()
-      }
+      document: demoDoc
     });
   }
 
@@ -544,18 +546,17 @@ app.post('/', async (c) => {
   }
 
   if (isDemo) {
+    const demoDoc = addDemoDocument({
+      projectId,
+      taskId,
+      originalName: compiledName || file?.name,
+      mimeType: file?.type,
+      size: file?.size
+    });
     return c.json({
       ok: true,
       isDemo: true,
-      document: {
-        id: 'doc_demo_' + Math.random().toString(36).substr(2, 6),
-        originalName: compiledName || file?.name || 'مستند تجريبي جديد.pdf',
-        mimeType: file?.type || 'application/pdf',
-        size: file?.size || 1024 * 1024,
-        diskFilename: 'https://drive.google.com/file/d/demo_showcase_file/view',
-        status: 'review',
-        createdAt: new Date().toISOString()
-      }
+      document: demoDoc
     });
   }
 
@@ -573,6 +574,10 @@ app.post('/', async (c) => {
     }
 
     const arrayBuffer = await file.arrayBuffer();
+    const avScan = inspectFileBuffer(arrayBuffer);
+    if (avScan.isMalware) {
+      return c.json({ error: avScan.reason, code: 'MALWARE_DETECTED' }, 400);
+    }
     const targetFolderId = await resolveTargetFolder(c.env, supabase, { projectId, taskId });
     const driveResult = await uploadToGoogleDrive(c.env, arrayBuffer, compiledName, file.type, targetFolderId);
     
