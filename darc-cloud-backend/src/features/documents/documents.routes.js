@@ -255,12 +255,12 @@ app.post('/session', async (c) => {
   const roleId = c.get('roleId');
   const supabase = c.get('supabase');
 
-  const MAX_PROD_UPLOAD_SIZE = 250 * 1024 * 1024; // 250MB for production
+  const MAX_PROD_UPLOAD_SIZE = 10 * 1024 * 1024 * 1024; // 10GB for production (CAD, BIM models, 3D point-clouds)
   const MAX_DEMO_UPLOAD_SIZE = 10 * 1024 * 1024;  // 10MB strictly for demo account
   const maxSize = isDemo ? MAX_DEMO_UPLOAD_SIZE : MAX_PROD_UPLOAD_SIZE;
 
   if (size && Number(size) > maxSize) {
-    const limitLabel = isDemo ? '10MB (بيئة العرض التجريبية)' : '250MB';
+    const limitLabel = isDemo ? '10MB (بيئة العرض التجريبية)' : '10GB';
     return c.json({ error: `حجم الملف يتجاوز الحد الأقصى المسموح به (${limitLabel}).` }, 413);
   }
 
