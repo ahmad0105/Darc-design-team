@@ -23,7 +23,7 @@ yarn-debug.log*
 Thumbs.db
 
 # Dev & Scratch scripts
-scripts/
+/scripts/
 tests/
 test*.js
 test*.html
