@@ -1,0 +1,79 @@
+name: Daily Encrypted Database Backup to Google Drive
+
+on:
+  schedule:
+    # Runs daily at 02:00 AM UTC (5:00 AM Riyadh / 6:00 AM Dubai)
+    - cron: '0 2 * * *'
+  workflow_dispatch: # Allows manual trigger at any time from GitHub Actions UI
+
+concurrency:
+  group: backup-daily
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    name: Database Dump, AES-256 Encrypt & Drive Upload
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js Environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install PostgreSQL Client Tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends postgresql-client
+
+      - name: Extract Atomic Database Dump & Encrypt (AES-256-CBC)
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          BACKUP_ENCRYPTION_KEY: ${{ secrets.BACKUP_ENCRYPTION_KEY }}
+        run: |
+          if [ -z "$SUPABASE_DB_URL" ]; then
+            echo "❌ ERROR: SUPABASE_DB_URL secret is not set."
+            exit 1
+          fi
+          if [ -z "$BACKUP_ENCRYPTION_KEY" ]; then
+            echo "❌ ERROR: BACKUP_ENCRYPTION_KEY secret is not set."
+            exit 1
+          fi
+
+          TIMESTAMP=$(date -u +"%Y-%m-%d_%H-%M-UTC")
+          BACKUP_NAME="darc_backup_${TIMESTAMP}"
+          echo "TIMESTAMP=${TIMESTAMP}" >> $GITHUB_ENV
+          echo "BACKUP_NAME=${BACKUP_NAME}" >> $GITHUB_ENV
+
+          echo "📦 Extracting consistent database dump from Supabase..."
+          pg_dump --clean --if-exists --no-owner --no-privileges -d "$SUPABASE_DB_URL" | gzip -9 > "${BACKUP_NAME}.sql.gz"
+
+          echo "🔒 Encrypting backup with OpenSSL AES-256-CBC (PBKDF2 100k iterations)..."
+          openssl enc -aes-256-cbc -salt -pbkdf2 -iter 100000 \
+            -in "${BACKUP_NAME}.sql.gz" \
+            -out "${BACKUP_NAME}.sql.gz.enc" \
+            -pass env:BACKUP_ENCRYPTION_KEY
+
+          echo "🛡️ Generating SHA-256 integrity checksum..."
+          sha256sum "${BACKUP_NAME}.sql.gz.enc" > "${BACKUP_NAME}.sql.gz.enc.sha256"
+
+          # Remove unencrypted plain archive immediately
+          rm -f "${BACKUP_NAME}.sql.gz"
+
+          echo "✅ Encrypted artifact ready: ${BACKUP_NAME}.sql.gz.enc ($(du -h "${BACKUP_NAME}.sql.gz.enc" | cut -f1))"
+
+      - name: Upload Encrypted Artifacts to Google Drive
+        env:
+          GDRIVE_SA_KEY: ${{ secrets.GDRIVE_SA_KEY }}
+          GDRIVE_FOLDER_ID: ${{ secrets.GDRIVE_FOLDER_ID }}
+        run: |
+          node .github/scripts/upload-to-gdrive.mjs "${BACKUP_NAME}.sql.gz.enc" "${BACKUP_NAME}.sql.gz.enc.sha256"
+
+      - name: Cleanup Temporary Artifacts
+        if: always()
+        run: |
+          rm -f darc_backup_*.sql.gz*
