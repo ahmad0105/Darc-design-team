@@ -365,11 +365,41 @@ export async function handleClick(event) {
     if (btn?.dataset?.autosubmit === 'true') {
       const loginForm = document.getElementById('login-form');
       if (loginForm) {
-        if (typeof loginForm.requestSubmit === 'function') {
-          loginForm.requestSubmit();
-        } else {
-          loginForm.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+        const getTurnstileToken = () => {
+          if (typeof window !== 'undefined' && window.turnstile && window._turnstileWidgetId !== undefined) {
+            return window.turnstile.getResponse(window._turnstileWidgetId);
+          }
+          return null;
+        };
+
+        const executeSubmit = () => {
+          if (typeof loginForm.requestSubmit === 'function') {
+            loginForm.requestSubmit();
+          } else {
+            loginForm.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+          }
+        };
+
+        const currentToken = getTurnstileToken();
+        if (!currentToken && typeof window !== 'undefined' && window.turnstile) {
+          btn.disabled = true;
+          const origHtml = btn.innerHTML;
+          btn.innerHTML = `<span>⏳ ${choose('جاري التحقق من أمان المتصفح...', 'Verifying browser security...')}</span>`;
+          let attempts = 0;
+          const checkTimer = setInterval(() => {
+            attempts++;
+            const t = getTurnstileToken();
+            if (t || attempts > 20) {
+              clearInterval(checkTimer);
+              btn.disabled = false;
+              btn.innerHTML = origHtml;
+              executeSubmit();
+            }
+          }, 100);
+          return;
         }
+
+        executeSubmit();
       }
     }
     return;
@@ -992,6 +1022,34 @@ export async function handleClick(event) {
     exportProjectXLS(target.dataset.projectId);
     return;
   }
+  if (action === 'export-audit-xls') {
+    if (!can('view_audit_logs') && !isAdmin()) {
+      showToast(choose('ليس لديك صلاحية لتصدير سجل الرقابة.', 'You do not have permission to export audit logs.'), true);
+      return;
+    }
+    exportAuditLogsXLS();
+    return;
+  }
+  if (action === 'print-audit-pdf') {
+    if (!can('view_audit_logs') && !isAdmin()) {
+      showToast(choose('ليس لديك صلاحية لطباعة سجل الرقابة.', 'You do not have permission to print audit logs.'), true);
+      return;
+    }
+    printAuditReport();
+    return;
+  }
+  if (action === 'load-full-audit') {
+    fetchFullAuditHistory();
+    return;
+  }
+  if (action === 'reset-audit-filters') {
+    state.auditFilterAction = 'all';
+    state.auditFilterEntity = 'all';
+    state.auditFilterUser = 'all';
+    state.auditSearchQuery = '';
+    renderView();
+    return;
+  }
 }
 
 let _searchDebounceTimer = null;
@@ -1047,6 +1105,18 @@ export function handleInput(event) {
     return;
   }
 
+  if (event.target.dataset.action === 'search-audit-input') {
+    state.auditSearchQuery = event.target.value;
+    const cursor = event.target.selectionStart;
+    clearTimeout(_searchDebounceTimer);
+    _searchDebounceTimer = setTimeout(() => {
+      renderView();
+      const next = document.querySelector('[data-action="search-audit-input"]');
+      if (next) { next.focus(); next.setSelectionRange(cursor, cursor); }
+    }, 120);
+    return;
+  }
+
   const search = event.target.dataset.search || (event.target.dataset.action === 'search-documents' ? 'documents' : null);
   if (!search) return;
   state.searches[search] = event.target.value;
@@ -1087,6 +1157,24 @@ export async function handleChange(event) {
 
   if (event.target.dataset.action === 'filter-project-docs-task') {
     state.docTaskFilter = event.target.value;
+    renderView();
+    return;
+  }
+
+  if (event.target.dataset.action === 'filter-audit-action') {
+    state.auditFilterAction = event.target.value;
+    renderView();
+    return;
+  }
+
+  if (event.target.dataset.action === 'filter-audit-entity') {
+    state.auditFilterEntity = event.target.value;
+    renderView();
+    return;
+  }
+
+  if (event.target.dataset.action === 'filter-audit-user') {
+    state.auditFilterUser = event.target.value;
     renderView();
     return;
   }

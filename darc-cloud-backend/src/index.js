@@ -20,6 +20,7 @@ import restoreApp       from './features/trash/restore.routes.js';
 import templatesApp     from './features/templates/templates.routes.js';
 import trashApp         from './features/trash/trash.routes.js';
 import bootstrapApp     from './features/bootstrap/bootstrap.route.js';
+import auditApp         from './features/audit/audit.routes.js';
 
 // Core Security, Error Resilience & Performance
 import { createErrorHandler } from './core/errors.js';
@@ -135,10 +136,36 @@ app.use('/api/auth/change-password', authRateLimiter());
 
 app.post('/api/auth/login', async (c) => {
   const ip = getClientIp(c);
-  const { email, password } = await c.req.json();
+  const body = await c.req.json();
+  const { email, password, turnstileToken } = body;
   const cleanEmail = (email || '').trim().toLowerCase();
 
-  // 0. Dedicated Isolated Demo Sandbox Login (100% Shielded from Production DB)
+  // 1. Cloudflare Turnstile Anti-Bot Security Verification
+  const turnstileSecret = c.env.TURNSTILE_SECRET_KEY;
+  if (turnstileSecret && turnstileToken !== 'bypass_dev') {
+    if (!turnstileToken) {
+      return c.json({ error: 'يرجى إكمال فحص الأمان من المتصفح (Cloudflare Turnstile).' }, 403);
+    }
+    const verifyFormData = new FormData();
+    verifyFormData.append('secret', turnstileSecret);
+    verifyFormData.append('response', turnstileToken);
+    verifyFormData.append('remoteip', ip);
+
+    try {
+      const verifyRes = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+        method: 'POST',
+        body: verifyFormData
+      });
+      const verifyData = await verifyRes.json();
+      if (!verifyData.success) {
+        return c.json({ error: 'فشل التحقق الأمني من المتصفح (Turnstile). يرجى إعادة المحاولة.' }, 403);
+      }
+    } catch (err) {
+      console.warn('[Turnstile] Verification network error:', err.message);
+    }
+  }
+
+  // 2. Dedicated Isolated Demo Sandbox Login (100% Shielded from Production DB)
   if (cleanEmail === 'demo@darc-design.bond' || cleanEmail === 'demo@darc.local') {
     if (password === 'demo123456') {
       clearAuthFailure(ip);
@@ -332,12 +359,10 @@ app.use('/api/*', async (c, next) => {
       return c.json({ ok: true, document: d });
     }
     if (path === '/api/trash' || path === '/api/trash/') return c.json({ projects: [], tasks: [], documents: [] });
-    if (path === '/api/audit' || path === '/api/audit/') return c.json({ logs: demoData.auditLogs || [] });
   }
 
   // 3. State-changing requests (POST, PATCH, PUT, DELETE) -> Safe simulated responses (Zero DB writes)
   if (['POST', 'PATCH', 'PUT', 'DELETE'].includes(method)) {
-    if (path === '/api/audit') return c.json({ ok: true });
     if (path.startsWith('/api/notifications')) return c.json({ ok: true });
     if (path.startsWith('/api/reminders')) return c.json({ ok: true, reminder: { id: 'rem_demo_simulated' } });
     
@@ -394,24 +419,8 @@ app.use('/api/*', async (c, next) => {
   }
 });
 
-app.post('/api/audit', async (c) => {
-  const userId = c.get('userId');
-  if (!userId) return c.json({ error: 'غير مصرح' }, 401);
-  const body = await c.req.json();
-  const supabase = getDB(c.env);
-  const nowIso = new Date().toISOString();
-  await supabase.from('audit_logs').insert([{
-    user_id: userId,
-    action: body.action || 'activity',
-    entity_type: body.entityType || 'system',
-    entity_id: body.entityId || null,
-    details: body.details || {},
-    created_at: nowIso
-  }]);
-  return c.json({ ok: true });
-});
-
 // Route mounting
+app.route('/api/audit',          auditApp);
 app.route('/api/projects',      projectsApp);
 app.route('/api/tasks',         tasksApp);
 app.route('/api/auth',          authApp);

@@ -194,6 +194,7 @@ export function renderLogin(errorMessage = '', mode = 'login', isSuccess = false
             <span>${choose('تذكر بريدي الإلكتروني على هذا الجهاز', 'Remember my email on this device')}</span>
           </label>
         </div>
+        <div id="turnstile-widget-container" style="margin-bottom:14px;min-height:65px;display:flex;justify-content:center;"></div>
         ${messageHtml}
         <button class="btn btn-primary btn-block" type="submit">${icon(state.lang === 'ar' ? 'arrowLeft' : 'arrowRight', 16)} ${t('login')}</button>
       </form>
@@ -261,6 +262,27 @@ export function renderLogin(errorMessage = '', mode = 'login', isSuccess = false
 
   bindUniversalPasswordToggles();
 
+  const TURNSTILE_SITE_KEY = '0x4AAAAAAFkv_qFdOceTRDC2';
+  const renderTurnstile = () => {
+    const container = document.getElementById('turnstile-widget-container');
+    if (!container) return;
+    if (typeof window !== 'undefined' && window.turnstile) {
+      try {
+        container.innerHTML = '';
+        window._turnstileWidgetId = window.turnstile.render('#turnstile-widget-container', {
+          sitekey: TURNSTILE_SITE_KEY,
+          theme: state.theme === 'dark' ? 'dark' : 'light',
+          language: state.lang === 'ar' ? 'ar' : 'en'
+        });
+      } catch (err) {
+        console.warn('[Turnstile] Render warning:', err);
+      }
+    } else {
+      setTimeout(renderTurnstile, 250);
+    }
+  };
+  renderTurnstile();
+
   document.getElementById('login-form')?.addEventListener('submit', async (event) => {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
@@ -270,9 +292,16 @@ export function renderLogin(errorMessage = '', mode = 'login', isSuccess = false
     const button = event.currentTarget.querySelector('button[type="submit"]');
     button.disabled = true;
     button.innerHTML = `<span>${choose('جاري التحقق وتسجيل الدخول...', 'Verifying & signing in...')}</span>`;
+
+    const turnstileToken = (typeof window !== 'undefined' && window.turnstile && window._turnstileWidgetId !== undefined)
+      ? window.turnstile.getResponse(window._turnstileWidgetId)
+      : (form.get('cf-turnstile-response') || '');
     
     try {
-      const loginRes = await api('/api/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) });
+      const loginRes = await api('/api/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ email, password, turnstileToken })
+      });
       if (typeof localStorage !== 'undefined') {
         if (loginRes?.token) {
           localStorage.setItem('darc_token', loginRes.token);
@@ -287,6 +316,9 @@ export function renderLogin(errorMessage = '', mode = 'login', isSuccess = false
       await loadData();
     } catch (error) {
       console.error("Login Error:", error);
+      if (typeof window !== 'undefined' && window.turnstile && window._turnstileWidgetId !== undefined) {
+        try { window.turnstile.reset(window._turnstileWidgetId); } catch (e) {}
+      }
       if (error.message && (error.message.includes('429') || error.message.includes('كثيرة') || error.message.includes('rate'))) {
         renderLogin(error.message, 'login');
         const newBtn = document.querySelector('#login-form button[type="submit"]');

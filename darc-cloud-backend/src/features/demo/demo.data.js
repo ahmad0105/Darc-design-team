@@ -464,8 +464,8 @@ export function createDemoDataset() {
       action: 'create',
       entityType: 'document',
       entityId: 'doc_demo_01',
-      details: { name: 'DARC-VILLA-ARCH-A101_Rev03.pdf', status: 'approved' },
-      createdAt: dateStr(-15)
+      details: { name: 'DARC-VILLA-ARCH-A101_Rev03.pdf', status: 'approved', discipline: 'معماري' },
+      createdAt: dateStr(-12)
     },
     {
       id: 'aud_demo_02',
@@ -473,16 +473,52 @@ export function createDemoDataset() {
       action: 'update',
       entityType: 'task',
       entityId: 'tsk_demo_02',
-      details: { status: 'review', progress: 80 },
-      createdAt: dateStr(-1)
+      details: { title: 'مخططات الأسقف وتوزيع الإنارة المودرن', oldStatus: 'in_progress', newStatus: 'review', progress: 80 },
+      createdAt: dateStr(-4)
     },
     {
       id: 'aud_demo_03',
+      userId: 'usr_demo_struct',
+      action: 'create',
+      entityType: 'document',
+      entityId: 'doc_demo_04',
+      details: { name: 'DARC-MALL-STRUCT-CALC_S200.pdf', size: 18450000, discipline: 'إنشائي' },
+      createdAt: dateStr(-3)
+    },
+    {
+      id: 'aud_demo_04',
+      userId: 'usr_demo_mep',
+      action: 'status_change',
+      entityType: 'task',
+      entityId: 'tsk_demo_04',
+      details: { title: 'شبكة التكييف المركزي HVAC ومجاري الهواء', oldStatus: 'review', newStatus: 'approval' },
+      createdAt: dateStr(-2)
+    },
+    {
+      id: 'aud_demo_05',
+      userId: 'usr_demo',
+      action: 'export_report',
+      entityType: 'report',
+      entityId: 'rep_portfolio_01',
+      details: { reportType: 'Portfolio_Progress_Excel', totalProjects: 3 },
+      createdAt: dateStr(-1)
+    },
+    {
+      id: 'aud_demo_06',
+      userId: 'usr_demo_3d',
+      action: 'create',
+      entityType: 'document',
+      entityId: 'doc_demo_03',
+      details: { name: 'DARC_CGI_Render_Perspective_4K.jpg', size: 12500000 },
+      createdAt: dateStr(-1)
+    },
+    {
+      id: 'aud_demo_07',
       userId: 'usr_demo',
       action: 'login',
       entityType: 'user',
       entityId: 'usr_demo',
-      details: { client: 'Web App', ip: 'Edge Session' },
+      details: { client: 'Edge Web Portal', authMode: 'Cloudflare Turnstile Verified', ip: 'Edge Session' },
       createdAt: dateStr(0)
     }
   ];

@@ -174,6 +174,428 @@ function renderAuditDetails(log) {
   return { badgeClass, actionLabel, entityLabel, detailHtml };
 }
 
+export function exportAuditLogsXLS(logs = null) {
+  const currentLogs = logs || state._lastFilteredAuditLogs || state.data?.auditLogs || [];
+  if (!currentLogs.length) {
+    showToast(choose('لا توجد عمليات لتصديرها.', 'No logs to export.'), true);
+    return;
+  }
+
+  const company = state.data?.company || {};
+  const companyName = choose(company.nameAr || company.name, company.nameEn || company.name) || 'DARC Design Team';
+  const currentUser = state.data?.user || {};
+  const exporterName = choose(currentUser.name, currentUser.nameEn || currentUser.name) || 'Admin';
+  const reportDate = new Date().toLocaleDateString(state.lang === 'ar' ? 'ar-SA' : 'en-US', { dateStyle: 'full' });
+  const reportTime = new Date().toLocaleTimeString(state.lang === 'ar' ? 'ar-SA' : 'en-US', { timeStyle: 'medium' });
+
+  let tableHtml = `
+    <table>
+      <tr>
+        <th colspan="7" class="title" style="font-size:18px;font-weight:bold;background:#0d6269;color:#ffffff;text-align:center;padding:12px;">
+          ${choose('سجل الرقابة والتدقيق الأمني والعمليات — فريق دارك الهندسي', 'Audit & Security Trail Report — DARC Design Team')}
+        </th>
+      </tr>
+      <tr>
+        <th colspan="7" class="subtitle" style="font-size:13px;background:#eef2f2;color:#1e293b;text-align:center;padding:8px;">
+          ${choose('المؤسسة:', 'Company:')} ${esc(companyName)} | ${choose('المشرف المستخرج:', 'Exported by:')} ${esc(exporterName)} | ${choose('تاريخ التصدير:', 'Export Date:')} ${esc(reportDate)} ${esc(reportTime)}
+        </th>
+      </tr>
+      <tr>
+        <th colspan="7" style="background:#f8fafc;color:#64748b;font-size:11px;text-align:center;padding:6px;">
+          ${choose('إجمالي العمليات المضمنة في التقرير:', 'Total Events in Report:')} ${currentLogs.length} ${choose('عملية', 'events')}
+        </th>
+      </tr>
+      <tr style="height:10px;"><td colspan="7" style="border:none;"></td></tr>
+      <tr class="header" style="background:#134e4a;color:#ffffff;font-weight:bold;font-size:12px;text-align:center;">
+        <th style="padding:8px;border:1px solid #cbd5e1;">${choose('المعرف', 'ID')}</th>
+        <th style="padding:8px;border:1px solid #cbd5e1;">${choose('التاريخ والوقت', 'Date & Time')}</th>
+        <th style="padding:8px;border:1px solid #cbd5e1;">${choose('المنفذ / المستخدم', 'Actor')}</th>
+        <th style="padding:8px;border:1px solid #cbd5e1;">${choose('الدور الوظيفي', 'Role')}</th>
+        <th style="padding:8px;border:1px solid #cbd5e1;">${choose('نوع النشاط', 'Action')}</th>
+        <th style="padding:8px;border:1px solid #cbd5e1;">${choose('نوع العنصر', 'Entity')}</th>
+        <th style="padding:8px;border:1px solid #cbd5e1;">${choose('التفاصيل والتغييرات', 'Details / Context')}</th>
+      </tr>
+  `;
+
+  currentLogs.forEach((log, index) => {
+    const author = log.user || (log.userId ? (state.data?.users || []).find(u => u.id === log.userId) : null);
+    const authorName = author ? choose(author.name, author.nameEn || author.name) : choose('النظام', 'System');
+    const authorRole = author ? roleName(author) : '—';
+    const dt = formatAuditTimestamp(log.createdAt);
+    const { actionLabel, entityLabel } = renderAuditDetails(log);
+    
+    let detailsStr = '';
+    if (log.details?.title || log.details?.name) {
+      detailsStr = log.details.title || log.details.name;
+    } else if (log.action === 'status_change') {
+      detailsStr = `${statusText(log.details?.oldStatus)} ➔ ${statusText(log.details?.newStatus)}`;
+    } else if (typeof log.details === 'object') {
+      detailsStr = JSON.stringify(log.details);
+    } else {
+      detailsStr = String(log.details || log.entityId || '—');
+    }
+
+    const rowBg = index % 2 === 0 ? '#ffffff' : '#f8fafc';
+
+    tableHtml += `
+      <tr style="background:${rowBg};font-size:11px;vertical-align:middle;">
+        <td style="padding:6px 8px;border:1px solid #e2e8f0;font-family:monospace;text-align:center;">${esc(log.id || '—')}</td>
+        <td style="padding:6px 8px;border:1px solid #e2e8f0;text-align:center;">${esc(dt.date)} ${esc(dt.time)}</td>
+        <td style="padding:6px 8px;border:1px solid #e2e8f0;font-weight:bold;">${esc(authorName)}</td>
+        <td style="padding:6px 8px;border:1px solid #e2e8f0;">${esc(authorRole)}</td>
+        <td style="padding:6px 8px;border:1px solid #e2e8f0;text-align:center;">${esc(actionLabel)}</td>
+        <td style="padding:6px 8px;border:1px solid #e2e8f0;text-align:center;">${esc(entityLabel)}</td>
+        <td style="padding:6px 8px;border:1px solid #e2e8f0;">${esc(detailsStr)}</td>
+      </tr>
+    `;
+  });
+
+  tableHtml += '</table>';
+
+  const fullHtml = `
+    <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+    <head>
+      <meta charset="utf-8" />
+      <style>
+        table { border-collapse: collapse; font-family: 'Segoe UI', Tahoma, Arial, sans-serif; }
+        th, td { border: 1px solid #cbd5e1; }
+      </style>
+    </head>
+    <body dir="${state.lang === 'ar' ? 'rtl' : 'ltr'}">
+      ${tableHtml}
+    </body>
+    </html>
+  `;
+
+  const blob = new Blob(['\uFEFF' + fullHtml], { type: 'application/vnd.ms-excel;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const dateStamp = new Date().toISOString().split('T')[0];
+  a.download = `DARC_Audit_Trail_${dateStamp}.xls`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+
+  showToast(choose('تم تصدير ملف سجل التدقيق بنجاح.', 'Audit trail exported successfully.'));
+
+  // Log the export action silently in audit trail
+  api('/api/audit', {
+    method: 'POST',
+    body: JSON.stringify({
+      action: 'export_report',
+      entityType: 'report',
+      entityId: `rep_audit_${dateStamp}`,
+      details: { reportType: 'Audit_Logs_Excel', count: currentLogs.length }
+    })
+  }).catch(() => {});
+}
+
+export function printAuditReport(logs = null) {
+  const currentLogs = logs || state._lastFilteredAuditLogs || state.data?.auditLogs || [];
+  if (!currentLogs.length) {
+    showToast(choose('لا توجد عمليات لطباعتها.', 'No logs to print.'), true);
+    return;
+  }
+
+  const company = state.data?.company || {};
+  const companyName = choose(company.nameAr || company.name, company.nameEn || company.name) || 'DARC Design Team';
+  const currentUser = state.data?.user || {};
+  const exporterName = choose(currentUser.name, currentUser.nameEn || currentUser.name) || 'Admin';
+  const reportDate = new Date().toLocaleDateString(state.lang === 'ar' ? 'ar-SA' : 'en-US', { dateStyle: 'full' });
+  const reportTime = new Date().toLocaleTimeString(state.lang === 'ar' ? 'ar-SA' : 'en-US', { timeStyle: 'medium' });
+
+  // Statistical KPIs
+  const totalEvents = currentLogs.length;
+  const createsCount = currentLogs.filter(l => l.action === 'create').length;
+  const updatesCount = currentLogs.filter(l => l.action === 'update' || l.action === 'status_change').length;
+  const deletesCount = currentLogs.filter(l => l.action === 'delete' || l.action === 'purge' || l.action === 'trash').length;
+
+  let rowsHtml = '';
+  currentLogs.forEach((log, index) => {
+    const author = log.user || (log.userId ? (state.data?.users || []).find(u => u.id === log.userId) : null);
+    const authorName = author ? choose(author.name, author.nameEn || author.name) : choose('النظام', 'System');
+    const authorRole = author ? roleName(author) : '—';
+    const dt = formatAuditTimestamp(log.createdAt);
+    const { actionLabel, entityLabel } = renderAuditDetails(log);
+
+    let detailsStr = '';
+    if (log.details?.title || log.details?.name) {
+      detailsStr = log.details.title || log.details.name;
+    } else if (log.action === 'status_change') {
+      detailsStr = `${statusText(log.details?.oldStatus)} ➔ ${statusText(log.details?.newStatus)}`;
+    } else if (typeof log.details === 'object') {
+      detailsStr = JSON.stringify(log.details);
+    } else {
+      detailsStr = String(log.details || log.entityId || '—');
+    }
+
+    rowsHtml += `
+      <tr>
+        <td style="font-family:monospace;font-size:10px;color:#64748b;text-align:center;">${esc(log.id || String(index + 1))}</td>
+        <td style="font-weight:bold;white-space:nowrap;">${esc(dt.date)} <span style="font-size:10px;font-weight:normal;color:#64748b;">${esc(dt.time)}</span></td>
+        <td>
+          <div style="font-weight:bold;color:#0f172a;">${esc(authorName)}</div>
+          <div style="font-size:10px;color:#64748b;">${esc(authorRole)}</div>
+        </td>
+        <td style="text-align:center;">
+          <span class="print-badge">${esc(actionLabel)}</span>
+        </td>
+        <td style="text-align:center;font-weight:600;">${esc(entityLabel)}</td>
+        <td style="font-size:11px;color:#334155;">${esc(detailsStr)}</td>
+      </tr>
+    `;
+  });
+
+  const printWindow = window.open('', '_blank', 'width=1100,height=850');
+  if (!printWindow) {
+    showToast(choose('يرجى السماح بالنوافذ المنبثقة للطباعة.', 'Please allow popups to print report.'), true);
+    return;
+  }
+
+  const printHtml = `
+    <!DOCTYPE html>
+    <html lang="${state.lang}" dir="${state.lang === 'ar' ? 'rtl' : 'ltr'}">
+    <head>
+      <meta charset="utf-8" />
+      <title>DARC Audit & Security Report - ${new Date().toISOString().split('T')[0]}</title>
+      <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet" />
+      <style>
+        @page { size: A4 landscape; margin: 12mm; }
+        * { box-sizing: border-box; }
+        body {
+          font-family: 'Cairo', system-ui, -apple-system, sans-serif;
+          margin: 0;
+          padding: 24px;
+          color: #0f172a;
+          background: #ffffff;
+          font-size: 11px;
+          line-height: 1.4;
+        }
+        .report-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          border-bottom: 2px solid #0d6269;
+          padding-bottom: 14px;
+          margin-bottom: 16px;
+        }
+        .brand-title {
+          font-size: 20px;
+          font-weight: 800;
+          color: #0d6269;
+          margin: 0;
+        }
+        .report-subtitle {
+          font-size: 12px;
+          color: #475569;
+          margin-top: 4px;
+        }
+        .report-meta-box {
+          text-align: ${state.lang === 'ar' ? 'left' : 'right'};
+          font-size: 11px;
+          color: #334155;
+        }
+        .kpi-row {
+          display: flex;
+          gap: 12px;
+          margin-bottom: 16px;
+        }
+        .kpi-card {
+          flex: 1;
+          border: 1px solid #e2e8f0;
+          background: #f8fafc;
+          border-radius: 8px;
+          padding: 8px 12px;
+          text-align: center;
+        }
+        .kpi-val {
+          font-size: 18px;
+          font-weight: 800;
+          color: #0d6269;
+        }
+        .kpi-label {
+          font-size: 10px;
+          color: #64748b;
+          margin-top: 2px;
+        }
+        table {
+          width: 100%;
+          border-collapse: collapse;
+          margin-bottom: 24px;
+        }
+        th, td {
+          border: 1px solid #cbd5e1;
+          padding: 7px 9px;
+          text-align: ${state.lang === 'ar' ? 'right' : 'left'};
+          vertical-align: middle;
+        }
+        th {
+          background: #0d6269;
+          color: #ffffff;
+          font-size: 11px;
+          font-weight: 700;
+          text-align: center;
+        }
+        tr:nth-child(even) {
+          background: #f8fafc;
+        }
+        .print-badge {
+          display: inline-block;
+          padding: 2px 8px;
+          border-radius: 4px;
+          font-size: 10px;
+          font-weight: 700;
+          background: #e2e8f0;
+          color: #1e293b;
+        }
+        .signature-section {
+          margin-top: 32px;
+          display: flex;
+          justify-content: space-between;
+          gap: 30px;
+          page-break-inside: avoid;
+        }
+        .signature-box {
+          flex: 1;
+          border-top: 1px dashed #94a3b8;
+          padding-top: 8px;
+          text-align: center;
+          font-size: 11px;
+          color: #475569;
+        }
+        .no-print-bar {
+          background: #f1f5f9;
+          border: 1px solid #cbd5e1;
+          border-radius: 8px;
+          padding: 10px 16px;
+          margin-bottom: 20px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+        }
+        .btn-print {
+          background: #0d6269;
+          color: #ffffff;
+          border: none;
+          padding: 8px 18px;
+          border-radius: 6px;
+          font-weight: bold;
+          cursor: pointer;
+          font-family: inherit;
+        }
+        @media print {
+          .no-print-bar { display: none !important; }
+          body { padding: 0; }
+        }
+      </style>
+    </head>
+    <body>
+      <div class="no-print-bar">
+        <div>
+          <strong>${choose('معاينة التقرير الرقابي الرسمي جاهزة للطباعة / التصدير PDF', 'Official Executive Audit Report Ready for Print / Save as PDF')}</strong>
+          <span style="display:block;font-size:11px;color:#64748b;">${choose('يمكنك الضغط على زر الطباعة أدناه واختيار "Save as PDF" لتخزين الملف كـ PDF رسمي.', 'Click the button below and choose "Save as PDF" in your browser.')}</span>
+        </div>
+        <button class="btn-print" onclick="window.print()">${choose('طباعة / حفظ كـ PDF', 'Print / Save as PDF')}</button>
+      </div>
+
+      <header class="report-header">
+        <div>
+          <h1 class="brand-title">${esc(companyName)}</h1>
+          <div class="report-subtitle">${choose('تقرير الرقابة والتدقيق الأمني وسجل العمليات الإدارية', 'Official Security Audit & Governance Operations Trail')}</div>
+        </div>
+        <div class="report-meta-box">
+          <div><strong>${choose('المشرف المستخرج:', 'Generated By:')}</strong> ${esc(exporterName)}</div>
+          <div><strong>${choose('تاريخ التقرير:', 'Report Date:')}</strong> ${esc(reportDate)} - ${esc(reportTime)}</div>
+          <div><strong>${choose('حالة النظام:', 'System Status:')}</strong> Active / Enforced</div>
+        </div>
+      </header>
+
+      <div class="kpi-row">
+        <div class="kpi-card">
+          <div class="kpi-val">${totalEvents}</div>
+          <div class="kpi-label">${choose('إجمالي العمليات', 'Total Events')}</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-val" style="color:#059669;">${createsCount}</div>
+          <div class="kpi-label">${choose('عمليات إنشاء', 'Create Operations')}</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-val" style="color:#2563eb;">${updatesCount}</div>
+          <div class="kpi-label">${choose('عمليات تعديل وحالة', 'Updates & State Changes')}</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-val" style="color:#dc2626;">${deletesCount}</div>
+          <div class="kpi-label">${choose('عمليات حذف وحركة سلة', 'Deletions & Trash Moves')}</div>
+        </div>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th style="width:50px;">#</th>
+            <th style="width:130px;">${choose('التاريخ والوقت', 'Timestamp')}</th>
+            <th style="width:160px;">${choose('المستخدم / المنفذ', 'Actor')}</th>
+            <th style="width:90px;">${choose('نوع النشاط', 'Action')}</th>
+            <th style="width:90px;">${choose('نوع العنصر', 'Entity')}</th>
+            <th>${choose('التفاصيل والتغييرات', 'Details & Context')}</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rowsHtml}
+        </tbody>
+      </table>
+
+      <footer class="signature-section">
+        <div class="signature-box">
+          <strong>${choose('إعداد وتصدير التقرير', 'Prepared By')}</strong><br /><br />
+          <span>${esc(exporterName)}</span>
+        </div>
+        <div class="signature-box">
+          <strong>${choose('مسؤول الجودة والامتثال الأمني', 'Security & Compliance Lead')}</strong><br /><br />
+          <span>..............................................</span>
+        </div>
+        <div class="signature-box">
+          <strong>${choose('الاعتماد الإداري العام', 'General Management Approval')}</strong><br /><br />
+          <span>..............................................</span>
+        </div>
+      </footer>
+    </body>
+    </html>
+  `;
+
+  printWindow.document.open();
+  printWindow.document.write(printHtml);
+  printWindow.document.close();
+
+  // Log report print action in audit trail
+  api('/api/audit', {
+    method: 'POST',
+    body: JSON.stringify({
+      action: 'export_report',
+      entityType: 'report',
+      entityId: `rep_audit_print_${Date.now()}`,
+      details: { reportType: 'Audit_Logs_Print_PDF', count: currentLogs.length }
+    })
+  }).catch(() => {});
+}
+
+export async function fetchFullAuditHistory() {
+  try {
+    showToast(choose('جاري تحميل سجل التدقيق التاريخي الكامل...', 'Loading complete audit history...'));
+    const res = await api('/api/audit?limit=1000');
+    if (res && res.logs) {
+      state.data.auditLogs = res.logs;
+      state.auditFullHistoryLoaded = true;
+      renderView();
+      showToast(choose(`تم جلب ${res.logs.length} عملية بنجاح.`, `Loaded ${res.logs.length} audit logs.`));
+    }
+  } catch (err) {
+    showToast(err.message || choose('فشل جلب السجل التاريخي.', 'Failed to fetch audit history.'), true);
+  }
+}
+
 export function renderSettings() {
   const currentUserId = state.data?.user?.id;
   const userIsAdmin = isAdmin();
@@ -680,21 +1102,121 @@ export function renderSettings() {
     const rawAuditLogs = state.data?.auditLogs || [];
     const sortedLogs = [...rawAuditLogs].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
+    const currentAction = state.auditFilterAction || 'all';
+    const currentEntity = state.auditFilterEntity || 'all';
+    const currentUser = state.auditFilterUser || 'all';
+    const searchQuery = (state.auditSearchQuery || '').trim().toLowerCase();
+
+    const filteredLogs = sortedLogs.filter(log => {
+      if (currentAction !== 'all' && log.action !== currentAction) return false;
+      if (currentEntity !== 'all' && (log.entityType || log.entity_type) !== currentEntity) return false;
+      if (currentUser !== 'all') {
+        const uid = log.userId || log.user_id || log.user?.id;
+        if (uid !== currentUser) return false;
+      }
+      if (searchQuery) {
+        const author = log.user || (log.userId ? (state.data?.users || []).find(u => u.id === log.userId) : null);
+        const authorName = (author ? (choose(author.name, author.nameEn || author.name) || '') : '').toLowerCase();
+        const { actionLabel, entityLabel } = renderAuditDetails(log);
+        const actionStr = (actionLabel || log.action || '').toLowerCase();
+        const entityStr = (entityLabel || log.entityType || '').toLowerCase();
+        const idStr = (log.id || log.entityId || '').toLowerCase();
+        const detailsStr = typeof log.details === 'object' ? JSON.stringify(log.details).toLowerCase() : String(log.details || '').toLowerCase();
+        
+        const match = authorName.includes(searchQuery) || 
+                      actionStr.includes(searchQuery) || 
+                      entityStr.includes(searchQuery) || 
+                      idStr.includes(searchQuery) || 
+                      detailsStr.includes(searchQuery);
+        if (!match) return false;
+      }
+      return true;
+    });
+
+    state._lastFilteredAuditLogs = filteredLogs;
+
+    const ACTION_FILTERS = [
+      ['all', choose('كافة العمليات', 'All Actions')],
+      ['create', choose('إنشاء جديد', 'Create')],
+      ['update', choose('تعديل بيانات', 'Update')],
+      ['status_change', choose('تغيير حالة', 'Status Change')],
+      ['delete', choose('نقل للمهملات', 'Delete / Trash')],
+      ['restore', choose('استعادة', 'Restore')],
+      ['purge', choose('حذف نهائي', 'Purge')],
+      ['export_report', choose('تصدير تقرير', 'Export Report')],
+      ['login', choose('تسجيل دخول', 'Sign In')],
+      ['invite', choose('دعوة مستخدم', 'Invite')]
+    ];
+
+    const ENTITY_FILTERS = [
+      ['all', choose('كافة العناصر', 'All Entities')],
+      ['project', choose('المشاريع', 'Projects')],
+      ['task', choose('المهام', 'Tasks')],
+      ['document', choose('المستندات', 'Documents')],
+      ['user', choose('المستخدمين', 'Users')],
+      ['role', choose('الأدوار والصلاحيات', 'Roles')],
+      ['company', choose('إعدادات الشركة', 'Company Settings')],
+      ['report', choose('التقارير', 'Reports')]
+    ];
+
+    const isFiltered = currentAction !== 'all' || currentEntity !== 'all' || currentUser !== 'all' || !!searchQuery;
+
     content = `
       <section class="setting-section">
-        <div class="panel-head">
+        <div class="panel-head" style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;">
           <div>
-            <div style="display:flex;align-items:center;gap:10px;">
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
               <h2>${t('audit')}</h2>
               <span class="mini-badge badge-neutral" style="padding:3px 9px;font-size:10px;font-weight:700;">
-                ${sortedLogs.length} ${choose('عملية مسجلة', 'events recorded')}
+                ${filteredLogs.length} ${choose('عملية معروضة', 'events shown')}
               </span>
+              ${isFiltered ? `
+                <span class="mini-badge" style="padding:3px 8px;font-size:10px;background:var(--surface-soft);color:var(--muted);border:1px solid var(--line);">
+                  ${choose('من أصل', 'out of')} ${sortedLogs.length}
+                </span>
+              ` : ''}
             </div>
             <p>${choose('سجل رقابي شامل يسجل هوية المنفذ بدقة، ونوع النشاط، وتاريخ وساعة التعديل بالثواني.', 'Comprehensive audit trail tracking user identity, activity type, and exact timestamp down to the second.')}</p>
           </div>
+          <div class="page-actions" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            ${!state.auditFullHistoryLoaded ? `
+              <button class="btn btn-ghost btn-sm" data-action="load-full-audit" title="${choose('جلب الأرشيف الكامل للسجلات من السيرفر', 'Load complete audit archive')}">
+                ${icon('refresh', 13)} ${choose('تحميل الأرشيف الكامل', 'Load All History')}
+              </button>
+            ` : ''}
+            <button class="btn btn-soft btn-sm" data-action="export-audit-xls" title="${choose('تصدير السجل كملف Excel منسق', 'Export as styled Excel file')}">
+              ${icon('download', 13)} ${choose('تصدير Excel', 'Export Excel')}
+            </button>
+            <button class="btn btn-primary btn-sm" data-action="print-audit-pdf" title="${choose('معاينة وطباعة تقرير رسمي وحفظه كـ PDF', 'Print or save executive PDF report')}">
+              ${icon('printer', 13)} ${choose('طباعة تقرير PDF', 'Print / PDF')}
+            </button>
+          </div>
         </div>
 
-        ${sortedLogs.length ? `
+        <div class="audit-toolbar" style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:16px;flex-wrap:wrap;background:var(--surface-soft);padding:10px 14px;border-radius:12px;border:1px solid var(--line);">
+          <div style="flex:1;min-width:220px;max-width:360px;">
+            <input type="search" class="input input-sm" placeholder="${choose('بحث فوري بالمنفذ، العملية، أو التفاصيل...', 'Search by actor, action, details...')}" value="${esc(state.auditSearchQuery || '')}" data-action="search-audit-input" style="width:100%;font-size:12px;padding:6px 12px;" />
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <select class="input input-sm" data-action="filter-audit-action" style="font-size:11.5px;padding:5px 8px;cursor:pointer;">
+              ${ACTION_FILTERS.map(([val, label]) => `<option value="${val}" ${currentAction === val ? 'selected' : ''}>${label}</option>`).join('')}
+            </select>
+            <select class="input input-sm" data-action="filter-audit-entity" style="font-size:11.5px;padding:5px 8px;cursor:pointer;">
+              ${ENTITY_FILTERS.map(([val, label]) => `<option value="${val}" ${currentEntity === val ? 'selected' : ''}>${label}</option>`).join('')}
+            </select>
+            <select class="input input-sm" data-action="filter-audit-user" style="font-size:11.5px;padding:5px 8px;cursor:pointer;">
+              <option value="all">${choose('كافة المستخدمين', 'All Users')}</option>
+              ${(state.data?.users || []).map(u => `<option value="${u.id}" ${currentUser === u.id ? 'selected' : ''}>${esc(choose(u.name, u.nameEn || u.name))}</option>`).join('')}
+            </select>
+            ${isFiltered ? `
+              <button class="btn btn-ghost btn-sm" data-action="reset-audit-filters" style="font-size:11px;color:var(--muted);padding:4px 8px;" title="${choose('إعادة تعيين الفلاتر', 'Reset filters')}">
+                ${choose('إلغاء التصفية', 'Clear')}
+              </button>
+            ` : ''}
+          </div>
+        </div>
+
+        ${filteredLogs.length ? `
           <div class="table-wrap" style="border:1px solid var(--line);border-radius:12px;overflow-x:auto;background:var(--surface);">
             <table class="data-table" style="width:100%;border-collapse:collapse;font-size:12px;min-width:650px;">
               <thead>
@@ -706,7 +1228,7 @@ export function renderSettings() {
                 </tr>
               </thead>
               <tbody>
-                ${sortedLogs.map((log) => {
+                ${filteredLogs.map((log) => {
                   const author = log.user || (log.userId ? (state.data?.users || []).find(u => u.id === log.userId) : null);
                   const authorName = author ? choose(author.name, author.nameEn || author.name) : choose('النظام', 'System');
                   const authorRole = author ? roleName(author) : choose('تلقائي', 'Automated');
@@ -751,8 +1273,13 @@ export function renderSettings() {
           </div>
         ` : `
           <div class="empty">
-            ${icon('checklist', 24)}
-            <span>${choose('لا توجد عمليات مسجلة حتى الآن.', 'No audit logs recorded yet.')}</span>
+            ${icon(isFiltered ? 'search' : 'checklist', 24)}
+            <span>${isFiltered ? choose('لا توجد عمليات تطابق معايير التصفية المحددة.', 'No audit logs match the selected filter criteria.') : choose('لا توجد عمليات مسجلة حتى الآن.', 'No audit logs recorded yet.')}</span>
+            ${isFiltered ? `
+              <button class="btn btn-soft btn-sm" data-action="reset-audit-filters" style="margin-top:10px;">
+                ${choose('إعادة تعيين الفلاتر', 'Reset filters')}
+              </button>
+            ` : ''}
           </div>
         `}
       </section>
