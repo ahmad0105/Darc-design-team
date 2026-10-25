@@ -123,8 +123,10 @@ app.post('/', async (c) => {
     description_en: String(body.descriptionEn || body.descriptionAr || '').trim(),
     status,
     priority: ['low', 'medium', 'high', 'urgent'].includes(body.priority) ? body.priority : 'medium',
-    assignee_id: body.assigneeId || null,
-    reviewer_id: body.reviewerId || null,
+    assignee_id: body.assigneeId || body.assignee_id || null,
+    reviewer_id: body.reviewerId || body.reviewer_id || null,
+    approver_id: body.approverId || body.approver_id || null,
+    parent_task_id: body.parentTaskId || body.parent_task_id || null,
     start_date: body.startDate || null,
     due_date: body.dueDate || null,
     weight: typeof body.weight === 'number' ? body.weight : 1,
@@ -308,7 +310,7 @@ app.patch('/:id', async (c) => {
   const fieldMap = { 
     titleAr: 'title_ar', titleEn: 'title_en', descriptionAr: 'description_ar', descriptionEn: 'description_en', 
     status: 'status', priority: 'priority', 
-    assigneeId: 'assignee_id', reviewerId: 'reviewer_id', 
+    assigneeId: 'assignee_id', reviewerId: 'reviewer_id', approverId: 'approver_id', parentTaskId: 'parent_task_id',
     startDate: 'start_date', dueDate: 'due_date', 
     weight: 'weight', progress: 'progress',
     templateId: 'template_id', typeAr: 'type_ar', typeEn: 'type_en'
@@ -317,7 +319,7 @@ app.patch('/:id', async (c) => {
   for (const [camel, snake] of Object.entries(fieldMap)) {
     if (body[camel] !== undefined) {
       let val = body[camel];
-      if (['start_date', 'due_date', 'assignee_id', 'reviewer_id', 'template_id'].includes(snake)) {
+      if (['start_date', 'due_date', 'assignee_id', 'reviewer_id', 'approver_id', 'parent_task_id', 'template_id'].includes(snake)) {
         val = val ? val : null;
       }
       updates[snake] = val;

@@ -105,7 +105,7 @@ async function autoSupersedePriorVersions(supabase, projectId, docId, filename) 
 
   try {
     await supabase.from('documents')
-      .update({ status: 'superseded', updated_at: new Date().toISOString() })
+      .update({ status: 'superseded', superseded_by: docId, updated_at: new Date().toISOString() })
       .eq('project_id', projectId)
       .eq('status', 'approved')
       .neq('id', docId)

@@ -100,10 +100,10 @@ app.get('/', async (c) => {
       let roles, templates, activeUsers, company, projectsRes, tasksRes, docsRes, membersRes, commentsRes, auditRes, notifRes;
 
       const PROJECT_COLUMNS = 'id, code, name_ar, name_en, client_ar, client_en, description_ar, description_en, lifecycle, health, start_date, due_date, manager_id, progress, progress_mode, demo, custom_fields, created_at, updated_at';
-      const TASK_COLUMNS = 'id, project_id, title_ar, title_en, description_ar, description_en, status, priority, category_ar, category_en, type_ar, type_en, weight, progress, assignee_id, reviewer_id, start_date, due_date, template_id, custom_fields, created_at, updated_at';
+      const TASK_COLUMNS = 'id, project_id, title_ar, title_en, description_ar, description_en, status, priority, category_ar, category_en, type_ar, type_en, weight, progress, assignee_id, reviewer_id, approver_id, parent_task_id, start_date, due_date, template_id, custom_fields, created_at, updated_at';
       const MEMBER_COLUMNS = 'project_id, user_id, role_id';
       const NOTIFICATION_COLUMNS = 'id, user_id, type, content, task_id, project_id, read, created_at';
-      const DOCUMENT_COLUMNS = 'id, project_id, task_id, uploader_id, original_name, disk_filename, mime_type, size, status, created_at, deleted_at';
+      const DOCUMENT_COLUMNS = 'id, project_id, task_id, uploader_id, original_name, disk_filename, mime_type, size, status, superseded_by, created_at, deleted_at';
       const COMMENT_COLUMNS = 'id, task_id, user_id, content, created_at, updated_at, deleted_at';
 
       // Single-batch parallel execution (eliminates sequential round-trips & lean projections)
