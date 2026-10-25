@@ -296,10 +296,20 @@ ON CONFLICT (id) DO UPDATE SET
     name_en = EXCLUDED.name_en,
     permissions = EXCLUDED.permissions;
 
--- 4.3 Default SuperAdmin User (If Not Exists)
-INSERT INTO users (id, name, name_en, email, role_id, status, email_verified)
-VALUES ('usr_ahmad', 'Ahmad Alhashmi', 'Ahmad Alhashmi', 'ahmad@darcdesign.com', 'admin', 'active', TRUE)
-ON CONFLICT (email) DO NOTHING;
+-- 4.3 Default SuperAdmin User (Collision-Free Idempotent Handling)
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM users WHERE id = 'usr_ahmad') THEN
+    IF NOT EXISTS (SELECT 1 FROM users WHERE email = 'ahmad@darcdesign.com') THEN
+      INSERT INTO users (id, name, name_en, email, role_id, status, email_verified)
+      VALUES ('usr_ahmad', 'Ahmad Alhashmi', 'Ahmad Alhashmi', 'ahmad@darcdesign.com', 'admin', 'active', TRUE);
+    ELSE
+      UPDATE users SET role_id = 'admin' WHERE email = 'ahmad@darcdesign.com';
+    END IF;
+  ELSE
+    UPDATE users SET role_id = 'admin' WHERE id = 'usr_ahmad';
+  END IF;
+END $$;
 
 -- ==============================================================================
 -- 5. AUTOMATIC TRIGGERS (UPDATED_AT & PROGRESS RECALCULATION)
