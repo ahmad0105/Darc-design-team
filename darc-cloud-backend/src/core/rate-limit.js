@@ -165,7 +165,8 @@ export function mutationRateLimiter() {
     maybeCleanup();
 
     const userId = c.get('userId');
-    const ip = getClientIp(c);
+    const rawIp = getClientIp(c);
+    const ip = getIpRateLimitKey(rawIp);
     const key = userId ? `u:${userId}` : `ip:${ip}`;
     const now = Date.now();
 
@@ -208,6 +209,10 @@ export function uploadRateLimiter(maxUploads = UPLOAD_MAX_SESSIONS, windowMs = U
     const key = userId ? `u:${userId}` : `ip:${getIpRateLimitKey(rawIp)}`;
     const now = Date.now();
 
+    // Check Cloudflare Edge Cache block first (multi-isolate sync)
+    const edgeKey = `upload:${key}`;
+    const edgeBlocked = await isEdgeCacheBlocked(edgeKey);
+
     let entry = _uploadTracker.get(key);
     if (!entry || now > entry.resetAt) {
       entry = { count: 1, resetAt: now + windowMs };
@@ -216,8 +221,9 @@ export function uploadRateLimiter(maxUploads = UPLOAD_MAX_SESSIONS, windowMs = U
       entry.count += 1;
     }
 
-    if (entry.count > maxUploads) {
+    if (edgeBlocked || entry.count > maxUploads) {
       const retryAfterSeconds = Math.max(1, Math.ceil((entry.resetAt - now) / 1000));
+      writeEdgeCacheBlock(edgeKey, retryAfterSeconds).catch(() => {});
       return c.json(
         {
           error: `تم تجاوز الحد المسموح لعمليات الرفع (${maxUploads} جلسات في الدقيقة). يرجى الانتظار ${retryAfterSeconds} ثانية.`,

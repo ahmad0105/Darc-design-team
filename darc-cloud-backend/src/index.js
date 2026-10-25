@@ -142,7 +142,7 @@ app.post('/api/auth/login', async (c) => {
 
   // 1. Cloudflare Turnstile Anti-Bot Security Verification
   const turnstileSecret = c.env.TURNSTILE_SECRET_KEY;
-  if (turnstileSecret && turnstileToken !== 'bypass_dev') {
+  if (turnstileSecret) {
     if (!turnstileToken) {
       return c.json({ error: 'يرجى إكمال فحص الأمان من المتصفح (Cloudflare Turnstile).' }, 403);
     }
@@ -161,7 +161,8 @@ app.post('/api/auth/login', async (c) => {
         return c.json({ error: 'فشل التحقق الأمني من المتصفح (Turnstile). يرجى إعادة المحاولة.' }, 403);
       }
     } catch (err) {
-      console.warn('[Turnstile] Verification network error:', err.message);
+      console.error('[Turnstile] Verification failure:', err.message);
+      return c.json({ error: 'تعذر التحقق من فحص الأمان (Turnstile) حالياً. يرجى المحاولة بعد لحظات.' }, 503);
     }
   }
 
