@@ -71,7 +71,7 @@ app.use('*', cors({
   },
   credentials: true,
   allowMethods: ['GET', 'HEAD', 'PUT', 'POST', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowHeaders: ['Content-Type', 'Authorization', 'Cookie', 'x-session-url', 'content-range', 'x-doc-meta', 'X-File-Name', 'If-None-Match', 'X-Request-Id', 'X-Offline-Replay', 'X-Offline-Id', 'X-Idempotency-Key'],
+  allowHeaders: ['Content-Type', 'Authorization', 'Cookie', 'Cache-Control', 'Pragma', 'If-None-Match', 'X-Silent', 'x-session-url', 'content-range', 'x-doc-meta', 'X-File-Name', 'X-Request-Id', 'X-Offline-Replay', 'X-Offline-Id', 'X-Idempotency-Key'],
   exposeHeaders: ['Set-Cookie', 'ETag', 'X-Request-Id']
 }));
 
