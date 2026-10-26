@@ -66,9 +66,11 @@ jobs:
 
           echo "✅ Encrypted artifact ready: ${BACKUP_NAME}.sql.gz.enc ($(du -h "${BACKUP_NAME}.sql.gz.enc" | cut -f1))"
 
-      - name: Upload Encrypted Artifacts to Google Drive
+      - name: Upload Encrypted Artifacts to Google Drive (5TB Account)
         env:
-          GDRIVE_SA_KEY: ${{ secrets.GDRIVE_SA_KEY }}
+          GDRIVE_CLIENT_ID: ${{ secrets.GDRIVE_CLIENT_ID }}
+          GDRIVE_CLIENT_SECRET: ${{ secrets.GDRIVE_CLIENT_SECRET }}
+          GDRIVE_REFRESH_TOKEN: ${{ secrets.GDRIVE_REFRESH_TOKEN }}
           GDRIVE_FOLDER_ID: ${{ secrets.GDRIVE_FOLDER_ID }}
         run: |
           node .github/scripts/upload-to-gdrive.mjs "${BACKUP_NAME}.sql.gz.enc" "${BACKUP_NAME}.sql.gz.enc.sha256"

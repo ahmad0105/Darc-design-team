@@ -1,63 +1,38 @@
 #!/usr/bin/env node
 
 /**
- * DARC Design Team — Automated Secure Google Drive Backup Uploader
+ * DARC Design Team — Automated Secure Google Drive Backup Uploader (OAuth2 / 5TB Storage)
  * Zero-dependency pure Node.js (uses built-in crypto, fs, and fetch)
- * Uploads client-side AES-256 encrypted backups to Google Drive
+ * Uploads client-side AES-256 encrypted backups directly to User's 5TB Google Drive
  * Enforces 30-day automated rolling retention (purges older backups)
  */
 
 import fs from 'node:fs';
 import path from 'node:path';
-import crypto from 'node:crypto';
 
-// Base64URL encoder helper
-function base64UrlEncode(strOrBuffer) {
-  const buf = Buffer.isBuffer(strOrBuffer) ? strOrBuffer : Buffer.from(strOrBuffer);
-  return buf.toString('base64').replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
-}
-
-// Generate Google OAuth2 Access Token from Service Account Key JSON
-async function getGoogleAccessToken(serviceAccountKey) {
-  const now = Math.floor(Date.now() / 1000);
-  const header = { alg: 'RS256', typ: 'JWT' };
-  const payload = {
-    iss: serviceAccountKey.client_email,
-    scope: 'https://www.googleapis.com/auth/drive.file',
-    aud: 'https://oauth2.googleapis.com/token',
-    exp: now + 3600,
-    iat: now
-  };
-
-  const encodedHeader = base64UrlEncode(JSON.stringify(header));
-  const encodedPayload = base64UrlEncode(JSON.stringify(payload));
-  const unsignedToken = `${encodedHeader}.${encodedPayload}`;
-
-  const signer = crypto.createSign('RSA-SHA256');
-  signer.update(unsignedToken);
-  signer.end();
-  const signature = base64UrlEncode(signer.sign(serviceAccountKey.private_key));
-  const jwt = `${unsignedToken}.${signature}`;
-
+// Exchange Refresh Token for a fresh Google Access Token (acts as the 5TB Account Owner)
+async function getGoogleAccessToken(clientId, clientSecret, refreshToken) {
   const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({
-      grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
-      assertion: jwt
+      client_id: clientId,
+      client_secret: clientSecret,
+      refresh_token: refreshToken,
+      grant_type: 'refresh_token'
     })
   });
 
   if (!tokenRes.ok) {
     const errText = await tokenRes.text();
-    throw new Error(`Failed to obtain Google access token: ${tokenRes.status} ${errText}`);
+    throw new Error(`Failed to refresh Google access token: ${tokenRes.status} ${errText}`);
   }
 
   const tokenData = await tokenRes.json();
   return tokenData.access_token;
 }
 
-// Upload a file to Google Drive using multipart upload
+// Upload a file to Google Drive using multipart upload directly into the target folder
 async function uploadFileToDrive(accessToken, folderId, filePath) {
   const fileName = path.basename(filePath);
   const fileStats = fs.statSync(filePath);
@@ -96,7 +71,7 @@ async function uploadFileToDrive(accessToken, folderId, filePath) {
   }
 
   const data = await uploadRes.json();
-  console.log(`✅ Uploaded [${fileName}] successfully (ID: ${data.id})`);
+  console.log(`✅ Uploaded [${fileName}] successfully to 5TB Google Drive (File ID: ${data.id})`);
   return data;
 }
 
@@ -131,24 +106,21 @@ async function purgeOldBackups(accessToken, folderId, retentionDays = 30) {
 
 // Main execution
 async function main() {
-  const saKeyJson = process.env.GDRIVE_SA_KEY;
+  const clientId = process.env.GDRIVE_CLIENT_ID;
+  const clientSecret = process.env.GDRIVE_CLIENT_SECRET;
+  const refreshToken = process.env.GDRIVE_REFRESH_TOKEN;
   const folderId = process.env.GDRIVE_FOLDER_ID;
   const filesToUpload = process.argv.slice(2);
 
-  if (!saKeyJson) throw new Error('Missing GDRIVE_SA_KEY environment variable');
+  if (!clientId || !clientSecret || !refreshToken) {
+    throw new Error('Missing Google OAuth2 credentials (GDRIVE_CLIENT_ID, GDRIVE_CLIENT_SECRET, GDRIVE_REFRESH_TOKEN)');
+  }
   if (!folderId) throw new Error('Missing GDRIVE_FOLDER_ID environment variable');
   if (filesToUpload.length === 0) throw new Error('No files specified to upload');
 
-  let serviceAccountKey;
-  try {
-    serviceAccountKey = JSON.parse(saKeyJson);
-  } catch (err) {
-    throw new Error(`Invalid GDRIVE_SA_KEY JSON: ${err.message}`);
-  }
-
-  console.log('🔑 Authenticating with Google Cloud Service Account...');
-  const accessToken = await getGoogleAccessToken(serviceAccountKey);
-  console.log('🔒 Authentication successful. Uploading encrypted artifacts to Google Drive...');
+  console.log('🔑 Authenticating via Google OAuth2 (5TB Account)...');
+  const accessToken = await getGoogleAccessToken(clientId, clientSecret, refreshToken);
+  console.log('🔒 Authentication successful! Uploading encrypted artifacts directly to your 5TB Google Drive...');
 
   for (const file of filesToUpload) {
     if (!fs.existsSync(file)) {
@@ -159,7 +131,7 @@ async function main() {
 
   console.log('🧹 Checking retention policy (purging backups older than 30 days)...');
   await purgeOldBackups(accessToken, folderId, 30);
-  console.log('✨ Backup sequence completed successfully.');
+  console.log('✨ Backup sequence completed successfully in your 5TB Google Drive.');
 }
 
 main().catch(err => {
