@@ -230,16 +230,16 @@ app.use('*', async (c, next) => {
 app.get('/:id', async (c) => {
   const docId = c.req.param('id');
   if (!/^[a-zA-Z0-9_-]{4,50}$/.test(docId)) {
-    return c.text('معرف المستند غير صالح', 400);
+    return c.json({ error: 'معرف المستند غير صالح' }, 400);
   }
   const userId = c.get('userId');
   const roleId = c.get('roleId');
   const supabase = c.get('supabase');
   const { data: doc } = await supabase.from('documents').select('*').eq('id', docId).is('deleted_at', null).single();
-  if (!doc) return c.text('المستند غير موجود', 404);
+  if (!doc) return c.json({ error: 'المستند غير موجود' }, 404);
 
   if (doc.project_id && !(await isProjectVisible(supabase, userId, roleId, doc.project_id))) {
-    return c.text('غير مصرح لك بعرض هذا المستند', 403);
+    return c.json({ error: 'غير مصرح لك بعرض هذا المستند' }, 403);
   }
   
   if (doc.disk_filename && doc.disk_filename.startsWith('http')) {
@@ -463,10 +463,21 @@ app.put('/chunk', async (c) => {
       const rawMeta = c.req.header('x-doc-meta') || '{}';
       let docMeta = {};
       try {
-        docMeta = JSON.parse(rawMeta.includes('%') ? decodeURIComponent(rawMeta) : rawMeta);
+        let decoded = rawMeta;
+        try {
+          if (rawMeta.includes('%')) decoded = decodeURIComponent(rawMeta);
+        } catch (_) {}
+        docMeta = JSON.parse(decoded);
       } catch (parseErr) {
-        docMeta = JSON.parse(rawMeta);
+        try { docMeta = JSON.parse(rawMeta); } catch (_) { docMeta = {}; }
       }
+
+      if (!docMeta || typeof docMeta !== 'object' || Array.isArray(docMeta)) {
+        docMeta = {};
+      }
+      delete docMeta.__proto__;
+      delete docMeta.constructor;
+      delete docMeta.prototype;
 
       const userId = c.get('userId');
       const roleId = c.get('roleId');

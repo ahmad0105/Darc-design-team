@@ -416,7 +416,8 @@ app.post('/cleanup', async (c) => {
   const supabase = c.get('supabase');
   let body = {};
   try { body = await c.req.json(); } catch (e) {}
-  const daysThreshold = parseInt(body.days || 30, 10);
+  const parsedDays = parseInt(body.days, 10);
+  const daysThreshold = (!isNaN(parsedDays) && parsedDays >= 1 && parsedDays <= 365) ? parsedDays : 30;
   const cutoffDate = new Date(Date.now() - daysThreshold * 24 * 60 * 60 * 1000).toISOString();
 
   let deletedDocsCount = 0;

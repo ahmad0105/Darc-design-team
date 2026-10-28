@@ -194,7 +194,8 @@ export async function getOrCreateFolder(env, folderName, parentId) {
 
   const token = await getAccessToken(env);
   const safeName = folderName.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-  const q = `name = '${safeName}' and '${cleanParentId}' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false`;
+  const safeParentId = cleanParentId.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+  const q = `name = '${safeName}' and '${safeParentId}' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false`;
 
   try {
     const searchRes = await fetch(

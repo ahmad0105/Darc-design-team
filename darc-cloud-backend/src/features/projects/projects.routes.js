@@ -39,7 +39,9 @@ app.post('/', async (c) => {
   }
 
   const body = await c.req.json();
-  const managerId = body.managerId || userId;
+  const cleanFk = (val) => (val && typeof val === 'string' && val.trim().length > 0) ? val.trim() : null;
+  const rawManagerId = cleanFk(body.managerId || body.manager_id);
+  const managerId = rawManagerId || userId;
 
   // Support idempotent offline sync with pre-assigned project ID
   const providedId = (body.id && typeof body.id === 'string' && /^prj_[a-zA-Z0-9_-]{6,36}$/.test(body.id)) ? body.id : null;
@@ -68,7 +70,7 @@ app.post('/', async (c) => {
     health: ['on_track', 'at_risk', 'off_track'].includes(body.health) ? body.health : 'on_track',
     start_date: body.startDate || body.start_date || null,
     due_date: body.dueDate || body.due_date || null,
-    manager_id: body.managerId || body.manager_id || managerId,
+    manager_id: managerId,
     progress_mode: 'weighted',
     demo: false
   };

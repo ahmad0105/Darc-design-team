@@ -37,7 +37,11 @@ export function applyDemoTaskUpdate(taskId, updates) {
   checkAndAutoReset();
   const task = _demoStore.tasks.find(t => t.id === taskId);
   if (task) {
-    Object.assign(task, updates, { updatedAt: new Date().toISOString() });
+    const cleanUpdates = (updates && typeof updates === 'object' && !Array.isArray(updates)) ? { ...updates } : {};
+    delete cleanUpdates.__proto__;
+    delete cleanUpdates.constructor;
+    delete cleanUpdates.prototype;
+    Object.assign(task, cleanUpdates, { updatedAt: new Date().toISOString() });
     // Recalculate demo project progress
     const project = _demoStore.projects.find(p => p.id === task.projectId);
     if (project) {

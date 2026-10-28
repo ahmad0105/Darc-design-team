@@ -20,7 +20,7 @@ export function createJwtMiddleware() {
 
     let payload;
     try {
-      payload = await verify(token, c.env.JWT_SECRET);
+      payload = await verify(token, c.env.JWT_SECRET, 'HS256');
     } catch (e) {
       return c.json({ error: 'الجلسة منتهية أو غير صالحة.' }, 401);
     }

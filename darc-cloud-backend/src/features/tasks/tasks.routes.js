@@ -84,8 +84,11 @@ app.post('/', async (c) => {
   let titleAr = body.titleAr || body.title_ar || body.title;
   let titleEn = body.titleEn || body.title_en;
 
+  const cleanFk = (val) => (val && typeof val === 'string' && val.trim().length > 0) ? val.trim() : null;
+
   // Handle template cloning if templateId provided
-  const templateId = body.templateId || body.template_id;
+  const rawTemplateId = cleanFk(body.templateId || body.template_id);
+  const templateId = (rawTemplateId && /^[a-zA-Z0-9_-]{3,64}$/.test(rawTemplateId)) ? rawTemplateId : null;
   if (templateId) {
     const { data: template } = await supabase.from('templates').select('*').eq('id', templateId).single();
     if (template) {
@@ -134,10 +137,10 @@ app.post('/', async (c) => {
     description_en: String(body.descriptionEn || body.descriptionAr || '').trim(),
     status,
     priority: ['low', 'medium', 'high', 'urgent'].includes(body.priority) ? body.priority : 'medium',
-    assignee_id: body.assigneeId || body.assignee_id || null,
-    reviewer_id: body.reviewerId || body.reviewer_id || null,
-    approver_id: body.approverId || body.approver_id || null,
-    parent_task_id: body.parentTaskId || body.parent_task_id || null,
+    assignee_id: cleanFk(body.assigneeId || body.assignee_id),
+    reviewer_id: cleanFk(body.reviewerId || body.reviewer_id),
+    approver_id: cleanFk(body.approverId || body.approver_id),
+    parent_task_id: cleanFk(body.parentTaskId || body.parent_task_id),
     start_date: body.startDate || body.start_date || null,
     due_date: body.dueDate || body.due_date || null,
     weight,

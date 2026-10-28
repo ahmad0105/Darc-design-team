@@ -1,7 +1,19 @@
 function getCookieVal(key) {
-  if (typeof document === 'undefined') return null;
-  const m = document.cookie.match(new RegExp('(?:^|; )' + key + '=([^;]*)'));
-  return m ? decodeURIComponent(m[1]) : null;
+  if (typeof document === 'undefined' || !key || !document.cookie) return null;
+  const cookies = document.cookie.split('; ');
+  const prefix = encodeURIComponent(String(key)) + '=';
+  const rawPrefix = String(key) + '=';
+  for (let i = 0; i < cookies.length; i++) {
+    const c = cookies[i];
+    if (c.startsWith(prefix)) {
+      const val = c.substring(prefix.length);
+      try { return decodeURIComponent(val); } catch (e) { return val; }
+    } else if (c.startsWith(rawPrefix)) {
+      const val = c.substring(rawPrefix.length);
+      try { return decodeURIComponent(val); } catch (e) { return val; }
+    }
+  }
+  return null;
 }
 
 function resolveInitialLang() {
@@ -54,9 +66,12 @@ function resolveInitialRoute() {
         let settingsSection = 'profile';
         if (queryPart) {
           const q = new URLSearchParams(queryPart);
-          if (q.get('id')) activeProjectId = q.get('id');
-          if (q.get('tab')) projectTab = q.get('tab');
-          if (q.get('section')) settingsSection = q.get('section');
+          const rawId = q.get('id');
+          if (rawId && /^[a-zA-Z0-9_-]{3,64}$/.test(rawId)) activeProjectId = rawId;
+          const rawTab = q.get('tab');
+          if (rawTab && ['overview', 'tasks', 'drawings', 'documents', 'timeline', 'activity'].includes(rawTab)) projectTab = rawTab;
+          const rawSection = q.get('section');
+          if (rawSection && ['profile', 'company', 'roles', 'accounts', 'audit', 'trash', 'preferences'].includes(rawSection)) settingsSection = rawSection;
         }
         return { view: viewPart, activeProjectId, projectTab, settingsSection };
       }

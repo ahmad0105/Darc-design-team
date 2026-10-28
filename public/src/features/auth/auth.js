@@ -412,6 +412,9 @@ export function renderResetPassword(token, errorMessage = '') {
   document.documentElement.dir = state.lang === 'ar' ? 'rtl' : 'ltr';
   document.documentElement.dataset.theme = state.theme || 'light';
 
+  const cleanToken = (typeof token === 'string' && /^[a-zA-Z0-9_-]{24,128}$/.test(token.trim())) ? token.trim() : null;
+  const tokenError = (!cleanToken && !errorMessage) ? choose('رابط إعادة تعيين كلمة المرور غير صالح أو مفقود. يرجى طلب رابط جديد.', 'Invalid or missing password reset link. Please request a new link.') : '';
+
   document.getElementById('app').innerHTML = `
     <div class="login-shell ${state.lang === 'en' ? 'is-ltr' : ''}">
       <div class="login-wrap">
@@ -431,10 +434,11 @@ export function renderResetPassword(token, errorMessage = '') {
               </div>
             </div>
             <form id="reset-form">
+              <input type="hidden" name="token" value="${esc(cleanToken || '')}" />
               <div class="field">
                 <label for="rst-pass">${choose('كلمة المرور الجديدة', 'New Password')}</label>
                 <div style="position:relative;display:flex;align-items:center;">
-                  <input id="rst-pass" name="newPassword" type="password" minlength="10" placeholder="••••••••••" style="width:100%;padding-inline-end:40px;" required />
+                  <input id="rst-pass" name="newPassword" type="password" minlength="10" placeholder="••••••••••" style="width:100%;padding-inline-end:40px;" required ${!cleanToken ? 'disabled' : ''} />
                   <button type="button" data-action="toggle-password-visibility" data-target="rst-pass" style="position:absolute;inset-inline-end:10px;background:none;border:none;color:var(--ink-soft);cursor:pointer;padding:4px;display:flex;align-items:center;justify-content:center;" title="${choose('إظهار/إخفاء كلمة المرور', 'Show/Hide password')}">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                   </button>
@@ -444,15 +448,15 @@ export function renderResetPassword(token, errorMessage = '') {
               <div class="field">
                 <label for="rst-pass-confirm">${choose('تأكيد كلمة المرور الجديدة', 'Confirm New Password')}</label>
                 <div style="position:relative;display:flex;align-items:center;">
-                  <input id="rst-pass-confirm" name="newPasswordConfirm" type="password" minlength="10" placeholder="••••••••••" style="width:100%;padding-inline-end:40px;" required />
+                  <input id="rst-pass-confirm" name="newPasswordConfirm" type="password" minlength="10" placeholder="••••••••••" style="width:100%;padding-inline-end:40px;" required ${!cleanToken ? 'disabled' : ''} />
                   <button type="button" data-action="toggle-password-visibility" data-target="rst-pass-confirm" style="position:absolute;inset-inline-end:10px;background:none;border:none;color:var(--ink-soft);cursor:pointer;padding:4px;display:flex;align-items:center;justify-content:center;" title="${choose('إظهار/إخفاء كلمة المرور', 'Show/Hide password')}">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                   </button>
                 </div>
                 <div id="rst-match-indicator" style="font-size:11px;font-weight:600;margin-top:4px;display:none;"></div>
               </div>
-              ${errorMessage ? `<div class="login-demo" style="border-color:var(--red-soft);background:var(--red-soft);color:var(--red);margin-top:0;margin-bottom:15px">${icon('alert', 15)}<span>${esc(errorMessage)}</span></div>` : ''}
-              <button class="btn btn-primary btn-block" type="submit">${choose('حفظ وتسجيل الدخول', 'Save and login')}</button>
+              ${(errorMessage || tokenError) ? `<div class="login-demo" style="border-color:var(--red-soft);background:var(--red-soft);color:var(--red);margin-top:0;margin-bottom:15px">${icon('alert', 15)}<span>${esc(errorMessage || tokenError)}</span></div>` : ''}
+              <button class="btn btn-primary btn-block" type="submit" ${!cleanToken ? 'disabled' : ''}>${choose('حفظ وتسجيل الدخول', 'Save and login')}</button>
             </form>
           </div>
         </section>

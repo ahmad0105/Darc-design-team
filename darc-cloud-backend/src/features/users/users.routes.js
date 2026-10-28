@@ -342,6 +342,10 @@ app.post('/:id/force-password', requireAdmin, async (c) => {
 app.post('/:id/invite', requireAdmin, async (c) => {
   const targetId = c.req.param('id');
   if (!isValidEntityId(targetId)) return c.json({ error: 'معرف غير صالح' }, 400);
+  const currentUserId = c.get('userId');
+  if ((targetId === 'usr_ahmad' || targetId === 'usr_ahmed') && currentUserId !== 'usr_ahmad') {
+    return c.json({ error: 'محظور: لا يمكن دعوة حساب مدير ومطور النظام.' }, 403);
+  }
   const supabase = c.get('supabase');
   const { data: user, error } = await supabase.from('users').select('id, email, name').eq('id', targetId).single();
   if (error || !user) return c.json({ error: 'المستخدم غير موجود.' }, 404);
