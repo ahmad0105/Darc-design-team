@@ -415,6 +415,29 @@ app.use('/api/*', async (c, next) => {
       // Prevent cache wipe during chunk uploads (308 Resume Incomplete)
       if (status !== 308) {
         invalidateBootstrapCache();
+
+        // Broadcast mutation event asynchronously to Supabase Realtime WebSocket subscribers
+        if (c.env.SUPABASE_URL && c.env.SUPABASE_SERVICE_ROLE_KEY) {
+          const broadcastPromise = fetch(`${c.env.SUPABASE_URL}/realtime/v1/api/broadcast`, {
+            method: 'POST',
+            headers: {
+              'apikey': c.env.SUPABASE_SERVICE_ROLE_KEY,
+              'Authorization': `Bearer ${c.env.SUPABASE_SERVICE_ROLE_KEY}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              messages: [{
+                topic: 'realtime:darc_live',
+                event: 'STATE_MUTATION',
+                payload: { path: c.req.path, method, timestamp: Date.now() }
+              }]
+            })
+          }).catch(() => {});
+
+          if (c.executionCtx && typeof c.executionCtx.waitUntil === 'function') {
+            c.executionCtx.waitUntil(broadcastPromise);
+          }
+        }
       }
     }
   }

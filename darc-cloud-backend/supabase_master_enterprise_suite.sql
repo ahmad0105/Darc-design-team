@@ -841,4 +841,39 @@ BEGIN
   END IF;
 END $$;
 
+-- ==============================================================================
+-- 12. REALTIME COLLABORATION (CDC PUBLICATION & REPLICA IDENTITY)
+-- Enables sub-second instant multi-client data synchronization via Supabase Realtime
+-- ==============================================================================
+
+-- Set REPLICA IDENTITY FULL so UPDATE and DELETE change payloads include full row state
+ALTER TABLE IF EXISTS tasks REPLICA IDENTITY FULL;
+ALTER TABLE IF EXISTS projects REPLICA IDENTITY FULL;
+ALTER TABLE IF EXISTS comments REPLICA IDENTITY FULL;
+ALTER TABLE IF EXISTS documents REPLICA IDENTITY FULL;
+ALTER TABLE IF EXISTS notifications REPLICA IDENTITY FULL;
+
+-- Idempotently register primary operational tables to supabase_realtime publication
+DO $$
+DECLARE
+  tbl TEXT;
+BEGIN
+  -- Ensure publication exists
+  IF NOT EXISTS (SELECT 1 FROM pg_publication WHERE pubname = 'supabase_realtime') THEN
+    CREATE PUBLICATION supabase_realtime;
+  END IF;
+
+  -- Add tables idempotently
+  FOR tbl IN SELECT unnest(ARRAY['tasks', 'projects', 'comments', 'documents', 'notifications'])
+  LOOP
+    IF NOT EXISTS (
+      SELECT 1 
+      FROM pg_publication_tables 
+      WHERE pubname = 'supabase_realtime' AND tablename = tbl
+    ) THEN
+      EXECUTE format('ALTER PUBLICATION supabase_realtime ADD TABLE %I', tbl);
+    END IF;
+  END LOOP;
+END $$;
+
 COMMIT;
