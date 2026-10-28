@@ -1,4 +1,5 @@
 // Security & Hardening Middlewares for DARC Cloud Backend
+import { getClientIp } from './rate-limit.js';
 
 const ALLOWED_ORIGINS = [
   'http://localhost:4318',
@@ -13,22 +14,137 @@ const ALLOWED_ORIGINS = [
 ];
 
 /**
- * Standard HTTP Security Headers to protect against MIME sniffing, clickjacking, etc.
+ * Standard HTTP Security Headers & Strict CSP to protect against XSS, clickjacking, etc.
  */
 export function securityHeadersMiddleware() {
+  const CSP_POLICY = [
+    "default-src 'self' https://api.darc-design.bond https://*.darc-design.bond",
+    "script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com",
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    "font-src 'self' https://fonts.gstatic.com data:",
+    "img-src 'self' data: blob: https: http:",
+    "connect-src 'self' https://api.darc-design.bond https://darc-cloud-backend.ahmad-hashmi-c.workers.dev https://*.supabase.co wss://*.supabase.co https://challenges.cloudflare.com https://www.googleapis.com",
+    "frame-src 'self' https://challenges.cloudflare.com",
+    "frame-ancestors 'none'",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "form-action 'self'"
+  ].join('; ');
+
   return async (c, next) => {
     await next();
 
+    c.res.headers.set('Content-Security-Policy', CSP_POLICY);
     c.res.headers.set('X-Content-Type-Options', 'nosniff');
-    c.res.headers.set('X-Frame-Options', 'SAMEORIGIN');
+    c.res.headers.set('X-Frame-Options', 'DENY');
     c.res.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
-    c.res.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+    c.res.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=()');
+    c.res.headers.set('Cross-Origin-Opener-Policy', 'same-origin');
+    c.res.headers.set('Cross-Origin-Resource-Policy', 'cross-origin');
 
-    // Enable HSTS for HTTPS connections
+    // Enable HSTS with preload for HTTPS connections
     if (c.req.url.startsWith('https://')) {
-      c.res.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+      c.res.headers.set('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
     }
   };
+}
+
+// Edge Intrusion Detection & Auto-Jail Store
+const _jailedIps = new Map(); // ip -> { jailUntil: number, offenses: number, reason: string }
+const MAX_JAILED_RECORDS = 1000;
+
+function cleanupJails(now) {
+  for (const [ip, data] of _jailedIps.entries()) {
+    if (now > data.jailUntil) _jailedIps.delete(ip);
+  }
+}
+
+/**
+ * Edge Intrusion Detection System (IDS) & Auto-Jail Sentry.
+ * Automatically inspects incoming paths and parameters for malicious probing, SQLi scans,
+ * path traversal, and exploit signatures. Automatically jails abusive IPs for 1 hour.
+ */
+export function edgeSentryMiddleware() {
+  return async (c, next) => {
+    const ip = getClientIp(c);
+    const now = Date.now();
+
+    // 1. Check if client IP is currently jailed
+    const jailInfo = _jailedIps.get(ip);
+    if (jailInfo) {
+      if (now < jailInfo.jailUntil) {
+        const remainingSec = Math.ceil((jailInfo.jailUntil - now) / 1000);
+        c.res.headers.set('Retry-After', String(remainingSec));
+        c.res.headers.set('X-Edge-Defense', 'JAILED');
+        return c.json({
+          error: 'تم حظر اتصالك مؤقتاً عبر نظام الحماية الدفاعية (DARC Edge Sentry) نظراً لرصد أنشطة مريبة أو محاولات فحص غير مصرح بها.',
+          code: 'EDGE_SECURITY_JAIL',
+          remainingSeconds: remainingSec
+        }, 403);
+      }
+      _jailedIps.delete(ip);
+    }
+
+    const path = c.req.path.toLowerCase();
+    const rawUrl = c.req.url.toLowerCase();
+
+    // 2. High-Severity Probes & Exploit Scanners (Instant Jail: 1 hour)
+    const isExploitProbe = 
+      /\.(env|git|svn|htaccess|aws|ssh)($|\/|\?)/i.test(path) ||
+      /\/(wp-admin|wp-login|xmlrpc|phpinfo|eval-stdin|cgi-bin|setup\.php|console|actuator|swagger-ui|shell\.php)/i.test(path) ||
+      /(\.\.\/|\.\.%2f|%2e%2e)/i.test(rawUrl) ||
+      /(union\s+select|select\s+.*\s+from|benchmark\(|sleep\(|waitfor\s+delay)/i.test(rawUrl) ||
+      /(<script|javascript:|data:text\/html)/i.test(rawUrl) ||
+      /(\||;|`)\s*(curl|wget|nc|bash|sh|powershell)\b/i.test(rawUrl);
+
+    if (isExploitProbe) {
+      cleanupJails(now);
+      const jailDurationMs = 60 * 60 * 1000; // 1 hour jail
+      _jailedIps.set(ip, {
+        jailUntil: now + jailDurationMs,
+        offenses: (jailInfo?.offenses || 0) + 1,
+        reason: `Malicious probe or exploit pattern: ${path.slice(0, 50)}`
+      });
+
+      if (_jailedIps.size > MAX_JAILED_RECORDS) {
+        const oldest = _jailedIps.keys().next().value;
+        if (oldest) _jailedIps.delete(oldest);
+      }
+
+      console.warn(`[DARC Edge Sentry] Jailed IP ${ip} for 1 hour. Blocked: ${path}`);
+      return c.json({
+        error: 'طلب محجوب: تم رصد محاولة فحص أمني أو نمط استغلال غير مصرح به وتم حظر الاتصال تلقائياً.',
+        code: 'EXPLOIT_PROBE_BLOCKED'
+      }, 403);
+    }
+
+    await next();
+  };
+}
+
+/**
+ * Computes a cryptographic client device & IP subnet fingerprint for session binding.
+ * Protects against session hijacking if JWT tokens are leaked across distinct networks or browsers.
+ */
+export async function computeClientFingerprint(c, secret = 'darc_sec_salt') {
+  const ua = (c.req.header('user-agent') || 'unknown').slice(0, 100);
+  const ip = getClientIp(c);
+
+  // Extract network subnet: /24 for IPv4, /64 for IPv6 (tolerates cellular antenna hops while blocking foreign networks)
+  let subnet = ip;
+  if (ip.includes('.')) {
+    const parts = ip.split('.');
+    if (parts.length === 4) subnet = `${parts[0]}.${parts[1]}.${parts[2]}.0`;
+  } else if (ip.includes(':')) {
+    const parts = ip.split(':');
+    if (parts.length >= 4) subnet = parts.slice(0, 4).join(':');
+  }
+
+  const raw = `${ua}|${subnet}|${secret}`;
+  const enc = new TextEncoder().encode(raw);
+  const hashBuf = await crypto.subtle.digest('SHA-256', enc);
+  const hashArr = Array.from(new Uint8Array(hashBuf));
+  return hashArr.map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 16);
 }
 
 /**

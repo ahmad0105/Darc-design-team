@@ -24,7 +24,7 @@ import auditApp         from './features/audit/audit.routes.js';
 
 // Core Security, Error Resilience & Performance
 import { createErrorHandler } from './core/errors.js';
-import { securityHeadersMiddleware, csrfGuardMiddleware, correlationIdMiddleware, payloadLimitMiddleware } from './core/security.js';
+import { securityHeadersMiddleware, csrfGuardMiddleware, correlationIdMiddleware, payloadLimitMiddleware, edgeSentryMiddleware, computeClientFingerprint } from './core/security.js';
 import { authRateLimiter, recordAuthFailure, clearAuthFailure, getClientIp, mutationRateLimiter } from './core/rate-limit.js';
 import { getDB } from './core/db.js';
 import { getUserTokenRecord } from './core/cache.js';
@@ -36,7 +36,10 @@ const _lastActiveThrottles = new Map();
 // 1. Correlation ID Tracing (Assigned to all requests & responses)
 app.use('*', correlationIdMiddleware());
 
-// 2. Security Headers (nosniff, SAMEORIGIN, HSTS)
+// 2. Edge Intrusion Detection System (IDS) & Auto-Jail (Blocks scanners, probes & SQLi)
+app.use('*', edgeSentryMiddleware());
+
+// 3. Security Headers & Strict CSP (nosniff, DENY, HSTS, CSP)
 app.use('*', securityHeadersMiddleware());
 
 // 3. CORS Guard: Strictly allow only authorized domains
@@ -220,7 +223,8 @@ app.post('/api/auth/login', async (c) => {
     lastActiveAt: nowIso
   };
 
-  const payload = { userId: user.id, roleId: user.role_id, v: tokenVer, exp: Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60 };
+  const clientFpt = await computeClientFingerprint(c, c.env.JWT_SECRET);
+  const payload = { userId: user.id, roleId: user.role_id, v: tokenVer, fpt: clientFpt, exp: Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60 };
   const token = await sign(payload, c.env.JWT_SECRET);
   setSessionCookie(c, token, 604800);
 
@@ -278,6 +282,16 @@ app.use('/api/*', async (c, next) => {
     }
     if (payload.v && payload.v < userRec.ver) {
       return c.json({ error: 'تم تسجيل الخروج من هذه الجلسة، يرجى تسجيل الدخول مجدداً' }, 401);
+    }
+    // Anti-Session Hijacking: Verify cryptographic client fingerprint if bound to token
+    if (payload.fpt && payload.userId !== 'usr_demo') {
+      const currentFpt = await computeClientFingerprint(c, c.env.JWT_SECRET);
+      if (payload.fpt !== currentFpt) {
+        return c.json({
+          error: 'تم رصد استخدام رمز الجلسة من جهاز أو شبكة غير مصرح بها (Session Hijack Prevention). يرجى تسجيل الدخول مجدداً.',
+          code: 'SESSION_FINGERPRINT_MISMATCH'
+        }, 401);
+      }
     }
     c.set('userId', payload.userId);
     c.set('roleId', payload.roleId);

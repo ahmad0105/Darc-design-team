@@ -39,7 +39,7 @@
     </script>
 
     <!-- Cloudflare Turnstile Anti-Bot Security Engine -->
-    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer crossorigin="anonymous"></script>
 
     <!-- Pre-Flight: Storage Guard, Theme Pre-Paint & Silent Auto-Healing -->
     <script>
@@ -47,8 +47,13 @@
         // 1. Safe Theme & Locale Pre-Paint (Cookies -> LocalStorage -> Device Default)
         try {
           function getCookieVal(key) {
-            var m = document.cookie.match(new RegExp('(?:^|; )' + key + '=([^;]*)'));
-            return m ? decodeURIComponent(m[1]) : null;
+            if (!document.cookie) return null;
+            var pairs = document.cookie.split('; ');
+            for (var i = 0; i < pairs.length; i++) {
+              var parts = pairs[i].split('=');
+              if (parts[0] === key) return decodeURIComponent(parts.slice(1).join('='));
+            }
+            return null;
           }
 
           // A. Language: Cookie -> LocalStorage -> Device Language
