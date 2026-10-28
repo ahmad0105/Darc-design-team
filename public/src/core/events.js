@@ -384,15 +384,22 @@ export async function handleClick(event) {
     const btn = target.closest('[data-action="quick-fill-login"]');
     const emailInput = document.getElementById('login-email');
     const passInput = document.getElementById('login-password');
-    if (emailInput && btn?.dataset?.email) {
-      emailInput.value = btn.dataset.email;
+    const emailVal = btn?.dataset?.email || 'demo@darc-design.bond';
+    const passVal = btn?.dataset?.pass || 'demo123456';
+    if (emailInput) {
+      emailInput.value = emailVal;
+      emailInput.dispatchEvent(new Event('input', { bubbles: true }));
+      emailInput.dispatchEvent(new Event('change', { bubbles: true }));
     }
-    if (passInput && btn?.dataset?.pass) {
-      passInput.value = btn.dataset.pass;
+    if (passInput) {
+      passInput.value = passVal;
+      passInput.dispatchEvent(new Event('input', { bubbles: true }));
+      passInput.dispatchEvent(new Event('change', { bubbles: true }));
     }
     if (btn?.dataset?.autosubmit === 'true') {
       const loginForm = document.getElementById('login-form');
       if (loginForm) {
+        const isDemoEmail = emailVal.trim().toLowerCase() === 'demo@darc-design.bond' || emailVal.trim().toLowerCase() === 'demo@darc.local';
         const getTurnstileToken = () => {
           if (typeof window !== 'undefined' && window.turnstile && window._turnstileWidgetId !== undefined) {
             return window.turnstile.getResponse(window._turnstileWidgetId);
@@ -409,7 +416,7 @@ export async function handleClick(event) {
         };
 
         const currentToken = getTurnstileToken();
-        if (!currentToken && typeof window !== 'undefined' && window.turnstile) {
+        if (!isDemoEmail && !currentToken && typeof window !== 'undefined' && window.turnstile) {
           btn.disabled = true;
           const origHtml = btn.innerHTML;
           btn.innerHTML = `<span>⏳ ${choose('جاري التحقق من أمان المتصفح...', 'Verifying browser security...')}</span>`;

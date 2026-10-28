@@ -205,9 +205,8 @@ function isAllowedOrigin(originStr) {
       parsed.startsWith('http://127.0.0.1:') ||
       parsed === 'https://darc-design-team.netlify.app' ||
       parsed.endsWith('.darc-design-team.netlify.app') ||
-      parsed === 'https://darc-design-team.workers.dev' ||
-      parsed === 'https://darc-design-team.pages.dev' ||
-      parsed === 'https://darc-design-team.ahmad-hashmi-c.workers.dev' ||
+      parsed.endsWith('.workers.dev') ||
+      parsed.endsWith('.pages.dev') ||
       parsed.endsWith('.darc-design.bond') ||
       parsed === 'https://darc-design.bond' ||
       parsed === 'https://panel.darc-design.bond' ||

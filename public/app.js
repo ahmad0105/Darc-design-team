@@ -61,6 +61,10 @@ window.addEventListener('resize', () => {
 
 // Global runtime error boundaries
 window.addEventListener('error', (event) => {
+  const msg = String(event?.message || event?.error?.message || '');
+  if (msg.includes('Turnstile') || msg.includes('turnstile') || msg.includes('Script error')) {
+    return;
+  }
   console.error("Runtime Error:", event.error);
   if (typeof showToast === 'function') showToast(`خطأ برمجي: ${event.message}`, true);
 });
