@@ -2840,8 +2840,12 @@ var e=Object.defineProperty,t=(t,n)=>{let r={};for(var i in t)e(r,i,{get:t[i],en
       </section>
     `),s.settingsSection===`company`&&(t||F(`manage_settings`))){let e=s.data?.company||{};a=`
       <section class="setting-section">
-        <h2>${D(`company`)}</h2>
-        <p>${O(`هوية مساحة العمل وشعار الشركة واللغة الافتراضية.`,`Workspace identity, company logo, and default language.`)}</p>
+        <div class="panel-head">
+          <div>
+            <h2>${D(`company`)}</h2>
+            <p>${O(`هوية مساحة العمل وشعار الشركة واللغة الافتراضية.`,`Workspace identity, company logo, and default language.`)}</p>
+          </div>
+        </div>
         
         <div class="company-preview">
           <label for="company-logo-file-input" class="logo-upload-trigger" id="company-logo-preview" role="button" tabindex="0" title="${O(`انقر لرفع وتعديل شعار الشركة`,`Click to upload and change company logo`)}">
@@ -2866,7 +2870,7 @@ var e=Object.defineProperty,t=(t,n)=>{let r={};for(var i in t)e(r,i,{get:t[i],en
           </div>
         </div>
 
-        <form data-action="update-company">
+        <form data-action="update-company" class="company-form">
           <div class="form-grid">
             <div class="field">
               <label>${D(`nameAr`)}</label>
@@ -2881,15 +2885,19 @@ var e=Object.defineProperty,t=(t,n)=>{let r={};for(var i in t)e(r,i,{get:t[i],en
               <input value="${k(s.data?.emailConfigured?D(`emailConfigured`):D(`emailNotConfigured`))}" disabled />
             </div>
           </div>
-          <div class="form-actions" style="margin-top:15px;">
+          <div class="form-actions" style="margin-top:20px;">
             <button type="submit" class="btn btn-primary">${D(`save`)}</button>
           </div>
         </form>
-        <div class="login-demo" style="margin-top:12px;">${j(`info`,16)}<span>${D(`emailInfo`)}</span></div>
+        <div class="login-demo" style="margin-top:16px;">${j(`info`,16)}<span>${D(`emailInfo`)}</span></div>
       </section>
       <section class="setting-section">
-        <h2>${O(`نموذج الإنجاز`,`Progress model`)}</h2>
-        <p>${D(`weightedExplanation`)}</p>
+        <div class="panel-head">
+          <div>
+            <h2>${O(`نموذج الإنجاز`,`Progress model`)}</h2>
+            <p>${D(`weightedExplanation`)}</p>
+          </div>
+        </div>
         <div class="report-stat-list">
           <div class="report-stat"><span>${D(`weightedProgress`)}</span><strong style="color:var(--teal)">100%</strong></div>
           <div class="report-stat"><span>${D(`simpleProgress`)}</span><strong style="color:var(--ink-soft)">—</strong></div>
@@ -2897,20 +2905,24 @@ var e=Object.defineProperty,t=(t,n)=>{let r={};for(var i in t)e(r,i,{get:t[i],en
       </section>
     `}if(s.settingsSection===`security`&&(a=`
       <section class="setting-section">
-        <h2>${O(`الأمان`,`Security`)}</h2>
-        <p>${O(`تغيير كلمة المرور أو تسجيل الخروج من كافة الأجهزة.`,`Change your password or sign out from all devices.`)}</p>
+        <div class="panel-head">
+          <div>
+            <h2>${O(`الأمان`,`Security`)}</h2>
+            <p>${O(`تغيير كلمة المرور أو تسجيل الخروج من كافة الأجهزة.`,`Change your password or sign out from all devices.`)}</p>
+          </div>
+        </div>
         <form data-action="change-password">
           <div class="form-grid" style="margin-top:18px">
             <div class="field"><label>${O(`كلمة المرور الحالية`,`Current password`)}</label><input type="password" name="oldPassword" required /></div>
             <div class="field"><label>${O(`كلمة المرور الجديدة`,`New password`)}</label><input type="password" name="newPassword" minlength="10" required /></div>
           </div>
-          <div class="form-actions" style="margin-top:15px"><button type="submit" class="btn btn-primary">${D(`save`)}</button></div>
+          <div class="form-actions" style="margin-top:20px"><button type="submit" class="btn btn-primary">${D(`save`)}</button></div>
         </form>
-        <hr style="margin:30px 0;border:0;border-top:1px solid var(--border)">
-        <div style="display:flex;align-items:center;justify-content:space-between">
+        <hr style="margin:28px 0;border:0;border-top:1px solid var(--line)">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;">
           <div>
-            <h3 style="font-size:14px;margin-bottom:4px">${O(`تسجيل الخروج من كل الأجهزة`,`Sign out of all devices`)}</h3>
-            <p style="color:var(--muted);font-size:13px">${O(`إنهاء كافة الجلسات النشطة على كل المتصفحات.`,`End all active sessions on all browsers.`)}</p>
+            <h3 style="font-size:14px;margin:0 0 4px">${O(`تسجيل الخروج من كل الأجهزة`,`Sign out of all devices`)}</h3>
+            <p style="color:var(--muted);font-size:12px;margin:0;">${O(`إنهاء كافة الجلسات النشطة على كل المتصفحات.`,`End all active sessions on all browsers.`)}</p>
           </div>
           <button class="btn btn-danger btn-sm" data-action="logout-all">${O(`تسجيل خروج للكل`,`Sign out all`)}</button>
         </div>

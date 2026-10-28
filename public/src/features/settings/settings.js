@@ -711,8 +711,12 @@ export function renderSettings() {
     const comp = state.data?.company || {};
     content = `
       <section class="setting-section">
-        <h2>${t('company')}</h2>
-        <p>${choose('هوية مساحة العمل وشعار الشركة واللغة الافتراضية.', 'Workspace identity, company logo, and default language.')}</p>
+        <div class="panel-head">
+          <div>
+            <h2>${t('company')}</h2>
+            <p>${choose('هوية مساحة العمل وشعار الشركة واللغة الافتراضية.', 'Workspace identity, company logo, and default language.')}</p>
+          </div>
+        </div>
         
         <div class="company-preview">
           <label for="company-logo-file-input" class="logo-upload-trigger" id="company-logo-preview" role="button" tabindex="0" title="${choose('انقر لرفع وتعديل شعار الشركة', 'Click to upload and change company logo')}">
@@ -740,7 +744,7 @@ export function renderSettings() {
           </div>
         </div>
 
-        <form data-action="update-company">
+        <form data-action="update-company" class="company-form">
           <div class="form-grid">
             <div class="field">
               <label>${t('nameAr')}</label>
@@ -755,15 +759,19 @@ export function renderSettings() {
               <input value="${esc(state.data?.emailConfigured ? t('emailConfigured') : t('emailNotConfigured'))}" disabled />
             </div>
           </div>
-          <div class="form-actions" style="margin-top:15px;">
+          <div class="form-actions" style="margin-top:20px;">
             <button type="submit" class="btn btn-primary">${t('save')}</button>
           </div>
         </form>
-        <div class="login-demo" style="margin-top:12px;">${icon('info', 16)}<span>${t('emailInfo')}</span></div>
+        <div class="login-demo" style="margin-top:16px;">${icon('info', 16)}<span>${t('emailInfo')}</span></div>
       </section>
       <section class="setting-section">
-        <h2>${choose('نموذج الإنجاز', 'Progress model')}</h2>
-        <p>${t('weightedExplanation')}</p>
+        <div class="panel-head">
+          <div>
+            <h2>${choose('نموذج الإنجاز', 'Progress model')}</h2>
+            <p>${t('weightedExplanation')}</p>
+          </div>
+        </div>
         <div class="report-stat-list">
           <div class="report-stat"><span>${t('weightedProgress')}</span><strong style="color:var(--teal)">100%</strong></div>
           <div class="report-stat"><span>${t('simpleProgress')}</span><strong style="color:var(--ink-soft)">—</strong></div>
@@ -776,20 +784,24 @@ export function renderSettings() {
   if (state.settingsSection === 'security') {
     content = `
       <section class="setting-section">
-        <h2>${choose('الأمان', 'Security')}</h2>
-        <p>${choose('تغيير كلمة المرور أو تسجيل الخروج من كافة الأجهزة.', 'Change your password or sign out from all devices.')}</p>
+        <div class="panel-head">
+          <div>
+            <h2>${choose('الأمان', 'Security')}</h2>
+            <p>${choose('تغيير كلمة المرور أو تسجيل الخروج من كافة الأجهزة.', 'Change your password or sign out from all devices.')}</p>
+          </div>
+        </div>
         <form data-action="change-password">
           <div class="form-grid" style="margin-top:18px">
             <div class="field"><label>${choose('كلمة المرور الحالية', 'Current password')}</label><input type="password" name="oldPassword" required /></div>
             <div class="field"><label>${choose('كلمة المرور الجديدة', 'New password')}</label><input type="password" name="newPassword" minlength="10" required /></div>
           </div>
-          <div class="form-actions" style="margin-top:15px"><button type="submit" class="btn btn-primary">${t('save')}</button></div>
+          <div class="form-actions" style="margin-top:20px"><button type="submit" class="btn btn-primary">${t('save')}</button></div>
         </form>
-        <hr style="margin:30px 0;border:0;border-top:1px solid var(--border)">
-        <div style="display:flex;align-items:center;justify-content:space-between">
+        <hr style="margin:28px 0;border:0;border-top:1px solid var(--line)">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;">
           <div>
-            <h3 style="font-size:14px;margin-bottom:4px">${choose('تسجيل الخروج من كل الأجهزة', 'Sign out of all devices')}</h3>
-            <p style="color:var(--muted);font-size:13px">${choose('إنهاء كافة الجلسات النشطة على كل المتصفحات.', 'End all active sessions on all browsers.')}</p>
+            <h3 style="font-size:14px;margin:0 0 4px">${choose('تسجيل الخروج من كل الأجهزة', 'Sign out of all devices')}</h3>
+            <p style="color:var(--muted);font-size:12px;margin:0;">${choose('إنهاء كافة الجلسات النشطة على كل المتصفحات.', 'End all active sessions on all browsers.')}</p>
           </div>
           <button class="btn btn-danger btn-sm" data-action="logout-all">${choose('تسجيل خروج للكل', 'Sign out all')}</button>
         </div>
