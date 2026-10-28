@@ -3,6 +3,7 @@ import { api } from './api.js';
 import { can, isAdmin, choose, t, esc, icon, avatar, roleName, currentViewTitle } from './utils.js';
 import { saveOfflineBootstrap, getOfflineBootstrap, getOfflineBootstrapAsync, getPendingMutations, isOnline } from './offline.js';
 import { showToast } from '../shared/ui.js';
+import { recordBreadcrumb } from './telemetry.js';
 
 export function canAccessView(view) {
   if (!state.data) return true;
@@ -195,6 +196,7 @@ export function switchView(view, projectId = undefined) {
   if (state.data && !canAccessView(view)) {
     view = getFirstAllowedView();
   }
+  recordBreadcrumb('navigation', `الانتقال إلى واجهة #${view}${projectId ? ` (مشروع: ${projectId})` : ''}`);
   state.view = view;
   if (projectId !== undefined) state.activeProjectId = projectId;
   if (view === 'settings' && !state.settingsSection) state.settingsSection = 'profile';

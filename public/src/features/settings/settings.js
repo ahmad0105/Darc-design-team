@@ -3,6 +3,7 @@ import { api } from '../../core/api.js';
 import { getActiveCalendarSystem, esc, sanitizeForSpreadsheet, choose, icon, t, can, isAdmin, avatar, roleName, initials, statusText, formatDateTime, formatReportDate, formatReportTime } from '../../core/utils.js';
 import { showToast, modalShell, closeModal } from '../../shared/ui.js';
 import { renderAnalyticsSection, fetchAnalyticsData } from './analytics.js';
+import { renderDiagnosticsSection, fetchDiagnosticsData } from './diagnostics.js';
 
 export function renderTeam() {
   if (!isAdmin() && !can('manage_users')) {
@@ -610,7 +611,10 @@ export function renderSettings() {
     ['security', choose('الأمان', 'Security')],
     ['trash', choose('سلة المهملات', 'Trash')],
     ...(userIsAdmin || can('view_audit_logs') ? [['audit', t('audit')]] : []),
-    ...(userIsAdmin || can('view_dashboard') || can('view_reports') ? [['analytics', choose('المراقبة والزيارات والأداء 📈', 'Observability & Analytics 📈')]] : [])
+    ...(userIsAdmin || can('view_dashboard') || can('view_reports') ? [
+      ['analytics', choose('المراقبة والزيارات والأداء 📈', 'Observability & Analytics 📈')],
+      ['diagnostics', choose('تشخيص الأعطال والمستخدمين 🛠️', 'Error Logs & User Diagnostics 🛠️')]
+    ] : [])
   ];
 
   if (!sections.some(([k]) => k === state.settingsSection)) {
@@ -1304,6 +1308,11 @@ export function renderSettings() {
   // ANALYTICS & OBSERVABILITY SECTION
   if (state.settingsSection === 'analytics' && (userIsAdmin || can('view_dashboard') || can('view_reports'))) {
     content = renderAnalyticsSection();
+  }
+
+  // USER ERROR DIAGNOSTICS & INCIDENTS SECTION
+  if (state.settingsSection === 'diagnostics' && (userIsAdmin || can('view_dashboard') || can('view_reports'))) {
+    content = renderDiagnosticsSection();
   }
 
   return `

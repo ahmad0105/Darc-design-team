@@ -225,8 +225,8 @@ export function csrfGuardMiddleware() {
   return async (c, next) => {
     const method = c.req.method;
 
-    // Safe read-only & preflight methods
-    if (method === 'GET' || method === 'HEAD' || method === 'OPTIONS' || c.req.path === '/api/telemetry/heartbeat') {
+    // Safe read-only & preflight methods + telemetry beacons
+    if (method === 'GET' || method === 'HEAD' || method === 'OPTIONS' || c.req.path === '/api/telemetry/heartbeat' || c.req.path === '/api/telemetry/report-error') {
       return next();
     }
 

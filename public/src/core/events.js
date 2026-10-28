@@ -10,6 +10,7 @@ import { getPendingMutations, syncPendingMutations, getOfflineBootstrap, clearOf
 import { exportPortfolioXLS, exportProjectXLS, exportProjectPDF, exportPortfolioPDF } from '../features/projects/projects.js';
 import { exportAuditLogsXLS, printAuditReport, fetchFullAuditHistory } from '../features/settings/settings.js';
 import { fetchAnalyticsData } from '../features/settings/analytics.js';
+import { fetchDiagnosticsData, setDiagnosticsUserFilter, setDiagnosticsSeverityFilter, setDiagnosticsStatusFilter } from '../features/settings/diagnostics.js';
 import { renderActivation, renderLogin, renderResetPassword } from '../features/auth/auth.js';
 
 export async function handleSubmit(event) {
@@ -1074,6 +1075,81 @@ export async function handleClick(event) {
     }
     return;
   }
+  if (action === 'goto-diagnostics') {
+    state.settingsSection = 'diagnostics';
+    if (typeof history !== 'undefined' && history.replaceState) {
+      history.replaceState(null, '', '#settings?section=diagnostics');
+    }
+    renderView();
+    return;
+  }
+  if (action === 'refresh-diagnostics') {
+    try {
+      await fetchDiagnosticsData(true);
+      renderView();
+      showToast(choose('تم تحديث سجل الأخطاء وتشخيصات المستخدمين بنجاح.', 'Diagnostics and incidents refreshed successfully.'));
+    } catch (e) {
+      showToast(e.message, true);
+    }
+    return;
+  }
+  if (action === 'test-incident-simulate') {
+    try {
+      const res = await api('/api/telemetry/test-error', { method: 'POST' });
+      await fetchDiagnosticsData(true);
+      await loadData(true);
+      renderView();
+      showToast(choose('🚨 تم رصد الخطأ وتوثيق خطوات المستخدم وإرسال بريد تنبيه للإدارة بنجاح!', '🚨 Incident recorded with stack trace and alert email sent to admin!'));
+    } catch (e) {
+      showToast(e.message, true);
+    }
+    return;
+  }
+  if (action === 'test-diagnostic-email') {
+    try {
+      const res = await api('/api/telemetry/test-email', { method: 'POST' });
+      showToast(choose('✉️ تم إرسال رسالة اختبار التنبيهات البريدية للإدارة بنجاح!', '✉️ Test alert email dispatched to admin successfully!'));
+    } catch (e) {
+      showToast(e.message, true);
+    }
+    return;
+  }
+  if (action === 'filter-diagnostics-user') {
+    const userId = target.dataset.userId || 'all';
+    setDiagnosticsUserFilter(userId);
+    renderView();
+    return;
+  }
+  if (action === 'clear-diagnostics-user-filter') {
+    setDiagnosticsUserFilter('all');
+    renderView();
+    return;
+  }
+  if (action === 'resolve-diagnostic-incident') {
+    const incId = target.dataset.incidentId;
+    if (incId) {
+      try {
+        await api(`/api/telemetry/incidents/${incId}/resolve`, { method: 'PATCH' });
+        await fetchDiagnosticsData(true);
+        renderView();
+        showToast(choose('تم تحديد المشكلة كمعالجة بنجاح ✅', 'Incident marked as resolved ✅'));
+      } catch (e) {
+        showToast(e.message, true);
+      }
+    }
+    return;
+  }
+  if (action === 'copy-debug-bundle') {
+    const bundle = target.dataset.bundle;
+    if (bundle && typeof navigator !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard.writeText(bundle).then(() => {
+        showToast(choose('تم نسخ تقرير المشكلة الفني بالكامل للحافظة 📋', 'Full debug bundle copied to clipboard 📋'));
+      }).catch(() => {
+        showToast(choose('فشل النسخ التلقائي للحافظة', 'Failed to copy to clipboard'), true);
+      });
+    }
+    return;
+  }
   if (action === 'restore-item') {
     try {
       await api(`/api/restore/${target.dataset.type}/${target.dataset.id}`, { method: 'POST' });
@@ -1289,6 +1365,16 @@ export function handleInput(event) {
 }
 
 export async function handleChange(event) {
+  if (event.target.dataset.action === 'filter-diagnostics-severity') {
+    setDiagnosticsSeverityFilter(event.target.value);
+    renderView();
+    return;
+  }
+  if (event.target.dataset.action === 'filter-diagnostics-status') {
+    setDiagnosticsStatusFilter(event.target.value);
+    renderView();
+    return;
+  }
   if (event.target.dataset.action === 'change-doc-status') {
     const docId = event.target.dataset.docId;
     const newStatus = event.target.value;

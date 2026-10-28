@@ -2,6 +2,7 @@ import { state } from './state.js';
 import { generatePrefixedId, enqueueOfflineMutation, simulateOfflineMutation } from './offline.js';
 import { choose } from './utils.js';
 import { showToast } from '../shared/ui.js';
+import { recordBreadcrumb } from './telemetry.js';
 
 // Dynamically match current hostname/port or use proxy
 export const API_BASE = (typeof window !== 'undefined' && (window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost'))
@@ -134,6 +135,7 @@ export async function api(path, options = {}) {
       }
     }
     
+    recordBreadcrumb('api.error', `${options.method || 'GET'} ${path} (Status ${response.status}: ${payload.error || 'Failed'})`);
     const err = new Error(payload.error || `Failed to fetch ${path}`);
     err.status = response.status;
     throw err;

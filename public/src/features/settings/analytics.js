@@ -215,9 +215,14 @@ export function renderAnalyticsSection() {
             </h3>
             <p style="margin:4px 0 0;font-size:12px;color:var(--muted);">${choose('يراقب استهلاك ذاكرة الـ Heap، تكرار الأخطاء، والضغط المفاجئ، ويرسل إشعارات فورية لمدير النظام.', 'Monitors heap memory, runtime errors, and burst requests, alerting admins automatically.')}</p>
           </div>
-          <span class="status-badge ${anomalies.some(a => a.status === 'active') ? 'urgent' : 'done'}">
-            ${anomalies.some(a => a.status === 'active') ? choose('⚠️ تم رصد حالات تستدعي المتابعة', '⚠️ Active Anomalies') : choose('✓ جميع الأجهزة تعمل باستهلاك طبيعي', '✓ Optimal Performance')}
-          </span>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <button type="button" class="btn btn-xs btn-primary" data-action="goto-diagnostics" style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;">
+              <span>🛠️</span> ${choose('سجل تفاصيل أخطاء المستخدمين ←', 'User Incident Explorer ←')}
+            </button>
+            <span class="status-badge ${anomalies.some(a => a.status === 'active') ? 'urgent' : 'done'}">
+              ${anomalies.some(a => a.status === 'active') ? choose('⚠️ تم رصد حالات تستدعي المتابعة', '⚠️ Active Anomalies') : choose('✓ جميع الأجهزة تعمل باستهلاك طبيعي', '✓ Optimal Performance')}
+            </span>
+          </div>
         </div>
 
         <div style="display:flex;flex-direction:column;gap:10px;">

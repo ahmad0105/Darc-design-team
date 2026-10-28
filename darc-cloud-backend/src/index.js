@@ -264,7 +264,7 @@ app.get('/api/health', (c) => c.json({ ok: true, status: 'healthy', env: 'produc
 
 // JWT Guard with Token Revocation Protection
 app.use('/api/*', async (c, next) => {
-  if (c.req.path.startsWith('/api/auth') || c.req.path === '/api/health' || c.req.path === '/api/telemetry/heartbeat') return next();
+  if (c.req.path.startsWith('/api/auth') || c.req.path === '/api/health' || c.req.path === '/api/telemetry/heartbeat' || c.req.path === '/api/telemetry/report-error') return next();
   const token = getSessionToken(c);
   if (!token) return c.json({ error: 'غير مصرح لك بالدخول' }, 401);
   let payload;
@@ -355,8 +355,8 @@ app.use('/api/*', async (c, next) => {
   const path = c.req.path;
   const method = c.req.method;
 
-  // 1. Allow routes specifically wired for demo: /api/bootstrap, /api/demo/reset, /api/tasks, /api/documents
-  if (path === '/api/bootstrap' || path.startsWith('/api/demo') || path.startsWith('/api/tasks') || path.startsWith('/api/documents')) {
+  // 1. Allow routes specifically wired for demo: /api/bootstrap, /api/demo/reset, /api/tasks, /api/documents, /api/telemetry
+  if (path === '/api/bootstrap' || path.startsWith('/api/demo') || path.startsWith('/api/tasks') || path.startsWith('/api/documents') || path.startsWith('/api/telemetry')) {
     return next();
   }
 
