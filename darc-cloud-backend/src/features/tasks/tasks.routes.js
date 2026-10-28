@@ -113,8 +113,12 @@ app.post('/', async (c) => {
   // Reversible auto-progress mapping
   let progress = calculateAutoProgress(status);
   if (progress === null) {
-    progress = typeof body.progress === 'number' ? body.progress : 0;
+    const rawProgress = typeof body.progress === 'number' ? body.progress : (Number(body.progress) || 0);
+    progress = Math.max(0, Math.min(100, Math.round(rawProgress)));
   }
+
+  const rawWeight = typeof body.weight === 'number' ? body.weight : (Number(body.weight) || 1);
+  const weight = Math.max(1, Math.min(100, Math.round(rawWeight)));
 
   const customFields = sanitizeCustomFields({
     ...(body.customFields || body.custom_fields || {}),
@@ -136,7 +140,7 @@ app.post('/', async (c) => {
     parent_task_id: body.parentTaskId || body.parent_task_id || null,
     start_date: body.startDate || body.start_date || null,
     due_date: body.dueDate || body.due_date || null,
-    weight: typeof body.weight === 'number' ? body.weight : 1,
+    weight,
     progress,
     custom_fields: customFields,
     template_id: templateId || null,
@@ -319,6 +323,7 @@ app.patch('/:id', async (c) => {
   }
 
   const updates = {};
+  const hasManagerEdit = (roleId === 'admin') || (await hasPermission(supabase, userId, roleId, 'edit_tasks', task.project_id));
   
   const fieldMap = { 
     titleAr: 'title_ar', titleEn: 'title_en', descriptionAr: 'description_ar', descriptionEn: 'description_en', 
@@ -333,8 +338,22 @@ app.patch('/:id', async (c) => {
     const valInBody = body[camel] !== undefined ? body[camel] : body[snake];
     if (valInBody !== undefined) {
       let val = valInBody;
+      // Protected fields: only managers with edit_tasks can reassign or adjust weights
+      if (!hasManagerEdit && ['assignee_id', 'reviewer_id', 'approver_id', 'weight'].includes(snake)) {
+        continue;
+      }
       if (['start_date', 'due_date', 'assignee_id', 'reviewer_id', 'approver_id', 'parent_task_id', 'template_id'].includes(snake)) {
         val = val ? val : null;
+      }
+      if (snake === 'weight') {
+        const num = Number(val);
+        if (isNaN(num)) continue;
+        val = Math.max(1, Math.min(100, Math.round(num)));
+      }
+      if (snake === 'progress') {
+        const num = Number(val);
+        if (isNaN(num)) continue;
+        val = Math.max(0, Math.min(100, Math.round(num)));
       }
       if (snake === 'status' && val && !['not_started', 'in_progress', 'review', 'approval', 'done', 'canceled'].includes(val)) {
         continue;

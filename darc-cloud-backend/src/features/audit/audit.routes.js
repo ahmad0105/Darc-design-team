@@ -35,6 +35,13 @@ auditApp.get('/', async (c) => {
   const startDate = url.searchParams.get('startDate');
   const endDate = url.searchParams.get('endDate');
 
+  if (startDate && isNaN(new Date(startDate).getTime())) {
+    return c.json({ error: 'تاريخ البدء غير صالح' }, 400);
+  }
+  if (endDate && isNaN(new Date(endDate).getTime())) {
+    return c.json({ error: 'تاريخ النهاية غير صالح' }, 400);
+  }
+
   if (isDemo) {
     const demoData = getDemoPayload();
     let logs = (demoData.auditLogs || []).map(log => {
@@ -175,19 +182,31 @@ auditApp.get('/export', async (c) => {
   const isAhmad = userId === 'usr_ahmad';
   const isAdmin = roleId === 'admin' || isAhmad;
 
+  let effectiveUserId = null;
   if (!isAdmin && !isDemo) {
     const supabase = getDB(c.env);
     const { data: userRole } = await supabase.from('users').select('roles(permissions)').eq('id', userId).single();
     const permissions = userRole?.roles?.permissions || [];
-    if (!permissions.includes('*') && !permissions.includes('view_audit_logs') && !permissions.includes('export_reports')) {
+    const hasAuditPerm = permissions.includes('*') || permissions.includes('view_audit_logs');
+    const hasExportPerm = permissions.includes('export_reports');
+    if (!hasAuditPerm && !hasExportPerm) {
       return c.json({ error: 'غير مصرح لك بتصدير سجل الرقابة' }, 403);
     }
+    if (!hasAuditPerm) {
+      effectiveUserId = userId;
+    }
+  } else if (!isAdmin && isDemo) {
+    effectiveUserId = userId;
   }
 
   let logs = [];
   if (isDemo) {
     const demoData = getDemoPayload();
-    logs = (demoData.auditLogs || []).map(log => {
+    let rawList = demoData.auditLogs || [];
+    if (effectiveUserId) {
+      rawList = rawList.filter(l => l.userId === effectiveUserId);
+    }
+    logs = rawList.map(log => {
       const u = demoData.users.find(usr => usr.id === log.userId);
       return {
         ...log,
@@ -203,10 +222,16 @@ auditApp.get('/export', async (c) => {
       roleId: u.role_id
     }]));
 
-    const { data: rawLogs } = await supabase.from('audit_logs')
+    let logQuery = supabase.from('audit_logs')
       .select('id, user_id, action, entity_type, entity_id, details, created_at')
       .order('created_at', { ascending: false })
       .limit(3000);
+
+    if (effectiveUserId) {
+      logQuery = logQuery.eq('user_id', effectiveUserId);
+    }
+
+    const { data: rawLogs } = await logQuery;
 
     const safeLogs = isAhmad ? (rawLogs || []) : (rawLogs || []).filter(a => a.user_id !== 'usr_ahmad' && a.entity_id !== 'usr_ahmad');
     logs = safeLogs.map(l => ({

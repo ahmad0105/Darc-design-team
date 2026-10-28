@@ -25,12 +25,37 @@ app.patch('/', async (c) => {
   }
   const body = await c.req.json();
   
+  const sanitizeText = (val, max = 100) => {
+    if (val === null || val === undefined) return undefined;
+    if (typeof val !== 'string') throw new Error('قيمة نصية غير صالحة');
+    const cleaned = val.replace(/<[^>]*>/g, '').trim();
+    if (cleaned.length > max) throw new Error(`النص يتجاوز الحد الأقصى المسموح (${max} حرف)`);
+    return cleaned;
+  };
+
+  let cleanNameAr, cleanNameEn;
+  try {
+    const rawNameAr = body.nameAr !== undefined ? body.nameAr : body.name_ar;
+    const rawNameEn = body.nameEn !== undefined ? body.nameEn : body.name_en;
+    if (rawNameAr !== undefined) {
+      cleanNameAr = sanitizeText(rawNameAr, 100);
+      if (!cleanNameAr) {
+        return c.json({ error: 'اسم الشركة بالعربية لا يمكن أن يكون فارغاً' }, 400);
+      }
+    }
+    if (rawNameEn !== undefined) {
+      cleanNameEn = sanitizeText(rawNameEn, 100);
+    }
+  } catch (err) {
+    return c.json({ error: err.message }, 400);
+  }
+
   const current = await getCachedCompany(supabase);
   const updates = {
     ...current,
-    name: body.nameAr || body.name || current.name || 'DARC Design Team',
-    name_ar: body.nameAr !== undefined ? body.nameAr : (body.name_ar !== undefined ? body.name_ar : current.name_ar),
-    name_en: body.nameEn !== undefined ? body.nameEn : (body.name_en !== undefined ? body.name_en : current.name_en),
+    name: cleanNameAr || current.name_ar || current.name || 'DARC Design Team',
+    name_ar: cleanNameAr !== undefined ? cleanNameAr : current.name_ar,
+    name_en: cleanNameEn !== undefined ? cleanNameEn : current.name_en,
     updated_at: new Date().toISOString()
   };
   const rawLogo = body.logoUrl !== undefined ? body.logoUrl : body.logo_url;

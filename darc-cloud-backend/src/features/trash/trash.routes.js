@@ -300,6 +300,9 @@ app.delete('/:type/:id', async (c) => {
     if (type === 'document') {
       const { data: doc } = await supabase.from('documents').select('*').eq('id', id).single();
       if (!doc) return c.json({ error: 'المستند غير موجود' }, 404);
+      if (!doc.deleted_at) {
+        return c.json({ error: 'المستند ليس في سلة المحذوفات' }, 400);
+      }
 
       if (!isGlobalAdmin && doc.uploader_id !== userId) {
         // Check if user is manager of the project or the one who deleted it
@@ -322,9 +325,13 @@ app.delete('/:type/:id', async (c) => {
       if (error) throw error;
 
     } else if (type === 'task') {
+      const { data: task } = await supabase.from('tasks').select('project_id, assignee_id, deleted_at').eq('id', id).single();
+      if (!task) return c.json({ error: 'المهمة غير موجودة' }, 404);
+      if (!task.deleted_at) {
+        return c.json({ error: 'المهمة ليست في سلة المحذوفات' }, 400);
+      }
+
       if (!isGlobalAdmin) {
-        const { data: task } = await supabase.from('tasks').select('project_id, assignee_id').eq('id', id).single();
-        if (!task) return c.json({ error: 'المهمة غير موجودة' }, 404);
         const { data: audit } = await supabase.from('audit_logs').select('user_id').eq('entity_id', id).eq('action', 'delete').single();
         const { data: proj } = await supabase.from('projects').select('manager_id').eq('id', task.project_id).single();
         if (audit?.user_id !== userId && proj?.manager_id !== userId && task.assignee_id !== userId) {
@@ -352,8 +359,13 @@ app.delete('/:type/:id', async (c) => {
       if (error) throw error;
 
     } else if (type === 'project') {
+      const { data: proj } = await supabase.from('projects').select('manager_id, deleted_at').eq('id', id).single();
+      if (!proj) return c.json({ error: 'المشروع غير موجود' }, 404);
+      if (!proj.deleted_at) {
+        return c.json({ error: 'المشروع ليس في سلة المحذوفات' }, 400);
+      }
+
       if (!isGlobalAdmin) {
-        const { data: proj } = await supabase.from('projects').select('manager_id').eq('id', id).single();
         if (proj?.manager_id !== userId) {
           return c.json({ error: 'غير مصرح لك بالحذف النهائي لهذا المشروع' }, 403);
         }

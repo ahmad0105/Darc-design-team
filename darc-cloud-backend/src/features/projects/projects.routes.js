@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { getDB } from '../../core/db.js';
-import { hasPermission } from '../../utils/permissions.js';
+import { hasPermission, isProjectVisible } from '../../utils/permissions.js';
 import { toCamelCase } from '../../utils/transformers.js';
 import { invalidateBootstrapCache } from '../../core/cache.js';
 
@@ -142,7 +142,7 @@ app.patch('/:id', async (c) => {
   if (error) throw error;
 
   if (Array.isArray(body.memberIds)) {
-    const newMemberIds = body.memberIds.filter(mid => typeof mid === 'string' && mid.trim().length > 0);
+    const newMemberIds = body.memberIds.filter(mid => typeof mid === 'string' && /^usr_[a-zA-Z0-9_-]{3,64}$/.test(mid.trim()));
     const effectiveMgr = updates.manager_id || project.manager_id;
     const memberRows = [];
     if (effectiveMgr) {
@@ -213,6 +213,10 @@ app.post('/:id/clone', async (c) => {
 
   if (!(await hasPermission(supabase, userId, roleId, 'create_projects'))) {
     return c.json({ error: 'لا تملك الصلاحية المطلوبة لهذه العملية' }, 403);
+  }
+
+  if (!(await isProjectVisible(supabase, userId, roleId, originalProjectId))) {
+    return c.json({ error: 'غير مصرح لك بالوصول إلى هذا المشروع أو نسخه' }, 403);
   }
 
   const body = await c.req.json();

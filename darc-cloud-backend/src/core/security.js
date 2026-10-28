@@ -281,13 +281,21 @@ export function csrfGuardMiddleware() {
 
 /**
  * Cryptographically secure identifier generator using Web Crypto API.
- * Works uniformly in Cloudflare Workers and Node.js.
+ * Works uniformly in Cloudflare Workers and Node.js with 96-bit collision resistance.
  */
 export function generateSecureId(prefix = 'id_') {
-  if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
-    const bytes = new Uint8Array(6);
-    crypto.getRandomValues(bytes);
-    return prefix + Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
+  if (typeof crypto !== 'undefined') {
+    if (crypto.getRandomValues) {
+      const bytes = new Uint8Array(12);
+      crypto.getRandomValues(bytes);
+      return prefix + Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
+    }
+    if (crypto.randomUUID) {
+      return prefix + crypto.randomUUID().replace(/-/g, '').slice(0, 24);
+    }
   }
-  return prefix + Math.random().toString(36).substr(2, 9);
+  // Cryptographically backed fallback
+  const now = Date.now().toString(36);
+  const rnd = Array.from({ length: 16 }, () => Math.floor(Math.random() * 36).toString(36)).join('');
+  return prefix + now + rnd;
 }

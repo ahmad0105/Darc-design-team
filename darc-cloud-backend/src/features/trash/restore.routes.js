@@ -32,6 +32,9 @@ app.post('/:type/:id', async (c) => {
   if (type === 'document') {
     const { data: doc } = await supabase.from('documents').select('*').eq('id', id).single();
     if (!doc) return c.json({ error: 'المستند غير موجود' }, 404);
+    if (!doc.deleted_at) {
+      return c.json({ error: 'المستند غير محذوف بالفعل' }, 400);
+    }
 
     if (!isGlobalAdmin) {
       // Must belong to the project, and be uploader, deleter, or project manager
@@ -73,8 +76,13 @@ app.post('/:type/:id', async (c) => {
     return c.json({ ok: true, message: 'تم استعادة المستند بنجاح.' });
 
   } else if (type === 'project') {
+    const { data: proj } = await supabase.from('projects').select('manager_id, deleted_at').eq('id', id).single();
+    if (!proj) return c.json({ error: 'المشروع غير موجود' }, 404);
+    if (!proj.deleted_at) {
+      return c.json({ error: 'المشروع غير محذوف بالفعل' }, 400);
+    }
+
     if (!isGlobalAdmin) {
-      const { data: proj } = await supabase.from('projects').select('manager_id').eq('id', id).single();
       if (proj?.manager_id !== userId) {
         return c.json({ error: 'غير مصرح لك باستعادة هذا المشروع، الصلاحية لمدير المشروع أو المشرفين فقط' }, 403);
       }
@@ -93,8 +101,11 @@ app.post('/:type/:id', async (c) => {
     return c.json({ ok: true, message: 'تم استعادة المشروع ومهامه ومستنداته بنجاح.' });
 
   } else if (type === 'task') {
-    const { data: task } = await supabase.from('tasks').select('project_id, assignee_id').eq('id', id).single();
+    const { data: task } = await supabase.from('tasks').select('project_id, assignee_id, deleted_at').eq('id', id).single();
     if (!task) return c.json({ error: 'المهمة غير موجودة' }, 404);
+    if (!task.deleted_at) {
+      return c.json({ error: 'المهمة غير محذوفة بالفعل' }, 400);
+    }
 
     if (!isGlobalAdmin) {
       const { data: member } = await supabase.from('project_members').select('project_id').eq('project_id', task.project_id).eq('user_id', userId).single();

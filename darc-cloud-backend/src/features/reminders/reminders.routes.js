@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { getDB } from '../../core/db.js';
-import { isProjectVisible } from '../../utils/permissions.js';
+import { isProjectVisible, hasPermission } from '../../utils/permissions.js';
 import { toCamelCase } from '../../utils/transformers.js';
 import { generateSecureId } from '../../core/security.js';
 
@@ -70,13 +70,20 @@ app.post('/', async (c) => {
   }]).select().single();
 
   // Also sync with task custom_fields.reminders array for instant fast UI caching
+  // Only update task table if user has permission to edit tasks or is the assignee
   if (task && body.taskId && remindAt) {
     try {
-      const existingReminders = Array.isArray(task.custom_fields?.reminders) ? task.custom_fields.reminders : [];
-      const newEntry = { id, remindAt, noteAr, createdBy: userId, createdAt: new Date().toISOString() };
-      const updatedList = [...existingReminders.filter(r => r.id !== id), newEntry];
-      const fields = { ...(task.custom_fields || {}), reminders: updatedList };
-      await supabase.from('tasks').update({ custom_fields: fields }).eq('id', body.taskId);
+      const canEditTask = (roleId === 'admin') ||
+        (task.assignee_id === userId) ||
+        (await hasPermission(supabase, userId, roleId, 'edit_tasks', task.project_id));
+
+      if (canEditTask) {
+        const existingReminders = Array.isArray(task.custom_fields?.reminders) ? task.custom_fields.reminders : [];
+        const newEntry = { id, remindAt, noteAr, createdBy: userId, createdAt: new Date().toISOString() };
+        const updatedList = [...existingReminders.filter(r => r.id !== id), newEntry];
+        const fields = { ...(task.custom_fields || {}), reminders: updatedList };
+        await supabase.from('tasks').update({ custom_fields: fields }).eq('id', body.taskId);
+      }
     } catch (e) {
       console.warn('[Reminders] Custom fields sync note:', e.message);
     }

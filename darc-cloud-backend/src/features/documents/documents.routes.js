@@ -433,6 +433,11 @@ app.put('/chunk', async (c) => {
 
   const chunk = await c.req.arrayBuffer();
 
+  const avScan = inspectFileBuffer(chunk);
+  if (avScan.isMalware) {
+    return c.json({ error: avScan.reason, code: 'MALWARE_DETECTED' }, 400);
+  }
+
   const res = await fetch(sessionUrl, {
     method: 'PUT',
     headers: {
@@ -658,7 +663,7 @@ app.patch('/:id', async (c) => {
   const userId = c.get('userId');
   const roleId = c.get('roleId');
 
-  const { data: doc } = await supabase.from('documents').select('project_id, uploader_id, original_name').eq('id', docId).single();
+  const { data: doc } = await supabase.from('documents').select('project_id, task_id, uploader_id, original_name, status').eq('id', docId).single();
   if (!doc) return c.json({ error: 'المستند غير موجود' }, 404);
   
   if (doc.uploader_id !== userId && !(await hasPermission(supabase, userId, roleId, 'edit_tasks', doc.project_id))) {
@@ -666,8 +671,22 @@ app.patch('/:id', async (c) => {
   }
   
   const updates = {};
-  if (body.originalName) updates.original_name = body.originalName;
-  if (body.status) {
+  if (body.originalName !== undefined) {
+    if (typeof body.originalName !== 'string' || !body.originalName.trim() || body.originalName.length > 255) {
+      return c.json({ error: 'اسم المستند غير صالح' }, 400);
+    }
+    const cleanName = body.originalName.trim();
+    if (isDangerousFile(cleanName)) {
+      return c.json({ error: 'صيغة الملف غير مسموح برفعها أو تسميتها لأسباب أمنية.' }, 400);
+    }
+    updates.original_name = cleanName;
+  }
+
+  const VALID_STATUSES = ['draft', 'review', 'approved', 'superseded'];
+  if (body.status !== undefined) {
+    if (!VALID_STATUSES.includes(body.status)) {
+      return c.json({ error: 'حالة المستند غير صالحة' }, 400);
+    }
     if (body.status === 'approved') {
       const authorized = await canUserApprove(supabase, userId, roleId, doc.project_id);
       if (!authorized) {
