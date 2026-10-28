@@ -975,8 +975,9 @@ export function renderSettings() {
             ${icon('document', 12)} ${choose('المستندات', 'Documents')} <span class="badge" style="margin-inline-start:4px;font-size:10px;background:rgba(255,255,255,0.25);">${docCount}</span>
           </button>
         </div>
-        <div style="min-width:220px;max-width:320px;flex:1;">
-          <input type="search" class="input input-sm" placeholder="${choose('بحث في المحذوفات...', 'Search deleted items...')}" value="${esc(state.trashQuery || '')}" data-action="search-trash-input" style="width:100%;padding:6px 12px;font-size:12px;" />
+        <div class="search-box search-sm" style="min-width:220px;max-width:320px;flex:1;">
+          ${icon('search', 14)}
+          <input type="search" placeholder="${choose('بحث في المحذوفات...', 'Search deleted items...')}" value="${esc(state.trashQuery || '')}" data-action="search-trash-input" />
         </div>
       </div>
 
@@ -1203,18 +1204,19 @@ export function renderSettings() {
           </div>
         </div>
 
-        <div class="audit-toolbar" style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:16px;flex-wrap:wrap;background:var(--surface-soft);padding:10px 14px;border-radius:12px;border:1px solid var(--line);">
-          <div style="flex:1;min-width:220px;max-width:360px;">
-            <input type="search" class="input input-sm" placeholder="${choose('بحث فوري بالمنفذ، العملية، أو التفاصيل...', 'Search by actor, action, details...')}" value="${esc(state.auditSearchQuery || '')}" data-action="search-audit-input" style="width:100%;font-size:12px;padding:6px 12px;" />
+        <div class="view-toolbar audit-toolbar" style="gap:10px;margin-bottom:16px;">
+          <div class="search-box search-sm" style="flex:1;min-width:240px;max-width:380px;">
+            ${icon('search', 14)}
+            <input type="search" placeholder="${choose('بحث فوري بالمنفذ، العملية، أو التفاصيل...', 'Search by actor, action, details...')}" value="${esc(state.auditSearchQuery || '')}" data-action="search-audit-input" />
           </div>
           <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-            <select class="input input-sm" data-action="filter-audit-action" style="font-size:11.5px;padding:5px 8px;cursor:pointer;">
+            <select class="filter-select select-compact select-sm" data-action="filter-audit-action" style="min-width:125px;">
               ${ACTION_FILTERS.map(([val, label]) => `<option value="${val}" ${currentAction === val ? 'selected' : ''}>${label}</option>`).join('')}
             </select>
-            <select class="input input-sm" data-action="filter-audit-entity" style="font-size:11.5px;padding:5px 8px;cursor:pointer;">
+            <select class="filter-select select-compact select-sm" data-action="filter-audit-entity" style="min-width:125px;">
               ${ENTITY_FILTERS.map(([val, label]) => `<option value="${val}" ${currentEntity === val ? 'selected' : ''}>${label}</option>`).join('')}
             </select>
-            <select class="input input-sm" data-action="filter-audit-user" style="font-size:11.5px;padding:5px 8px;cursor:pointer;">
+            <select class="filter-select select-compact select-sm" data-action="filter-audit-user" style="min-width:140px;">
               <option value="all">${choose('كافة المستخدمين', 'All Users')}</option>
               ${(state.data?.users || []).map(u => `<option value="${u.id}" ${currentUser === u.id ? 'selected' : ''}>${esc(choose(u.name, u.nameEn || u.name))}</option>`).join('')}
             </select>

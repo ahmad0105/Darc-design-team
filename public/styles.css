@@ -578,11 +578,122 @@ a { color: inherit; text-decoration: none; }
 
 .view-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface, #fff); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02); }
 .view-toolbar-start, .view-toolbar-end { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
-.search-box { min-width: 240px; height: 38px; box-sizing: border-box; display: inline-flex; align-items: center; gap: 9px; padding: 0 12px; color: var(--muted); border: 1px solid var(--line); border-radius: 10px; background: var(--surface, #fff); transition: border-color 0.15s ease, box-shadow 0.15s ease; }
-.search-box:hover, .filter-select:hover, .select-compact:hover, .search-input input:hover { border-color: #a4c7c2; }
-.search-box:focus-within, .filter-select:focus, .select-compact:focus, .search-input input:focus { border-color: var(--teal, #0d9488) !important; box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.12) !important; outline: 0 !important; }
-.search-box svg { width: 15px; height: 15px; flex: none; color: var(--muted); }
-.search-box input { width: 100%; height: 100%; padding: 0; border: 0; outline: 0; color: var(--ink); background: transparent; font-size: 12px; font-weight: 500; }
+/* --- Universal Search Box & Input Hierarchy --- */
+.search-box {
+  min-width: 240px;
+  height: 38px;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 0 12px;
+  color: var(--muted);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface, #fff);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+
+.search-box:hover, .filter-select:hover, .select-compact:hover, .search-input input:hover, .input:hover {
+  border-color: #a4c7c2;
+}
+
+.search-box:focus-within, .filter-select:focus, .select-compact:focus, .search-input input:focus, .input:focus {
+  border-color: var(--teal, #0d9488) !important;
+  box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.14) !important;
+  outline: 0 !important;
+}
+
+.search-box svg {
+  width: 15px;
+  height: 15px;
+  flex: none;
+  color: var(--muted);
+  transition: color 0.15s ease;
+}
+
+.search-box:focus-within svg {
+  color: var(--teal, #0d9488);
+}
+
+.search-box input {
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  color: var(--ink);
+  background: transparent;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: inherit;
+}
+
+.search-box input::placeholder, .input::placeholder {
+  color: var(--muted);
+  opacity: 0.85;
+}
+
+/* Standalone Input Classes */
+.input {
+  box-sizing: border-box;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink);
+  background-color: var(--surface, #fff);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  outline: 0;
+  height: 38px;
+  padding: 0 12px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+
+/* Sizing Modifiers */
+.search-box.search-sm {
+  min-width: 180px;
+  height: 34px;
+  padding: 0 10px;
+  gap: 7px;
+  border-radius: 8px;
+}
+.search-box.search-sm svg {
+  width: 14px;
+  height: 14px;
+}
+.search-box.search-sm input {
+  font-size: 11.5px !important;
+}
+
+.search-box.search-lg {
+  height: 44px;
+  padding: 0 14px;
+  gap: 10px;
+  border-radius: 12px;
+}
+.search-box.search-lg svg {
+  width: 16px;
+  height: 16px;
+}
+.search-box.search-lg input {
+  font-size: 13px;
+}
+
+.input-sm {
+  height: 34px !important;
+  padding: 0 10px !important;
+  font-size: 11.5px !important;
+  border-radius: 8px !important;
+}
+
+.input-lg {
+  height: 44px !important;
+  padding: 0 14px !important;
+  font-size: 13px !important;
+  border-radius: 12px !important;
+}
+
 /* --- Universal Dropdown & Select Box Styling (Every select has the chevron arrow) --- */
 select, .filter-select, .select-compact {
   appearance: none !important;
@@ -608,14 +719,26 @@ select, .filter-select, .select-compact {
 .filter-select, .sort-box select, .select-compact {
   height: 38px;
 }
+.select-compact.select-sm, select.input-sm {
+  height: 34px !important;
+  padding: 0 10px 0 28px !important;
+  font-size: 11.5px !important;
+  border-radius: 8px !important;
+  background-size: 12px 12px !important;
+  background-position: left 8px center !important;
+}
 .is-ltr select, .is-ltr .filter-select, .is-ltr .select-compact, [dir="ltr"] select, [dir="ltr"] .filter-select, [dir="ltr"] .select-compact {
   padding: 0 34px 0 12px;
   background-position: right 12px center !important;
 }
+.is-ltr .select-compact.select-sm, .is-ltr select.input-sm, [dir="ltr"] .select-compact.select-sm, [dir="ltr"] select.input-sm {
+  padding: 0 28px 0 10px !important;
+  background-position: right 8px center !important;
+}
 [data-theme="dark"] select,
 [data-theme="dark"] .filter-select,
 [data-theme="dark"] .select-compact {
-  background-color: var(--surface-soft, #1e293b);
+  background-color: var(--surface, #1e293b) !important;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") !important;
 }
 .sort-box { display: inline-flex; align-items: center; gap: 6px; }
@@ -1650,13 +1773,21 @@ body:has(#floating-upload-manager) .toast-stack { bottom: 230px; }
 [data-theme="dark"] input,
 [data-theme="dark"] select,
 [data-theme="dark"] textarea {
-  background-color: var(--surface-soft) !important;
-  border-color: var(--line) !important;
+  background-color: var(--surface-soft);
+  border-color: var(--line);
+  color: var(--ink);
+}
+
+[data-theme="dark"] .search-box input {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
   color: var(--ink) !important;
 }
 
 [data-theme="dark"] input::placeholder,
-[data-theme="dark"] textarea::placeholder {
+[data-theme="dark"] textarea::placeholder,
+[data-theme="dark"] .search-box input::placeholder {
   color: var(--muted) !important;
 }
 
@@ -1768,19 +1899,46 @@ body:has(#floating-upload-manager) .toast-stack { bottom: 230px; }
 }
 
 [data-theme="dark"] .filter-select,
-[data-theme="dark"] .select-compact {
-  background-color: var(--surface-soft);
-  border-color: var(--line);
-  color: var(--ink);
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+[data-theme="dark"] .select-compact,
+[data-theme="dark"] select {
+  background-color: var(--surface) !important;
+  border-color: var(--line) !important;
+  color: var(--ink) !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") !important;
 }
 
-[data-theme="dark"] .search-box {
-  background: var(--surface-soft);
-  border-color: var(--line);
+[data-theme="dark"] .search-box,
+[data-theme="dark"] .input {
+  background-color: var(--surface) !important;
+  border-color: var(--line) !important;
+  color: var(--ink) !important;
+}
+
+[data-theme="dark"] .search-box:hover,
+[data-theme="dark"] .input:hover,
+[data-theme="dark"] .filter-select:hover,
+[data-theme="dark"] .select-compact:hover {
+  border-color: #38bdf8 !important;
+}
+
+[data-theme="dark"] .search-box:focus-within,
+[data-theme="dark"] .input:focus,
+[data-theme="dark"] .filter-select:focus,
+[data-theme="dark"] .select-compact:focus {
+  border-color: var(--teal, #0d9488) !important;
+  box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.25) !important;
+}
+
+[data-theme="dark"] .view-toolbar,
+[data-theme="dark"] .audit-toolbar {
+  background: var(--surface-soft) !important;
+  border-color: var(--line) !important;
 }
 
 [data-theme="dark"] .search-box input {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
   color: var(--ink) !important;
 }
 

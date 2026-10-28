@@ -3047,8 +3047,9 @@ var e=Object.defineProperty,t=(t,n)=>{let r={};for(var i in t)e(r,i,{get:t[i],en
             ${j(`document`,12)} ${O(`المستندات`,`Documents`)} <span class="badge" style="margin-inline-start:4px;font-size:10px;background:rgba(255,255,255,0.25);">${u}</span>
           </button>
         </div>
-        <div style="min-width:220px;max-width:320px;flex:1;">
-          <input type="search" class="input input-sm" placeholder="${O(`بحث في المحذوفات...`,`Search deleted items...`)}" value="${k(s.trashQuery||``)}" data-action="search-trash-input" style="width:100%;padding:6px 12px;font-size:12px;" />
+        <div class="search-box search-sm" style="min-width:220px;max-width:320px;flex:1;">
+          ${j(`search`,14)}
+          <input type="search" placeholder="${O(`بحث في المحذوفات...`,`Search deleted items...`)}" value="${k(s.trashQuery||``)}" data-action="search-trash-input" />
         </div>
       </div>
 
@@ -3181,18 +3182,19 @@ var e=Object.defineProperty,t=(t,n)=>{let r={};for(var i in t)e(r,i,{get:t[i],en
           </div>
         </div>
 
-        <div class="audit-toolbar" style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:16px;flex-wrap:wrap;background:var(--surface-soft);padding:10px 14px;border-radius:12px;border:1px solid var(--line);">
-          <div style="flex:1;min-width:220px;max-width:360px;">
-            <input type="search" class="input input-sm" placeholder="${O(`بحث فوري بالمنفذ، العملية، أو التفاصيل...`,`Search by actor, action, details...`)}" value="${k(s.auditSearchQuery||``)}" data-action="search-audit-input" style="width:100%;font-size:12px;padding:6px 12px;" />
+        <div class="view-toolbar audit-toolbar" style="gap:10px;margin-bottom:16px;">
+          <div class="search-box search-sm" style="flex:1;min-width:240px;max-width:380px;">
+            ${j(`search`,14)}
+            <input type="search" placeholder="${O(`بحث فوري بالمنفذ، العملية، أو التفاصيل...`,`Search by actor, action, details...`)}" value="${k(s.auditSearchQuery||``)}" data-action="search-audit-input" />
           </div>
           <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-            <select class="input input-sm" data-action="filter-audit-action" style="font-size:11.5px;padding:5px 8px;cursor:pointer;">
+            <select class="filter-select select-compact select-sm" data-action="filter-audit-action" style="min-width:125px;">
               ${c.map(([e,n])=>`<option value="${e}" ${t===e?`selected`:``}>${n}</option>`).join(``)}
             </select>
-            <select class="input input-sm" data-action="filter-audit-entity" style="font-size:11.5px;padding:5px 8px;cursor:pointer;">
+            <select class="filter-select select-compact select-sm" data-action="filter-audit-entity" style="min-width:125px;">
               ${l.map(([e,t])=>`<option value="${e}" ${n===e?`selected`:``}>${t}</option>`).join(``)}
             </select>
-            <select class="input input-sm" data-action="filter-audit-user" style="font-size:11.5px;padding:5px 8px;cursor:pointer;">
+            <select class="filter-select select-compact select-sm" data-action="filter-audit-user" style="min-width:140px;">
               <option value="all">${O(`كافة المستخدمين`,`All Users`)}</option>
               ${(s.data?.users||[]).map(e=>`<option value="${e.id}" ${r===e.id?`selected`:``}>${k(O(e.name,e.nameEn||e.name))}</option>`).join(``)}
             </select>
