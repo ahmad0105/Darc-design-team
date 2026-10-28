@@ -960,19 +960,19 @@ export function renderSettings() {
         </div>
       </div>
 
-      <div class="trash-filter-bar" style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
+      <div class="view-toolbar trash-filter-bar" style="gap:12px;margin-bottom:16px;">
         <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
           <button class="btn btn-sm ${currentFilter === 'all' ? 'btn-primary' : 'btn-ghost'}" data-action="filter-trash" data-filter="all">
-            ${choose('الكل', 'All')} <span class="badge" style="margin-inline-start:4px;font-size:10px;background:rgba(255,255,255,0.25);">${allTrashItems.length}</span>
+            ${choose('الكل', 'All')} <span class="badge ${currentFilter === 'all' ? 'badge-on-primary' : 'badge-neutral'}" style="margin-inline-start:4px;font-size:10px;">${allTrashItems.length}</span>
           </button>
           <button class="btn btn-sm ${currentFilter === 'project' ? 'btn-primary' : 'btn-ghost'}" data-action="filter-trash" data-filter="project">
-            ${icon('building', 12)} ${choose('المشاريع', 'Projects')} <span class="badge" style="margin-inline-start:4px;font-size:10px;background:rgba(255,255,255,0.25);">${projectCount}</span>
+            ${icon('building', 12)} ${choose('المشاريع', 'Projects')} <span class="badge ${currentFilter === 'project' ? 'badge-on-primary' : 'badge-neutral'}" style="margin-inline-start:4px;font-size:10px;">${projectCount}</span>
           </button>
           <button class="btn btn-sm ${currentFilter === 'task' ? 'btn-primary' : 'btn-ghost'}" data-action="filter-trash" data-filter="task">
-            ${icon('checklist', 12)} ${choose('المهام', 'Tasks')} <span class="badge" style="margin-inline-start:4px;font-size:10px;background:rgba(255,255,255,0.25);">${taskCount}</span>
+            ${icon('checklist', 12)} ${choose('المهام', 'Tasks')} <span class="badge ${currentFilter === 'task' ? 'badge-on-primary' : 'badge-neutral'}" style="margin-inline-start:4px;font-size:10px;">${taskCount}</span>
           </button>
           <button class="btn btn-sm ${currentFilter === 'document' ? 'btn-primary' : 'btn-ghost'}" data-action="filter-trash" data-filter="document">
-            ${icon('document', 12)} ${choose('المستندات', 'Documents')} <span class="badge" style="margin-inline-start:4px;font-size:10px;background:rgba(255,255,255,0.25);">${docCount}</span>
+            ${icon('document', 12)} ${choose('المستندات', 'Documents')} <span class="badge ${currentFilter === 'document' ? 'badge-on-primary' : 'badge-neutral'}" style="margin-inline-start:4px;font-size:10px;">${docCount}</span>
           </button>
         </div>
         <div class="search-box search-sm" style="min-width:220px;max-width:320px;flex:1;">

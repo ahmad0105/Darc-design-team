@@ -3032,19 +3032,19 @@ var e=Object.defineProperty,t=(t,n)=>{let r={};for(var i in t)e(r,i,{get:t[i],en
         </div>
       </div>
 
-      <div class="trash-filter-bar" style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
+      <div class="view-toolbar trash-filter-bar" style="gap:12px;margin-bottom:16px;">
         <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
           <button class="btn btn-sm ${r===`all`?`btn-primary`:`btn-ghost`}" data-action="filter-trash" data-filter="all">
-            ${O(`الكل`,`All`)} <span class="badge" style="margin-inline-start:4px;font-size:10px;background:rgba(255,255,255,0.25);">${n.length}</span>
+            ${O(`الكل`,`All`)} <span class="badge ${r===`all`?`badge-on-primary`:`badge-neutral`}" style="margin-inline-start:4px;font-size:10px;">${n.length}</span>
           </button>
           <button class="btn btn-sm ${r===`project`?`btn-primary`:`btn-ghost`}" data-action="filter-trash" data-filter="project">
-            ${j(`building`,12)} ${O(`المشاريع`,`Projects`)} <span class="badge" style="margin-inline-start:4px;font-size:10px;background:rgba(255,255,255,0.25);">${c}</span>
+            ${j(`building`,12)} ${O(`المشاريع`,`Projects`)} <span class="badge ${r===`project`?`badge-on-primary`:`badge-neutral`}" style="margin-inline-start:4px;font-size:10px;">${c}</span>
           </button>
           <button class="btn btn-sm ${r===`task`?`btn-primary`:`btn-ghost`}" data-action="filter-trash" data-filter="task">
-            ${j(`checklist`,12)} ${O(`المهام`,`Tasks`)} <span class="badge" style="margin-inline-start:4px;font-size:10px;background:rgba(255,255,255,0.25);">${l}</span>
+            ${j(`checklist`,12)} ${O(`المهام`,`Tasks`)} <span class="badge ${r===`task`?`badge-on-primary`:`badge-neutral`}" style="margin-inline-start:4px;font-size:10px;">${l}</span>
           </button>
           <button class="btn btn-sm ${r===`document`?`btn-primary`:`btn-ghost`}" data-action="filter-trash" data-filter="document">
-            ${j(`document`,12)} ${O(`المستندات`,`Documents`)} <span class="badge" style="margin-inline-start:4px;font-size:10px;background:rgba(255,255,255,0.25);">${u}</span>
+            ${j(`document`,12)} ${O(`المستندات`,`Documents`)} <span class="badge ${r===`document`?`badge-on-primary`:`badge-neutral`}" style="margin-inline-start:4px;font-size:10px;">${u}</span>
           </button>
         </div>
         <div class="search-box search-sm" style="min-width:220px;max-width:320px;flex:1;">
