@@ -69,16 +69,23 @@ app.get('/', async (c) => {
   const userId = c.get('userId');
   const roleId = c.get('roleId');
 
+  const clientEtag = c.req.header('if-none-match');
+  const cacheControl = (c.req.header('cache-control') || '').toLowerCase();
+  const bypassEtag = cacheControl.includes('no-cache') || cacheControl.includes('no-store');
+
   // Isolated Showcase Demo Sandbox (100% Shielded from Production DB)
   if (userId === 'usr_demo' || c.get('isDemo')) {
     const demoPayload = getDemoPayload();
+    const demoEtag = 'W/"demo-bootstrap-v2"';
+    c.header('ETag', demoEtag);
+    c.header('Cache-Control', 'private, no-cache');
+    if (!bypassEtag && clientEtag && clientEtag === demoEtag) {
+      return c.body(null, 304);
+    }
     return c.json(demoPayload);
   }
 
   const cacheKey = `${userId}:${roleId}`;
-  const clientEtag = c.req.header('if-none-match');
-  const cacheControl = (c.req.header('cache-control') || '').toLowerCase();
-  const bypassEtag = cacheControl.includes('no-cache') || cacheControl.includes('no-store');
 
   // 1. High-Performance In-Memory Micro-Cache: Serves sub-5ms responses during active sessions
   const cached = getBootstrapCache(cacheKey);

@@ -19,7 +19,11 @@ export default defineConfig({
   build: {
     outDir: resolve(__dirname, 'dist'),
     emptyOutDir: true,
+    target: 'es2022',
     sourcemap: false,
+    cssMinify: true,
+    minify: 'esbuild',
+    reportCompressedSize: false,
     chunkSizeWarningLimit: 1200,
     rollupOptions: {
       input: {

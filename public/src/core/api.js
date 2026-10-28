@@ -8,10 +8,15 @@ export const API_BASE = (typeof window !== 'undefined' && (window.location.hostn
   ? (window.location.port === '8787' ? `${window.location.protocol}//${window.location.hostname}:8787` : (window.__API_BASE__ !== undefined ? window.__API_BASE__ : ''))
   : (typeof window !== 'undefined' && window.__API_BASE__ ? window.__API_BASE__ : '');
 
-let _lastBootstrapEtag = null;
+let _lastBootstrapEtag = (typeof sessionStorage !== 'undefined') ? sessionStorage.getItem('darc_bootstrap_etag') : null;
 
 export function invalidateBootstrapEtag() {
   _lastBootstrapEtag = null;
+  try {
+    if (typeof sessionStorage !== 'undefined') {
+      sessionStorage.removeItem('darc_bootstrap_etag');
+    }
+  } catch (e) {}
 }
 
 export function showGlobalLoading() {}
@@ -64,7 +69,8 @@ export async function api(path, options = {}) {
 
   const token = (typeof localStorage !== 'undefined') ? localStorage.getItem('darc_token') : null;
   const isSilent = Boolean(options.silent || (options.headers && options.headers['X-Silent']));
-  const shouldSendEtag = isSilent && Boolean(state.data) && Boolean(_lastBootstrapEtag);
+  const hasOfflineData = (typeof localStorage !== 'undefined') && Boolean(localStorage.getItem('darc_offline_bootstrap'));
+  const shouldSendEtag = Boolean(_lastBootstrapEtag) && (isSilent || Boolean(state.data) || hasOfflineData);
   const clientMutationId = isMutation ? (`mut_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`) : null;
 
   const headers = {
@@ -136,6 +142,11 @@ export async function api(path, options = {}) {
   const etag = response.headers.get('ETag');
   if (etag && path === '/api/bootstrap') {
     _lastBootstrapEtag = etag;
+    try {
+      if (typeof sessionStorage !== 'undefined') {
+        sessionStorage.setItem('darc_bootstrap_etag', etag);
+      }
+    } catch (e) {}
   }
   
   const result = await response.json();
