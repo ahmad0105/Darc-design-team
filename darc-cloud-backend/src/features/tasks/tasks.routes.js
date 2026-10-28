@@ -69,18 +69,19 @@ app.post('/', async (c) => {
   }
 
   const supabase = c.get('supabase');
-  const projectId = body.projectId;
+  const projectId = body.projectId || body.project_id;
   
   if (!(await hasPermission(supabase, userId, roleId, 'create_tasks', projectId))) {
     return c.json({ error: 'لا تملك الصلاحية المطلوبة لهذه العملية' }, 403);
   }
 
-  let titleAr = body.titleAr;
-  let titleEn = body.titleEn;
+  let titleAr = body.titleAr || body.title_ar || body.title;
+  let titleEn = body.titleEn || body.title_en;
 
   // Handle template cloning if templateId provided
-  if (body.templateId) {
-    const { data: template } = await supabase.from('templates').select('*').eq('id', body.templateId).single();
+  const templateId = body.templateId || body.template_id;
+  if (templateId) {
+    const { data: template } = await supabase.from('templates').select('*').eq('id', templateId).single();
     if (template) {
       if (!titleAr) titleAr = template.name_ar;
       if (!titleEn) titleEn = template.name_en;
@@ -127,14 +128,14 @@ app.post('/', async (c) => {
     reviewer_id: body.reviewerId || body.reviewer_id || null,
     approver_id: body.approverId || body.approver_id || null,
     parent_task_id: body.parentTaskId || body.parent_task_id || null,
-    start_date: body.startDate || null,
-    due_date: body.dueDate || null,
+    start_date: body.startDate || body.start_date || null,
+    due_date: body.dueDate || body.due_date || null,
     weight: typeof body.weight === 'number' ? body.weight : 1,
     progress,
     custom_fields: customFields,
-    template_id: body.templateId || null,
-    type_ar: body.typeAr || null,
-    type_en: body.typeEn || null
+    template_id: templateId || null,
+    type_ar: body.typeAr || body.type_ar || null,
+    type_en: body.typeEn || body.type_en || null
   };
 
   const { data: task, error } = await supabase.from('tasks').insert([taskData]).select().single();
@@ -317,8 +318,9 @@ app.patch('/:id', async (c) => {
   };
   
   for (const [camel, snake] of Object.entries(fieldMap)) {
-    if (body[camel] !== undefined) {
-      let val = body[camel];
+    const valInBody = body[camel] !== undefined ? body[camel] : body[snake];
+    if (valInBody !== undefined) {
+      let val = valInBody;
       if (['start_date', 'due_date', 'assignee_id', 'reviewer_id', 'approver_id', 'parent_task_id', 'template_id'].includes(snake)) {
         val = val ? val : null;
       }

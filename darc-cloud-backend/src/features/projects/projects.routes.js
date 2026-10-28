@@ -58,17 +58,17 @@ app.post('/', async (c) => {
   const projectData = {
     ...(providedId ? { id: providedId } : {}),
     code,
-    name_ar: String(body.nameAr || body.name || '').trim(),
-    name_en: String(body.nameEn || body.name || '').trim(),
-    client_ar: String(body.clientAr || '').trim(),
-    client_en: String(body.clientEn || body.clientAr || '').trim(),
-    description_ar: String(body.descriptionAr || '').trim(),
-    description_en: String(body.descriptionEn || body.descriptionAr || '').trim(),
+    name_ar: String(body.nameAr || body.name_ar || body.name || '').trim(),
+    name_en: String(body.nameEn || body.name_en || body.name || '').trim(),
+    client_ar: String(body.clientAr || body.client_ar || '').trim(),
+    client_en: String(body.clientEn || body.client_en || body.clientAr || body.client_ar || '').trim(),
+    description_ar: String(body.descriptionAr || body.description_ar || '').trim(),
+    description_en: String(body.descriptionEn || body.description_en || body.descriptionAr || body.description_ar || '').trim(),
     lifecycle: ['planning', 'active', 'on_hold', 'completed', 'archived', 'cancelled'].includes(body.lifecycle) ? body.lifecycle : 'planning',
     health: ['on_track', 'at_risk', 'off_track'].includes(body.health) ? body.health : 'on_track',
-    start_date: body.startDate || null,
-    due_date: body.dueDate || null,
-    manager_id: managerId,
+    start_date: body.startDate || body.start_date || null,
+    due_date: body.dueDate || body.due_date || null,
+    manager_id: body.managerId || body.manager_id || managerId,
     progress_mode: 'weighted',
     demo: false
   };
@@ -117,8 +117,9 @@ app.patch('/:id', async (c) => {
   const fieldMap = { code: 'code', nameAr: 'name_ar', nameEn: 'name_en', clientAr: 'client_ar', clientEn: 'client_en', descriptionAr: 'description_ar', descriptionEn: 'description_en', startDate: 'start_date', dueDate: 'due_date', managerId: 'manager_id', lifecycle: 'lifecycle', health: 'health' };
   
   for (const [camel, snake] of Object.entries(fieldMap)) {
-    if (body[camel] !== undefined) {
-      let val = body[camel];
+    const valInBody = body[camel] !== undefined ? body[camel] : body[snake];
+    if (valInBody !== undefined) {
+      let val = valInBody;
       if (['start_date', 'due_date', 'manager_id'].includes(snake)) {
         val = val ? val : null;
       }
@@ -256,8 +257,8 @@ app.post('/:id/clone', async (c) => {
         updated_at: undefined,
         status: 'not_started',
         progress: 0,
-        assignee_id: null,
-        reviewer_id: null,
+        assignee_id: body.keepAssignees ? t.assignee_id : null,
+        reviewer_id: body.keepAssignees ? t.reviewer_id : null,
         start_date: null,
         due_date: null
       };

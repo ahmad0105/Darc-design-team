@@ -6,10 +6,14 @@ import { getCachedUsers } from '../../core/cache.js';
 
 const auditApp = new Hono();
 
-// Helper to escape CSV cell contents
+// Helper to escape CSV cell contents and neutralize Spreadsheet Formula Injection (CWE-1236)
 function escapeCSV(val) {
   if (val === null || val === undefined) return '""';
-  const str = typeof val === 'object' ? JSON.stringify(val) : String(val);
+  let str = typeof val === 'object' ? JSON.stringify(val) : String(val);
+  const trimmed = str.trimStart();
+  if (/^[=+@\-]/.test(trimmed) || /^[\t\r]/.test(str)) {
+    str = `'${str}`;
+  }
   return `"${str.replace(/"/g, '""')}"`;
 }
 
@@ -270,12 +274,19 @@ auditApp.post('/', async (c) => {
   const supabase = getDB(c.env);
   const nowIso = new Date().toISOString();
 
+  const action = String(body.action || 'activity').trim().slice(0, 100);
+  const entityType = String(body.entityType || 'system').trim().slice(0, 100);
+  const entityId = body.entityId ? String(body.entityId).trim().slice(0, 100) : null;
+  const rawDetails = (body.details && typeof body.details === 'object') ? body.details : {};
+  const detailsStr = JSON.stringify(rawDetails);
+  const safeDetails = detailsStr.length > 50000 ? { summary: 'Payload exceeded size limit' } : rawDetails;
+
   await supabase.from('audit_logs').insert([{
     user_id: userId,
-    action: body.action || 'activity',
-    entity_type: body.entityType || 'system',
-    entity_id: body.entityId || null,
-    details: body.details || {},
+    action,
+    entity_type: entityType,
+    entity_id: entityId,
+    details: safeDetails,
     created_at: nowIso
   }]);
 

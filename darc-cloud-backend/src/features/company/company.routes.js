@@ -35,18 +35,22 @@ app.patch('/', async (c) => {
   };
   const rawLogo = body.logoUrl !== undefined ? body.logoUrl : body.logo_url;
   if (rawLogo !== undefined) {
-    if (typeof rawLogo !== 'string') {
-      return c.json({ error: 'صيغة رابط شعار الشركة غير صالحة' }, 400);
+    if (rawLogo === null || rawLogo === '') {
+      updates.logo_url = null;
+    } else {
+      if (typeof rawLogo !== 'string') {
+        return c.json({ error: 'صيغة رابط شعار الشركة غير صالحة' }, 400);
+      }
+      if (rawLogo.length > 350 * 1024) {
+        return c.json({ error: 'حجم ملف الشعار كبير جداً ويتجاوز الحد الأقصى المسموح (350KB). يرجى ضغط الشعار.' }, 400);
+      }
+      const isSafeRaster = /^data:image\/(png|jpeg|jpg|webp|gif);base64,/i.test(rawLogo);
+      const isHttpsOrRelative = rawLogo.startsWith('https://') || rawLogo.startsWith('/');
+      if (!isSafeRaster && !isHttpsOrRelative) {
+        return c.json({ error: 'نوع ملف الشعار غير مدعوم. يرجى استخدام PNG أو JPEG أو WebP أو رابط آمن.' }, 400);
+      }
+      updates.logo_url = rawLogo;
     }
-    if (rawLogo.length > 350 * 1024) {
-      return c.json({ error: 'حجم ملف الشعار كبير جداً ويتجاوز الحد الأقصى المسموح (350KB). يرجى ضغط الشعار.' }, 400);
-    }
-    const isSafeRaster = /^data:image\/(png|jpeg|jpg|webp|gif);base64,/i.test(rawLogo);
-    const isHttps = rawLogo.startsWith('https://');
-    if (rawLogo && !isSafeRaster && !isHttps) {
-      return c.json({ error: 'نوع ملف الشعار غير مدعوم. يرجى استخدام PNG أو JPEG أو WebP أو رابط آمن.' }, 400);
-    }
-    updates.logo_url = rawLogo;
   }
 
   try {

@@ -83,19 +83,24 @@ app.patch('/me', async (c) => {
   }
 
   if (body.avatarUrl !== undefined) {
-    if (typeof body.avatarUrl !== 'string') {
-      return c.json({ error: 'صيغة رابط الصورة الشخصية غير صالحة' }, 400);
+    if (body.avatarUrl === null || body.avatarUrl === '') {
+      customFields.avatarUrl = null;
+      updates.avatar_url = null;
+    } else {
+      if (typeof body.avatarUrl !== 'string') {
+        return c.json({ error: 'صيغة رابط الصورة الشخصية غير صالحة' }, 400);
+      }
+      if (body.avatarUrl.length > 250 * 1024) {
+        return c.json({ error: 'حجم بيانات الصورة كبير جداً ويتجاوز الحد الأقصى المسموح به (250KB). يرجى ضغط الصورة.' }, 400);
+      }
+      const isSafeRaster = /^data:image\/(png|jpeg|jpg|webp|gif);base64,/i.test(body.avatarUrl);
+      const isHttpsOrRelative = body.avatarUrl.startsWith('https://') || body.avatarUrl.startsWith('/');
+      if (!isSafeRaster && !isHttpsOrRelative) {
+        return c.json({ error: 'نوع ملف الصورة غير مدعوم. يرجى استخدام PNG أو JPEG أو WebP أو رابط آمن.' }, 400);
+      }
+      customFields.avatarUrl = body.avatarUrl;
+      updates.avatar_url = body.avatarUrl;
     }
-    if (body.avatarUrl.length > 250 * 1024) {
-      return c.json({ error: 'حجم بيانات الصورة كبير جداً ويتجاوز الحد الأقصى المسموح به (250KB). يرجى ضغط الصورة.' }, 400);
-    }
-    const isSafeRaster = /^data:image\/(png|jpeg|jpg|webp|gif);base64,/i.test(body.avatarUrl);
-    const isHttps = body.avatarUrl.startsWith('https://');
-    if (body.avatarUrl && !isSafeRaster && !isHttps) {
-      return c.json({ error: 'نوع ملف الصورة غير مدعوم. يرجى استخدام PNG أو JPEG أو WebP أو رابط آمن.' }, 400);
-    }
-    customFields.avatarUrl = body.avatarUrl;
-    updates.avatar_url = body.avatarUrl;
   }
   updates.custom_fields = customFields;
 
