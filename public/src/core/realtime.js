@@ -19,6 +19,8 @@ const MAX_LOCAL_MUTATIONS = 150;
 
 let _syncDebounceTimer = null;
 let _isRealtimeInitialized = false;
+let _isExplicitlyDisconnected = false;
+let _sharedAudioContext = null;
 let _ws = null;
 let _wsHeartbeatTimer = null;
 let _wsReconnectTimer = null;
@@ -110,7 +112,7 @@ export function recalculateProjectProgressInMemory(projectId) {
   const project = state.data.projects.find((p) => p.id === projectId);
   if (!project) return;
 
-  const projectTasks = state.data.tasks.filter((t) => t.projectId === projectId && !t.deletedAt);
+  const projectTasks = state.data.tasks.filter((t) => t.projectId === projectId && !t.deletedAt && !t.deleted_at);
   let totalWeight = 0;
   let weightedProgress = 0;
   for (const t of projectTasks) {
@@ -122,6 +124,16 @@ export function recalculateProjectProgressInMemory(projectId) {
   const finalPct = totalWeight > 0 ? Math.round((weightedProgress / totalWeight) * 100) : 0;
   if (project.progress !== finalPct) {
     project.progress = finalPct;
+  }
+  project.totalWeight = totalWeight;
+
+  // Auto-sync project lifecycle state with task completion status
+  const hasTasks = projectTasks.length > 0;
+  const allDone = hasTasks && projectTasks.every(t => t.status === 'done' || t.status === 'completed');
+  if (hasTasks && allDone && finalPct === 100) {
+    project.lifecycle = 'completed';
+  } else if (project.lifecycle === 'completed' && (!allDone || finalPct < 100)) {
+    project.lifecycle = 'active';
   }
 }
 
@@ -145,14 +157,20 @@ function updateNotificationDotInDom() {
 }
 
 /**
- * Play subtle, elegant chime using native Web Audio API (0 KB audio files)
+ * Play subtle, elegant chime using native Web Audio API (0 KB audio files, Singleton AudioContext)
  */
 function playNotificationChime() {
   if (typeof window === 'undefined') return;
   try {
     const AudioCtx = window.AudioContext || window.webkitAudioContext;
     if (!AudioCtx) return;
-    const ctx = new AudioCtx();
+    if (!_sharedAudioContext || _sharedAudioContext.state === 'closed') {
+      _sharedAudioContext = new AudioCtx();
+    }
+    if (_sharedAudioContext.state === 'suspended') {
+      _sharedAudioContext.resume().catch(() => {});
+    }
+    const ctx = _sharedAudioContext;
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.type = 'sine';
@@ -213,8 +231,33 @@ export function applyGranularDelta(tableName, actionType, rawRecord, rawOldRecor
   const collection = state.data[tableName];
 
   let stateMutated = false;
+  const isSoftDeleted = Boolean(record?.deletedAt || record?.deleted_at);
 
-  if (actionType === 'UPDATE' && record) {
+  if (actionType === 'DELETE' || isSoftDeleted) {
+    const prevLen = collection.length;
+    let deletedItemProjectId = null;
+    if (tableName === 'tasks') {
+      const targetItem = collection.find((item) => item.id === targetId);
+      deletedItemProjectId = targetItem?.projectId || oldRecord?.projectId || record?.projectId;
+    }
+
+    state.data[tableName] = collection.filter((item) => item.id !== targetId);
+    if (state.data[tableName].length !== prevLen) {
+      stateMutated = true;
+    }
+
+    // Cascade in-memory cleanup
+    if (tableName === 'tasks' && deletedItemProjectId) {
+      recalculateProjectProgressInMemory(deletedItemProjectId);
+    } else if (tableName === 'projects') {
+      // Remove orphaned tasks for deleted project
+      if (Array.isArray(state.data.tasks)) {
+        state.data.tasks = state.data.tasks.filter((t) => t.projectId !== targetId);
+      }
+    } else if (tableName === 'notifications') {
+      updateNotificationDotInDom();
+    }
+  } else if (actionType === 'UPDATE' && record) {
     const idx = collection.findIndex((item) => item.id === targetId);
     if (idx !== -1) {
       // Safe merge without prototype pollution
@@ -258,30 +301,6 @@ export function applyGranularDelta(tableName, actionType, rawRecord, rawOldRecor
         }
         playNotificationChime();
       }
-    }
-  } else if (actionType === 'DELETE') {
-    const prevLen = collection.length;
-    let deletedItemProjectId = null;
-    if (tableName === 'tasks') {
-      const targetItem = collection.find((item) => item.id === targetId);
-      deletedItemProjectId = targetItem?.projectId || oldRecord?.projectId;
-    }
-
-    state.data[tableName] = collection.filter((item) => item.id !== targetId);
-    if (state.data[tableName].length !== prevLen) {
-      stateMutated = true;
-    }
-
-    // Cascade in-memory cleanup
-    if (tableName === 'tasks' && deletedItemProjectId) {
-      recalculateProjectProgressInMemory(deletedItemProjectId);
-    } else if (tableName === 'projects') {
-      // Remove orphaned tasks for deleted project
-      if (Array.isArray(state.data.tasks)) {
-        state.data.tasks = state.data.tasks.filter((t) => t.projectId !== targetId);
-      }
-    } else if (tableName === 'notifications') {
-      updateNotificationDotInDom();
     }
   }
 
@@ -386,6 +405,7 @@ function stopWsHeartbeat() {
  * Disconnect WebSocket cleanly and release network resources
  */
 export function disconnectSupabaseRealtime(reason = 'disconnect') {
+  _isExplicitlyDisconnected = true;
   stopWsHeartbeat();
   if (_wsReconnectTimer) {
     clearTimeout(_wsReconnectTimer);
@@ -439,6 +459,8 @@ function connectSupabaseRealtime() {
   if (_isHibernating) return;
   if (_ws && (_ws.readyState === WebSocket.CONNECTING || _ws.readyState === WebSocket.OPEN)) return;
 
+  _isExplicitlyDisconnected = false;
+
   try {
     const ws = new WebSocket(SUPABASE_WS_ENDPOINT);
     _ws = ws;
@@ -490,12 +512,24 @@ function connectSupabaseRealtime() {
           if (deltaApplied) return;
         }
 
-        // C. Worker Edge Broadcast: Trigger fallback reconciliation only for non-CDC mutations
-        if (topic === 'realtime:darc_live' && evt === 'broadcast') {
+        // C. Worker Edge Broadcast: Smart granular delta or fallback reconciliation
+        if (topic === 'realtime:darc_live' && (evt === 'broadcast' || evt === 'STATE_MUTATION' || evt === 'GRANULAR_DELTA')) {
           const mutationPayload = payload?.payload || payload;
-          if (mutationPayload?.id && _recentLocalMutations.has(mutationPayload.id)) {
-            return; // Ignore own mutation echo
+          const mutationId = mutationPayload?.mutationId || mutationPayload?.id || mutationPayload?.entityId;
+
+          // 1. Ignore own mutation echo (local tab already rendered with 0 HTTP traffic)
+          if (mutationId && _recentLocalMutations.has(mutationId)) {
+            return;
           }
+
+          // 2. Direct granular delta patch from Cloudflare Worker
+          if (mutationPayload?.delta) {
+            const { table, action, record, oldRecord } = mutationPayload.delta;
+            const deltaApplied = applyGranularDelta(table, action, record, oldRecord);
+            if (deltaApplied) return;
+          }
+
+          // 3. Fallback reconciliation via ETag (only if granular patch was not applicable)
           triggerImmediateSync('edge_broadcast');
           return;
         }
@@ -517,12 +551,16 @@ function connectSupabaseRealtime() {
       /* Handled gracefully in onclose */
     };
 
-    ws.onclose = () => {
+    ws.onclose = (event) => {
       stopWsHeartbeat();
       _ws = null;
 
-      // Only attempt reconnection if NOT hibernating, authenticated, and online
-      if (!_isHibernating && isAuthenticated() && typeof navigator !== 'undefined' && navigator.onLine) {
+      // Never reconnect if disconnected intentionally or unauthenticated
+      if (_isExplicitlyDisconnected || !isAuthenticated() || _isHibernating) return;
+      if (event?.reason === 'logout' || event?.reason === 'unauthorized_401') return;
+
+      // Only attempt reconnection if online
+      if (typeof navigator !== 'undefined' && navigator.onLine) {
         _reconnectAttempts++;
         const delay = Math.min(30000, Math.pow(2, Math.min(_reconnectAttempts, 5)) * 1000);
         if (_wsReconnectTimer) clearTimeout(_wsReconnectTimer);

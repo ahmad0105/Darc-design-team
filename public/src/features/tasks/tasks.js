@@ -1040,7 +1040,12 @@ export function initTaskModalWidgets(task) {
     api(`/api/tasks/${encodeURIComponent(task.id)}/comments`, { silent: true }).then((res) => {
       if (res && Array.isArray(res.comments)) {
         if (!state.data.comments) state.data.comments = [];
-        state.data.comments = state.data.comments.filter(c => c.taskId !== task.id).concat(res.comments);
+        // Non-destructive idempotent merge: preserve any local optimistic or concurrent comments
+        const commentMap = new Map(state.data.comments.map(c => [c.id, c]));
+        for (const c of res.comments) {
+          commentMap.set(c.id, c);
+        }
+        state.data.comments = Array.from(commentMap.values());
         const commentsListEl = document.getElementById('task-comments-list');
         if (commentsListEl && document.getElementById('task-comment-form')?.dataset?.taskId === task.id) {
           commentsListEl.innerHTML = renderTaskComments(task);

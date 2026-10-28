@@ -418,6 +418,10 @@ app.use('/api/*', async (c, next) => {
 
         // Broadcast mutation event asynchronously to Supabase Realtime WebSocket subscribers
         if (c.env.SUPABASE_URL && c.env.SUPABASE_SERVICE_ROLE_KEY) {
+          const clientMutationId = c.req.header('x-mutation-id') || null;
+          const pathParts = c.req.path.split('/');
+          const entityId = (pathParts.length >= 4 && pathParts[3] && !pathParts[3].includes('?')) ? pathParts[3] : null;
+
           const broadcastPromise = fetch(`${c.env.SUPABASE_URL}/realtime/v1/api/broadcast`, {
             method: 'POST',
             headers: {
@@ -429,7 +433,13 @@ app.use('/api/*', async (c, next) => {
               messages: [{
                 topic: 'realtime:darc_live',
                 event: 'STATE_MUTATION',
-                payload: { path: c.req.path, method, timestamp: Date.now() }
+                payload: {
+                  path: c.req.path,
+                  method,
+                  mutationId: clientMutationId,
+                  entityId,
+                  timestamp: Date.now()
+                }
               }]
             })
           }).catch(() => {});

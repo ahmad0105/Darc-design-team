@@ -53,6 +53,19 @@ export function savePreferencesCookies({ theme, lang } = {}) {
 export function esc(value) {
   return String(value ?? '').replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[character]));
 }
+/**
+ * Neutralize CSV / Spreadsheet Formula Injection (CWE-1236)
+ * Prepends a single quote to any value starting with formula trigger chars (=, +, -, @, tab, CR)
+ */
+export function sanitizeForSpreadsheet(val) {
+  if (val === null || val === undefined) return '';
+  const str = String(val);
+  const trimmedLeading = str.trimStart();
+  if (/^[=+@\-]/.test(trimmedLeading) || /^[\t\r]/.test(str)) {
+    return `'${str}`;
+  }
+  return str;
+}
 export function icon(name, size = 18) {
   const paths = {
     grid: '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',

@@ -1,6 +1,6 @@
 import { state } from '../../core/state.js';
 import { api } from '../../core/api.js';
-import { getActiveCalendarSystem } from '../../core/utils.js';
+import { getActiveCalendarSystem, esc, sanitizeForSpreadsheet } from '../../core/utils.js';
 
 export function renderTeam() {
   if (!isAdmin() && !can('manage_users')) {
@@ -239,13 +239,13 @@ export function exportAuditLogsXLS(logs = null) {
 
     tableHtml += `
       <tr style="background:${rowBg};font-size:11px;vertical-align:middle;">
-        <td style="padding:6px 8px;border:1px solid #e2e8f0;font-family:monospace;text-align:center;">${esc(log.id || '—')}</td>
-        <td style="padding:6px 8px;border:1px solid #e2e8f0;text-align:center;">${esc(dt.date)} ${esc(dt.time)}</td>
-        <td style="padding:6px 8px;border:1px solid #e2e8f0;font-weight:bold;">${esc(authorName)}</td>
-        <td style="padding:6px 8px;border:1px solid #e2e8f0;">${esc(authorRole)}</td>
-        <td style="padding:6px 8px;border:1px solid #e2e8f0;text-align:center;">${esc(actionLabel)}</td>
-        <td style="padding:6px 8px;border:1px solid #e2e8f0;text-align:center;">${esc(entityLabel)}</td>
-        <td style="padding:6px 8px;border:1px solid #e2e8f0;">${esc(detailsStr)}</td>
+        <td style="padding:6px 8px;border:1px solid #e2e8f0;font-family:monospace;text-align:center;">${esc(sanitizeForSpreadsheet(log.id || '—'))}</td>
+        <td style="padding:6px 8px;border:1px solid #e2e8f0;text-align:center;">${esc(sanitizeForSpreadsheet(`${dt.date} ${dt.time}`))}</td>
+        <td style="padding:6px 8px;border:1px solid #e2e8f0;font-weight:bold;">${esc(sanitizeForSpreadsheet(authorName))}</td>
+        <td style="padding:6px 8px;border:1px solid #e2e8f0;">${esc(sanitizeForSpreadsheet(authorRole))}</td>
+        <td style="padding:6px 8px;border:1px solid #e2e8f0;text-align:center;">${esc(sanitizeForSpreadsheet(actionLabel))}</td>
+        <td style="padding:6px 8px;border:1px solid #e2e8f0;text-align:center;">${esc(sanitizeForSpreadsheet(entityLabel))}</td>
+        <td style="padding:6px 8px;border:1px solid #e2e8f0;">${esc(sanitizeForSpreadsheet(detailsStr))}</td>
       </tr>
     `;
   });

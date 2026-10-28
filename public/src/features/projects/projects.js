@@ -1,7 +1,7 @@
 
 import { state } from '../../core/state.js';
 import { api } from '../../core/api.js';
-import { choose, esc, icon, avatar, statusText, t, showToast, can, isAdmin } from '../../core/utils.js';
+import { choose, esc, icon, avatar, statusText, t, showToast, can, isAdmin, sanitizeForSpreadsheet } from '../../core/utils.js';
 import { renderTaskSortSelect, getSavedTaskSort } from '../tasks/tasks.js';
 
 export function projectRow(project) {
@@ -1057,7 +1057,12 @@ export function getCompanyBranding() {
   // Strict sanitization: Only allow safe image protocols (http, https, data:image, /)
   const rawLogo = comp.logoUrl || '';
   const isSafeLogo = /^(https?:\/\/|data:image\/|\/)/i.test(rawLogo) && !rawLogo.toLowerCase().includes('javascript:');
-  const logoUrl = isSafeLogo ? rawLogo : '';
+  let logoUrl = isSafeLogo ? rawLogo : '';
+
+  // Resolve relative URLs to absolute so desktop Excel applications can fetch the logo correctly
+  if (logoUrl.startsWith('/') && typeof window !== 'undefined' && window.location?.origin) {
+    logoUrl = `${window.location.origin}${logoUrl}`;
+  }
 
   return {
     nameAr,
@@ -1137,15 +1142,15 @@ export function exportPortfolioXLS() {
   projects.forEach(p => {
     const managerName = p.manager ? choose(p.manager.name, p.manager.nameEn || p.manager.name) : '';
     table += `<tr>
-      <td>${esc(p.code)}</td>
-      <td>${esc(p.nameAr)}</td>
-      <td>${esc(p.nameEn)}</td>
-      <td>${esc(choose(p.clientAr, p.clientEn))}</td>
-      <td>${esc(managerName)}</td>
-      <td>${esc(statusText(p.lifecycle))}</td>
-      <td>${esc(statusText(p.health))}</td>
-      <td>${esc(p.startDate || '')}</td>
-      <td>${esc(p.dueDate || '')}</td>
+      <td>${esc(sanitizeForSpreadsheet(p.code))}</td>
+      <td>${esc(sanitizeForSpreadsheet(p.nameAr))}</td>
+      <td>${esc(sanitizeForSpreadsheet(p.nameEn))}</td>
+      <td>${esc(sanitizeForSpreadsheet(choose(p.clientAr, p.clientEn)))}</td>
+      <td>${esc(sanitizeForSpreadsheet(managerName))}</td>
+      <td>${esc(sanitizeForSpreadsheet(statusText(p.lifecycle)))}</td>
+      <td>${esc(sanitizeForSpreadsheet(statusText(p.health)))}</td>
+      <td>${esc(sanitizeForSpreadsheet(p.startDate || ''))}</td>
+      <td>${esc(sanitizeForSpreadsheet(p.dueDate || ''))}</td>
       <td>${p.progress || 0}%</td>
       <td>${p.memberCount || 0}</td>
     </tr>`;
@@ -1217,16 +1222,16 @@ export function exportProjectXLS(projectId) {
     const approverName = getUserName(t.approverId || t.approver_id);
 
     table += `<tr>
-      <td style="text-align:center;font-weight:bold;">${esc(code)}</td>
-      <td>${esc(t.titleAr)}</td>
-      <td>${esc(t.titleEn)}</td>
-      <td>${esc(choose(t.categoryAr, t.categoryEn))}</td>
-      <td>${esc(assigneeName)}</td>
-      <td style="color:#0369a1;">${esc(reviewerName)}</td>
-      <td style="color:#047857;">${esc(approverName)}</td>
-      <td>${esc(statusText(t.status))}</td>
-      <td>${esc(t.startDate || '')}</td>
-      <td>${esc(t.dueDate || '')}</td>
+      <td style="text-align:center;font-weight:bold;">${esc(sanitizeForSpreadsheet(code))}</td>
+      <td>${esc(sanitizeForSpreadsheet(t.titleAr))}</td>
+      <td>${esc(sanitizeForSpreadsheet(t.titleEn))}</td>
+      <td>${esc(sanitizeForSpreadsheet(choose(t.categoryAr, t.categoryEn)))}</td>
+      <td>${esc(sanitizeForSpreadsheet(assigneeName))}</td>
+      <td style="color:#0369a1;">${esc(sanitizeForSpreadsheet(reviewerName))}</td>
+      <td style="color:#047857;">${esc(sanitizeForSpreadsheet(approverName))}</td>
+      <td>${esc(sanitizeForSpreadsheet(statusText(t.status)))}</td>
+      <td>${esc(sanitizeForSpreadsheet(t.startDate || ''))}</td>
+      <td>${esc(sanitizeForSpreadsheet(t.dueDate || ''))}</td>
       <td style="font-weight:bold;">${t.progress || 0}%</td>
     </tr>`;
   });
@@ -2075,10 +2080,18 @@ export function renderInPagePrintModal(printHtml) {
   `;
   overlay.style.display = 'flex';
 
-  document.getElementById('btn-close-print-modal')?.addEventListener('click', () => {
+  const closeModal = () => {
     overlay.style.display = 'none';
     overlay.innerHTML = '';
-  });
+    window.removeEventListener('keydown', handleEsc);
+  };
+
+  const handleEsc = (e) => {
+    if (e.key === 'Escape') closeModal();
+  };
+
+  window.addEventListener('keydown', handleEsc);
+  document.getElementById('btn-close-print-modal')?.addEventListener('click', closeModal);
 
   document.getElementById('btn-print-iframe')?.addEventListener('click', () => {
     const iframe = document.getElementById('print-preview-iframe');

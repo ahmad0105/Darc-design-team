@@ -456,16 +456,15 @@ export async function handleClick(event) {
   }
   if (action === 'toggle-sidebar') { state.sidebarOpen = !state.sidebarOpen; document.querySelector('.sidebar')?.classList.toggle('open', state.sidebarOpen); return; }
   if (action === 'logout') {
+    if (typeof localStorage !== 'undefined') localStorage.removeItem('darc_token');
     if (typeof window !== 'undefined' && typeof window.disconnectSupabaseRealtime === 'function') {
       window.disconnectSupabaseRealtime('logout');
     }
     await api('/api/auth/logout', { method: 'POST' }).catch(() => {});
     try {
-      if (typeof localStorage !== 'undefined') localStorage.removeItem('darc_token');
       await clearOfflineBootstrap();
     } catch (e) {
       try {
-        localStorage.removeItem('darc_token');
         localStorage.removeItem('darc_offline_bootstrap');
         localStorage.removeItem('darc_offline_queue');
       } catch (err) {}
@@ -482,16 +481,15 @@ export async function handleClick(event) {
     return;
   }
   if (action === 'logout-all') {
+    if (typeof localStorage !== 'undefined') localStorage.removeItem('darc_token');
     if (typeof window !== 'undefined' && typeof window.disconnectSupabaseRealtime === 'function') {
       window.disconnectSupabaseRealtime('logout_all');
     }
     await api('/api/auth/logout-all', { method: 'POST' }).catch(() => {});
     try {
-      if (typeof localStorage !== 'undefined') localStorage.removeItem('darc_token');
       await clearOfflineBootstrap();
     } catch (e) {
       try {
-        localStorage.removeItem('darc_token');
         localStorage.removeItem('darc_offline_bootstrap');
         localStorage.removeItem('darc_offline_queue');
       } catch (err) {}

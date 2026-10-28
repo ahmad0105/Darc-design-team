@@ -382,27 +382,6 @@ app.delete('/:id', async (c) => {
   return c.json({ ok: true });
 });
 
-// GET /api/tasks/:id/comments
-app.get('/:id/comments', async (c) => {
-  const taskId = c.req.param('id');
-  const userId = c.get('userId');
-  const roleId = c.get('roleId');
-  const supabase = c.get('supabase');
-
-  const { data: task } = await supabase.from('tasks').select('project_id').eq('id', taskId).single();
-  if (!task || !(await isProjectVisible(supabase, userId, roleId, task.project_id))) {
-    return c.json({ error: 'غير مصرح' }, 403);
-  }
-
-  const { data: comments } = await supabase
-    .from('comments')
-    .select(`*, user:user_id(id, name, name_en, email, avatar_color)`)
-    .eq('task_id', taskId)
-    .order('created_at', { ascending: true });
-
-  return c.json({ comments: toCamelCase(comments || []) });
-});
-
 // POST /api/tasks/:id/comments
 app.post('/:id/comments', async (c) => {
   const taskId = c.req.param('id');
