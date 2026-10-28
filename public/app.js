@@ -66,6 +66,7 @@ window.addEventListener('error', (event) => {
 });
 
 import { initRealtimeConnection } from './src/core/realtime.js';
+import { initTelemetryEngine } from './src/core/telemetry.js';
 
 // Register Service Worker for Offline-First PWA capabilities
 if ('serviceWorker' in navigator && window.location.protocol.startsWith('http')) {
@@ -77,5 +78,6 @@ if ('serviceWorker' in navigator && window.location.protocol.startsWith('http'))
 }
 
 initRealtimeConnection();
+initTelemetryEngine();
 init();
 

@@ -21,6 +21,7 @@ import templatesApp     from './features/templates/templates.routes.js';
 import trashApp         from './features/trash/trash.routes.js';
 import bootstrapApp     from './features/bootstrap/bootstrap.route.js';
 import auditApp         from './features/audit/audit.routes.js';
+import telemetryApp     from './features/telemetry/telemetry.routes.js';
 
 // Core Security, Error Resilience & Performance
 import { createErrorHandler } from './core/errors.js';
@@ -263,7 +264,7 @@ app.get('/api/health', (c) => c.json({ ok: true, status: 'healthy', env: 'produc
 
 // JWT Guard with Token Revocation Protection
 app.use('/api/*', async (c, next) => {
-  if (c.req.path.startsWith('/api/auth') || c.req.path === '/api/health') return next();
+  if (c.req.path.startsWith('/api/auth') || c.req.path === '/api/health' || c.req.path === '/api/telemetry/heartbeat') return next();
   const token = getSessionToken(c);
   if (!token) return c.json({ error: 'غير مصرح لك بالدخول' }, 401);
   let payload;
@@ -489,5 +490,6 @@ app.route('/api/restore',       restoreApp);
 app.route('/api/templates',     templatesApp);
 app.route('/api/trash',         trashApp);
 app.route('/api/bootstrap',     bootstrapApp);
+app.route('/api/telemetry',     telemetryApp);
 
 export default app;

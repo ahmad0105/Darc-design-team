@@ -227,7 +227,7 @@ export function csrfGuardMiddleware() {
     const method = c.req.method;
 
     // Safe read-only & preflight methods
-    if (method === 'GET' || method === 'HEAD' || method === 'OPTIONS') {
+    if (method === 'GET' || method === 'HEAD' || method === 'OPTIONS' || c.req.path === '/api/telemetry/heartbeat') {
       return next();
     }
 

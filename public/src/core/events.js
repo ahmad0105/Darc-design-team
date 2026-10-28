@@ -9,6 +9,7 @@ import { setSavedTaskSort, openDocumentPreviewModal, renderTaskDocuments } from 
 import { getPendingMutations, syncPendingMutations, getOfflineBootstrap, clearOfflineBootstrap, saveOfflineBootstrap } from './offline.js';
 import { exportPortfolioXLS, exportProjectXLS, exportProjectPDF, exportPortfolioPDF } from '../features/projects/projects.js';
 import { exportAuditLogsXLS, printAuditReport, fetchFullAuditHistory } from '../features/settings/settings.js';
+import { fetchAnalyticsData } from '../features/settings/analytics.js';
 import { renderActivation, renderLogin, renderResetPassword } from '../features/auth/auth.js';
 
 export async function handleSubmit(event) {
@@ -1027,6 +1028,9 @@ export async function handleClick(event) {
       }
     } catch (e) {}
     target.closest('.settings-nav')?.querySelectorAll('.settings-nav-item').forEach(b => b.classList.toggle('active', b === target));
+    if (state.settingsSection === 'analytics') {
+      fetchAnalyticsData(true).then(() => renderView()).catch(() => {});
+    }
     if (state.settingsSection === 'trash' && !state.trashLoaded) {
       api('/api/trash').then(data => {
         state.trash = Array.isArray(data) ? data : (data.trash || [
@@ -1040,6 +1044,28 @@ export async function handleClick(event) {
     }
     requestAnimationFrame(() => renderView()); 
     return; 
+  }
+  if (action === 'refresh-analytics') {
+    try {
+      await fetchAnalyticsData(true);
+      renderView();
+      showToast(choose('تم تحديث مؤشرات التحليلات والمراقبة الحية بنجاح.', 'Live observability and analytics refreshed successfully.'));
+    } catch (e) {
+      showToast(e.message, true);
+    }
+    return;
+  }
+  if (action === 'test-anomaly-alert') {
+    try {
+      const res = await api('/api/telemetry/test-anomaly', { method: 'POST' });
+      await fetchAnalyticsData(true);
+      await loadData(true);
+      renderApp();
+      showToast(choose('🚨 تم رصد استهلاك زائد بنجاح وإرسال إشعار فوري لمركز التنبيهات!', '🚨 Anomaly detected! Alert notification dispatched to Notification Center!'));
+    } catch (e) {
+      showToast(e.message, true);
+    }
+    return;
   }
   if (action === 'restore-item') {
     try {
