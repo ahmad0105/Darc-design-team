@@ -229,6 +229,9 @@ app.use('*', async (c, next) => {
 // GET /api/documents/:id -> Redirect to view
 app.get('/:id', async (c) => {
   const docId = c.req.param('id');
+  if (!/^[a-zA-Z0-9_-]{4,50}$/.test(docId)) {
+    return c.text('معرف المستند غير صالح', 400);
+  }
   const userId = c.get('userId');
   const roleId = c.get('roleId');
   const supabase = c.get('supabase');
@@ -242,7 +245,9 @@ app.get('/:id', async (c) => {
   if (doc.disk_filename && doc.disk_filename.startsWith('http')) {
     try {
       const u = new URL(doc.disk_filename);
-      if (u.hostname.endsWith('google.com') || u.hostname.endsWith('googleusercontent.com')) {
+      const isGoogle = u.hostname === 'google.com' || u.hostname.endsWith('.google.com') ||
+                       u.hostname === 'googleusercontent.com' || u.hostname.endsWith('.googleusercontent.com');
+      if (isGoogle) {
         return c.redirect(doc.disk_filename);
       }
     } catch (e) {}
@@ -633,6 +638,9 @@ app.post('/', uploadRateLimiter(), async (c) => {
 // PATCH /api/documents/:id -> Update Document Name or Status
 app.patch('/:id', async (c) => {
   const docId = c.req.param('id');
+  if (!/^[a-zA-Z0-9_-]{4,50}$/.test(docId)) {
+    return c.json({ error: 'معرف المستند غير صالح' }, 400);
+  }
   const body = await c.req.json();
   const supabase = c.get('supabase');
   const userId = c.get('userId');
@@ -679,6 +687,9 @@ app.patch('/:id', async (c) => {
 // DELETE /api/documents/:id -> Soft delete to Trash (retained for 30 days)
 app.delete('/:id', async (c) => {
   const docId = c.req.param('id');
+  if (!/^[a-zA-Z0-9_-]{4,50}$/.test(docId)) {
+    return c.json({ error: 'معرف المستند غير صالح' }, 400);
+  }
   const supabase = c.get('supabase');
   const userId = c.get('userId');
   const roleId = c.get('roleId');

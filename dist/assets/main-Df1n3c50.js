@@ -733,7 +733,7 @@ var e=Object.defineProperty,t=(t,n)=>{let r={};for(var i in t)e(r,i,{get:t[i],en
           <a href="${k(c)}" target="_blank" rel="noopener noreferrer" class="btn btn-soft btn-sm" style="text-decoration:none;display:flex;align-items:center;gap:6px;" title="${O(`فتح في Google Drive`,`Open in Google Drive`)}">
             ${j(`globe`,13)} <span class="hide-mobile">${O(`فتح في Drive`,`Open in Drive`)}</span>
           </a>
-          <a href="${k(l)}" target="_blank" download class="btn btn-primary btn-sm" style="text-decoration:none;display:flex;align-items:center;gap:6px;" title="${O(`تحميل المخطط`,`Download`)}">
+          <a href="${k(l)}" target="_blank" rel="noopener noreferrer" download class="btn btn-primary btn-sm" style="text-decoration:none;display:flex;align-items:center;gap:6px;" title="${O(`تحميل المخطط`,`Download`)}">
             ${j(`download`,13)} <span class="hide-mobile">${O(`تحميل`,`Download`)}</span>
           </a>
           <button type="button" class="btn btn-ghost btn-sm" id="close-preview-modal-btn" style="padding:6px;min-width:0;margin-inline-start:4px;" title="${O(`إغلاق`,`Close`)}">${j(`close`,18)}</button>
@@ -1100,7 +1100,7 @@ var e=Object.defineProperty,t=(t,n)=>{let r={};for(var i in t)e(r,i,{get:t[i],en
                           <button class="btn btn-ghost btn-sm" data-action="copy-doc-link" data-doc-id="${k(e.id)}" style="padding:5px;color:var(--teal);" title="${O(`نسخ الرابط`,`Copy Link`)}">
                             ${j(`link`,14)}
                           </button>
-                          <a href="/api/documents/${k(e.id)}" target="_blank" download class="btn btn-ghost btn-sm" style="padding:5px;color:var(--blue);" title="${O(`تحميل`,`Download`)}">
+                          <a href="/api/documents/${k(e.id)}" target="_blank" rel="noopener noreferrer" download class="btn btn-ghost btn-sm" style="padding:5px;color:var(--blue);" title="${O(`تحميل`,`Download`)}">
                             ${j(`download`,14)}
                           </a>
                         </div>
@@ -2365,7 +2365,7 @@ var e=Object.defineProperty,t=(t,n)=>{let r={};for(var i in t)e(r,i,{get:t[i],en
                       <button class="btn btn-ghost btn-sm" data-action="copy-doc-link" data-doc-id="${k(e.id)}" style="padding:5px;color:var(--teal);" title="${O(`نسخ الرابط`,`Copy Link`)}">
                         ${j(`link`,14)}
                       </button>
-                      <a href="/api/documents/${k(e.id)}" target="_blank" download class="btn btn-ghost btn-sm" style="padding:5px;color:var(--blue);" title="${O(`تحميل`,`Download`)}">
+                      <a href="/api/documents/${k(e.id)}" target="_blank" rel="noopener noreferrer" download class="btn btn-ghost btn-sm" style="padding:5px;color:var(--blue);" title="${O(`تحميل`,`Download`)}">
                         ${j(`download`,14)}
                       </a>
                       ${d?`

@@ -265,9 +265,15 @@ app.patch('/reorder', async (c) => {
   return c.json({ ok: true });
 });
 
+// Helper: Validate entity ID format
+const isValidEntityId = (id) => typeof id === 'string' && /^[a-zA-Z0-9_-]{4,50}$/.test(id);
+
 // PATCH /api/tasks/:id
 app.patch('/:id', async (c) => {
   const taskId = c.req.param('id');
+  if (!isValidEntityId(taskId)) {
+    return c.json({ error: 'معرف المهمة غير صالح' }, 400);
+  }
   const body = await c.req.json();
 
   if (c.get('isDemo')) {
@@ -359,6 +365,9 @@ app.patch('/:id', async (c) => {
 // DELETE /api/tasks/:id
 app.delete('/:id', async (c) => {
   const taskId = c.req.param('id');
+  if (!isValidEntityId(taskId)) {
+    return c.json({ error: 'معرف المهمة غير صالح' }, 400);
+  }
   const userId = c.get('userId');
   const roleId = c.get('roleId');
   const supabase = c.get('supabase');
@@ -391,6 +400,9 @@ app.delete('/:id', async (c) => {
 // POST /api/tasks/:id/comments
 app.post('/:id/comments', async (c) => {
   const taskId = c.req.param('id');
+  if (!isValidEntityId(taskId)) {
+    return c.json({ error: 'معرف المهمة غير صالح' }, 400);
+  }
   const userId = c.get('userId');
   const roleId = c.get('roleId');
   const supabase = c.get('supabase');
@@ -494,6 +506,9 @@ app.post('/:id/comments', async (c) => {
 app.patch('/:id/comments/:commentId', async (c) => {
   const taskId = c.req.param('id');
   const commentId = c.req.param('commentId');
+  if (!isValidEntityId(taskId) || !isValidEntityId(commentId)) {
+    return c.json({ error: 'معرف غير صالح' }, 400);
+  }
   const userId = c.get('userId');
   const roleId = c.get('roleId');
   const supabase = c.get('supabase');
@@ -538,6 +553,9 @@ app.patch('/:id/comments/:commentId', async (c) => {
 app.delete('/:id/comments/:commentId', async (c) => {
   const taskId = c.req.param('id');
   const commentId = c.req.param('commentId');
+  if (!isValidEntityId(taskId) || !isValidEntityId(commentId)) {
+    return c.json({ error: 'معرف غير صالح' }, 400);
+  }
   const userId = c.get('userId');
   const roleId = c.get('roleId');
   const supabase = c.get('supabase');
@@ -576,6 +594,9 @@ app.delete('/:id/comments/:commentId', async (c) => {
 // GET /api/tasks/:id/comments — Lazy load comments for a task (Performance Optimization)
 app.get('/:id/comments', async (c) => {
   const taskId = c.req.param('id');
+  if (!isValidEntityId(taskId)) {
+    return c.json({ error: 'معرف المهمة غير صالح' }, 400);
+  }
   const userId = c.get('userId');
   const roleId = c.get('roleId');
   const supabase = c.get('supabase');

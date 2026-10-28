@@ -173,7 +173,7 @@ export function renderDocuments() {
                       <button class="btn btn-ghost btn-sm" data-action="copy-doc-link" data-doc-id="${esc(doc.id)}" style="padding:5px;color:var(--teal);" title="${choose('نسخ الرابط', 'Copy Link')}">
                         ${icon('link', 14)}
                       </button>
-                      <a href="/api/documents/${esc(doc.id)}" target="_blank" download class="btn btn-ghost btn-sm" style="padding:5px;color:var(--blue);" title="${choose('تحميل', 'Download')}">
+                      <a href="/api/documents/${esc(doc.id)}" target="_blank" rel="noopener noreferrer" download class="btn btn-ghost btn-sm" style="padding:5px;color:var(--blue);" title="${choose('تحميل', 'Download')}">
                         ${icon('download', 14)}
                       </a>
                       ${canDeleteDoc ? `

@@ -1175,7 +1175,7 @@ export function openDocumentPreviewModal(docId) {
           <a href="${esc(externalViewUrl)}" target="_blank" rel="noopener noreferrer" class="btn btn-soft btn-sm" style="text-decoration:none;display:flex;align-items:center;gap:6px;" title="${choose('فتح في Google Drive', 'Open in Google Drive')}">
             ${icon('globe', 13)} <span class="hide-mobile">${choose('فتح في Drive', 'Open in Drive')}</span>
           </a>
-          <a href="${esc(downloadUrl)}" target="_blank" download class="btn btn-primary btn-sm" style="text-decoration:none;display:flex;align-items:center;gap:6px;" title="${choose('تحميل المخطط', 'Download')}">
+          <a href="${esc(downloadUrl)}" target="_blank" rel="noopener noreferrer" download class="btn btn-primary btn-sm" style="text-decoration:none;display:flex;align-items:center;gap:6px;" title="${choose('تحميل المخطط', 'Download')}">
             ${icon('download', 13)} <span class="hide-mobile">${choose('تحميل', 'Download')}</span>
           </a>
           <button type="button" class="btn btn-ghost btn-sm" id="close-preview-modal-btn" style="padding:6px;min-width:0;margin-inline-start:4px;" title="${choose('إغلاق', 'Close')}">${icon('close', 18)}</button>

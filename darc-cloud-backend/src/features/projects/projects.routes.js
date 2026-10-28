@@ -103,6 +103,9 @@ app.post('/', async (c) => {
 // PATCH /api/projects/:id
 app.patch('/:id', async (c) => {
   const projectId = c.req.param('id');
+  if (!/^[a-zA-Z0-9_-]{4,50}$/.test(projectId)) {
+    return c.json({ error: 'معرف المشروع غير صالح' }, 400);
+  }
   const userId = c.get('userId');
   const roleId = c.get('roleId');
   const supabase = c.get('supabase');
@@ -162,6 +165,9 @@ app.patch('/:id', async (c) => {
 // DELETE /api/projects/:id
 app.delete('/:id', async (c) => {
   const projectId = c.req.param('id');
+  if (!/^[a-zA-Z0-9_-]{4,50}$/.test(projectId)) {
+    return c.json({ error: 'معرف المشروع غير صالح' }, 400);
+  }
   const userId = c.get('userId');
   const roleId = c.get('roleId');
   const supabase = c.get('supabase');
@@ -192,6 +198,9 @@ app.delete('/:id', async (c) => {
 // POST /api/projects/:id/clone
 app.post('/:id/clone', async (c) => {
   const originalProjectId = c.req.param('id');
+  if (!/^[a-zA-Z0-9_-]{4,50}$/.test(originalProjectId)) {
+    return c.json({ error: 'معرف المشروع غير صالح' }, 400);
+  }
   const userId = c.get('userId');
   const roleId = c.get('roleId');
   const supabase = c.get('supabase');
