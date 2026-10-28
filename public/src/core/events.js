@@ -27,7 +27,11 @@ export async function handleSubmit(event) {
       delete values.passwordConfirm;
       await api('/api/auth/activate', { method: 'POST', body: JSON.stringify(values) });
       window.history.replaceState({}, '', window.location.pathname);
-      await loadData();
+      await loadData(); 
+    if (state.data?.user?.customFields?.calendarSystem) {
+      state.calendarSystem = state.data.user.customFields.calendarSystem;
+      try { localStorage.setItem('darc_calendar_system', state.calendarSystem); } catch (e) {}
+    }
       return;
     }
     if (form.id === 'project-form') {
@@ -777,7 +781,11 @@ export async function handleClick(event) {
     const res = await syncPendingMutations(api);
     if (res.synced > 0) {
       showToast(choose(`تمت مزامنة ${res.synced} عمليات بنجاح! 🚀`, `Successfully synced ${res.synced} actions! 🚀`), false);
-      await loadData();
+      await loadData(); 
+    if (state.data?.user?.customFields?.calendarSystem) {
+      state.calendarSystem = state.data.user.customFields.calendarSystem;
+      try { localStorage.setItem('darc_calendar_system', state.calendarSystem); } catch (e) {}
+    }
     } else if (res.failed > 0) {
       showToast(choose(`فشلت مزامنة ${res.failed} عمليات، يرجى المحاولة لاحقاً.`, `Failed to sync ${res.failed} actions, please try again.`), true);
     }
@@ -2084,6 +2092,9 @@ if (typeof window !== 'undefined' && !window._taskDropzoneListenersSet) {
 
 export async function init() {
   savePreferencesCookies({ theme: state.theme, lang: state.lang });
+  try {
+    state.calendarSystem = localStorage.getItem('darc_calendar_system') || state.calendarSystem || 'gregorian';
+  } catch (e) {}
 
   if (typeof window !== 'undefined' && window.matchMedia && !window._darcThemeListenerBound) {
     window._darcThemeListenerBound = true;
@@ -2161,6 +2172,10 @@ export async function init() {
       }
     }
     await loadData(); 
+    if (state.data?.user?.customFields?.calendarSystem) {
+      state.calendarSystem = state.data.user.customFields.calendarSystem;
+      try { localStorage.setItem('darc_calendar_system', state.calendarSystem); } catch (e) {}
+    } 
     
     // Start Smart Live Sync (Sequential Polling with Adaptive Idle Throttling & Stampede Guard)
     if (!window._darcPollingActive) {

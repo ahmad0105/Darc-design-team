@@ -1,7 +1,7 @@
 
 import { state } from '../../core/state.js';
 import { api } from '../../core/api.js';
-import { getTaskStatusStyle, esc, choose, avatar, icon, can, isAdmin, t, statusText } from '../../core/utils.js';
+import { getTaskStatusStyle, esc, choose, avatar, icon, can, isAdmin, t, statusText, formatDateTime, getActiveCalendarSystem } from '../../core/utils.js';
 import { showToast, modalShell, closeModal } from '../../shared/ui.js';
 
 export function renderTaskAssignees(task) {
@@ -326,7 +326,12 @@ export function renderTimeline(tasks) {
   for (let i = 0; i < totalDays; i++) {
     const d = new Date(minTime + i * 86400000);
     const isWeekend = d.getDay() === 5 || d.getDay() === 6; // Friday/Saturday in Arab world
-    headerHtml += `<div style="padding:10px 5px;text-align:center;font-size:10px;color:var(--ink-soft);border-right:1px solid var(--line);background:${isWeekend ? 'var(--surface-soft)' : 'transparent'};border-bottom:1px solid var(--line)">${d.getDate()}<br>${d.toLocaleDateString(state.lang === 'ar' ? 'ar-SA' : 'en-US', { month: 'short' })}</div>`;
+    const calSystem = getActiveCalendarSystem();
+    const monthLocale = calSystem === 'hijri'
+      ? (state.lang === 'ar' ? 'ar-SA-u-ca-islamic-umalqura' : 'en-u-ca-islamic-umalqura')
+      : (state.lang === 'ar' ? 'ar-u-ca-gregory' : 'en-GB-u-ca-gregory');
+    const monthShort = new Intl.DateTimeFormat(monthLocale, { month: 'short' }).format(d);
+    headerHtml += `<div style="padding:10px 5px;text-align:center;font-size:10px;color:var(--ink-soft);border-right:1px solid var(--line);background:${isWeekend ? 'var(--surface-soft)' : 'transparent'};border-bottom:1px solid var(--line)">${d.getDate()}<br>${monthShort}</div>`;
   }
 
   const rowsHtml = scheduledTasks.map((task, index) => {
@@ -449,17 +454,7 @@ export function renderTasks() {
 }
 
 export function formatRemindAtDate(isoStr) {
-  if (!isoStr) return '—';
-  try {
-    const d = new Date(isoStr);
-    if (isNaN(d.getTime())) return isoStr;
-    return new Intl.DateTimeFormat(state.lang === 'ar' ? 'ar-SA' : 'en-US', {
-      year: 'numeric', month: 'short', day: 'numeric',
-      hour: '2-digit', minute: '2-digit'
-    }).format(d);
-  } catch (e) {
-    return isoStr;
-  }
+  return formatDateTime(isoStr, { includeSeconds: false }).full;
 }
 
 export function buildAssigneeChipsHtml(selectedUserIds = [], selectedExternals = []) {

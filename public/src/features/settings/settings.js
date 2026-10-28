@@ -1,6 +1,6 @@
 import { state } from '../../core/state.js';
 import { api } from '../../core/api.js';
-import { getActiveCalendarSystem, esc, sanitizeForSpreadsheet, choose, icon, t, can, isAdmin, avatar, roleName, initials, statusText } from '../../core/utils.js';
+import { getActiveCalendarSystem, esc, sanitizeForSpreadsheet, choose, icon, t, can, isAdmin, avatar, roleName, initials, statusText, formatDateTime, formatReportDate, formatReportTime } from '../../core/utils.js';
 import { showToast, modalShell, closeModal } from '../../shared/ui.js';
 
 export function renderTeam() {
@@ -101,20 +101,7 @@ export function renderUserActivityCell(user) {
 }
 
 function formatAuditTimestamp(isoStr) {
-  if (!isoStr) return { date: '—', time: '—' };
-  try {
-    const d = new Date(isoStr);
-    if (isNaN(d.getTime())) return { date: isoStr, time: '' };
-    const date = new Intl.DateTimeFormat(state.lang === 'ar' ? 'ar-SA' : 'en-US', {
-      year: 'numeric', month: 'short', day: 'numeric'
-    }).format(d);
-    const time = new Intl.DateTimeFormat(state.lang === 'ar' ? 'ar-SA' : 'en-US', {
-      hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true
-    }).format(d);
-    return { date, time };
-  } catch (e) {
-    return { date: isoStr, time: '' };
-  }
+  return formatDateTime(isoStr, { includeSeconds: true });
 }
 
 function renderAuditDetails(log) {
@@ -190,8 +177,8 @@ export function exportAuditLogsXLS(logs = null) {
   }
   const currentUser = state.data?.user || {};
   const exporterName = choose(currentUser.name, currentUser.nameEn || currentUser.name) || 'Admin';
-  const reportDate = new Date().toLocaleDateString(state.lang === 'ar' ? 'ar-SA' : 'en-US', { dateStyle: 'full' });
-  const reportTime = new Date().toLocaleTimeString(state.lang === 'ar' ? 'ar-SA' : 'en-US', { timeStyle: 'medium' });
+  const reportDate = formatReportDate();
+  const reportTime = formatReportTime();
 
   let tableHtml = `
     <table>
@@ -313,8 +300,8 @@ export function printAuditReport(logs = null) {
   }
   const currentUser = state.data?.user || {};
   const exporterName = choose(currentUser.name, currentUser.nameEn || currentUser.name) || 'Admin';
-  const reportDate = new Date().toLocaleDateString(state.lang === 'ar' ? 'ar-SA' : 'en-US', { dateStyle: 'full' });
-  const reportTime = new Date().toLocaleTimeString(state.lang === 'ar' ? 'ar-SA' : 'en-US', { timeStyle: 'medium' });
+  const reportDate = formatReportDate();
+  const reportTime = formatReportTime();
 
   // Statistical KPIs
   const totalEvents = currentLogs.length;

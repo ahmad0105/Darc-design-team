@@ -106,6 +106,12 @@ app.patch('/me', async (c) => {
       updates.avatar_url = body.avatarUrl;
     }
   }
+
+  if (body.calendarSystem !== undefined) {
+    if (['gregorian', 'hijri'].includes(body.calendarSystem)) {
+      customFields.calendarSystem = body.calendarSystem;
+    }
+  }
   updates.custom_fields = customFields;
 
   let { data, error } = await supabase.from('users').update(updates).eq('id', currentUserId).select().single();

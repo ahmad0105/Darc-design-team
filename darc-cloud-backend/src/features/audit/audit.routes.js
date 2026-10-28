@@ -181,6 +181,8 @@ auditApp.get('/export', async (c) => {
   const roleId = c.get('roleId');
   const isAhmad = userId === 'usr_ahmad';
   const isAdmin = roleId === 'admin' || isAhmad;
+  const url = new URL(c.req.url);
+  const calendarPref = url.searchParams.get('calendar') || 'gregorian';
 
   let effectiveUserId = null;
   if (!isAdmin && !isDemo) {
@@ -258,7 +260,8 @@ auditApp.get('/export', async (c) => {
   logs.forEach(log => {
     const userName = log.user ? `${log.user.name || ''} (${log.user.nameEn || ''})`.trim() : 'النظام / System';
     const userRole = log.user ? log.user.roleId : '—';
-    const dt = new Date(log.createdAt).toLocaleString('ar-SA', { dateStyle: 'short', timeStyle: 'medium' });
+    const calLocale = calendarPref === 'hijri' ? 'ar-SA-u-ca-islamic-umalqura' : 'ar-u-ca-gregory';
+    const dt = new Date(log.createdAt).toLocaleString(calLocale, { dateStyle: 'short', timeStyle: 'medium' });
     const detailText = typeof log.details === 'object' ? JSON.stringify(log.details) : String(log.details || '');
 
     csvRows.push([

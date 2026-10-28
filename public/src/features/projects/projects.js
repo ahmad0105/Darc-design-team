@@ -1,7 +1,7 @@
 
 import { state } from '../../core/state.js';
 import { api } from '../../core/api.js';
-import { choose, esc, icon, avatar, statusText, t, can, isAdmin, roleName, sanitizeForSpreadsheet } from '../../core/utils.js';
+import { choose, esc, icon, avatar, statusText, t, can, isAdmin, roleName, sanitizeForSpreadsheet, formatReportDate, formatReportTime } from '../../core/utils.js';
 import { showToast, modalShell, closeModal } from '../../shared/ui.js';
 import { renderTaskSortSelect, getSavedTaskSort } from '../tasks/tasks.js';
 
@@ -1113,7 +1113,7 @@ export function exportPortfolioXLS() {
   }
 
   const company = getCompanyBranding();
-  const reportDate = new Date().toLocaleDateString(state.lang === 'ar' ? 'ar-SA' : 'en-US');
+  const reportDate = formatReportDate();
   const colsCount = 11;
 
   let table = '<table>';
@@ -1189,7 +1189,7 @@ export function exportProjectXLS(projectId) {
     return u ? choose(u.name, u.nameEn || u.name) : userId;
   }
 
-  const reportDate = new Date().toLocaleDateString(state.lang === 'ar' ? 'ar-SA' : 'en-US');
+  const reportDate = formatReportDate();
   const colsCount = 11;
 
   let table = '<table>';
@@ -1281,8 +1281,8 @@ export function exportProjectPDF(projectId, isClientFacing = false) {
   const overdueTasks = tasks.filter(t => isTaskOverdue(t)).length;
 
   const now = new Date();
-  const reportDate = now.toLocaleDateString(state.lang === 'ar' ? 'ar-SA' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-  const reportTime = now.toLocaleTimeString(state.lang === 'ar' ? 'ar-SA' : 'en-US', { hour: '2-digit', minute: '2-digit' });
+  const reportDate = formatReportDate(now);
+  const reportTime = formatReportTime(now);
 
   // Categorize disciplines
   const catMap = new Map();
@@ -1807,8 +1807,8 @@ export function exportPortfolioPDF() {
 
   const company = getCompanyBranding();
   const now = new Date();
-  const reportDate = now.toLocaleDateString(state.lang === 'ar' ? 'ar-SA' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-  const reportTime = now.toLocaleTimeString(state.lang === 'ar' ? 'ar-SA' : 'en-US', { hour: '2-digit', minute: '2-digit' });
+  const reportDate = formatReportDate(now);
+  const reportTime = formatReportTime(now);
 
   const totalProjects = projects.length;
   const onTrackCount = projects.filter(p => p.health === 'on_track').length;

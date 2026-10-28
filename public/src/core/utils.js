@@ -252,7 +252,7 @@ export function dateLabel(value, includeYear = true) {
     return new Intl.DateTimeFormat(locale, {
       day: 'numeric',
       month: 'short',
-      year: 'numeric'
+      ...(includeYear ? { year: 'numeric' } : {})
     }).format(date);
   }
 
@@ -261,7 +261,7 @@ export function dateLabel(value, includeYear = true) {
   return new Intl.DateTimeFormat(locale, {
     day: 'numeric',
     month: 'short',
-    year: 'numeric'
+    ...(includeYear ? { year: 'numeric' } : {})
   }).format(date);
 }
 
@@ -269,10 +269,77 @@ export function formatUnifiedDateNumeric(value) {
   if (!value) return '—';
   const date = new Date(String(value).length === 10 ? `${value}T12:00:00` : value);
   if (Number.isNaN(date.getTime())) return '—';
+  const calSystem = getActiveCalendarSystem();
+  if (calSystem === 'hijri') {
+    const locale = state.lang === 'ar' ? 'ar-SA-u-ca-islamic-umalqura' : 'en-u-ca-islamic-umalqura';
+    return new Intl.DateTimeFormat(locale, {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    }).format(date);
+  }
   const d = String(date.getDate()).padStart(2, '0');
   const m = String(date.getMonth() + 1).padStart(2, '0');
   const y = date.getFullYear();
   return `${d}/${m}/${y}`;
+}
+
+export function formatDateTime(value, options = {}) {
+  if (!value) return { date: '—', time: '—', full: '—' };
+  try {
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return { date: String(value), time: '—', full: String(value) };
+
+    const calSystem = getActiveCalendarSystem();
+    const isAr = state.lang === 'ar';
+
+    const dateLocale = calSystem === 'hijri'
+      ? (isAr ? 'ar-SA-u-ca-islamic-umalqura' : 'en-u-ca-islamic-umalqura')
+      : (isAr ? 'ar-u-ca-gregory' : 'en-GB-u-ca-gregory');
+
+    const date = new Intl.DateTimeFormat(dateLocale, {
+      year: 'numeric',
+      month: options.monthStyle || 'short',
+      day: 'numeric'
+    }).format(d);
+
+    const timeLocale = isAr ? 'ar-SA' : 'en-US';
+    const time = new Intl.DateTimeFormat(timeLocale, {
+      hour: '2-digit',
+      minute: '2-digit',
+      ...(options.includeSeconds !== false ? { second: '2-digit' } : {}),
+      hour12: true
+    }).format(d);
+
+    return { date, time, full: `${date} ${time}` };
+  } catch (e) {
+    return { date: String(value), time: '—', full: String(value) };
+  }
+}
+
+export function formatReportDate(value = new Date()) {
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return '—';
+  const calSystem = getActiveCalendarSystem();
+  const isAr = state.lang === 'ar';
+  const locale = calSystem === 'hijri'
+    ? (isAr ? 'ar-SA-u-ca-islamic-umalqura' : 'en-u-ca-islamic-umalqura')
+    : (isAr ? 'ar-u-ca-gregory' : 'en-GB-u-ca-gregory');
+
+  return new Intl.DateTimeFormat(locale, {
+    dateStyle: 'full'
+  }).format(d);
+}
+
+export function formatReportTime(value = new Date()) {
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return '—';
+  const isAr = state.lang === 'ar';
+  return new Intl.DateTimeFormat(isAr ? 'ar-SA' : 'en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true
+  }).format(d);
 }
 
 export function getHijriDateEquivalent(value) {
