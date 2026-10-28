@@ -126,6 +126,12 @@ app.patch('/:id', async (c) => {
       if (['start_date', 'due_date', 'manager_id'].includes(snake)) {
         val = val ? val : null;
       }
+      if (snake === 'lifecycle' && val && !['planning', 'active', 'on_hold', 'completed', 'archived', 'cancelled'].includes(val)) {
+        continue;
+      }
+      if (snake === 'health' && val && !['on_track', 'at_risk', 'off_track'].includes(val)) {
+        continue;
+      }
       updates[snake] = val;
     }
   }

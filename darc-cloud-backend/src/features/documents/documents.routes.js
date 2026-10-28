@@ -304,7 +304,8 @@ app.post('/session', uploadRateLimiter(), async (c) => {
     );
     return c.json({ sessionUrl, folderId: targetFolderId });
   } catch (error) {
-    return c.json({ error: 'فشل بدء جلسة الرفع: ' + error.message }, 500);
+    console.error('[Session Create Error]', error.message);
+    return c.json({ error: 'فشل بدء جلسة الرفع، يرجى إعادة المحاولة لاحقاً.' }, 500);
   }
 });
 
@@ -631,7 +632,7 @@ app.post('/', uploadRateLimiter(), async (c) => {
     return c.json({ ok: true, document: toCamelCase(data) }, 201);
   } catch (error) {
     console.error("[Documents] Upload Error:", error);
-    return c.json({ error: 'فشل رفع الملف: ' + error.message }, 500);
+    return c.json({ error: 'فشل رفع الملف، يرجى إعادة المحاولة لاحقاً.' }, 500);
   }
 });
 

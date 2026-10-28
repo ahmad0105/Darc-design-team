@@ -7,6 +7,7 @@ import { Buffer } from 'node:buffer';
 import { toCamelCase } from '../../utils/transformers.js';
 import { invalidateUsersCache, setUserTokenVersion } from '../../core/cache.js';
 import { authRateLimiter } from '../../core/rate-limit.js';
+import { computeClientFingerprint } from '../../core/security.js';
 
 const app = new Hono();
 
@@ -97,8 +98,9 @@ app.post('/reset-password', authRateLimiter(), async (c) => {
   setUserTokenVersion(user.id, nextVer);
   invalidateUsersCache();
 
-  // Issue session cookie with new tokenVersion
-  const payload = { userId: user.id, roleId: user.role_id, v: nextVer, exp: Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60 };
+  // Issue session cookie with new tokenVersion & client device fingerprint
+  const clientFpt = await computeClientFingerprint(c, c.env.JWT_SECRET);
+  const payload = { userId: user.id, roleId: user.role_id, v: nextVer, fpt: clientFpt, exp: Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60 };
   const sessionToken = await sign(payload, c.env.JWT_SECRET);
   setSessionCookie(c, sessionToken, 604800);
 
@@ -153,8 +155,9 @@ app.post('/change-password', async (c) => {
   setUserTokenVersion(userId, nextVer);
   invalidateUsersCache();
 
-  // Re-issue fresh cookie for current session with incremented version
-  const payload = { userId: user.id, roleId: user.role_id, v: nextVer, exp: Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60 };
+  // Re-issue fresh cookie for current session with incremented version & client device fingerprint
+  const clientFpt = await computeClientFingerprint(c, c.env.JWT_SECRET);
+  const payload = { userId: user.id, roleId: user.role_id, v: nextVer, fpt: clientFpt, exp: Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60 };
   const sessionToken = await sign(payload, c.env.JWT_SECRET);
   setSessionCookie(c, sessionToken, 604800);
 
@@ -206,14 +209,16 @@ app.post('/activate', authRateLimiter(), async (c) => {
     .single();
 
   if (updateErr) {
-    return c.json({ error: 'فشل تفعيل الحساب: ' + updateErr.message }, 500);
+    console.error('[Activate Error]', updateErr.message);
+    return c.json({ error: 'فشل تفعيل الحساب، يرجى المحاولة لاحقاً.' }, 500);
   }
 
   setUserTokenVersion(user.id, 1);
   invalidateUsersCache();
 
-  // Issue session cookie so user is logged in
-  const payload = { userId: updatedUser.id, roleId: updatedUser.role_id, v: 1, exp: Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60 };
+  // Issue session cookie so user is logged in with client device fingerprint
+  const clientFpt = await computeClientFingerprint(c, c.env.JWT_SECRET);
+  const payload = { userId: updatedUser.id, roleId: updatedUser.role_id, v: 1, fpt: clientFpt, exp: Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60 };
   const sessionToken = await sign(payload, c.env.JWT_SECRET);
   setSessionCookie(c, sessionToken, 604800);
 

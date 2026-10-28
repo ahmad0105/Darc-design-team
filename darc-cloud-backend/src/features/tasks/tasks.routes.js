@@ -25,10 +25,16 @@ function calculateAutoProgress(status) {
   }
 }
 
-// Helper: Sanitize custom_fields (prevent XSS in external assignees, constrain array lengths)
+// Helper: Sanitize custom_fields (prevent XSS in external assignees, constrain array lengths, prototype pollution guard)
 function sanitizeCustomFields(cf) {
   if (!cf || typeof cf !== 'object' || Array.isArray(cf)) return {};
   const clean = { ...cf };
+  delete clean.__proto__;
+  delete clean.constructor;
+  delete clean.prototype;
+  delete clean.tokenVersion;
+  delete clean.resetToken;
+  delete clean.resetExpiresAt;
   if (Array.isArray(clean.additional_assignees)) {
     clean.additional_assignees = clean.additional_assignees
       .filter(x => typeof x === 'string' && x.trim().length > 0)
@@ -329,6 +335,12 @@ app.patch('/:id', async (c) => {
       let val = valInBody;
       if (['start_date', 'due_date', 'assignee_id', 'reviewer_id', 'approver_id', 'parent_task_id', 'template_id'].includes(snake)) {
         val = val ? val : null;
+      }
+      if (snake === 'status' && val && !['not_started', 'in_progress', 'review', 'approval', 'done', 'canceled'].includes(val)) {
+        continue;
+      }
+      if (snake === 'priority' && val && !['low', 'medium', 'high', 'urgent'].includes(val)) {
+        continue;
       }
       updates[snake] = val;
     }

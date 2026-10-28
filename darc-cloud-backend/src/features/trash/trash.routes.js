@@ -272,7 +272,8 @@ app.delete('/empty', async (c) => {
       message: 'تم إفراغ سلة المهملات بالكامل بنجاح.'
     });
   } catch (err) {
-    return c.json({ error: 'فشل إفراغ سلة المهملات: ' + err.message }, 500);
+    console.error('[Empty Trash Error]', err.message);
+    return c.json({ error: 'فشل إفراغ سلة المهملات، يرجى المحاولة لاحقاً.' }, 500);
   }
 });
 
@@ -280,6 +281,15 @@ app.delete('/empty', async (c) => {
 app.delete('/:type/:id', async (c) => {
   const type = c.req.param('type');
   const id = c.req.param('id');
+
+  const validTypes = new Set(['project', 'task', 'document']);
+  if (!validTypes.has(type)) {
+    return c.json({ error: 'نوع غير صالح. يجب أن يكون project أو task أو document.' }, 400);
+  }
+  if (!/^[a-zA-Z0-9_-]{3,64}$/.test(id)) {
+    return c.json({ error: 'معرف غير صالح' }, 400);
+  }
+
   const userId = c.get('userId');
   const roleId = c.get('roleId');
   const supabase = c.get('supabase');
@@ -444,7 +454,8 @@ app.post('/cleanup', async (c) => {
       message: `تم تنظيف العناصر المحذوفة منذ أكثر من ${daysThreshold} يوماً بنجاح.`
     });
   } catch (error) {
-    return c.json({ error: 'فشلت عملية تنظيف سلة المهملات: ' + error.message }, 500);
+    console.error('[Purge Trash Error]', error.message);
+    return c.json({ error: 'فشلت عملية تنظيف سلة المهملات، يرجى المحاولة لاحقاً.' }, 500);
   }
 });
 

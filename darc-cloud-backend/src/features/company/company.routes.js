@@ -46,8 +46,9 @@ app.patch('/', async (c) => {
       }
       const isSafeRaster = /^data:image\/(png|jpeg|jpg|webp|gif);base64,/i.test(rawLogo);
       const isHttpsOrRelative = rawLogo.startsWith('https://') || rawLogo.startsWith('/');
-      if (!isSafeRaster && !isHttpsOrRelative) {
-        return c.json({ error: 'نوع ملف الشعار غير مدعوم. يرجى استخدام PNG أو JPEG أو WebP أو رابط آمن.' }, 400);
+      const isDangerousSvgOrScript = /\.svg($|\?)|<|>|javascript:/i.test(rawLogo);
+      if ((!isSafeRaster && !isHttpsOrRelative) || isDangerousSvgOrScript) {
+        return c.json({ error: 'نوع ملف الشعار غير مدعوم أو غير آمن. يرجى استخدام صورة نقطية آمنة (PNG, JPEG, WebP).' }, 400);
       }
       updates.logo_url = rawLogo;
     }

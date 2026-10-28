@@ -8,6 +8,7 @@ const ALLOWED_ORIGINS = [
   'http://127.0.0.1:8787',
   'https://darc-design-team.netlify.app',
   'https://darc-design-team.workers.dev',
+  'https://darc-design-team.ahmad-hashmi-c.workers.dev',
   'https://darc-design.bond',
   'https://panel.darc-design.bond',
   'https://api.darc-design.bond'
@@ -206,6 +207,7 @@ function isAllowedOrigin(originStr) {
       parsed.endsWith('.darc-design-team.netlify.app') ||
       parsed === 'https://darc-design-team.workers.dev' ||
       parsed === 'https://darc-design-team.pages.dev' ||
+      parsed === 'https://darc-design-team.ahmad-hashmi-c.workers.dev' ||
       parsed.endsWith('.darc-design.bond') ||
       parsed === 'https://darc-design.bond' ||
       parsed === 'https://panel.darc-design.bond' ||

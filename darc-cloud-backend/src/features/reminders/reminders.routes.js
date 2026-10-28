@@ -22,27 +22,38 @@ app.post('/', async (c) => {
   let targetUserId = userId;
 
   if (body.taskId) {
+    if (!/^[a-zA-Z0-9_-]{3,64}$/.test(body.taskId)) {
+      return c.json({ error: 'معرف المهمة غير صالح' }, 400);
+    }
     const { data } = await supabase
       .from('tasks')
       .select('id, project_id, assignee_id, title_ar, title_en, custom_fields')
       .eq('id', body.taskId)
       .single();
 
+    if (!data) {
+      return c.json({ error: 'المهمة المحددة غير موجودة' }, 404);
+    }
+
     task = data;
-    if (task) {
-      if (!(await isProjectVisible(supabase, userId, roleId, task.project_id))) {
-        return c.json({ error: 'غير مصرح لك بإضافة تذكير لمهمة في هذا المشروع' }, 403);
-      }
-      if (task.assignee_id) {
-        targetUserId = task.assignee_id;
-      }
+    if (!(await isProjectVisible(supabase, userId, roleId, task.project_id))) {
+      return c.json({ error: 'غير مصرح لك بإضافة تذكير لمهمة في هذا المشروع' }, 403);
+    }
+    if (task.assignee_id) {
+      targetUserId = task.assignee_id;
     }
   }
 
   const id = generateSecureId('rem_');
-  const remindAt = body.remindAt || null;
-  const noteAr = body.noteAr || (task ? `تذكير بمهمة: ${task.title_ar}` : 'تذكير');
-  const noteEn = body.noteEn || (task ? `Task reminder: ${task.title_en || task.title_ar}` : 'Reminder');
+  let remindAt = null;
+  if (body.remindAt) {
+    const parsed = new Date(body.remindAt);
+    if (!isNaN(parsed.getTime())) {
+      remindAt = parsed.toISOString();
+    }
+  }
+  const noteAr = (body.noteAr || (task ? `تذكير بمهمة: ${task.title_ar}` : 'تذكير')).slice(0, 500);
+  const noteEn = (body.noteEn || (task ? `Task reminder: ${task.title_en || task.title_ar}` : 'Reminder')).slice(0, 500);
 
   const { data, error } = await supabase.from('reminders').insert([{
     id,
@@ -87,6 +98,9 @@ app.get('/', async (c) => {
 
   let query = supabase.from('reminders').select('*');
   if (taskId) {
+    if (!/^[a-zA-Z0-9_-]{3,64}$/.test(taskId)) {
+      return c.json({ error: 'معرف المهمة غير صالح' }, 400);
+    }
     const { data: task } = await supabase.from('tasks').select('id, project_id, custom_fields').eq('id', taskId).single();
     if (!task) return c.json({ reminders: [] });
     if (!(await isProjectVisible(supabase, userId, roleId, task.project_id))) {
@@ -114,6 +128,9 @@ app.get('/', async (c) => {
 // DELETE /api/reminders/:id — Delete a reminder
 app.delete('/:id', async (c) => {
   const id = c.req.param('id');
+  if (!/^[a-zA-Z0-9_-]{3,64}$/.test(id)) {
+    return c.json({ error: 'معرف التذكير غير صالح' }, 400);
+  }
   const userId = c.get('userId');
   const roleId = c.get('roleId');
   const supabase = c.get('supabase');

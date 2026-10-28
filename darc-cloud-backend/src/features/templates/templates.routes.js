@@ -53,6 +53,9 @@ app.post('/', async (c) => {
 
 app.patch('/:id', async (c) => {
   const templateId = c.req.param('id');
+  if (!/^[a-zA-Z0-9_-]{3,64}$/.test(templateId)) {
+    return c.json({ error: 'معرف القالب غير صالح' }, 400);
+  }
   const userId = c.get('userId');
   const roleId = c.get('roleId');
   const supabase = c.get('supabase');
@@ -80,6 +83,9 @@ app.patch('/:id', async (c) => {
 
 app.delete('/:id', async (c) => {
   const templateId = c.req.param('id');
+  if (!/^[a-zA-Z0-9_-]{3,64}$/.test(templateId)) {
+    return c.json({ error: 'معرف القالب غير صالح' }, 400);
+  }
   const userId = c.get('userId');
   const roleId = c.get('roleId');
   const supabase = c.get('supabase');

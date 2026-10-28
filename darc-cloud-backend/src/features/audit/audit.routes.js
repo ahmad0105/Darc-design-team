@@ -136,7 +136,8 @@ auditApp.get('/', async (c) => {
 
   const { data: dbLogs, count, error } = await query;
   if (error) {
-    return c.json({ error: error.message }, 500);
+    console.error('[Audit Query Error]', error.message);
+    return c.json({ error: 'فشل استرجاع سجل العمليات، يرجى المحاولة لاحقاً.' }, 500);
   }
 
   // Filter sensitive logs if not root admin

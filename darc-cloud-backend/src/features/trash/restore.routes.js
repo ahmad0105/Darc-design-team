@@ -15,6 +15,15 @@ app.post('/:type/:id', async (c) => {
   const roleId = c.get('roleId');
   const type = c.req.param('type'); // 'project', 'task', or 'document'
   const id = c.req.param('id');
+
+  const validTypes = new Set(['project', 'task', 'document']);
+  if (!validTypes.has(type)) {
+    return c.json({ error: 'نوع غير صالح. يجب أن يكون project أو task أو document.' }, 400);
+  }
+  if (!/^[a-zA-Z0-9_-]{3,64}$/.test(id)) {
+    return c.json({ error: 'معرف غير صالح' }, 400);
+  }
+
   const supabase = c.get('supabase');
   const now = new Date().toISOString();
 
@@ -40,8 +49,11 @@ app.post('/:type/:id', async (c) => {
 
     // Ensure parent project is active if it was deleted
     if (doc.project_id) {
-      const { data: proj } = await supabase.from('projects').select('deleted_at').eq('id', doc.project_id).single();
+      const { data: proj } = await supabase.from('projects').select('manager_id, deleted_at').eq('id', doc.project_id).single();
       if (proj && proj.deleted_at) {
+        if (!isGlobalAdmin && proj.manager_id !== userId) {
+          return c.json({ error: 'المشروع التابع له هذا المستند محذوف حالياً. يجب استعادة المشروع أولاً من قِبل مدير المشروع أو المشرف.' }, 400);
+        }
         await supabase.from('projects').update({ lifecycle: 'active', deleted_at: null, updated_at: now }).eq('id', doc.project_id);
       }
     }
@@ -99,8 +111,11 @@ app.post('/:type/:id', async (c) => {
 
     if (task && task.project_id) {
       // Ensure parent project is active if it was deleted
-      const { data: proj } = await supabase.from('projects').select('deleted_at').eq('id', task.project_id).single();
+      const { data: proj } = await supabase.from('projects').select('manager_id, deleted_at').eq('id', task.project_id).single();
       if (proj && proj.deleted_at) {
+        if (!isGlobalAdmin && proj.manager_id !== userId) {
+          return c.json({ error: 'المشروع التابع له هذه المهمة محذوف حالياً. يجب استعادة المشروع أولاً من قِبل مدير المشروع أو المشرف.' }, 400);
+        }
         await supabase.from('projects').update({ lifecycle: 'active', deleted_at: null, updated_at: now }).eq('id', task.project_id);
       }
     }

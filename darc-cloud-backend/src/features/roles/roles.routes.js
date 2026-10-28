@@ -44,6 +44,9 @@ app.post('/', requireAdmin, async (c) => {
 
 app.patch('/:id', requireAdmin, async (c) => {
   const roleId = c.req.param('id');
+  if (!/^[a-zA-Z0-9_-]{3,64}$/.test(roleId)) {
+    return c.json({ error: 'معرف الدور غير صالح' }, 400);
+  }
   const body = await c.req.json();
   const supabase = c.get('supabase');
   
@@ -70,6 +73,9 @@ app.patch('/:id', requireAdmin, async (c) => {
 
 app.delete('/:id', requireAdmin, async (c) => {
   const roleId = c.req.param('id');
+  if (!/^[a-zA-Z0-9_-]{3,64}$/.test(roleId)) {
+    return c.json({ error: 'معرف الدور غير صالح' }, 400);
+  }
   const supabase = c.get('supabase');
   
   const BUILT_IN_ROLES = [

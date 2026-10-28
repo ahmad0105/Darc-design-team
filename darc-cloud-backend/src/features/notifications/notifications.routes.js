@@ -27,6 +27,9 @@ app.post('/read-all', async (c) => {
 
 app.patch('/:id', async (c) => {
   const notificationId = c.req.param('id');
+  if (!/^[a-zA-Z0-9_-]{3,64}$/.test(notificationId)) {
+    return c.json({ error: 'معرف الإشعار غير صالح' }, 400);
+  }
   const userId = c.get('userId');
   const supabase = c.get('supabase');
   const now = new Date().toISOString();

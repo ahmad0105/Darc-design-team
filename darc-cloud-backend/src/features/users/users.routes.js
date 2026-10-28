@@ -4,6 +4,9 @@ import { invalidateUsersCache, setUserTokenVersion, getUserTokenVersion, setUser
 import { logAudit } from '../../core/audit.js';
 import { toCamelCase } from '../../utils/transformers.js';
 import { hasPermission } from '../../utils/permissions.js';
+import { computeClientFingerprint } from '../../core/security.js';
+
+const isValidEntityId = (id) => typeof id === 'string' && /^[a-zA-Z0-9_-]{3,64}$/.test(id);
 
 const app = new Hono();
 
@@ -95,8 +98,9 @@ app.patch('/me', async (c) => {
       }
       const isSafeRaster = /^data:image\/(png|jpeg|jpg|webp|gif);base64,/i.test(body.avatarUrl);
       const isHttpsOrRelative = body.avatarUrl.startsWith('https://') || body.avatarUrl.startsWith('/');
-      if (!isSafeRaster && !isHttpsOrRelative) {
-        return c.json({ error: 'نوع ملف الصورة غير مدعوم. يرجى استخدام PNG أو JPEG أو WebP أو رابط آمن.' }, 400);
+      const isDangerousSvgOrScript = /\.svg($|\?)|<|>|javascript:/i.test(body.avatarUrl);
+      if ((!isSafeRaster && !isHttpsOrRelative) || isDangerousSvgOrScript) {
+        return c.json({ error: 'نوع ملف الصورة غير مدعوم أو غير آمن. يرجى استخدام صورة نقطية آمنة (PNG, JPEG, WebP).' }, 400);
       }
       customFields.avatarUrl = body.avatarUrl;
       updates.avatar_url = body.avatarUrl;
@@ -112,7 +116,10 @@ app.patch('/me', async (c) => {
     data = retry.data;
     error = retry.error;
   }
-  if (error) return c.json({ error: 'فشل تحديث البيانات الشخصية: ' + error.message }, 500);
+  if (error) {
+    console.error('[Update Profile Error]', error.message);
+    return c.json({ error: 'فشل تحديث البيانات الشخصية، يرجى المحاولة لاحقاً.' }, 500);
+  }
 
   invalidateUsersCache();
   if (data) {
@@ -172,6 +179,9 @@ app.post('/', requireAdmin, async (c) => {
 
 app.patch('/:id', async (c) => {
   const userId = c.req.param('id');
+  if (!isValidEntityId(userId)) {
+    return c.json({ error: 'معرف المستخدم غير صالح' }, 400);
+  }
   const currentUserId = c.get('userId');
   const currentRoleId = c.get('roleId');
   const supabase = c.get('supabase');
@@ -188,15 +198,26 @@ app.patch('/:id', async (c) => {
     return c.json({ error: 'غير مصرح لك بتنفيذ هذه العملية، هذه الصلاحية للمشرف فقط' }, 403);
   }
 
+  const { data: targetUser } = await supabase.from('users').select('id, role_id').eq('id', userId).single();
+  if (!targetUser) {
+    return c.json({ error: 'المستخدم غير موجود' }, 404);
+  }
+
   const body = await c.req.json();
 
-  // If not full admin, enforce privilege escalation guards
+  // If not full admin, enforce strict privilege escalation & account hijacking guards
   if (currentRoleId !== 'admin') {
-    if (body.roleId === 'admin') {
-      return c.json({ error: 'لا يمكن تعيين صلاحية مدير النظام إلا من قِبل مدير النظام.' }, 403);
+    if (targetUser.role_id === 'admin') {
+      return c.json({ error: 'لا يمكن لغير مدير النظام تعديل حسابات مدراء النظام.' }, 403);
     }
-    if (userId === currentUserId && body.roleId !== undefined) {
-      return c.json({ error: 'لا يمكنك تغيير رتبة حسابك الخاص.' }, 403);
+    if (body.roleId !== undefined && body.roleId !== targetUser.role_id) {
+      return c.json({ error: 'لا يمكن تعديل رتبة الحسابات إلا من قِبل مدير النظام.' }, 403);
+    }
+    if (body.email !== undefined) {
+      return c.json({ error: 'لا يمكن تعديل البريد الإلكتروني للحسابات إلا من قِبل مدير النظام.' }, 403);
+    }
+    if (userId === currentUserId && body.status !== undefined) {
+      return c.json({ error: 'لا يمكنك تعديل حالة حسابك الخاص.' }, 403);
     }
   }
   
@@ -236,6 +257,7 @@ app.patch('/:id', async (c) => {
 
 app.post('/:id/deactivate', requireAdmin, async (c) => {
   const targetId = c.req.param('id');
+  if (!isValidEntityId(targetId)) return c.json({ error: 'معرف غير صالح' }, 400);
   const currentUserId = c.get('userId');
   if ((targetId === 'usr_ahmad' || targetId === 'usr_ahmed') && currentUserId !== 'usr_ahmad') {
     return c.json({ error: 'محظور: لا يمكن تعديل أو تعطيل حساب مدير ومطور النظام.' }, 403);
@@ -255,6 +277,7 @@ app.post('/:id/deactivate', requireAdmin, async (c) => {
 
 app.delete('/:id', requireAdmin, async (c) => {
   const targetId = c.req.param('id');
+  if (!isValidEntityId(targetId)) return c.json({ error: 'معرف غير صالح' }, 400);
   const currentUserId = c.get('userId');
   if (targetId === currentUserId) return c.json({ error: 'لا يمكنك تعطيل حسابك الخاص.' }, 400);
   if ((targetId === 'usr_ahmad' || targetId === 'usr_ahmed') && currentUserId !== 'usr_ahmad') {
@@ -286,6 +309,7 @@ async function hashPassword(password) {
 
 app.post('/:id/force-password', requireAdmin, async (c) => {
   const targetId = c.req.param('id');
+  if (!isValidEntityId(targetId)) return c.json({ error: 'معرف غير صالح' }, 400);
   const currentUserId = c.get('userId');
   if ((targetId === 'usr_ahmad' || targetId === 'usr_ahmed') && currentUserId !== 'usr_ahmad') {
     return c.json({ error: 'محظور: لا يمكن تعديل كلمة مرور حساب مدير ومطور النظام.' }, 403);
@@ -311,6 +335,7 @@ app.post('/:id/force-password', requireAdmin, async (c) => {
 
 app.post('/:id/invite', requireAdmin, async (c) => {
   const targetId = c.req.param('id');
+  if (!isValidEntityId(targetId)) return c.json({ error: 'معرف غير صالح' }, 400);
   const supabase = c.get('supabase');
   const { data: user, error } = await supabase.from('users').select('id, email, name').eq('id', targetId).single();
   if (error || !user) return c.json({ error: 'المستخدم غير موجود.' }, 404);
@@ -326,6 +351,7 @@ app.post('/:id/invite', requireAdmin, async (c) => {
 
 app.post('/:id/impersonate', requireAdmin, async (c) => {
   const targetId = c.req.param('id');
+  if (!isValidEntityId(targetId)) return c.json({ error: 'معرف غير صالح' }, 400);
   const currentUserId = c.get('userId');
   if ((targetId === 'usr_ahmad' || targetId === 'usr_ahmed') && currentUserId !== 'usr_ahmad') {
     return c.json({ error: 'محظور: لا يمكن الدخول كـ حساب مدير ومطور النظام.' }, 403);
@@ -338,7 +364,8 @@ app.post('/:id/impersonate', requireAdmin, async (c) => {
   const secret = c.env.JWT_SECRET;
   const tokenVer = Number(user.custom_fields?.tokenVersion || 1);
   const exp = Math.floor(Date.now() / 1000) + 60 * 60 * 4; // 4 hours
-  const token = await sign({ userId: user.id, roleId: user.role_id, v: tokenVer, exp }, secret);
+  const clientFpt = await computeClientFingerprint(c, secret);
+  const token = await sign({ userId: user.id, roleId: user.role_id, v: tokenVer, fpt: clientFpt, exp }, secret);
   setSessionCookie(c, token, 60 * 60 * 4);
   await logAudit(supabase, { userId: currentUserId, action: 'impersonate', entityType: 'user', entityId: targetId });
   return c.json({ ok: true, token, user: { id: user.id, roleId: user.role_id } });
