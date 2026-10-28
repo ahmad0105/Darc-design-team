@@ -378,7 +378,9 @@ export function renderTimelinePanel(tasks, project) {
     </div>
   `;
 }
-window.__timelineExports = { renderTimelinePanel, renderCalendar, renderTimeline };
+if (typeof window !== 'undefined') {
+  window.__timelineExports = { renderTimelinePanel, renderCalendar, renderTimeline };
+}
 
 export function filterTasks(tasks) {
   const query = state.searches.tasks.trim().toLowerCase();

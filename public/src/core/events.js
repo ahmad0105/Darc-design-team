@@ -6,6 +6,8 @@ import { openOmnisearch, closeOmnisearch, openShortcutsCheatsheet } from '../fea
 import { playSuccessChime, savePreferencesCookies } from './utils.js';
 import { setSavedTaskSort, openDocumentPreviewModal, renderTaskDocuments } from '../features/tasks/tasks.js';
 import { getPendingMutations, syncPendingMutations, getOfflineBootstrap, clearOfflineBootstrap, saveOfflineBootstrap } from './offline.js';
+import { exportPortfolioXLS, exportProjectXLS, exportProjectPDF, exportPortfolioPDF } from '../features/projects/projects.js';
+import { exportAuditLogsXLS, printAuditReport, fetchFullAuditHistory } from '../features/settings/settings.js';
 
 export async function handleSubmit(event) {
   const form = event.target;
@@ -1037,12 +1039,36 @@ export async function handleClick(event) {
     exportPortfolioXLS();
     return;
   }
+  if (action === 'print-portfolio-pdf') {
+    if (!can('export_reports') && !isAdmin()) {
+      showToast(choose('ليس لديك صلاحية لطباعة التقارير.', 'You do not have permission to print reports.'), true);
+      return;
+    }
+    exportPortfolioPDF();
+    return;
+  }
   if (action === 'export-project') {
     if (!can('export_reports') && !isAdmin()) {
       showToast(choose('ليس لديك صلاحية لتصدير التقارير.', 'You do not have permission to export reports.'), true);
       return;
     }
     exportProjectXLS(target.dataset.projectId);
+    return;
+  }
+  if (action === 'export-project-pdf') {
+    if (!can('export_reports') && !isAdmin()) {
+      showToast(choose('ليس لديك صلاحية لتصدير التقارير.', 'You do not have permission to export reports.'), true);
+      return;
+    }
+    exportProjectPDF(target.dataset.projectId, false);
+    return;
+  }
+  if (action === 'export-project-client-pdf') {
+    if (!can('export_reports') && !isAdmin()) {
+      showToast(choose('ليس لديك صلاحية لتصدير التقارير.', 'You do not have permission to export reports.'), true);
+      return;
+    }
+    exportProjectPDF(target.dataset.projectId, true);
     return;
   }
   if (action === 'export-audit-xls') {

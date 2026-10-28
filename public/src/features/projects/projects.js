@@ -1,6 +1,7 @@
 
 import { state } from '../../core/state.js';
 import { api } from '../../core/api.js';
+import { choose, esc, icon, avatar, statusText, t, showToast, can, isAdmin } from '../../core/utils.js';
 import { renderTaskSortSelect, getSavedTaskSort } from '../tasks/tasks.js';
 
 export function projectRow(project) {
@@ -694,10 +695,20 @@ export function renderProjectDetail() {
         ${(can('edit_projects') || can('create_projects') || can('delete_projects') || can('view_reports') || isAdmin()) ? `
           <div style="position:relative;margin-top:11px;width:100%">
             <button class="btn btn-soft btn-sm" data-action="toggle-project-menu" style="width:100%">${icon('more', 15)} ${choose('خيارات', 'Options')}</button>
-            <div id="project-menu" class="dropdown-menu" style="display:none;position:absolute;top:100%;${state.lang === 'ar' ? 'left:0' : 'right:0'};background:var(--surface);border:1px solid var(--line);border-radius:8px;box-shadow:0 10px 30px rgba(0,0,0,0.1);z-index:100;min-width:180px;padding:5px;margin-top:5px;text-align:start">
+            <div id="project-menu" class="dropdown-menu" style="display:none;position:absolute;top:100%;${state.lang === 'ar' ? 'left:0' : 'right:0'};background:var(--surface);border:1px solid var(--line);border-radius:8px;box-shadow:0 10px 30px rgba(0,0,0,0.1);z-index:100;min-width:220px;padding:5px;margin-top:5px;text-align:start">
               ${(can('edit_projects') || isAdmin()) ? `<button class="menu-item" data-action="edit-project" data-project-id="${esc(project.id)}" style="display:flex;align-items:center;gap:8px;width:100%;padding:8px 12px;border:0;background:0;cursor:pointer;font-size:13px">${icon('edit', 14)} ${t('edit')}</button>` : ''}
               ${(can('create_projects') || isAdmin()) ? `<button class="menu-item" data-action="clone-project" data-project-id="${esc(project.id)}" style="display:flex;align-items:center;gap:8px;width:100%;padding:8px 12px;border:0;background:0;cursor:pointer;font-size:13px">${icon('document', 14)} ${choose('استنساخ المشروع', 'Clone Project')}</button>` : ''}
-              ${(can('export_reports') || isAdmin()) ? `<button class="menu-item" data-action="export-project" data-project-id="${esc(project.id)}" style="display:flex;align-items:center;gap:8px;width:100%;padding:8px 12px;border:0;background:0;cursor:pointer;font-size:13px">${icon('document', 14)} ${choose('تصدير التقرير (Excel)', 'Export Report (Excel)')}</button>` : ''}
+              ${(can('export_reports') || isAdmin()) ? `
+                <button class="menu-item" data-action="export-project-pdf" data-project-id="${esc(project.id)}" style="display:flex;align-items:center;gap:8px;width:100%;padding:8px 12px;border:0;background:0;cursor:pointer;font-size:13px;color:var(--brand-teal);font-weight:600;">
+                  ${icon('printer', 14)} ${choose('تقرير تنفيذي معتمد (PDF)', 'Executive Report (PDF)')}
+                </button>
+                <button class="menu-item" data-action="export-project-client-pdf" data-project-id="${esc(project.id)}" style="display:flex;align-items:center;gap:8px;width:100%;padding:8px 12px;border:0;background:0;cursor:pointer;font-size:13px;color:var(--ink);">
+                  ${icon('user', 14)} ${choose('تقرير تسليمات العميل (PDF)', 'Client Deliverables (PDF)')}
+                </button>
+                <button class="menu-item" data-action="export-project" data-project-id="${esc(project.id)}" style="display:flex;align-items:center;gap:8px;width:100%;padding:8px 12px;border:0;background:0;cursor:pointer;font-size:13px;">
+                  ${icon('document', 14)} ${choose('تصدير بيانات المهام (Excel)', 'Export Tasks (Excel)')}
+                </button>
+              ` : ''}
               ${(can('delete_projects') || isAdmin()) ? `<button class="menu-item" data-action="delete-project" data-project-id="${esc(project.id)}" style="display:flex;align-items:center;gap:8px;width:100%;padding:8px 12px;border:0;background:0;cursor:pointer;font-size:13px;color:var(--red)">${icon('trash', 14)} ${choose('حذف المشروع', 'Delete Project')}</button>` : ''}
             </div>
           </div>
@@ -1037,17 +1048,38 @@ export function openCloneModal(project) {
   });
 }
 
+export function getCompanyBranding() {
+  const comp = state.data?.company || {};
+  const nameAr = comp.nameAr || comp.name || 'فريق دارك للتصميم';
+  const nameEn = comp.nameEn || comp.name || 'DARC Design Team';
+  const displayName = choose(nameAr, nameEn);
+  
+  // Strict sanitization: Only allow safe image protocols (http, https, data:image, /)
+  const rawLogo = comp.logoUrl || '';
+  const isSafeLogo = /^(https?:\/\/|data:image\/|\/)/i.test(rawLogo) && !rawLogo.toLowerCase().includes('javascript:');
+  const logoUrl = isSafeLogo ? rawLogo : '';
+
+  return {
+    nameAr,
+    nameEn,
+    displayName,
+    logoUrl,
+    emailFrom: comp.emailFrom || '',
+    timezone: comp.timezone || 'Asia/Riyadh'
+  };
+}
+
 export function exportXLS(filename, htmlTable) {
   const html = `
     <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
     <head>
       <meta charset="utf-8" />
       <style>
-        table { border-collapse: collapse; font-family: Arial, sans-serif; }
-        td, th { border: 1px solid #333; padding: 6px; text-align: right; vertical-align: middle; }
+        table { border-collapse: collapse; font-family: 'Segoe UI', Tahoma, Arial, sans-serif; }
+        td, th { border: 1px solid #333; padding: 7px 10px; text-align: right; vertical-align: middle; }
         .title { font-size: 18px; font-weight: bold; background: #0d6269; color: #fff; text-align: center; }
         .subtitle { font-size: 14px; font-weight: bold; background: #eef2f2; text-align: center; }
-        .meta { font-size: 12px; text-align: center; background: #f9fafa; }
+        .meta { font-size: 12px; text-align: center; background: #f9fafa; color: #475569; }
         .header { font-weight: bold; background: #d4e0e0; text-align: center; }
       </style>
     </head>
@@ -1074,24 +1106,28 @@ export function exportPortfolioXLS() {
     return;
   }
 
+  const company = getCompanyBranding();
   const reportDate = new Date().toLocaleDateString(state.lang === 'ar' ? 'ar-SA' : 'en-US');
   const colsCount = 11;
 
   let table = '<table>';
-  table += `<tr><td colspan="${colsCount}" class="title">DARC Design Team</td></tr>`;
-  table += `<tr><td colspan="${colsCount}" class="subtitle">${choose('تقرير حالة مشاريع المحفظة', 'Portfolio Projects Report')}</td></tr>`;
+  table += `<tr><td colspan="${colsCount}" class="title" style="background:#0d6269;color:#ffffff;font-size:18px;font-weight:bold;text-align:center;padding:14px;">
+    ${company.logoUrl ? `<img src="${esc(company.logoUrl)}" height="42" style="vertical-align:middle;margin-inline-end:12px;" />` : ''}
+    <span style="vertical-align:middle;">${esc(company.displayName)}</span>
+  </td></tr>`;
+  table += `<tr><td colspan="${colsCount}" class="subtitle">${choose('تقرير حالة مشاريع المحفظة الهندسية', 'Portfolio Projects Status Report')}</td></tr>`;
   table += `<tr><td colspan="${colsCount}" class="meta">${choose('تاريخ الإصدار:', 'Generated on:')} ${reportDate}</td></tr>`;
-  table += `<tr><td colspan="${colsCount}" style="border:none;"></td></tr>`; // Empty Row
+  table += `<tr><td colspan="${colsCount}" style="border:none;"></td></tr>`;
 
   // Headers
   table += `<tr class="header">
     <td>${choose('كود المشروع', 'Code')}</td>
     <td>${choose('اسم المشروع (عربي)', 'Project Name (Ar)')}</td>
     <td>${choose('اسم المشروع (إنجليزي)', 'Project Name (En)')}</td>
-    <td>${choose('العميل', 'Client')}</td>
+    <td>${choose('العميل / المالك', 'Client')}</td>
     <td>${choose('مدير المشروع', 'Manager')}</td>
-    <td>${choose('الحالة', 'Lifecycle')}</td>
-    <td>${choose('الصحة', 'Health')}</td>
+    <td>${choose('المرحلة', 'Lifecycle')}</td>
+    <td>${choose('الصحة التشغيلية', 'Health')}</td>
     <td>${choose('تاريخ البدء', 'Start Date')}</td>
     <td>${choose('تاريخ التسليم', 'Due Date')}</td>
     <td>${choose('نسبة الإنجاز', 'Progress %')}</td>
@@ -1117,7 +1153,7 @@ export function exportPortfolioXLS() {
 
   table += '</table>';
   exportXLS(`DARC_Portfolio_Report_${new Date().toISOString().split('T')[0]}`, table);
-  showToast(choose('تم بدء تحميل التقرير.', 'Report download started.'));
+  showToast(choose('تم بدء تحميل تقرير المحفظة.', 'Portfolio report download started.'));
   api('/api/audit', {
     method: 'POST',
     body: JSON.stringify({
@@ -1137,45 +1173,67 @@ export function exportProjectXLS(projectId) {
     return;
   }
 
+  const company = getCompanyBranding();
+  const users = state.data?.users || [];
+  const userMap = new Map(users.map(u => [u.id, u]));
+
+  function getUserName(userId) {
+    if (!userId) return '—';
+    const u = userMap.get(userId);
+    return u ? choose(u.name, u.nameEn || u.name) : userId;
+  }
+
   const reportDate = new Date().toLocaleDateString(state.lang === 'ar' ? 'ar-SA' : 'en-US');
-  const colsCount = 8;
+  const colsCount = 11;
 
   let table = '<table>';
-  table += `<tr><td colspan="${colsCount}" class="title">DARC Design Team</td></tr>`;
-  table += `<tr><td colspan="${colsCount}" class="subtitle">${choose('تقرير مهام المشروع:', 'Project Tasks Report:')} ${esc(choose(project.nameAr, project.nameEn))}</td></tr>`;
-  table += `<tr><td colspan="${colsCount}" class="meta">${choose('تاريخ الإصدار:', 'Generated on:')} ${reportDate}</td></tr>`;
-  table += `<tr><td colspan="${colsCount}" style="border:none;"></td></tr>`; // Empty Row
+  table += `<tr><td colspan="${colsCount}" class="title" style="background:#0d6269;color:#ffffff;font-size:18px;font-weight:bold;text-align:center;padding:14px;">
+    ${company.logoUrl ? `<img src="${esc(company.logoUrl)}" height="42" style="vertical-align:middle;margin-inline-end:12px;" />` : ''}
+    <span style="vertical-align:middle;">${esc(company.displayName)}</span>
+  </td></tr>`;
+  table += `<tr><td colspan="${colsCount}" class="subtitle">${choose('تقرير مهام ومخرجات المشروع:', 'Project Tasks & Deliverables Report:')} ${esc(choose(project.nameAr, project.nameEn))} (${esc(project.code)})</td></tr>`;
+  table += `<tr><td colspan="${colsCount}" class="meta">${choose('العميل / المالك:', 'Client:')} ${esc(choose(project.clientAr, project.clientEn)) || '—'} | ${choose('تاريخ الإصدار:', 'Generated on:')} ${reportDate}</td></tr>`;
+  table += `<tr><td colspan="${colsCount}" style="border:none;"></td></tr>`;
 
   // Headers
   table += `<tr class="header">
+    <td>${choose('كود المخرج', 'Code')}</td>
     <td>${choose('المهمة (عربي)', 'Task (Ar)')}</td>
     <td>${choose('المهمة (إنجليزي)', 'Task (En)')}</td>
-    <td>${choose('القسم', 'Category')}</td>
-    <td>${choose('المسؤول', 'Assignee')}</td>
+    <td>${choose('التخصص / القسم', 'Category')}</td>
+    <td>${choose('المنفذ المسؤول', 'Assignee')}</td>
+    <td>${choose('المراجع الهندسي', 'Reviewer')}</td>
+    <td>${choose('المعتمد النهائي', 'Approver')}</td>
     <td>${choose('الحالة', 'Status')}</td>
     <td>${choose('تاريخ البدء', 'Start Date')}</td>
     <td>${choose('تاريخ التسليم', 'Due Date')}</td>
     <td>${choose('الإنجاز', 'Progress %')}</td>
   </tr>`;
 
-  tasks.forEach(t => {
-    const matchedUser = (state.data?.users || []).find(u => u.id === (t.assigneeId || t.assignee_id));
-    const assigneeName = t.assignee ? choose(t.assignee.name, t.assignee.nameEn || t.assignee.name) : (matchedUser ? choose(matchedUser.name, matchedUser.nameEn || matchedUser.name) : '');
+  tasks.forEach((t, idx) => {
+    const code = t.templateId ? t.templateId.replace('tpl-', '#') : (t.id ? `#${t.id.slice(-6)}` : `#${idx + 1}`);
+    const assigneeName = getUserName(t.assigneeId || t.assignee_id);
+    const reviewerName = getUserName(t.reviewerId || t.reviewer_id);
+    const approverName = getUserName(t.approverId || t.approver_id);
+
     table += `<tr>
+      <td style="text-align:center;font-weight:bold;">${esc(code)}</td>
       <td>${esc(t.titleAr)}</td>
       <td>${esc(t.titleEn)}</td>
       <td>${esc(choose(t.categoryAr, t.categoryEn))}</td>
       <td>${esc(assigneeName)}</td>
+      <td style="color:#0369a1;">${esc(reviewerName)}</td>
+      <td style="color:#047857;">${esc(approverName)}</td>
       <td>${esc(statusText(t.status))}</td>
       <td>${esc(t.startDate || '')}</td>
       <td>${esc(t.dueDate || '')}</td>
-      <td>${t.progress || 0}%</td>
+      <td style="font-weight:bold;">${t.progress || 0}%</td>
     </tr>`;
   });
 
   table += '</table>';
   exportXLS(`DARC_Project_${project.code}_${new Date().toISOString().split('T')[0]}`, table);
-  showToast(choose('تم بدء تحميل التقرير.', 'Report download started.'));
+  showToast(choose('تم بدء تحميل تقرير المهام.', 'Report download started.'));
   api('/api/audit', {
     method: 'POST',
     body: JSON.stringify({
@@ -1185,5 +1243,849 @@ export function exportProjectXLS(projectId) {
       details: { title: choose(`تقرير مهام مشروع: ${project.nameAr}`, `Project Tasks Report: ${project.nameEn || project.nameAr}`), taskCount: tasks.length }
     })
   }).catch(() => {});
+}
+
+export function exportProjectPDF(projectId, isClientFacing = false) {
+  const project = (state.data?.projects || []).find(p => p.id === projectId);
+  if (!project) return;
+  const tasks = (state.data?.tasks || []).filter(t => t.projectId === projectId);
+  if (!tasks.length) {
+    showToast(choose('لا توجد مهام لهذا المشروع لطباعة التقرير.', 'No tasks to print report.'), true);
+    return;
+  }
+
+  const company = getCompanyBranding();
+  const users = state.data?.users || [];
+  const userMap = new Map(users.map(u => [u.id, u]));
+
+  function getUserName(userId) {
+    if (!userId) return '—';
+    const u = userMap.get(userId);
+    return u ? choose(u.name, u.nameEn || u.name) : userId;
+  }
+
+  function isTaskOverdue(t) {
+    return t?.dueDate && !['done', 'completed', 'canceled'].includes(t.status) && new Date(`${t.dueDate}T23:59:59`) < new Date();
+  }
+
+  const totalTasks = tasks.length;
+  const completedTasks = tasks.filter(t => ['done', 'completed'].includes(t.status)).length;
+  const inReviewTasks = tasks.filter(t => ['review', 'approval'].includes(t.status)).length;
+  const inProgressTasks = tasks.filter(t => t.status === 'in_progress').length;
+  const overdueTasks = tasks.filter(t => isTaskOverdue(t)).length;
+
+  const now = new Date();
+  const reportDate = now.toLocaleDateString(state.lang === 'ar' ? 'ar-SA' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+  const reportTime = now.toLocaleTimeString(state.lang === 'ar' ? 'ar-SA' : 'en-US', { hour: '2-digit', minute: '2-digit' });
+
+  // Categorize disciplines
+  const catMap = new Map();
+  tasks.forEach(t => {
+    const key = choose(t.categoryAr, t.categoryEn) || choose(t.typeAr, t.typeEn) || choose('عام', 'General');
+    const cur = catMap.get(key) || { total: 0, completed: 0, weight: 0, progressSum: 0 };
+    const w = Number(t.weight || 1);
+    cur.total++;
+    if (['done', 'completed'].includes(t.status)) cur.completed++;
+    cur.weight += w;
+    cur.progressSum += (t.progress || 0) * w;
+    catMap.set(key, cur);
+  });
+
+  const disciplines = Array.from(catMap.entries()).map(([name, data]) => ({
+    name,
+    percent: data.weight ? Math.round(data.progressSum / data.weight) : 0,
+    completed: data.completed,
+    total: data.total
+  }));
+
+  const reportTitle = isClientFacing
+    ? choose('تقرير تسليمات ومخرجات المشروع للمالك والعميل', 'Client Deliverables & Milestone Brief')
+    : choose('تقرير الإنجاز التنفيذي والمخرجات والاعتمادات الهندسية', 'Official Executive Engineering & Deliverables Audit');
+
+  const reportSub = isClientFacing
+    ? choose('ملخص رسمي لمخرجات ومخططات المشروع المعتمدة وتواريخ التسليم التعاقدية.', 'Official summary of approved architectural drawings, milestones, and deliverables.')
+    : choose('بيان تفصيلي بمسار التنفيذ ومسؤوليات المراجعة والاعتماد لكافة مخرجات المشروع.', 'Detailed execution readout with review and approval sign-offs for all project assets.');
+
+  const tableRowsHtml = tasks.map((t, idx) => {
+    const code = t.templateId ? t.templateId.replace('tpl-', '#') : (t.id ? `#${t.id.slice(-6)}` : `#${idx + 1}`);
+    const title = choose(t.titleAr, t.titleEn);
+    const cat = choose(t.categoryAr, t.categoryEn) || choose(t.typeAr, t.typeEn) || '—';
+    const stText = statusText(t.status);
+    const progress = t.progress || 0;
+    const due = t.dueDate || '—';
+
+    if (isClientFacing) {
+      return `
+        <tr>
+          <td style="text-align:center;font-weight:bold;color:#475569;">${idx + 1}</td>
+          <td style="text-align:center;font-weight:600;color:#0d6269;">${esc(code)}</td>
+          <td style="font-weight:600;">${esc(title)}</td>
+          <td style="text-align:center;">${esc(cat)}</td>
+          <td style="text-align:center;"><span class="badge ${esc(t.status)}">${esc(stText)}</span></td>
+          <td style="text-align:center;direction:ltr;">${esc(due)}</td>
+          <td style="text-align:center;font-weight:bold;color:${progress === 100 ? '#0d6269' : '#1e293b'};">${progress}%</td>
+        </tr>
+      `;
+    }
+
+    const assignee = getUserName(t.assigneeId || t.assignee_id);
+    const reviewer = getUserName(t.reviewerId || t.reviewer_id);
+    const approver = getUserName(t.approverId || t.approver_id);
+
+    return `
+      <tr>
+        <td style="text-align:center;font-weight:bold;color:#475569;">${idx + 1}</td>
+        <td style="text-align:center;font-weight:600;color:#0d6269;">${esc(code)}</td>
+        <td style="font-weight:600;">${esc(title)}</td>
+        <td style="text-align:center;">${esc(cat)}</td>
+        <td>${esc(assignee)}</td>
+        <td style="color:#0369a1;font-weight:600;">${esc(reviewer)}</td>
+        <td style="color:#047857;font-weight:600;">${esc(approver)}</td>
+        <td style="text-align:center;"><span class="badge ${esc(t.status)}">${esc(stText)}</span></td>
+        <td style="text-align:center;direction:ltr;">${esc(due)}</td>
+        <td style="text-align:center;font-weight:bold;color:${progress === 100 ? '#0d6269' : '#1e293b'};">${progress}%</td>
+      </tr>
+    `;
+  }).join('');
+
+  const printHtml = `
+    <!DOCTYPE html>
+    <html lang="${state.lang}" dir="${state.lang === 'ar' ? 'rtl' : 'ltr'}">
+    <head>
+      <meta charset="utf-8" />
+      <title>${esc(company.displayName)} - ${esc(project.code)} - ${isClientFacing ? 'Client_Report' : 'Executive_Report'}</title>
+      <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet" />
+      <style>
+        @page { size: A4 portrait; margin: 12mm 14mm 15mm 14mm; }
+        * { box-sizing: border-box; }
+        body {
+          font-family: 'Cairo', 'Tajawal', system-ui, -apple-system, sans-serif;
+          margin: 0;
+          padding: 24px;
+          color: #0f172a;
+          background: #ffffff;
+          font-size: 11px;
+          line-height: 1.45;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+        .no-print-toolbar {
+          background: #f1f5f9;
+          border: 1px solid #cbd5e1;
+          border-radius: 8px;
+          padding: 10px 18px;
+          margin-bottom: 20px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          flex-wrap: wrap;
+          gap: 10px;
+        }
+        .btn-toolbar {
+          background: #0d6269;
+          color: #ffffff;
+          border: none;
+          padding: 8px 18px;
+          border-radius: 6px;
+          font-weight: 700;
+          cursor: pointer;
+          font-family: inherit;
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          text-decoration: none;
+        }
+        .btn-toolbar-ghost {
+          background: #e2e8f0;
+          color: #1e293b;
+          border: none;
+          padding: 8px 14px;
+          border-radius: 6px;
+          font-weight: 600;
+          cursor: pointer;
+          font-family: inherit;
+          text-decoration: none;
+        }
+        .report-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          border-bottom: 3px solid #0d6269;
+          padding-bottom: 14px;
+          margin-bottom: 16px;
+        }
+        .brand-logo-img {
+          max-height: 52px;
+          max-width: 170px;
+          object-fit: contain;
+          margin-bottom: 4px;
+        }
+        .brand-logo-fallback {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 44px;
+          height: 44px;
+          background: linear-gradient(135deg, #0d6269, #00c2cb);
+          color: #fff;
+          font-weight: 800;
+          font-size: 18px;
+          border-radius: 10px;
+          margin-bottom: 4px;
+        }
+        .brand-title {
+          font-size: 19px;
+          font-weight: 800;
+          color: #0d6269;
+          margin: 0;
+          line-height: 1.2;
+        }
+        .brand-sub {
+          font-size: 11px;
+          color: #64748b;
+          font-weight: 600;
+        }
+        .report-meta-box {
+          text-align: ${state.lang === 'ar' ? 'left' : 'right'};
+          font-size: 11px;
+          color: #334155;
+          line-height: 1.6;
+        }
+        .report-type-badge {
+          display: inline-block;
+          background: #e6f4f5;
+          color: #0d6269;
+          font-weight: 800;
+          padding: 3px 10px;
+          border-radius: 4px;
+          font-size: 11px;
+          border: 1px solid #bce1e4;
+          margin-bottom: 4px;
+        }
+        .info-strip {
+          background: #f8fafc;
+          border: 1px solid #e2e8f0;
+          border-radius: 8px;
+          padding: 10px 14px;
+          margin-bottom: 16px;
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 12px;
+        }
+        .info-cell strong {
+          display: block;
+          font-size: 10px;
+          color: #64748b;
+          text-transform: uppercase;
+        }
+        .info-cell span {
+          font-size: 12px;
+          font-weight: 700;
+          color: #0f172a;
+        }
+        .kpi-row {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 10px;
+          margin-bottom: 16px;
+        }
+        .kpi-card {
+          border: 1px solid #e2e8f0;
+          background: #ffffff;
+          border-radius: 8px;
+          padding: 10px 12px;
+          text-align: center;
+          border-top: 3px solid #0d6269;
+        }
+        .kpi-val {
+          font-size: 20px;
+          font-weight: 800;
+          color: #0d6269;
+        }
+        .kpi-label {
+          font-size: 10px;
+          color: #64748b;
+          font-weight: 600;
+          margin-top: 2px;
+        }
+        .disc-section {
+          background: #fafafa;
+          border: 1px solid #e2e8f0;
+          border-radius: 8px;
+          padding: 10px 14px;
+          margin-bottom: 16px;
+        }
+        .disc-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+          gap: 10px;
+          margin-top: 6px;
+        }
+        .disc-item {
+          font-size: 10px;
+        }
+        .disc-bar-bg {
+          height: 6px;
+          background: #e2e8f0;
+          border-radius: 3px;
+          overflow: hidden;
+          margin-top: 3px;
+        }
+        .disc-bar-fill {
+          height: 100%;
+          background: #0d6269;
+          border-radius: 3px;
+        }
+        table {
+          width: 100%;
+          border-collapse: collapse;
+          margin-bottom: 24px;
+        }
+        th, td {
+          border: 1px solid #cbd5e1;
+          padding: 6px 8px;
+          text-align: ${state.lang === 'ar' ? 'right' : 'left'};
+          vertical-align: middle;
+        }
+        th {
+          background: #0d6269;
+          color: #ffffff;
+          font-size: 10px;
+          font-weight: 700;
+          text-align: center;
+        }
+        tr:nth-child(even) {
+          background: #f8fafc;
+        }
+        .badge {
+          display: inline-block;
+          padding: 2px 6px;
+          border-radius: 3px;
+          font-size: 9px;
+          font-weight: 700;
+        }
+        .badge.done, .badge.completed { background: #dcfce7; color: #166534; }
+        .badge.in_progress { background: #dbeafe; color: #1e40af; }
+        .badge.review, .badge.approval { background: #fef3c7; color: #92400e; }
+        .badge.blocked { background: #fee2e2; color: #991b1b; }
+        .badge.not_started { background: #f1f5f9; color: #475569; }
+        .signature-section {
+          margin-top: 28px;
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 20px;
+          page-break-inside: avoid;
+        }
+        .signature-box {
+          border: 1px solid #cbd5e1;
+          border-radius: 8px;
+          padding: 12px;
+          text-align: center;
+          background: #fafafa;
+          min-height: 90px;
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+        }
+        .signature-title {
+          font-size: 11px;
+          font-weight: 700;
+          color: #1e293b;
+        }
+        .signature-line {
+          border-top: 1px dashed #94a3b8;
+          margin-top: 35px;
+          padding-top: 4px;
+          font-size: 10px;
+          color: #64748b;
+        }
+        .stamp-box {
+          border: 2px dashed #0d6269;
+          border-radius: 8px;
+          padding: 12px;
+          text-align: center;
+          color: #0d6269;
+          font-weight: 700;
+          font-size: 11px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          min-height: 90px;
+          background: #f0fdfa;
+        }
+        .report-footer {
+          margin-top: 20px;
+          border-top: 1px solid #e2e8f0;
+          padding-top: 8px;
+          display: flex;
+          justify-content: space-between;
+          font-size: 9px;
+          color: #94a3b8;
+        }
+        @media print {
+          .no-print-toolbar { display: none !important; }
+          body { padding: 0; }
+        }
+      </style>
+    </head>
+    <body>
+      <div class="no-print-toolbar">
+        <div>
+          <strong style="color:#0d6269;font-size:13px;">${esc(reportTitle)}</strong>
+          <div style="font-size:11px;color:#64748b;">${choose('معاينة التقرير جاهزة للطباعة أو الحفظ المباشر كملف PDF رسمي.', 'Ready for printing or saving directly as an official executive PDF file.')}</div>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn-toolbar" onclick="window.print()">
+            🖨️ ${choose('طباعة / حفظ كـ PDF', 'Print / Save as PDF')}
+          </button>
+          <button class="btn-toolbar-ghost" onclick="window.location.search = (window.location.search.includes('client=1') ? '' : '?client=1')">
+            🔄 ${isClientFacing ? choose('التبديل للتقرير الفني الشامل', 'Switch to Technical Report') : choose('التبديل لتقرير المالك والعميل', 'Switch to Client Report')}
+          </button>
+          <button class="btn-toolbar-ghost" onclick="window.close()">
+            ✕ ${choose('إغلاق', 'Close')}
+          </button>
+        </div>
+      </div>
+
+      <header class="report-header">
+        <div>
+          ${company.logoUrl ? `
+            <img src="${esc(company.logoUrl)}" alt="Logo" class="brand-logo-img" />
+          ` : `
+            <div class="brand-logo-fallback">D</div>
+          `}
+          <h1 class="brand-title">${esc(company.displayName)}</h1>
+          <div class="brand-sub">${choose('مكتب الاستشارات والتصميم الهندسي', 'Architecture & Engineering Consultancy')}</div>
+        </div>
+        <div class="report-meta-box">
+          <div class="report-type-badge">${esc(reportTitle)}</div>
+          <div><strong>${choose('كود المشروع:', 'Project Code:')}</strong> ${esc(project.code)}</div>
+          <div><strong>${choose('تاريخ التقرير:', 'Report Date:')}</strong> ${esc(reportDate)} - ${esc(reportTime)}</div>
+          <div><strong>${choose('حالة المشروع:', 'Project Status:')}</strong> ${esc(statusText(project.lifecycle))} (${esc(statusText(project.health))})</div>
+        </div>
+      </header>
+
+      <div class="info-strip">
+        <div class="info-cell">
+          <strong>${choose('اسم المشروع', 'Project Name')}</strong>
+          <span>${esc(choose(project.nameAr, project.nameEn))}</span>
+        </div>
+        <div class="info-cell">
+          <strong>${choose('العميل / المالك', 'Client / Owner')}</strong>
+          <span>${esc(choose(project.clientAr, project.clientEn)) || '—'}</span>
+        </div>
+        <div class="info-cell">
+          <strong>${choose('الجدول الزمني', 'Schedule Timeline')}</strong>
+          <span>${esc(project.startDate || '—')} → ${esc(project.dueDate || '—')}</span>
+        </div>
+        <div class="info-cell">
+          <strong>${choose('مدير المشروع المسؤول', 'Project Manager')}</strong>
+          <span>${esc(getUserName(project.managerId))}</span>
+        </div>
+      </div>
+
+      <div class="kpi-row">
+        <div class="kpi-card">
+          <div class="kpi-val">${project.progress || 0}%</div>
+          <div class="kpi-label">${choose('نسبة الإنجاز الإجمالية', 'Overall Progress')}</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-val" style="color:#047857;">${completedTasks} / ${totalTasks}</div>
+          <div class="kpi-label">${choose('المخرجات المعتمدة', 'Approved Deliverables')}</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-val" style="color:#b45309;">${inReviewTasks}</div>
+          <div class="kpi-label">${choose('قيد المراجعة والاعتماد', 'Under Review')}</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-val" style="color:${overdueTasks > 0 ? '#b91c1c' : '#64748b'};">${overdueTasks}</div>
+          <div class="kpi-label">${choose('المخرجات المتأخرة', 'Overdue Deliverables')}</div>
+        </div>
+      </div>
+
+      ${disciplines.length ? `
+        <div class="disc-section">
+          <strong style="font-size:11px;color:#334155;">${choose('مؤشرات الإنجاز بحسب التخصص الهندسي:', 'Engineering Discipline Progress Breakdown:')}</strong>
+          <div class="disc-grid">
+            ${disciplines.map(d => `
+              <div class="disc-item">
+                <div style="display:flex;justify-content:space-between;font-weight:600;">
+                  <span>${esc(d.name)}</span>
+                  <span>${d.percent}% (${d.completed}/${d.total})</span>
+                </div>
+                <div class="disc-bar-bg">
+                  <div class="disc-bar-fill" style="width:${d.percent}%;"></div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      ` : ''}
+
+      <table>
+        <thead>
+          <tr>
+            <th style="width:30px;">#</th>
+            <th style="width:75px;">${choose('الكود', 'Code')}</th>
+            <th>${isClientFacing ? choose('اسم المخرج الهندسي / المخطط', 'Deliverable / Drawing Title') : choose('المهمة والمخرج القياسي', 'Deliverable & Task Title')}</th>
+            <th style="width:90px;">${choose('التخصص', 'Discipline')}</th>
+            ${!isClientFacing ? `
+              <th style="width:105px;">${choose('المنفذ', 'Assignee')}</th>
+              <th style="width:105px;">${choose('المراجع', 'Reviewer')}</th>
+              <th style="width:105px;">${choose('المعتمد', 'Approver')}</th>
+            ` : ''}
+            <th style="width:80px;">${choose('الحالة', 'Status')}</th>
+            <th style="width:85px;">${choose('موعد التسليم', 'Target Due')}</th>
+            <th style="width:55px;">${choose('الإنجاز', 'Progress')}</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${tableRowsHtml}
+        </tbody>
+      </table>
+
+      <div class="signature-section">
+        <div class="stamp-box">
+          ${choose('ختم المكتب الهندسي والاستشاري المعتمد', 'Official Engineering Consultancy Stamp')}
+        </div>
+        <div class="signature-box">
+          <div class="signature-title">${choose('مهندس ومدير المشروع', 'Project Manager')}</div>
+          <div style="font-weight:600;font-size:11px;color:#334155;margin-top:6px;">${esc(getUserName(project.managerId))}</div>
+          <div class="signature-line">${choose('التوقيع والمصادقة', 'Sign & Date')}</div>
+        </div>
+        <div class="signature-box">
+          <div class="signature-title">${choose('الاعتماد والاستشاري العام', 'Approved By Lead Consultant')}</div>
+          <div style="font-weight:600;font-size:11px;color:#334155;margin-top:6px;">${esc(company.displayName)}</div>
+          <div class="signature-line">${choose('التوقيع والاعتماد النهائي', 'Sign & Authorization')}</div>
+        </div>
+      </div>
+
+      <footer class="report-footer">
+        <div>${esc(company.displayName)} — ${choose('وثيقة إدارية معتمدة صادرة عبر منصة دارك', 'Official Governance Document via DARC Platform')}</div>
+        <div>${choose('صفحة 1 من 1', 'Page 1 of 1')}</div>
+        <div>${esc(reportDate)}</div>
+      </footer>
+    </body>
+    </html>
+  `;
+
+  // Try opening in dedicated print window
+  const printWindow = window.open('', '_blank', 'width=1100,height=900');
+  if (printWindow) {
+    printWindow.document.open();
+    printWindow.document.write(printHtml);
+    printWindow.document.close();
+  } else {
+    // Fallback: render print modal directly in page if popup blocked
+    renderInPagePrintModal(printHtml);
+  }
+
+  showToast(choose('تم تجهيز التقرير الرسمي للطباعة والتصدير PDF.', 'Executive report ready for Print / PDF export.'));
+  api('/api/audit', {
+    method: 'POST',
+    body: JSON.stringify({
+      action: 'export_report',
+      entityType: 'project',
+      entityId: projectId,
+      details: { title: esc(reportTitle), type: isClientFacing ? 'client_pdf' : 'executive_pdf', taskCount: totalTasks }
+    })
+  }).catch(() => {});
+}
+
+export function exportPortfolioPDF() {
+  const projects = state.data?.projects || [];
+  if (!projects || !projects.length) {
+    showToast(choose('لا توجد مشاريع لتصدير التقرير.', 'No projects to export.'), true);
+    return;
+  }
+
+  const company = getCompanyBranding();
+  const now = new Date();
+  const reportDate = now.toLocaleDateString(state.lang === 'ar' ? 'ar-SA' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+  const reportTime = now.toLocaleTimeString(state.lang === 'ar' ? 'ar-SA' : 'en-US', { hour: '2-digit', minute: '2-digit' });
+
+  const totalProjects = projects.length;
+  const onTrackCount = projects.filter(p => p.health === 'on_track').length;
+  const atRiskCount = projects.filter(p => p.health === 'at_risk').length;
+  const offTrackCount = projects.filter(p => p.health === 'off_track').length;
+
+  const tableRowsHtml = projects.map((p, idx) => {
+    const managerName = p.manager ? choose(p.manager.name, p.manager.nameEn || p.manager.name) : '—';
+    return `
+      <tr>
+        <td style="text-align:center;font-weight:bold;color:#475569;">${idx + 1}</td>
+        <td style="text-align:center;font-weight:700;color:#0d6269;">${esc(p.code)}</td>
+        <td style="font-weight:700;">${esc(choose(p.nameAr, p.nameEn))}</td>
+        <td>${esc(choose(p.clientAr, p.clientEn)) || '—'}</td>
+        <td>${esc(managerName)}</td>
+        <td style="text-align:center;"><span class="badge ${esc(p.lifecycle)}">${esc(statusText(p.lifecycle))}</span></td>
+        <td style="text-align:center;"><span class="badge ${esc(p.health)}">${esc(statusText(p.health))}</span></td>
+        <td style="text-align:center;direction:ltr;">${esc(p.startDate || '—')}</td>
+        <td style="text-align:center;direction:ltr;">${esc(p.dueDate || '—')}</td>
+        <td style="text-align:center;font-weight:bold;color:${p.progress === 100 ? '#0d6269' : '#0f172a'};">${p.progress || 0}%</td>
+      </tr>
+    `;
+  }).join('');
+
+  const reportTitle = choose('تقرير الأداء ومتابعة المشاريع للمحفظة الهندسية', 'Official Portfolio Projects Status & Operations Readout');
+
+  const printHtml = `
+    <!DOCTYPE html>
+    <html lang="${state.lang}" dir="${state.lang === 'ar' ? 'rtl' : 'ltr'}">
+    <head>
+      <meta charset="utf-8" />
+      <title>${esc(company.displayName)} - Portfolio_Report_${new Date().toISOString().split('T')[0]}</title>
+      <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet" />
+      <style>
+        @page { size: A4 landscape; margin: 12mm 15mm; }
+        * { box-sizing: border-box; }
+        body {
+          font-family: 'Cairo', 'Tajawal', system-ui, -apple-system, sans-serif;
+          margin: 0;
+          padding: 24px;
+          color: #0f172a;
+          background: #ffffff;
+          font-size: 11px;
+          line-height: 1.45;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+        .no-print-toolbar {
+          background: #f1f5f9;
+          border: 1px solid #cbd5e1;
+          border-radius: 8px;
+          padding: 10px 18px;
+          margin-bottom: 20px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+        }
+        .btn-toolbar {
+          background: #0d6269;
+          color: #ffffff;
+          border: none;
+          padding: 8px 18px;
+          border-radius: 6px;
+          font-weight: 700;
+          cursor: pointer;
+          font-family: inherit;
+        }
+        .btn-toolbar-ghost {
+          background: #e2e8f0;
+          color: #1e293b;
+          border: none;
+          padding: 8px 14px;
+          border-radius: 6px;
+          font-weight: 600;
+          cursor: pointer;
+          font-family: inherit;
+        }
+        .report-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          border-bottom: 3px solid #0d6269;
+          padding-bottom: 14px;
+          margin-bottom: 16px;
+        }
+        .brand-logo-img {
+          max-height: 52px;
+          max-width: 170px;
+          object-fit: contain;
+          margin-bottom: 4px;
+        }
+        .brand-title {
+          font-size: 20px;
+          font-weight: 800;
+          color: #0d6269;
+          margin: 0;
+        }
+        .kpi-row {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 12px;
+          margin-bottom: 18px;
+        }
+        .kpi-card {
+          border: 1px solid #e2e8f0;
+          background: #ffffff;
+          border-radius: 8px;
+          padding: 10px 14px;
+          text-align: center;
+          border-top: 3px solid #0d6269;
+        }
+        .kpi-val { font-size: 22px; font-weight: 800; color: #0d6269; }
+        .kpi-label { font-size: 10px; color: #64748b; font-weight: 600; margin-top: 2px; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
+        th, td { border: 1px solid #cbd5e1; padding: 7px 9px; text-align: ${state.lang === 'ar' ? 'right' : 'left'}; vertical-align: middle; }
+        th { background: #0d6269; color: #ffffff; font-size: 10px; font-weight: 700; text-align: center; }
+        tr:nth-child(even) { background: #f8fafc; }
+        .badge { display: inline-block; padding: 2px 6px; border-radius: 3px; font-size: 9px; font-weight: 700; }
+        .badge.on_track, .badge.active, .badge.completed { background: #dcfce7; color: #166534; }
+        .badge.at_risk, .badge.planning { background: #fef3c7; color: #92400e; }
+        .badge.off_track, .badge.on_hold { background: #fee2e2; color: #991b1b; }
+        .signature-section { margin-top: 28px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; page-break-inside: avoid; }
+        .signature-box { border: 1px solid #cbd5e1; border-radius: 8px; padding: 12px; text-align: center; background: #fafafa; }
+        .stamp-box { border: 2px dashed #0d6269; border-radius: 8px; padding: 12px; text-align: center; color: #0d6269; font-weight: 700; font-size: 11px; display: flex; align-items: center; justify-content: center; min-height: 80px; background: #f0fdfa; }
+        .report-footer { margin-top: 20px; border-top: 1px solid #e2e8f0; padding-top: 8px; display: flex; justify-content: space-between; font-size: 9px; color: #94a3b8; }
+        @media print {
+          .no-print-toolbar { display: none !important; }
+          body { padding: 0; }
+        }
+      </style>
+    </head>
+    <body>
+      <div class="no-print-toolbar">
+        <div>
+          <strong style="color:#0d6269;font-size:13px;">${esc(reportTitle)}</strong>
+          <div style="font-size:11px;color:#64748b;">${choose('معاينة تقرير المحفظة جاهزة للطباعة أو الحفظ كـ PDF.', 'Portfolio report preview ready for print / save as PDF.')}</div>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn-toolbar" onclick="window.print()">🖨️ ${choose('طباعة / حفظ كـ PDF', 'Print / Save as PDF')}</button>
+          <button class="btn-toolbar-ghost" onclick="window.close()">✕ ${choose('إغلاق', 'Close')}</button>
+        </div>
+      </div>
+
+      <header class="report-header">
+        <div>
+          ${company.logoUrl ? `<img src="${esc(company.logoUrl)}" alt="Logo" class="brand-logo-img" />` : ''}
+          <h1 class="brand-title">${esc(company.displayName)}</h1>
+          <div style="font-size:11px;color:#64748b;">${choose('الإدارة الهندسية وضبط الجودة والمشاريع', 'Engineering Operations & Project Portfolio Readout')}</div>
+        </div>
+        <div style="text-align:${state.lang === 'ar' ? 'left' : 'right'};font-size:11px;color:#334155;line-height:1.6;">
+          <div style="display:inline-block;background:#e6f4f5;color:#0d6269;font-weight:800;padding:3px 10px;border-radius:4px;font-size:11px;border:1px solid #bce1e4;margin-bottom:4px;">${choose('تقرير حالة المحفظة', 'Portfolio Status Report')}</div>
+          <div><strong>${choose('تاريخ التقرير:', 'Report Date:')}</strong> ${esc(reportDate)} - ${esc(reportTime)}</div>
+          <div><strong>${choose('إجمالي المشاريع:', 'Total Projects:')}</strong> ${totalProjects}</div>
+        </div>
+      </header>
+
+      <div class="kpi-row">
+        <div class="kpi-card">
+          <div class="kpi-val">${totalProjects}</div>
+          <div class="kpi-label">${choose('إجمالي مشاريع المحفظة', 'Total Projects')}</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-val" style="color:#166534;">${onTrackCount}</div>
+          <div class="kpi-label">${choose('مشاريع تسير وفق الخطة', 'On Track Projects')}</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-val" style="color:#b45309;">${atRiskCount}</div>
+          <div class="kpi-label">${choose('مشاريع تحت المراقبة (مخاطر)', 'At Risk Projects')}</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-val" style="color:#991b1b;">${offTrackCount}</div>
+          <div class="kpi-label">${choose('مشاريع متأخرة أو حرجة', 'Off Track / Delayed')}</div>
+        </div>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th style="width:30px;">#</th>
+            <th style="width:75px;">${choose('كود المشروع', 'Code')}</th>
+            <th>${choose('اسم المشروع', 'Project Name')}</th>
+            <th>${choose('العميل / المالك', 'Client / Owner')}</th>
+            <th>${choose('مدير المشروع', 'Manager')}</th>
+            <th style="width:80px;">${choose('المرحلة', 'Lifecycle')}</th>
+            <th style="width:80px;">${choose('الصحة التشغيلية', 'Health')}</th>
+            <th style="width:85px;">${choose('تاريخ البدء', 'Start Date')}</th>
+            <th style="width:85px;">${choose('تاريخ التسليم', 'Due Date')}</th>
+            <th style="width:65px;">${choose('الإنجاز', 'Progress %')}</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${tableRowsHtml}
+        </tbody>
+      </table>
+
+      <div class="signature-section">
+        <div class="stamp-box">${choose('ختم الإدارة الهندسية والمكتب الاستشاري', 'Engineering Management Official Stamp')}</div>
+        <div class="signature-box">
+          <div style="font-size:11px;font-weight:700;color:#1e293b;">${choose('مسؤول ضبط المشاريع (PMO)', 'PMO Lead')}</div>
+          <div style="border-top:1px dashed #94a3b8;margin-top:35px;padding-top:4px;font-size:10px;color:#64748b;">${choose('التوقيع والتاريخ', 'Sign & Date')}</div>
+        </div>
+        <div class="signature-box">
+          <div style="font-size:11px;font-weight:700;color:#1e293b;">${choose('المدير التنفيذي العام', 'Executive Director')}</div>
+          <div style="border-top:1px dashed #94a3b8;margin-top:35px;padding-top:4px;font-size:10px;color:#64748b;">${choose('المصادقة والاعتماد', 'Sign & Approval')}</div>
+        </div>
+      </div>
+
+      <footer class="report-footer">
+        <div>${esc(company.displayName)} — ${choose('تقرير إداري معتمد لمحفظة المشاريع', 'Official Portfolio Readout')}</div>
+        <div>${choose('صفحة 1 من 1', 'Page 1 of 1')}</div>
+        <div>${esc(reportDate)}</div>
+      </footer>
+    </body>
+    </html>
+  `;
+
+  const printWindow = window.open('', '_blank', 'width=1200,height=900');
+  if (printWindow) {
+    printWindow.document.open();
+    printWindow.document.write(printHtml);
+    printWindow.document.close();
+  } else {
+    renderInPagePrintModal(printHtml);
+  }
+
+  showToast(choose('تم تجهيز تقرير المحفظة للطباعة والتصدير PDF.', 'Portfolio report ready for Print / PDF export.'));
+  api('/api/audit', {
+    method: 'POST',
+    body: JSON.stringify({
+      action: 'export_report',
+      entityType: 'report',
+      details: { title: esc(reportTitle), type: 'portfolio_pdf', count: totalProjects }
+    })
+  }).catch(() => {});
+}
+
+export function renderInPagePrintModal(printHtml) {
+  let overlay = document.getElementById('print-modal-overlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'print-modal-overlay';
+    overlay.style.position = 'fixed';
+    overlay.style.inset = '0';
+    overlay.style.zIndex = '1400';
+    overlay.style.background = 'rgba(0, 0, 0, 0.75)';
+    overlay.style.backdropFilter = 'blur(4px)';
+    overlay.style.display = 'flex';
+    overlay.style.flexDirection = 'column';
+    overlay.style.alignItems = 'center';
+    overlay.style.justifyContent = 'center';
+    overlay.style.padding = '15px';
+    document.body.appendChild(overlay);
+  }
+
+  overlay.innerHTML = `
+    <div style="background:#fff;width:95%;max-width:1150px;height:92vh;border-radius:12px;box-shadow:0 25px 50px rgba(0,0,0,0.3);overflow:hidden;display:flex;flex-direction:column;">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 20px;border-bottom:1px solid #e2e8f0;background:#f8fafc;">
+        <strong style="color:#0d6269;font-size:14px;">${choose('معاينة التقرير الرسمي المعتمد (PDF Preview)', 'Official Approved Report (PDF Preview)')}</strong>
+        <div style="display:flex;gap:10px;">
+          <button type="button" class="btn btn-primary btn-sm" id="btn-print-iframe" style="display:flex;align-items:center;gap:6px;">
+            ${icon('printer', 14)} ${choose('طباعة / حفظ كـ PDF', 'Print / Save as PDF')}
+          </button>
+          <button type="button" class="btn btn-ghost btn-sm" id="btn-close-print-modal">✕</button>
+        </div>
+      </div>
+      <div style="flex:1;overflow:hidden;position:relative;">
+        <iframe id="print-preview-iframe" style="width:100%;height:100%;border:none;" srcdoc="${esc(printHtml)}"></iframe>
+      </div>
+    </div>
+  `;
+  overlay.style.display = 'flex';
+
+  document.getElementById('btn-close-print-modal')?.addEventListener('click', () => {
+    overlay.style.display = 'none';
+    overlay.innerHTML = '';
+  });
+
+  document.getElementById('btn-print-iframe')?.addEventListener('click', () => {
+    const iframe = document.getElementById('print-preview-iframe');
+    if (iframe && iframe.contentWindow) {
+      iframe.contentWindow.focus();
+      iframe.contentWindow.print();
+    }
+  });
 }
 
