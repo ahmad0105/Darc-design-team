@@ -141,6 +141,9 @@ export async function api(path, options = {}) {
   // On successful mutations, invalidate local ETag and broadcast to other open tabs to trigger immediate sync
   if (['POST', 'PATCH', 'PUT', 'DELETE'].includes(options.method)) {
     invalidateBootstrapEtag();
+    if (parsedBody && parsedBody.id && typeof window !== 'undefined' && typeof window.recordRecentLocalMutation === 'function') {
+      window.recordRecentLocalMutation(parsedBody.id);
+    }
     if (path !== '/api/auth/login' && path !== '/api/auth/logout') {
       if (typeof window !== 'undefined') {
         if (typeof window.notifyStateMutation === 'function') {

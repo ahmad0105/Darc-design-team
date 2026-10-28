@@ -391,3 +391,8 @@ export async function loadData(silent = false) {
     throw error;
   }
 }
+
+if (typeof window !== 'undefined') {
+  window.renderApp = renderApp;
+  window.renderView = renderView;
+}
