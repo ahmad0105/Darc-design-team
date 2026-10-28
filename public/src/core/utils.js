@@ -14,9 +14,18 @@ export function t(key) { return I18N[state.lang][key] || I18N.ar[key] || key; }
 export function choose(ar, en) { return state.lang === 'ar' ? ar : en; }
 
 export function getCookieVal(key) {
-  if (typeof document === 'undefined') return null;
-  const m = document.cookie.match(new RegExp('(?:^|; )' + key + '=([^;]*)'));
-  return m ? decodeURIComponent(m[1]) : null;
+  if (typeof document === 'undefined' || !key) return null;
+  const cookies = document.cookie ? document.cookie.split('; ') : [];
+  for (const c of cookies) {
+    const idx = c.indexOf('=');
+    if (idx !== -1) {
+      const k = c.slice(0, idx).trim();
+      if (k === key) {
+        return decodeURIComponent(c.slice(idx + 1));
+      }
+    }
+  }
+  return null;
 }
 
 export function savePreferencesCookies({ theme, lang } = {}) {

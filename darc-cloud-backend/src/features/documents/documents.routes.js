@@ -404,9 +404,14 @@ app.put('/chunk', async (c) => {
   const contentRange = c.req.header('content-range');
   if (!sessionUrl) return c.json({ error: 'Missing x-session-url' }, 400);
 
-  // Security check: Prevent Server-Side Request Forgery (SSRF)
-  if (!sessionUrl.startsWith('https://www.googleapis.com/upload/drive/')) {
-    return c.json({ error: 'Invalid session URL' }, 403);
+  // Security check: Prevent Server-Side Request Forgery (SSRF - CWE-918)
+  try {
+    const parsed = new URL(sessionUrl);
+    if (parsed.protocol !== 'https:' || parsed.hostname !== 'www.googleapis.com' || !parsed.pathname.startsWith('/upload/drive/')) {
+      return c.json({ error: 'Invalid session URL' }, 403);
+    }
+  } catch {
+    return c.json({ error: 'Invalid session URL' }, 400);
   }
 
   const chunk = await c.req.arrayBuffer();

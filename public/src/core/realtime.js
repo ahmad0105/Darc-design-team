@@ -359,7 +359,7 @@ export function triggerImmediateSync(source = 'realtime') {
     try {
       await loadData(true); // Silent high-performance ETag sync (HTTP 304 if unchanged)
     } catch (e) {
-      console.warn(`[Realtime:${source}] Sync error:`, e.message);
+      console.warn('[Realtime] Sync error:', String(source), e.message);
     }
   }, SYNC_DEBOUNCE_MS);
 }
