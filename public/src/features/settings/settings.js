@@ -924,6 +924,16 @@ export function renderSettings() {
 
   // TRASH SECTION (Available to all users, scoped by project membership)
   if (state.settingsSection === 'trash') {
+    // Restore from session cache immediately to eliminate empty flash on refresh
+    if (!state.trash && typeof sessionStorage !== 'undefined') {
+      try {
+        const cached = sessionStorage.getItem('darc_trash_cache');
+        if (cached) {
+          state.trash = JSON.parse(cached);
+        }
+      } catch (e) {}
+    }
+
     if (!state.trashLoaded && !state._trashFetching) {
       state._trashFetching = true;
       api('/api/trash').then(data => {
@@ -934,6 +944,11 @@ export function renderSettings() {
         ]);
         state.trashLoaded = true;
         state._trashFetching = false;
+        try {
+          if (typeof sessionStorage !== 'undefined') {
+            sessionStorage.setItem('darc_trash_cache', JSON.stringify(state.trash));
+          }
+        } catch (e) {}
         if (typeof window.renderView === 'function') window.renderView();
       }).catch(err => {
         state._trashFetching = false;
@@ -1083,12 +1098,18 @@ export function renderSettings() {
           <span>${choose('لا توجد نتائج تطابق بحثك في سلة المهملات.', 'No items match your search in trash.')}</span>
         </div>
       `}
+    ` : (!state.trashLoaded && !allTrashItems.length ? `
+      <div style="padding:48px 20px;text-align:center;">
+        <div style="width:32px;height:32px;margin:0 auto 14px;border:3px solid var(--line);border-top-color:var(--teal);border-radius:50%;animation:spin 0.75s linear infinite;"></div>
+        <div style="font-size:14px;font-weight:700;color:var(--ink);">${choose('جاري فحص واسترجاع عناصر سلة المهملات...', 'Loading recycle bin items...')}</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:4px;">${choose('يتم جلب المشاريع والمهام والمستندات المحذوفة من الخادم...', 'Fetching deleted projects, tasks, and drawings from server...')}</div>
+      </div>
     ` : `
       <div class="empty">
         ${icon('trash', 24)}
         <span>${choose('سلة المهملات فارغة، لا توجد عناصر محذوفة حالياً.', 'Trash is empty, no deleted items found.')}</span>
       </div>
-    `;
+    `);
 
     content = `
       <section class="setting-section">
@@ -1097,7 +1118,7 @@ export function renderSettings() {
             <div style="display:flex;align-items:center;gap:10px;">
               <h2>${choose('سلة المهملات', 'Recycle Bin')}</h2>
               <span class="mini-badge badge-neutral" style="padding:3px 9px;font-size:10px;font-weight:700;">
-                ${allTrashItems.length} ${choose('عناصر', 'items')}
+                ${!state.trashLoaded && !allTrashItems.length ? choose('جاري التحميل...', 'Loading...') : `${allTrashItems.length} ${choose('عناصر', 'items')}`}
               </span>
             </div>
             <p>${choose('استعراض واستعادة المشاريع والمهام والمستندات المحذوفة مؤقتاً، أو حذفها نهائياً.', 'Review, restore, or permanently purge temporarily deleted projects, tasks, and documents.')}</p>

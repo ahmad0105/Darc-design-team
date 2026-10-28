@@ -251,6 +251,11 @@ export async function refreshView(silent = false) { try { await loadData(silent)
 
 export async function loadData(silent = false) {
   try {
+    const isTrashSection = state.view === 'settings' && state.settingsSection === 'trash';
+    const trashPromise = isTrashSection && !state.trashLoaded
+      ? api('/api/trash', { silent: true }).catch(() => null)
+      : null;
+
     let payload = await api('/api/bootstrap', { silent });
     if (payload === null) {
       // HTTP 304 Not Modified
@@ -271,6 +276,24 @@ export async function loadData(silent = false) {
     // Save to offline storage non-blockingly for instant access when offline
     saveOfflineBootstrap(payload);
     state.isOffline = false;
+
+    // Resolve pre-fetched trash if on recycle bin section
+    if (trashPromise) {
+      try {
+        const trashData = await trashPromise;
+        if (trashData) {
+          state.trash = Array.isArray(trashData) ? trashData : (trashData.trash || [
+            ...(trashData.projects || []).map(p => ({...p, type:'project'})),
+            ...(trashData.tasks || []).map(t => ({...t, type:'task'})),
+            ...(trashData.documents || []).map(d => ({...d, type:'document'}))
+          ]);
+          state.trashLoaded = true;
+          if (typeof sessionStorage !== 'undefined') {
+            sessionStorage.setItem('darc_trash_cache', JSON.stringify(state.trash));
+          }
+        }
+      } catch (e) {}
+    }
 
     // Optimistic Preservation Guard: Protect recently created/updated items against race conditions or stale caches
     if (state.data?.tasks && payload?.tasks) {

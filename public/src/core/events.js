@@ -1047,6 +1047,7 @@ export async function handleClick(event) {
           ...(data.documents || []).map(d => ({...d, type:'document'}))
         ]);
         state.trashLoaded = true;
+        try { if (typeof sessionStorage !== 'undefined') sessionStorage.setItem('darc_trash_cache', JSON.stringify(state.trash)); } catch (e) {}
         renderView();
       }).catch(e => console.error(e));
     }
@@ -1159,6 +1160,7 @@ export async function handleClick(event) {
         ...(data.tasks || []).map(t => ({...t, type:'task'})),
         ...(data.documents || []).map(d => ({...d, type:'document'}))
       ]);
+      try { if (typeof sessionStorage !== 'undefined') sessionStorage.setItem('darc_trash_cache', JSON.stringify(state.trash)); } catch (e) {}
       await refreshView();
       showToast(choose('تمت الاستعادة بنجاح.', 'Restored successfully.'));
     } catch(e) { showToast(e.message, true); }
