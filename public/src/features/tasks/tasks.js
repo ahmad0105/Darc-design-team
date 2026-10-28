@@ -1034,6 +1034,20 @@ export function initTaskModalWidgets(task) {
     if (dropdown) dropdown.style.display = 'none';
     if (addExternalBtn) addExternalBtn.style.display = 'none';
   });
+
+  // 6. Intelligent Background Lazy Loading: Fetch full thread for this specific task on demand
+  if (task && task.id && !task.id.startsWith('demo_')) {
+    api(`/api/tasks/${encodeURIComponent(task.id)}/comments`, { silent: true }).then((res) => {
+      if (res && Array.isArray(res.comments)) {
+        if (!state.data.comments) state.data.comments = [];
+        state.data.comments = state.data.comments.filter(c => c.taskId !== task.id).concat(res.comments);
+        const commentsListEl = document.getElementById('task-comments-list');
+        if (commentsListEl && document.getElementById('task-comment-form')?.dataset?.taskId === task.id) {
+          commentsListEl.innerHTML = renderTaskComments(task);
+        }
+      }
+    }).catch(() => {});
+  }
 }
 
 export function renderTaskComments(task) {

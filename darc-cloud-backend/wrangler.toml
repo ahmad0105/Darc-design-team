@@ -2,6 +2,11 @@ name = "darc-cloud-backend"
 main = "src/index.js"
 compatibility_date = "2026-10-24"
 compatibility_flags = ["nodejs_compat"]
+workers_dev = true
+
+routes = [
+  { pattern = "api.darc-design.bond", custom_domain = true }
+]
 
 [vars]
 SUPABASE_URL = "https://yjfmrpwkjstxldnwegob.supabase.co"

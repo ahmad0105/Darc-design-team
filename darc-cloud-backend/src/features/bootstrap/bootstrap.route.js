@@ -117,7 +117,7 @@ app.get('/', async (c) => {
           supabase.from('active_tasks').select(TASK_COLUMNS),
           supabase.from('documents').select(DOCUMENT_COLUMNS).is('deleted_at', null),
           supabase.from('project_members').select(MEMBER_COLUMNS),
-          supabase.from('comments').select(COMMENT_COLUMNS).is('deleted_at', null).order('created_at', { ascending: false }).limit(150),
+          supabase.from('comments').select(COMMENT_COLUMNS).is('deleted_at', null).order('created_at', { ascending: false }).limit(35),
           supabase.from('audit_logs').select('id, user_id, action, entity_type, entity_id, details, created_at').order('created_at', { ascending: false }).limit(35),
           supabase.from('notifications').select(NOTIFICATION_COLUMNS).eq('user_id', userId).order('created_at', { ascending: false }).limit(20)
         ]);
@@ -164,7 +164,7 @@ app.get('/', async (c) => {
           ]);
           const visibleTaskIds = (tasksRes?.data || []).map(t => t.id);
           if (visibleTaskIds.length > 0) {
-            commentsRes = await supabase.from('comments').select(COMMENT_COLUMNS).in('task_id', visibleTaskIds).is('deleted_at', null).order('created_at', { ascending: false }).limit(150);
+            commentsRes = await supabase.from('comments').select(COMMENT_COLUMNS).in('task_id', visibleTaskIds).is('deleted_at', null).order('created_at', { ascending: false }).limit(35);
           } else {
             commentsRes = { data: [] };
           }
