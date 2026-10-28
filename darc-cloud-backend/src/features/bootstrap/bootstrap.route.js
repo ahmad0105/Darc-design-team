@@ -283,7 +283,10 @@ app.get('/', async (c) => {
       }
       return toCamelCase(copy);
     });
-    const exposedTasks = isAhmad ? tasks : tasks.map(t => (t.assignee_id === 'usr_ahmad' ? { ...t, assignee_id: null } : t));
+    const exposedTasks = (isAhmad ? tasks : tasks.map(t => (t.assignee_id === 'usr_ahmad' ? { ...t, assignee_id: null } : t))).map(t => {
+      const sortOrder = typeof t.sort_order === 'number' ? t.sort_order : (typeof t.sortOrder === 'number' ? t.sortOrder : (t.custom_fields?.sortOrder ?? t.custom_fields?.sort_order ?? 0));
+      return { ...t, sort_order: sortOrder, sortOrder };
+    });
     const exposedAuditLogs = (isAhmad ? auditLogs : auditLogs.filter(a => a.user_id !== 'usr_ahmad' && a.entity_id !== 'usr_ahmad')).map(log => {
       const author = userMap.get(log.user_id);
       return {

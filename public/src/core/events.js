@@ -1,13 +1,15 @@
 
 import { state } from './state.js';
 import { api, API_BASE, invalidateBootstrapEtag } from './api.js';
-import { switchView, refreshView, renderView, renderApp, canAccessView, getFirstAllowedView } from './router.js';
+import { switchView, refreshView, renderView, renderApp, canAccessView, getFirstAllowedView, loadData } from './router.js';
 import { openOmnisearch, closeOmnisearch, openShortcutsCheatsheet } from '../features/dashboard/omnisearch.js';
-import { playSuccessChime, savePreferencesCookies } from './utils.js';
+import { playSuccessChime, savePreferencesCookies, choose, esc, icon, t, can, isAdmin, avatar, roleName, statusText, initials, dateLabel } from './utils.js';
+import { showToast, modalShell, closeModal, renderLoading } from '../shared/ui.js';
 import { setSavedTaskSort, openDocumentPreviewModal, renderTaskDocuments } from '../features/tasks/tasks.js';
 import { getPendingMutations, syncPendingMutations, getOfflineBootstrap, clearOfflineBootstrap, saveOfflineBootstrap } from './offline.js';
 import { exportPortfolioXLS, exportProjectXLS, exportProjectPDF, exportPortfolioPDF } from '../features/projects/projects.js';
 import { exportAuditLogsXLS, printAuditReport, fetchFullAuditHistory } from '../features/settings/settings.js';
+import { renderActivation, renderLogin, renderResetPassword } from '../features/auth/auth.js';
 
 export async function handleSubmit(event) {
   const form = event.target;
@@ -151,11 +153,13 @@ export async function handleSubmit(event) {
         if (Array.isArray(reminders) && reminders.length > 0) {
           for (const rem of reminders) {
             if (!rem.id || rem.id.startsWith('rem_temp_')) {
+              const remindTime = rem.remindAt ? new Date(rem.remindAt) : null;
+              if (!remindTime || isNaN(remindTime.getTime())) continue;
               api('/api/reminders', {
                 method: 'POST',
                 body: JSON.stringify({
                   taskId: result.task.id,
-                  remindAt: new Date(rem.remindAt).toISOString(),
+                  remindAt: remindTime.toISOString(),
                   noteAr: rem.noteAr || values.titleAr || 'تذكير لمتابعة المهمة'
                 })
               }).catch(err => console.warn('[Reminder dispatch note]', err));

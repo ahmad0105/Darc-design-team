@@ -5,6 +5,8 @@ import { state } from './state.js';
 import { loadData, renderView, renderApp } from './router.js';
 import { syncPendingMutations } from './offline.js';
 import { invalidateBootstrapEtag } from './api.js';
+import { choose } from './utils.js';
+import { showToast } from '../shared/ui.js';
 import { renderTaskComments, renderTaskDocuments } from '../features/tasks/tasks.js';
 
 const SUPABASE_WS_ENDPOINT = 'wss://yjfmrpwkjstxldnwegob.supabase.co/realtime/v1/websocket?apikey=sb_publishable_Zr7mRIWo5djcRpwq4Ihl0A_Eb3AA8gJ&vsn=1.0.0';
@@ -295,9 +297,9 @@ export function applyGranularDelta(tableName, actionType, rawRecord, rawOldRecor
       const currentUserId = state.data?.user?.id;
       if (currentUserId && record.userId === currentUserId && !record.read) {
         updateNotificationDotInDom();
-        const title = state.lang === 'ar' ? (record.titleAr || record.title) : (record.titleEn || record.title || record.titleAr);
-        if (title && typeof window.showToast === 'function') {
-          window.showToast(`🔔 ${title}`, false);
+        const title = record.content || (state.lang === 'ar' ? (record.titleAr || record.title) : (record.titleEn || record.title || record.titleAr)) || choose('إشعار جديد', 'New notification');
+        if (title) {
+          showToast(`🔔 ${title}`, false);
         }
         playNotificationChime();
       }

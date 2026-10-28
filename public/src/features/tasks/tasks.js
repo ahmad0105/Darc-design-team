@@ -1,7 +1,8 @@
 
 import { state } from '../../core/state.js';
 import { api } from '../../core/api.js';
-import { getTaskStatusStyle } from '../../core/utils.js';
+import { getTaskStatusStyle, esc, choose, avatar, icon, can, isAdmin, t, statusText } from '../../core/utils.js';
+import { showToast, modalShell, closeModal } from '../../shared/ui.js';
 
 export function renderTaskAssignees(task) {
   const users = state.data?.users || [];

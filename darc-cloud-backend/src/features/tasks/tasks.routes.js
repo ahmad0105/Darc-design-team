@@ -366,7 +366,11 @@ app.delete('/:id', async (c) => {
   const { data: task } = await supabase.from('tasks').select('*').eq('id', taskId).single();
   if (!task) return c.json({ error: 'المهمة غير موجودة' }, 404);
 
-  if (!(await hasPermission(supabase, userId, roleId, 'edit_tasks', task.project_id))) {
+  const canDelete = roleId === 'admin' ||
+    (await hasPermission(supabase, userId, roleId, 'delete_tasks', task.project_id)) ||
+    (await hasPermission(supabase, userId, roleId, 'edit_tasks', task.project_id));
+
+  if (!canDelete) {
     return c.json({ error: 'لا تملك الصلاحية المطلوبة لهذه العملية' }, 403);
   }
 

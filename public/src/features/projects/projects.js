@@ -1,7 +1,8 @@
 
 import { state } from '../../core/state.js';
 import { api } from '../../core/api.js';
-import { choose, esc, icon, avatar, statusText, t, showToast, can, isAdmin, sanitizeForSpreadsheet } from '../../core/utils.js';
+import { choose, esc, icon, avatar, statusText, t, can, isAdmin, roleName, sanitizeForSpreadsheet } from '../../core/utils.js';
+import { showToast, modalShell, closeModal } from '../../shared/ui.js';
 import { renderTaskSortSelect, getSavedTaskSort } from '../tasks/tasks.js';
 
 export function projectRow(project) {

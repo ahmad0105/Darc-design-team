@@ -19,10 +19,17 @@ export function showNotifications() {
   const listHtml = notifications.length ? `<div class="attention-list">${notifications.slice(0, 20).map((notification) => {
     const type = notification.type === 'overdue' || notification.type === 'escalation' ? 'red' : (notification.type === 'due_soon' || notification.type === 'document_review') ? 'amber' : 'blue';
     const isRead = Boolean(notification.readAt || notification.read);
-    const title = choose(notification.titleAr || notification.titleEn || notification.content || '', notification.titleEn || notification.titleAr || notification.content || '');
+    const defaultTitle = notification.type === 'overdue' ? choose('مهمة متأخرة', 'Overdue Task') :
+      notification.type === 'escalation' ? choose('تصعيد مهمة', 'Task Escalation') :
+      notification.type === 'due_soon' ? choose('موعد تسليم قريب', 'Due Soon') :
+      notification.type === 'document_review' ? choose('مراجعة مستند', 'Document Review') :
+      notification.type === 'assignment' ? choose('إسناد مهمة جديدة', 'Task Assigned') :
+      choose('تنبيه مساحة العمل', 'Workspace Notification');
+    const title = choose(notification.titleAr || notification.titleEn || defaultTitle, notification.titleEn || notification.titleAr || defaultTitle);
     const message = choose(notification.messageAr || notification.bodyAr || notification.content || '', notification.messageEn || notification.bodyEn || notification.content || '');
+    const displaySubtitle = message && message !== title ? `${message} · ` : '';
     const notifIcon = notification.type === 'overdue' || notification.type === 'escalation' ? 'alert' : notification.type === 'document_review' ? 'document' : notification.type === 'assignment' ? 'user' : 'bell';
-    return `<button class="attention-item" data-action="read-notification" data-notification-id="${esc(notification.id)}" style="border:0;text-align:inherit;width:100%;opacity:${isRead ? '.65' : '1'}"><span class="attention-icon ${type}">${icon(notifIcon, 14)}</span><span class="attention-copy"><strong style="color:var(--${type})">${esc(title)}</strong><span>${esc(message)} · ${dateLabel(notification.createdAt)}</span></span></button>`;
+    return `<button class="attention-item" data-action="read-notification" data-notification-id="${esc(notification.id)}" style="border:0;text-align:inherit;width:100%;opacity:${isRead ? '.65' : '1'}"><span class="attention-icon ${type}">${icon(notifIcon, 14)}</span><span class="attention-copy"><strong style="color:var(--${type})">${esc(title)}</strong><span>${esc(displaySubtitle)}${dateLabel(notification.createdAt)}</span></span></button>`;
   }).join('')}</div>` : `<div class="empty">${icon('bell', 18)}<span>${t('noAttention')}</span></div>`;
 
   const body = `${headerActions}${listHtml}`;

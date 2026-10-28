@@ -1,4 +1,5 @@
 import { state } from '../core/state.js';
+import { choose, esc, icon } from '../core/utils.js';
 
 export function renderLoading() {
   document.getElementById('app').innerHTML = `<div class="loading"><div class="loading-mark"><div class="loading-spinner"></div><span>${choose('جاري تجهيز مساحة العمل...', 'Preparing your workspace...')}</span></div></div>`;

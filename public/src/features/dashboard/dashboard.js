@@ -1,6 +1,6 @@
 
 import { state } from '../../core/state.js';
-import { getTimeBasedGreeting, can, isAdmin } from '../../core/utils.js';
+import { getTimeBasedGreeting, can, isAdmin, esc, icon, t, choose, avatar, isOverdue, dueLabel } from '../../core/utils.js';
 
 export function metricCard(label, value, note, type, iconName, noteClass = '') {
   return `<article class="metric-card ${type}"><div class="metric-top"><span class="metric-label">${esc(label)}</span><span class="metric-icon">${icon(iconName, 15)}</span></div><div class="metric-value">${esc(value)}</div><span class="metric-note ${noteClass}">${esc(note)}</span></article>`;

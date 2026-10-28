@@ -65,7 +65,7 @@ self.addEventListener('fetch', (event) => {
           caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone)).catch(() => {});
         }
         return networkResponse;
-      }).catch(() => null);
+      }).catch(() => cached || new Response('', { status: 503, statusText: 'Service Unavailable' }));
 
       return cached || fetchPromise;
     })

@@ -1,6 +1,8 @@
 import { state } from '../../core/state.js';
 import { api } from '../../core/api.js';
-import { savePreferencesCookies } from '../../core/utils.js';
+import { choose, esc, icon, t, savePreferencesCookies } from '../../core/utils.js';
+import { modalShell } from '../../shared/ui.js';
+import { loadData } from '../../core/router.js';
 
 // Calculate password strength score (0 to 4)
 export function calculatePasswordStrength(pass) {

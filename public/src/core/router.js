@@ -2,6 +2,7 @@ import { state } from './state.js';
 import { api } from './api.js';
 import { can, isAdmin, choose, t, esc, icon, avatar, roleName, currentViewTitle } from './utils.js';
 import { saveOfflineBootstrap, getOfflineBootstrap, getOfflineBootstrapAsync, getPendingMutations, isOnline } from './offline.js';
+import { showToast } from '../shared/ui.js';
 
 export function canAccessView(view) {
   if (!state.data) return true;

@@ -257,11 +257,6 @@ app.post('/api/auth/logout', async (c) => {
 
 app.get('/api/health', (c) => c.json({ ok: true, status: 'healthy', env: 'production' }));
 
-app.post('/api/demo/reset', async (c) => {
-  const fresh = resetDemoPayload();
-  return c.json({ ok: true, data: fresh });
-});
-
 // JWT Guard with Token Revocation Protection
 app.use('/api/*', async (c, next) => {
   if (c.req.path.startsWith('/api/auth') || c.req.path === '/api/health') return next();
@@ -323,6 +318,18 @@ app.use('/api/*', async (c, next) => {
   } catch (e) { /* non-blocking */ }
 
   await next();
+});
+
+// Authenticated Demo Sandbox Reset (Rate-limited, Demo/Admin only)
+app.post('/api/demo/reset', async (c) => {
+  const isDemo = c.get('isDemo') || c.get('userId') === 'usr_demo';
+  const roleId = c.get('roleId');
+  if (!isDemo && roleId !== 'admin') {
+    return c.json({ error: 'إعادة ضبط بيئة العرض متاحة فقط في الوضع التجريبي أو لمدير النظام' }, 403);
+  }
+  const fresh = resetDemoPayload();
+  invalidateBootstrapCache();
+  return c.json({ ok: true, data: fresh });
 });
 
 // Bulletproof Demo Sandbox Shield Middleware: Intercepts ALL requests for isDemo: true

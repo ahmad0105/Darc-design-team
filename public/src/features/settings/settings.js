@@ -1,6 +1,7 @@
 import { state } from '../../core/state.js';
 import { api } from '../../core/api.js';
-import { getActiveCalendarSystem, esc, sanitizeForSpreadsheet } from '../../core/utils.js';
+import { getActiveCalendarSystem, esc, sanitizeForSpreadsheet, choose, icon, t, can, isAdmin, avatar, roleName, initials, statusText } from '../../core/utils.js';
+import { showToast, modalShell, closeModal } from '../../shared/ui.js';
 
 export function renderTeam() {
   if (!isAdmin() && !can('manage_users')) {
@@ -183,6 +184,10 @@ export function exportAuditLogsXLS(logs = null) {
 
   const company = state.data?.company || {};
   const companyName = choose(company.nameAr || company.name, company.nameEn || company.name) || 'DARC Design Team';
+  let logoUrl = company.logoUrl || '';
+  if (logoUrl.startsWith('/') && typeof window !== 'undefined' && window.location?.origin) {
+    logoUrl = `${window.location.origin}${logoUrl}`;
+  }
   const currentUser = state.data?.user || {};
   const exporterName = choose(currentUser.name, currentUser.nameEn || currentUser.name) || 'Admin';
   const reportDate = new Date().toLocaleDateString(state.lang === 'ar' ? 'ar-SA' : 'en-US', { dateStyle: 'full' });
@@ -192,7 +197,8 @@ export function exportAuditLogsXLS(logs = null) {
     <table>
       <tr>
         <th colspan="7" class="title" style="font-size:18px;font-weight:bold;background:#0d6269;color:#ffffff;text-align:center;padding:12px;">
-          ${choose('سجل الرقابة والتدقيق الأمني والعمليات — فريق دارك الهندسي', 'Audit & Security Trail Report — DARC Design Team')}
+          ${logoUrl ? `<img src="${esc(logoUrl)}" height="38" style="vertical-align:middle;margin-inline-end:10px;" />` : ''}
+          <span style="vertical-align:middle;">${choose('سجل الرقابة والتدقيق الأمني والعمليات — ' + companyName, 'Audit & Security Trail Report — ' + companyName)}</span>
         </th>
       </tr>
       <tr>
@@ -301,6 +307,10 @@ export function printAuditReport(logs = null) {
 
   const company = state.data?.company || {};
   const companyName = choose(company.nameAr || company.name, company.nameEn || company.name) || 'DARC Design Team';
+  let printLogoUrl = company.logoUrl || '';
+  if (printLogoUrl.startsWith('/') && typeof window !== 'undefined' && window.location?.origin) {
+    printLogoUrl = `${window.location.origin}${printLogoUrl}`;
+  }
   const currentUser = state.data?.user || {};
   const exporterName = choose(currentUser.name, currentUser.nameEn || currentUser.name) || 'Admin';
   const reportDate = new Date().toLocaleDateString(state.lang === 'ar' ? 'ar-SA' : 'en-US', { dateStyle: 'full' });
@@ -502,6 +512,7 @@ export function printAuditReport(logs = null) {
 
       <header class="report-header">
         <div>
+          ${printLogoUrl ? `<img src="${esc(printLogoUrl)}" alt="Logo" style="height:44px;object-fit:contain;margin-bottom:6px;display:block;" />` : ''}
           <h1 class="brand-title">${esc(companyName)}</h1>
           <div class="report-subtitle">${choose('تقرير الرقابة والتدقيق الأمني وسجل العمليات الإدارية', 'Official Security Audit & Governance Operations Trail')}</div>
         </div>
