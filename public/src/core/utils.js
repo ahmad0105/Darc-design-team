@@ -405,3 +405,48 @@ export function playSuccessChime() {
     // Audio autoplay restrictions or unsupported
   }
 }
+
+/**
+ * Executes a heavy computation off the main UI thread inside an ephemeral Web Worker.
+ * Preserves 60 FPS fluidity during large report generation and exports.
+ */
+export function runInWorker(taskFn, data) {
+  if (typeof window === 'undefined' || typeof Worker === 'undefined' || typeof Blob === 'undefined') {
+    return Promise.resolve(taskFn(data));
+  }
+  return new Promise((resolve, reject) => {
+    try {
+      const workerBlob = new Blob([`
+        self.onmessage = function(e) {
+          try {
+            var fn = ${taskFn.toString()};
+            var res = fn(e.data);
+            self.postMessage({ ok: true, result: res });
+          } catch (err) {
+            self.postMessage({ ok: false, error: err.message });
+          }
+        };
+      `], { type: 'application/javascript' });
+      const url = URL.createObjectURL(workerBlob);
+      const worker = new Worker(url);
+      worker.onmessage = (e) => {
+        URL.revokeObjectURL(url);
+        worker.terminate();
+        if (e.data.ok) resolve(e.data.result);
+        else reject(new Error(e.data.error));
+      };
+      worker.onerror = (err) => {
+        URL.revokeObjectURL(url);
+        worker.terminate();
+        reject(err);
+      };
+      worker.postMessage(data);
+    } catch (e) {
+      try {
+        resolve(taskFn(data));
+      } catch (err) {
+        reject(err);
+      }
+    }
+  });
+}

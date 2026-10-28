@@ -84,32 +84,44 @@ export function invalidateBootstrapCache() {
   _bootstrapCache.clear();
 }
 
-// --- STAMPEDE / THUNDERING HERD GUARD (Request Coalescing) ---
-const _inFlightBootstrapPromises = new Map();
+// --- STAMPEDE / THUNDERING HERD GUARD (SingleFlight Request Coalescing) ---
+const _inFlightPromises = new Map();
 
-export async function fetchBootstrapWithCoalescing(key, fetcher) {
-  if (_inFlightBootstrapPromises.has(key)) {
-    return _inFlightBootstrapPromises.get(key);
+/**
+ * SingleFlight / Request Coalescing Engine.
+ * If multiple concurrent requests arrive for the exact same database query,
+ * only ONE request executes against Supabase; all others wait and share the exact result.
+ */
+export async function singleFlight(key, fetcher) {
+  if (_inFlightPromises.has(key)) {
+    return _inFlightPromises.get(key);
   }
   const promise = (async () => {
     try {
       return await fetcher();
     } finally {
-      _inFlightBootstrapPromises.delete(key);
+      _inFlightPromises.delete(key);
     }
   })();
-  _inFlightBootstrapPromises.set(key, promise);
+  _inFlightPromises.set(key, promise);
   return promise;
 }
 
-// --- STATIC CACHES (Roles, Templates, Users) ---
+export async function fetchBootstrapWithCoalescing(key, fetcher) {
+  return singleFlight(`bootstrap:${key}`, fetcher);
+}
+
+// --- STATIC CACHES (Roles, Templates, Users, Company) ---
 
 export async function getCachedRoles(supabase) {
   const now = Date.now();
   if (!_rolesCache || now - _rolesCacheTime > STATIC_TTL) {
-    const { data } = await supabase.from('roles').select('*').is('deleted_at', null);
-    _rolesCache = data || [];
-    _rolesCacheTime = now;
+    return singleFlight('roles_db_fetch', async () => {
+      const { data } = await supabase.from('roles').select('*').is('deleted_at', null);
+      _rolesCache = data || [];
+      _rolesCacheTime = Date.now();
+      return _rolesCache;
+    });
   }
   return _rolesCache;
 }
@@ -159,16 +171,19 @@ const DEFAULT_33_TEMPLATES = [
 export async function getCachedTemplates(supabase) {
   const now = Date.now();
   if (!_templatesCache || now - _templatesCacheTime > STATIC_TTL) {
-    const { data } = await supabase.from('templates').select('*').is('deleted_at', null);
-    let items = (data && data.length) ? data : DEFAULT_33_TEMPLATES;
-    // Map missing category_id
-    items = items.map(t => {
-      if (t.category_id) return t;
-      const match = DEFAULT_33_TEMPLATES.find(d => d.code === t.code || d.id === t.id);
-      return match ? { ...t, category_id: match.category_id, category_ar: match.category_ar, category_en: match.category_en, category_icon: match.category_icon } : t;
+    return singleFlight('templates_db_fetch', async () => {
+      const { data } = await supabase.from('templates').select('*').is('deleted_at', null);
+      let items = (data && data.length) ? data : DEFAULT_33_TEMPLATES;
+      // Map missing category_id
+      items = items.map(t => {
+        if (t.category_id) return t;
+        const match = DEFAULT_33_TEMPLATES.find(d => d.code === t.code || d.id === t.id);
+        return match ? { ...t, category_id: match.category_id, category_ar: match.category_ar, category_en: match.category_en, category_icon: match.category_icon } : t;
+      });
+      _templatesCache = items;
+      _templatesCacheTime = Date.now();
+      return _templatesCache;
     });
-    _templatesCache = items;
-    _templatesCacheTime = now;
   }
   return _templatesCache;
 }
@@ -182,28 +197,31 @@ export function invalidateTemplatesCache() {
 export async function getCachedUsers(supabase) {
   const now = Date.now();
   if (!_usersCache || now - _usersCacheTime > USERS_TTL) {
-    try {
-      const { data } = await supabase.from('active_users').select('*');
-      _usersCache = (data || []).map(u => ({
-        id: u.id,
-        name: u.name,
-        name_en: u.name_en,
-        email: u.email,
-        status: u.status,
-        role_id: u.role_id,
-        avatar_color: u.avatar_color,
-        job_title_ar: u.job_title_ar || '',
-        job_title_en: u.job_title_en || '',
-        specialty: u.specialty || u.custom_fields?.specialty || '',
-        avatar_url: u.avatar_url || u.custom_fields?.avatarUrl || null,
-        last_login_at: u.last_login_at || u.custom_fields?.lastLoginAt || null,
-        last_active_at: u.last_active_at || u.custom_fields?.lastActiveAt || null
-      }));
-    } catch (e) {
-      console.warn('[Cache] getCachedUsers error:', e.message);
-      _usersCache = _usersCache || [];
-    }
-    _usersCacheTime = now;
+    return singleFlight('users_db_fetch', async () => {
+      try {
+        const { data } = await supabase.from('active_users').select('*');
+        _usersCache = (data || []).map(u => ({
+          id: u.id,
+          name: u.name,
+          name_en: u.name_en,
+          email: u.email,
+          status: u.status,
+          role_id: u.role_id,
+          avatar_color: u.avatar_color,
+          job_title_ar: u.job_title_ar || '',
+          job_title_en: u.job_title_en || '',
+          specialty: u.specialty || u.custom_fields?.specialty || '',
+          avatar_url: u.avatar_url || u.custom_fields?.avatarUrl || null,
+          last_login_at: u.last_login_at || u.custom_fields?.lastLoginAt || null,
+          last_active_at: u.last_active_at || u.custom_fields?.lastActiveAt || null
+        }));
+      } catch (e) {
+        console.warn('[Cache] getCachedUsers error:', e.message);
+        _usersCache = _usersCache || [];
+      }
+      _usersCacheTime = Date.now();
+      return _usersCache;
+    });
   }
   return _usersCache;
 }
@@ -220,16 +238,19 @@ let _companyCacheTime = 0;
 export async function getCachedCompany(supabase) {
   const now = Date.now();
   if (!_companyCache || now - _companyCacheTime > STATIC_TTL) {
-    try {
-      const { data } = await supabase.from('company').select('*').eq('id', 'default').maybeSingle();
-      if (data) _companyCache = data;
-    } catch (e) {
-      // company table might not exist yet
-    }
-    if (!_companyCache) {
-      _companyCache = { id: 'default', name: 'DARC Design Team', name_ar: 'فريق دارك للتصميم', name_en: 'DARC Design Team', logo_url: null };
-    }
-    _companyCacheTime = now;
+    return singleFlight('company_db_fetch', async () => {
+      try {
+        const { data } = await supabase.from('company').select('*').eq('id', 'default').maybeSingle();
+        if (data) _companyCache = data;
+      } catch (e) {
+        // company table might not exist yet
+      }
+      if (!_companyCache) {
+        _companyCache = { id: 'default', name: 'DARC Design Team', name_ar: 'فريق دارك للتصميم', name_en: 'DARC Design Team', logo_url: null };
+      }
+      _companyCacheTime = Date.now();
+      return _companyCache;
+    });
   }
   return _companyCache;
 }
