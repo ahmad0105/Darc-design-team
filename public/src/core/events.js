@@ -519,27 +519,78 @@ export async function handleClick(event) {
   if (action === 'close-modal') { closeModal(); return; }
   if (action === 'show-notifications') { showNotifications(); return; }
   if (action === 'read-notification') {
-    const notifId = target.dataset.notificationId;
+    const notifId = target.dataset.notificationId || target.closest('[data-notification-id]')?.dataset.notificationId;
     const notif = (state.data?.notifications || []).find(n => n.id === notifId);
-    try {
-      await api(`/api/notifications/${notifId}`, { method: 'PATCH', body: JSON.stringify({}) });
-      if (notif) notif.read = true;
-      closeModal();
-      if (notif?.taskId) {
-        const task = (state.data?.tasks || []).find(t => t.id === notif.taskId);
-        if (task) {
-          openTaskModal(task);
-          return;
-        }
-      }
-      if (notif?.projectId) {
-        switchView('project-detail', notif.projectId);
+
+    // 1. التحديث الفوري المتفائل (Optimistic Instant Update)
+    if (notif) {
+      notif.read = true;
+      notif.readAt = new Date().toISOString();
+    }
+    renderApp();
+
+    // إرسال طلب التحديث في الخلفية دون تعطيل واجهة المستخدم
+    if (notifId) {
+      api(`/api/notifications/${notifId}`, { method: 'PATCH', body: JSON.stringify({}) }).catch((err) => {
+        console.warn('[Notifications] Failed to patch read status in background:', err);
+      });
+    }
+
+    // 2. إغلاق فوري نظيف لمودال الإشعارات بدون تأخير زمني
+    closeModal(true);
+
+    // 3. استخراج المعرفات المستهدفة (مهمة، مستند/مخطط، أو مشروع)
+    const taskId = target.dataset.taskId || notif?.taskId;
+    const docId = target.dataset.documentId || notif?.documentId;
+    const projectId = target.dataset.projectId || notif?.projectId;
+    const notifType = target.dataset.type || notif?.type;
+
+    // A. إذا كان الإشعار يشير لمستند/مخطط محدد
+    if (docId) {
+      openDocumentPreviewModal(docId);
+      return;
+    }
+
+    // B. إذا كان الإشعار يشير لمهمة
+    if (taskId) {
+      let task = (state.data?.tasks || []).find(t => t.id === taskId);
+      if (task) {
+        if (task.projectId) state.activeProjectId = task.projectId;
+        openTaskModal(task);
         return;
       }
-      await refreshView();
-    } catch (error) {
-      showToast(error.message, true);
+
+      // إذا لم تكن المهمة محملة مسبقاً في الذاكرة (مثلاً مسندة حديثاً أو بمشروع آخر)، يتم جلبها فوراً من الخادم
+      try {
+        const fetchedTask = await api(`/api/tasks/${taskId}`);
+        if (fetchedTask && fetchedTask.id) {
+          if (!state.data.tasks) state.data.tasks = [];
+          state.data.tasks.push(fetchedTask);
+          if (fetchedTask.projectId) state.activeProjectId = fetchedTask.projectId;
+          openTaskModal(fetchedTask);
+          return;
+        }
+      } catch (err) {
+        console.warn('[Notifications] Failed to fetch task on demand:', err);
+      }
     }
+
+    // C. إذا كان الإشعار مراجعة مخططات عامة داخل مشروع
+    if (notifType === 'document_review' && projectId) {
+      state.activeProjectId = projectId;
+      state.projectTab = 'documents';
+      switchView('project-detail', projectId);
+      return;
+    }
+
+    // D. إذا كان الإشعار مرتبطاً بمشروع
+    if (projectId) {
+      state.activeProjectId = projectId;
+      switchView('project-detail', projectId);
+      return;
+    }
+
+    await refreshView();
     return;
   }
   if (action === 'mark-all-notifications-read') {
@@ -888,8 +939,24 @@ export async function handleClick(event) {
     if (window._justDroppedAt && (Date.now() - window._justDroppedAt < 250)) {
       return; // Ignore synthetic click caused by mouse release on drop
     }
-    const task = state.data.tasks.find((item) => item.id === target.dataset.taskId);
-    if (task) openTaskModal(task);
+    const taskId = target.dataset.taskId || target.closest('[data-task-id]')?.dataset.taskId;
+    if (!taskId) return;
+    let task = (state.data?.tasks || []).find((item) => item.id === taskId);
+    if (task) {
+      openTaskModal(task);
+      return;
+    }
+    api(`/api/tasks/${taskId}`).then((fetched) => {
+      if (fetched && fetched.id) {
+        if (!state.data.tasks) state.data.tasks = [];
+        state.data.tasks.push(fetched);
+        openTaskModal(fetched);
+      } else {
+        showToast(choose('تعذر العثور على المهمة أو تم نقلها لسلة المهملات.', 'Task not found or was moved to trash.'), true);
+      }
+    }).catch((err) => {
+      showToast(choose('تعذر فتح المهمة: ' + err.message, 'Could not open task: ' + err.message), true);
+    });
     return;
   }
   if (action === 'task-filter') {

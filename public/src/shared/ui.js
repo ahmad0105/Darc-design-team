@@ -6,8 +6,14 @@ export function renderLoading() {
 }
 
 let isClosingModal = false;
+let _closeModalTimer = null;
 
 export function closeModal(immediate = false) { 
+  if (_closeModalTimer) {
+    clearTimeout(_closeModalTimer);
+    _closeModalTimer = null;
+  }
+
   const previewOverlay = document.getElementById('preview-modal-overlay');
   if (previewOverlay) {
     previewOverlay.style.display = 'none';
@@ -17,6 +23,7 @@ export function closeModal(immediate = false) {
   const modalRoot = document.getElementById('modal-root');
   if (!modalRoot || !modalRoot.hasChildNodes()) {
     document.body.style.overflow = '';
+    isClosingModal = false;
     return;
   }
 
@@ -36,7 +43,8 @@ export function closeModal(immediate = false) {
   if (backdrop && modal) {
     backdrop.classList.add('is-closing');
     modal.classList.add('is-closing');
-    setTimeout(() => {
+    _closeModalTimer = setTimeout(() => {
+      _closeModalTimer = null;
       modalRoot.innerHTML = '';
       document.body.style.overflow = '';
       isClosingModal = false;
@@ -49,6 +57,11 @@ export function closeModal(immediate = false) {
 }
 
 export function modalShell(title, subtitle, body, id = '', extraClass = '') {
+  if (_closeModalTimer) {
+    clearTimeout(_closeModalTimer);
+    _closeModalTimer = null;
+  }
+  isClosingModal = false;
   document.body.style.overflow = 'hidden';
   return `<div class="modal-backdrop"><div class="modal ${extraClass}" data-modal="${id}"><div class="modal-head"><div><h2>${esc(title)}</h2><p>${esc(subtitle || '')}</p></div><button class="modal-close" type="button" data-action="close-modal" aria-label="${choose('إغلاق', 'Close')}">${icon('close', 15)}</button></div>${body}</div></div>`;
 }

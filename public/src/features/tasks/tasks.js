@@ -1114,9 +1114,25 @@ export function renderTaskDocuments(task) {
   `).join('')}</div>`;
 }
 
-export function openDocumentPreviewModal(docId) {
-  const doc = (state.data?.documents || []).find(d => d.id === docId);
-  if (!doc) return;
+export async function openDocumentPreviewModal(docId) {
+  if (!docId) return;
+  let doc = (state.data?.documents || []).find(d => d.id === docId);
+  if (!doc) {
+    try {
+      const fetched = await api(`/api/documents/${docId}`);
+      if (fetched && fetched.id) {
+        doc = fetched;
+        if (!state.data.documents) state.data.documents = [];
+        state.data.documents.push(doc);
+      }
+    } catch (err) {
+      console.warn('[Documents] Failed to fetch doc preview on demand:', err);
+    }
+  }
+  if (!doc) {
+    showToast(choose('المستند غير موجود أو تم نقله لسلة المهملات.', 'Document not found or moved to trash.'), true);
+    return;
+  }
 
   let url = doc.diskFilename || `/api/documents/${doc.id}`;
   if (url.startsWith('file://') || url.startsWith('/') || !url.startsWith('http')) {
