@@ -2827,11 +2827,12 @@ var e=Object.defineProperty,t=(t,n)=>{let r={};for(var i in t)e(r,i,{get:t[i],en
               <input value="${k(i.email||``)}" disabled style="background:var(--surface-soft);cursor:not-allowed;" />
             </div>
             <div class="field full">
-              <label>${O(`نظام التقويم المفضل في المنصة`,`Preferred Calendar System`)}</label>
-              <select name="calendarSystem" class="input">
-                <option value="gregorian" ${ye()===`gregorian`?`selected`:``}>${O(`ميلادي — اليوم / الشهر / السنة (مثال: 07/09/2026)`,`Gregorian — Day / Month / Year (e.g. 07/09/2026)`)}</option>
-                <option value="hijri" ${ye()===`hijri`?`selected`:``}>${O(`هجري أم القرى — اليوم / الشهر / السنة (مثال: 25/02/1448 هـ)`,`Hijri Umm al-Qura — Day / Month / Year (e.g. 25/02/1448 AH)`)}</option>
+              <label for="settings-calendar-system">${O(`نظام التقويم المفضل في المنصة`,`Preferred Calendar System`)}</label>
+              <select id="settings-calendar-system" name="calendarSystem">
+                <option value="gregorian" ${ye()===`gregorian`?`selected`:``}>${O(`التقويم الميلادي (Gregorian) — اليوم / الشهر / السنة`,`Gregorian Calendar — Day / Month / Year`)}</option>
+                <option value="hijri" ${ye()===`hijri`?`selected`:``}>${O(`التقويم الهجري (أم القرى) — اليوم / الشهر / السنة`,`Hijri Calendar (Umm al-Qura) — Day / Month / Year`)}</option>
               </select>
+              <small class="field-hint">${O(`يحدد صيغة عرض التواريخ في سجل العمليات، الجداول، وإحصائيات المشاريع في حسابك.`,`Sets the date format across audit logs, tables, and project analytics in your account.`)}</small>
             </div>
           </div>
           <div class="form-actions" style="margin-top:20px;">
