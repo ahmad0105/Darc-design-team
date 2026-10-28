@@ -1187,7 +1187,7 @@ export function openDocumentPreviewModal(docId) {
             <img src="${esc(embedUrl)}" alt="${esc(doc.originalName)}" style="max-width:100%;max-height:100%;object-fit:contain;border-radius:4px;box-shadow:0 4px 20px rgba(0,0,0,0.5);" onerror="this.onerror=null;this.src='${esc(downloadUrl)}';" />
           </div>
         ` : `
-          <iframe src="${esc(embedUrl)}" style="width:100%;height:100%;border:none;background:#fff;" allow="autoplay" loading="lazy"></iframe>
+          <iframe src="${esc(embedUrl)}" sandbox="allow-scripts allow-same-origin allow-popups" style="width:100%;height:100%;border:none;background:#fff;" allow="autoplay" loading="lazy"></iframe>
         `}
       </div>
     </div>

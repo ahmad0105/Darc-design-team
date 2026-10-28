@@ -16,11 +16,13 @@ app.use('*', async (c, next) => {
   await next();
 });
 
+const SCRYPT_OPTIONS = { N: 16384, r: 8, p: 1, maxmem: 64 * 1024 * 1024 };
+
 async function verifyPassword(password, stored) {
   if (!stored || !stored.includes(':')) return false;
   const [salt, digest] = stored.split(':');
   return new Promise((resolve) => {
-    crypto.scrypt(password, salt, 64, (err, derivedKey) => {
+    crypto.scrypt(password, salt, 64, SCRYPT_OPTIONS, (err, derivedKey) => {
       if (err) resolve(false);
       else {
         const computed = derivedKey.toString('hex');
@@ -36,7 +38,7 @@ async function verifyPassword(password, stored) {
 async function hashPassword(password) {
   const salt = crypto.randomBytes(16).toString('hex');
   return new Promise((resolve, reject) => {
-    crypto.scrypt(password, salt, 64, (err, derivedKey) => {
+    crypto.scrypt(password, salt, 64, SCRYPT_OPTIONS, (err, derivedKey) => {
       if (err) reject(err);
       else resolve(`${salt}:${derivedKey.toString('hex')}`);
     });

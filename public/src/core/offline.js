@@ -450,8 +450,15 @@ export async function syncPendingMutations(apiFunction) {
   let syncedCount = 0;
   let stoppedDueToNetwork = false;
 
+  const ALLOWED_MUTATION_PATHS = /^\/api\/(tasks|projects|documents|reminders|comments|notifications)(\/|$)/;
+  const ALLOWED_METHODS = new Set(['POST', 'PATCH', 'PUT', 'DELETE']);
+
   for (let i = 0; i < queue.length; i++) {
     const item = queue[i];
+    if (!item || !item.path || typeof item.path !== 'string' || !ALLOWED_MUTATION_PATHS.test(item.path) || !ALLOWED_METHODS.has(item.method)) {
+      console.warn('[Offline Sync] Dropping unauthorized/malformed queue mutation:', item?.id, item?.path);
+      continue;
+    }
     try {
       const opts = {
         method: item.method,

@@ -8,7 +8,10 @@
  */
 export function inspectFileBuffer(buffer) {
   if (!buffer || buffer.byteLength < 2) return { isMalware: false };
-  const bytes = new Uint8Array(buffer.slice(0, Math.min(buffer.byteLength, 1024)));
+
+  // Inspect first 64KB of buffer to defeat padding/offset evasion
+  const headSize = Math.min(buffer.byteLength, 65536);
+  const bytes = new Uint8Array(buffer.slice(0, headSize));
 
   // 1. Windows PE / Executable Header ("MZ" = 0x4D, 0x5A)
   if (bytes[0] === 0x4D && bytes[1] === 0x5A) {
@@ -51,16 +54,30 @@ export function inspectFileBuffer(buffer) {
     };
   }
 
-  // 5. Scan text prefix for web shells and embedded script tags
+  // 5. Deep content inspection for web shells, polyglots, and embedded exploits
   try {
-    const headerText = new TextDecoder('utf-8', { fatal: false }).decode(bytes).toLowerCase();
+    const decoder = new TextDecoder('utf-8', { fatal: false });
+    let textToInspect = decoder.decode(bytes).toLowerCase();
+
+    // If file is larger than 64KB, also scan tail 8KB to detect appended payloads
+    if (buffer.byteLength > 65536) {
+      const tailBytes = new Uint8Array(buffer.slice(buffer.byteLength - 8192));
+      textToInspect += ' ' + decoder.decode(tailBytes).toLowerCase();
+    }
+
     const dangerousPatterns = [
       '<?php',
       '<?=',
       '<script',
       '<iframe',
+      '<object',
+      '<embed',
       'eval(base64_decode',
       'eval(gzinflate',
+      'eval($_',
+      'passthru(',
+      'shell_exec(',
+      'system($_',
       'powershell',
       'cmd.exe',
       '/bin/sh',
@@ -68,10 +85,10 @@ export function inspectFileBuffer(buffer) {
     ];
 
     for (const pattern of dangerousPatterns) {
-      if (headerText.includes(pattern)) {
+      if (textToInspect.includes(pattern)) {
         return {
           isMalware: true,
-          reason: `محظور أمنياً: تم رصد شفرة برمجية خبيثة داخل الملف (${pattern}).`
+          reason: `محظور أمنياً: تم رصد شفرة برمجية خبيثة داخل محتوى الملف (${pattern}).`
         };
       }
     }

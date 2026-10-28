@@ -289,7 +289,18 @@ app.post('/session', uploadRateLimiter(), async (c) => {
     return c.json({ error: 'غير مصرح لك برفع مستندات لهذا المشروع' }, 403);
   }
 
-  const origin = c.req.header('origin') || 'http://127.0.0.1:8787';
+  const rawOrigin = c.req.header('origin');
+  let safeOrigin = 'https://api.darc-design.bond';
+  if (rawOrigin && (
+    rawOrigin.startsWith('http://localhost:') ||
+    rawOrigin.startsWith('http://127.0.0.1:') ||
+    rawOrigin === 'https://darc-design.bond' ||
+    rawOrigin.endsWith('.darc-design.bond') ||
+    rawOrigin === 'https://darc-design-team.netlify.app' ||
+    rawOrigin === 'https://darc-design-team.ahmad-hashmi-c.workers.dev'
+  )) {
+    safeOrigin = rawOrigin;
+  }
 
   try {
     const targetFolderId = await resolveTargetFolder(c.env, supabase, { projectId, taskId });
@@ -298,7 +309,7 @@ app.post('/session', uploadRateLimiter(), async (c) => {
       c.env,
       compiledName || 'document',
       mimeType || 'application/octet-stream',
-      origin,
+      safeOrigin,
       size,
       targetFolderId
     );

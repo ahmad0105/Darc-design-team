@@ -19,6 +19,21 @@ const _mutationTracker = new Map();
 // key -> { count: number, resetAt: number }
 const _uploadTracker = new Map();
 
+const MAX_MAP_SIZE = 5000;
+
+function safeSetMap(map, key, val) {
+  if (map.size >= MAX_MAP_SIZE && !map.has(key)) {
+    // Evict oldest 500 entries to prevent memory exhaustion (Pillar 2: Zero-Trust Resiliency)
+    let evicted = 0;
+    for (const k of map.keys()) {
+      map.delete(k);
+      evicted++;
+      if (evicted >= 500) break;
+    }
+  }
+  map.set(key, val);
+}
+
 // Periodic cleanup to avoid memory leaks in long-lived isolates
 let _lastCleanup = Date.now();
 function maybeCleanup() {
@@ -133,7 +148,7 @@ export function recordAuthFailure(rawIp) {
   const entry = _authFailures.get(ip);
 
   if (!entry || now > entry.resetAt) {
-    _authFailures.set(ip, { count: 1, resetAt: now + AUTH_WINDOW_MS });
+    safeSetMap(_authFailures, ip, { count: 1, resetAt: now + AUTH_WINDOW_MS });
   } else {
     entry.count += 1;
     if (entry.count >= AUTH_MAX_ATTEMPTS) {
@@ -173,7 +188,7 @@ export function mutationRateLimiter() {
     let entry = _mutationTracker.get(key);
     if (!entry || now > entry.resetAt) {
       entry = { count: 1, resetAt: now + MUTATION_WINDOW_MS };
-      _mutationTracker.set(key, entry);
+      safeSetMap(_mutationTracker, key, entry);
     } else {
       entry.count += 1;
     }
@@ -216,7 +231,7 @@ export function uploadRateLimiter(maxUploads = UPLOAD_MAX_SESSIONS, windowMs = U
     let entry = _uploadTracker.get(key);
     if (!entry || now > entry.resetAt) {
       entry = { count: 1, resetAt: now + windowMs };
-      _uploadTracker.set(key, entry);
+      safeSetMap(_uploadTracker, key, entry);
     } else {
       entry.count += 1;
     }

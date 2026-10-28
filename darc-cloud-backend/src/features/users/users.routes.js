@@ -300,7 +300,7 @@ async function hashPassword(password) {
   const { default: crypto } = await import('node:crypto');
   const salt = crypto.randomBytes(16).toString('hex');
   return new Promise((resolve, reject) => {
-    crypto.scrypt(password, salt, 64, (err, derivedKey) => {
+    crypto.scrypt(password, salt, 64, { N: 16384, r: 8, p: 1, maxmem: 64 * 1024 * 1024 }, (err, derivedKey) => {
       if (err) reject(err);
       else resolve(`${salt}:${derivedKey.toString('hex')}`);
     });

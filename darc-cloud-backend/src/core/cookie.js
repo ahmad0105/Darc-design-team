@@ -44,7 +44,7 @@ export function setSessionCookie(c, token, maxAgeSeconds = DEFAULT_SESSION_MAX_A
     path: '/',
     httpOnly: true,
     secure: true,
-    sameSite: cookieDomain ? 'Lax' : 'None',
+    sameSite: 'Lax',
     domain: cookieDomain,
     maxAge: maxAgeSeconds
   });
@@ -67,7 +67,7 @@ export function clearSessionCookie(c) {
     path: '/',
     httpOnly: true,
     secure: true,
-    sameSite: cookieDomain ? 'Lax' : 'None',
+    sameSite: 'Lax',
     domain: cookieDomain
   });
 }

@@ -226,6 +226,21 @@ export function applyGranularDelta(tableName, actionType, rawRecord, rawOldRecor
     return true;
   }
 
+  // 1b. Authorization Guard: Prevent cross-project or cross-user data leakage for non-admins
+  const isGlobalAdmin = state.data?.user?.role_id === 'admin';
+  if (!isGlobalAdmin && record) {
+    if (tableName === 'notifications') {
+      if (record.userId && record.userId !== state.data?.user?.id) {
+        return false; // Drop notifications meant for other users
+      }
+    } else if (tableName === 'tasks' || tableName === 'documents' || tableName === 'comments') {
+      const pId = record.projectId || (tableName === 'comments' ? (state.data?.tasks?.find(t => t.id === record.taskId)?.projectId) : null);
+      if (pId && !state.data?.projects?.some(p => p.id === pId)) {
+        return false; // Drop records belonging to projects not accessible to current user
+      }
+    }
+  }
+
   // Ensure table collection exists in state
   if (!Array.isArray(state.data[tableName])) {
     state.data[tableName] = [];

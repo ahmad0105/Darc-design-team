@@ -79,9 +79,13 @@ export function setBootstrapCache(key, payload, etag) {
   _bootstrapCache.set(key, { payload, etag, time: Date.now() });
 }
 
-export function invalidateBootstrapCache() {
-  _cacheVersion++;
-  _bootstrapCache.clear();
+export function invalidateBootstrapCache(specificKey = null) {
+  if (specificKey) {
+    _bootstrapCache.delete(specificKey);
+  } else {
+    _cacheVersion++;
+    _bootstrapCache.clear();
+  }
 }
 
 // --- STAMPEDE / THUNDERING HERD GUARD (SingleFlight Request Coalescing) ---

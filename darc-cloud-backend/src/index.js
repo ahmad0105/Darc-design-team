@@ -114,7 +114,7 @@ async function verifyPassword(password, stored) {
   if (!stored || !stored.includes(':')) return false;
   const [salt, digest] = stored.split(':');
   return new Promise((resolve) => {
-    crypto.scrypt(password, salt, 64, (err, derivedKey) => {
+    crypto.scrypt(password, salt, 64, { N: 16384, r: 8, p: 1, maxmem: 64 * 1024 * 1024 }, (err, derivedKey) => {
       if (err) resolve(false);
       else {
         const computed = derivedKey.toString('hex');
@@ -342,7 +342,7 @@ app.post('/api/demo/reset', async (c) => {
     return c.json({ error: 'إعادة ضبط بيئة العرض متاحة فقط في الوضع التجريبي أو لمدير النظام' }, 403);
   }
   const fresh = resetDemoPayload();
-  invalidateBootstrapCache();
+  invalidateBootstrapCache('usr_demo:admin');
   return c.json({ ok: true, data: fresh });
 });
 
