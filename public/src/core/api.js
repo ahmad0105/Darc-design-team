@@ -110,6 +110,9 @@ export async function api(path, options = {}) {
     
     if (response.status === 401) {
       _lastBootstrapEtag = null;
+      if (typeof window !== 'undefined' && typeof window.disconnectSupabaseRealtime === 'function') {
+        window.disconnectSupabaseRealtime('unauthorized_401');
+      }
       if (path !== '/api/auth/login') {
         if (typeof localStorage !== 'undefined') {
           localStorage.removeItem('darc_token');
