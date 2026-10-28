@@ -141,15 +141,55 @@ export async function api(path, options = {}) {
   // On successful mutations, invalidate local ETag and broadcast to other open tabs to trigger immediate sync
   if (['POST', 'PATCH', 'PUT', 'DELETE'].includes(options.method)) {
     invalidateBootstrapEtag();
-    if (parsedBody && parsedBody.id && typeof window !== 'undefined' && typeof window.recordRecentLocalMutation === 'function') {
-      window.recordRecentLocalMutation(parsedBody.id);
+
+    // 1. Identify affected entity ID for echo suppression and cross-tab deduplication
+    let mutatedId = parsedBody && typeof parsedBody.id === 'string' ? parsedBody.id : null;
+    if (!mutatedId && result && typeof result === 'object') {
+      mutatedId = result.id || result.task?.id || result.project?.id || result.comment?.id || result.document?.id || result.data?.id;
     }
+    if (!mutatedId && typeof path === 'string') {
+      const parts = path.split('/');
+      if (parts.length >= 4 && parts[3] && !parts[3].includes('?')) {
+        mutatedId = parts[3];
+      }
+    }
+
+    if (mutatedId && typeof window !== 'undefined' && typeof window.recordRecentLocalMutation === 'function') {
+      window.recordRecentLocalMutation(mutatedId);
+    }
+
+    // 2. Build lightweight Granular Delta for zero-HTTP cross-tab synchronization
     if (path !== '/api/auth/login' && path !== '/api/auth/logout') {
+      let deltaPayload = null;
+      if (result) {
+        if (result.task) {
+          deltaPayload = { table: 'tasks', action: options.method === 'POST' ? 'INSERT' : 'UPDATE', record: result.task };
+        } else if (result.project) {
+          deltaPayload = { table: 'projects', action: options.method === 'POST' ? 'INSERT' : 'UPDATE', record: result.project };
+        } else if (result.comment) {
+          deltaPayload = { table: 'comments', action: options.method === 'POST' ? 'INSERT' : 'UPDATE', record: result.comment };
+        } else if (result.document) {
+          deltaPayload = { table: 'documents', action: options.method === 'POST' ? 'INSERT' : 'UPDATE', record: result.document };
+        }
+      }
+      if (!deltaPayload && options.method === 'DELETE' && mutatedId) {
+        if (path.startsWith('/api/tasks/')) deltaPayload = { table: 'tasks', action: 'DELETE', record: { id: mutatedId } };
+        else if (path.startsWith('/api/projects/')) deltaPayload = { table: 'projects', action: 'DELETE', record: { id: mutatedId } };
+        else if (path.startsWith('/api/documents/')) deltaPayload = { table: 'documents', action: 'DELETE', record: { id: mutatedId } };
+        else if (path.startsWith('/api/comments/')) deltaPayload = { table: 'comments', action: 'DELETE', record: { id: mutatedId } };
+      }
+
       if (typeof window !== 'undefined') {
         if (typeof window.notifyStateMutation === 'function') {
-          window.notifyStateMutation();
+          window.notifyStateMutation(deltaPayload);
         } else if (window._darcBroadcastChannel) {
-          try { window._darcBroadcastChannel.postMessage({ type: 'STATE_MUTATION', timestamp: Date.now() }); } catch (e) {}
+          try {
+            window._darcBroadcastChannel.postMessage({
+              type: deltaPayload ? 'GRANULAR_DELTA' : 'STATE_MUTATION',
+              delta: deltaPayload,
+              timestamp: Date.now()
+            });
+          } catch (e) {}
         }
       }
     }

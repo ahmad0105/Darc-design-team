@@ -470,6 +470,10 @@ export async function syncPendingMutations(apiFunction) {
         console.warn('[Offline Sync] Dropping unprocessable mutation:', item.id, res.error);
       } else {
         syncedCount++;
+        const syncedId = (item.body && typeof item.body === 'object' && item.body.id) || (typeof item.path === 'string' && item.path.split('/')[3]);
+        if (syncedId && typeof window !== 'undefined' && typeof window.recordRecentLocalMutation === 'function') {
+          window.recordRecentLocalMutation(syncedId);
+        }
       }
     } catch (err) {
       console.error('[Offline Sync] Failed to replay mutation:', item.id, item.path, err.message);

@@ -5,6 +5,7 @@ import { state } from './state.js';
 import { loadData, renderView, renderApp } from './router.js';
 import { syncPendingMutations } from './offline.js';
 import { invalidateBootstrapEtag } from './api.js';
+import { renderTaskComments, renderTaskDocuments } from '../features/tasks/tasks.js';
 
 const SUPABASE_WS_ENDPOINT = 'wss://yjfmrpwkjstxldnwegob.supabase.co/realtime/v1/websocket?apikey=sb_publishable_Zr7mRIWo5djcRpwq4Ihl0A_Eb3AA8gJ&vsn=1.0.0';
 
@@ -14,6 +15,7 @@ const INACTIVITY_IDLE_TIMEOUT_MS = 5 * 60 * 1000;           // 5 minutes without
 const TAB_HIDDEN_STANDBY_MS = isDataSaver ? 10 * 1000 : 30 * 1000; // 10s (Data Saver) or 30s in background -> Hibernate
 const SYNC_DEBOUNCE_MS = isDataSaver ? 600 : 300;           // Window to batch multi-event mutations
 const HEARTBEAT_INTERVAL_MS = 25 * 1000;                     // 25s keepalive ping while actively working
+const MAX_LOCAL_MUTATIONS = 150;
 
 let _syncDebounceTimer = null;
 let _isRealtimeInitialized = false;
@@ -36,14 +38,19 @@ const _recentLocalMutations = new Map(); // id -> timestamp
  * Record a mutation performed locally so that WebSocket echoes are ignored
  */
 export function recordRecentLocalMutation(id) {
-  if (!id) return;
+  if (!id || typeof id !== 'string') return;
   const now = Date.now();
   _recentLocalMutations.set(id, now);
-  // Auto-prune entries older than 5 seconds
-  if (_recentLocalMutations.size > 50) {
-    for (const [k, v] of _recentLocalMutations.entries()) {
-      if (now - v > 5000) _recentLocalMutations.delete(k);
-    }
+
+  // Auto-prune entries older than 8 seconds
+  for (const [k, v] of _recentLocalMutations.entries()) {
+    if (now - v > 8000) _recentLocalMutations.delete(k);
+  }
+
+  // Strict cap on map size (prevent memory leak)
+  if (_recentLocalMutations.size > MAX_LOCAL_MUTATIONS) {
+    const oldestKey = _recentLocalMutations.keys().next().value;
+    if (oldestKey) _recentLocalMutations.delete(oldestKey);
   }
 }
 
@@ -56,24 +63,110 @@ function isAuthenticated() {
 }
 
 /**
- * Key passthrough guard for JSONB objects
+ * Guard sets to prevent Prototype Pollution attacks
  */
+const DANGEROUS_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
 const JSONB_PASSTHROUGH_KEYS = new Set(['custom_fields', 'permissions', 'details']);
 
 /**
- * Convert snake_case Supabase CDC payload into camelCase frontend model
+ * Convert snake_case Supabase CDC payload into camelCase frontend model with Prototype Pollution shielding
  */
 function snakeToCamel(obj) {
   if (obj === null || typeof obj !== 'object') return obj;
   if (Array.isArray(obj)) return obj.map(snakeToCamel);
   const out = {};
   for (const [k, v] of Object.entries(obj)) {
+    if (DANGEROUS_KEYS.has(k)) continue;
     const camelKey = k.indexOf('_') === -1 ? k : k.replace(/_([a-z0-9])/g, (_, c) => c.toUpperCase());
+    if (DANGEROUS_KEYS.has(camelKey)) continue;
     out[camelKey] = (v !== null && typeof v === 'object' && !JSONB_PASSTHROUGH_KEYS.has(k))
       ? snakeToCamel(v)
       : v;
   }
   return out;
+}
+
+/**
+ * Sanitize object properties to prevent prototype tampering
+ */
+function sanitizeRecord(obj) {
+  if (obj === null || typeof obj !== 'object') return obj;
+  if (Array.isArray(obj)) return obj.map(sanitizeRecord);
+  const clean = {};
+  for (const [k, v] of Object.entries(obj)) {
+    if (DANGEROUS_KEYS.has(k)) continue;
+    clean[k] = (v !== null && typeof v === 'object' && !JSONB_PASSTHROUGH_KEYS.has(k))
+      ? sanitizeRecord(v)
+      : v;
+  }
+  return clean;
+}
+
+/**
+ * Recalculate project weighted progress directly in-memory (0-latency instant UI update)
+ */
+export function recalculateProjectProgressInMemory(projectId) {
+  if (!projectId || !state.data || !Array.isArray(state.data.tasks) || !Array.isArray(state.data.projects)) return;
+  const project = state.data.projects.find((p) => p.id === projectId);
+  if (!project) return;
+
+  const projectTasks = state.data.tasks.filter((t) => t.projectId === projectId && !t.deletedAt);
+  let totalWeight = 0;
+  let weightedProgress = 0;
+  for (const t of projectTasks) {
+    const w = Number(t.weight) || 1;
+    const p = Number(t.progress) || 0;
+    totalWeight += w;
+    weightedProgress += w * (p / 100);
+  }
+  const finalPct = totalWeight > 0 ? Math.round((weightedProgress / totalWeight) * 100) : 0;
+  if (project.progress !== finalPct) {
+    project.progress = finalPct;
+  }
+}
+
+/**
+ * Update the notification indicator dot in the topbar directly in DOM
+ */
+function updateNotificationDotInDom() {
+  if (typeof document === 'undefined') return;
+  const notifBtn = document.querySelector('[data-action="show-notifications"]');
+  if (!notifBtn) return;
+  const notifications = state.data?.notifications || [];
+  const unread = notifications.filter((n) => !n.read && !n.readAt).length;
+  let dot = notifBtn.querySelector('.notification-dot');
+  if (unread > 0) {
+    if (!dot) {
+      notifBtn.insertAdjacentHTML('beforeend', '<span class="notification-dot"></span>');
+    }
+  } else if (dot) {
+    dot.remove();
+  }
+}
+
+/**
+ * Play subtle, elegant chime using native Web Audio API (0 KB audio files)
+ */
+function playNotificationChime() {
+  if (typeof window === 'undefined') return;
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
+    osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.15); // A5
+    gain.gain.setValueAtTime(0.06, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.36);
+  } catch (e) {
+    // Silent fail if AudioContext is prevented by browser policy
+  }
 }
 
 /**
@@ -94,21 +187,21 @@ function scheduleBatchedViewUpdate() {
 /**
  * Apply Granular Delta Changes In-Memory (Zero HTTP Requests / 0 KB Bandwidth)
  */
-function applyGranularDelta(tableName, actionType, rawRecord, rawOldRecord) {
+export function applyGranularDelta(tableName, actionType, rawRecord, rawOldRecord) {
   if (!state.data || !tableName) return false;
 
   const validTables = ['tasks', 'projects', 'comments', 'documents', 'notifications'];
   if (!validTables.includes(tableName)) return false;
 
-  const record = rawRecord ? snakeToCamel(rawRecord) : null;
-  const oldRecord = rawOldRecord ? snakeToCamel(rawOldRecord) : null;
+  const record = rawRecord ? sanitizeRecord(snakeToCamel(rawRecord)) : null;
+  const oldRecord = rawOldRecord ? sanitizeRecord(snakeToCamel(rawOldRecord)) : null;
   const targetId = (record && record.id) || (oldRecord && oldRecord.id);
 
   if (!targetId) return false;
 
-  // 1. Deduplication: Check if this was an echo of a local mutation performed by this user
+  // 1. Deduplication: Check if this was an echo of a local mutation performed by this client
   const recentTime = _recentLocalMutations.get(targetId);
-  if (recentTime && (Date.now() - recentTime < 4000)) {
+  if (recentTime && (Date.now() - recentTime < 5000)) {
     // Local user already applied this optimistically -> skip re-render
     return true;
   }
@@ -124,11 +217,26 @@ function applyGranularDelta(tableName, actionType, rawRecord, rawOldRecord) {
   if (actionType === 'UPDATE' && record) {
     const idx = collection.findIndex((item) => item.id === targetId);
     if (idx !== -1) {
-      Object.assign(collection[idx], record);
+      // Safe merge without prototype pollution
+      for (const [key, val] of Object.entries(record)) {
+        if (!DANGEROUS_KEYS.has(key)) {
+          collection[idx][key] = val;
+        }
+      }
       stateMutated = true;
     } else {
       collection.unshift(record);
       stateMutated = true;
+    }
+
+    // Trigger in-memory recalculations
+    if (tableName === 'tasks') {
+      if (record.projectId) recalculateProjectProgressInMemory(record.projectId);
+      if (oldRecord?.projectId && oldRecord.projectId !== record.projectId) {
+        recalculateProjectProgressInMemory(oldRecord.projectId);
+      }
+    } else if (tableName === 'notifications') {
+      updateNotificationDotInDom();
     }
   } else if (actionType === 'INSERT' && record) {
     const exists = collection.some((item) => item.id === targetId);
@@ -136,11 +244,44 @@ function applyGranularDelta(tableName, actionType, rawRecord, rawOldRecord) {
       collection.unshift(record);
       stateMutated = true;
     }
+
+    // Trigger in-memory recalculations
+    if (tableName === 'tasks' && record.projectId) {
+      recalculateProjectProgressInMemory(record.projectId);
+    } else if (tableName === 'notifications') {
+      const currentUserId = state.data?.user?.id;
+      if (currentUserId && record.userId === currentUserId && !record.read) {
+        updateNotificationDotInDom();
+        const title = state.lang === 'ar' ? (record.titleAr || record.title) : (record.titleEn || record.title || record.titleAr);
+        if (title && typeof window.showToast === 'function') {
+          window.showToast(`🔔 ${title}`, false);
+        }
+        playNotificationChime();
+      }
+    }
   } else if (actionType === 'DELETE') {
     const prevLen = collection.length;
+    let deletedItemProjectId = null;
+    if (tableName === 'tasks') {
+      const targetItem = collection.find((item) => item.id === targetId);
+      deletedItemProjectId = targetItem?.projectId || oldRecord?.projectId;
+    }
+
     state.data[tableName] = collection.filter((item) => item.id !== targetId);
     if (state.data[tableName].length !== prevLen) {
       stateMutated = true;
+    }
+
+    // Cascade in-memory cleanup
+    if (tableName === 'tasks' && deletedItemProjectId) {
+      recalculateProjectProgressInMemory(deletedItemProjectId);
+    } else if (tableName === 'projects') {
+      // Remove orphaned tasks for deleted project
+      if (Array.isArray(state.data.tasks)) {
+        state.data.tasks = state.data.tasks.filter((t) => t.projectId !== targetId);
+      }
+    } else if (tableName === 'notifications') {
+      updateNotificationDotInDom();
     }
   }
 
@@ -149,12 +290,30 @@ function applyGranularDelta(tableName, actionType, rawRecord, rawOldRecord) {
     invalidateBootstrapEtag();
 
     // 2. Fine-grained Modal DOM patching if task modal is currently open
-    if (tableName === 'comments' && record?.taskId) {
-      const openCommentForm = document.getElementById('task-comment-form');
-      if (openCommentForm && openCommentForm.dataset.taskId === record.taskId) {
-        const commentListEl = document.getElementById('task-comments-list');
-        if (commentListEl && typeof window.__timelineExports !== 'undefined') {
-          // If task view helper exists, re-render comments list smoothly
+    const openTaskId = record?.taskId || oldRecord?.taskId;
+    if (openTaskId) {
+      const parentTask = (state.data?.tasks || []).find((t) => t.id === openTaskId);
+      if (parentTask) {
+        // Comment list live update
+        if (tableName === 'comments') {
+          const openCommentForm = document.getElementById('task-comment-form');
+          if (openCommentForm && openCommentForm.dataset.taskId === openTaskId) {
+            const commentListEl = document.getElementById('task-comments-list');
+            if (commentListEl && typeof renderTaskComments === 'function') {
+              commentListEl.innerHTML = renderTaskComments(parentTask);
+              commentListEl.scrollTop = commentListEl.scrollHeight;
+            }
+          }
+        }
+        // Document list live update
+        if (tableName === 'documents') {
+          const dropzoneEl = document.getElementById('task-dropzone');
+          if (dropzoneEl && dropzoneEl.dataset.taskId === openTaskId) {
+            const docListEl = document.getElementById('task-documents-list');
+            if (docListEl && typeof renderTaskDocuments === 'function') {
+              docListEl.innerHTML = renderTaskDocuments(parentTask);
+            }
+          }
         }
       }
     }
@@ -400,6 +559,12 @@ function handleUserActivity() {
 function startIdleCheck() {
   if (_idleCheckTimer) clearInterval(_idleCheckTimer);
   _idleCheckTimer = setInterval(() => {
+    // Periodic sweep of _recentLocalMutations to guarantee zero memory leaks
+    const now = Date.now();
+    for (const [k, v] of _recentLocalMutations.entries()) {
+      if (now - v > 8000) _recentLocalMutations.delete(k);
+    }
+
     // If already hibernating or tab is hidden, skip check
     if (_isHibernating || (typeof document !== 'undefined' && document.hidden)) return;
 
@@ -462,7 +627,10 @@ export function initRealtimeConnection() {
   if (typeof BroadcastChannel !== 'undefined') {
     const channel = new BroadcastChannel('darc_state_sync');
     channel.onmessage = (event) => {
-      if (event.data?.type === 'STATE_MUTATION') {
+      if (event.data?.type === 'GRANULAR_DELTA' && event.data.delta) {
+        const { table, action, record, oldRecord } = event.data.delta;
+        applyGranularDelta(table, action, record, oldRecord);
+      } else if (event.data?.type === 'STATE_MUTATION') {
         triggerImmediateSync('broadcast_channel');
       }
     };
@@ -472,6 +640,7 @@ export function initRealtimeConnection() {
   // 6. Network online/offline monitoring
   window.addEventListener('online', async () => {
     state.isOffline = false;
+    _reconnectAttempts = 0;
     const apiFn = window.api;
     const chooseFn = typeof window.choose === 'function' ? window.choose : ((ar) => ar);
     const showToastFn = typeof window.showToast === 'function' ? window.showToast : console.log;
@@ -498,6 +667,7 @@ export function initRealtimeConnection() {
 
   window.addEventListener('offline', () => {
     state.isOffline = true;
+    _reconnectAttempts = 0;
     enterHibernation('offline');
 
     if (typeof window.renderApp === 'function') window.renderApp();
@@ -511,12 +681,16 @@ export function initRealtimeConnection() {
 }
 
 /**
- * Cross-tab notification of local state mutations
+ * Cross-tab notification of local state mutations with optional granular delta payload
  */
-export function notifyStateMutation() {
-  if (window._darcBroadcastChannel) {
+export function notifyStateMutation(delta = null) {
+  if (typeof window !== 'undefined' && window._darcBroadcastChannel) {
     try {
-      window._darcBroadcastChannel.postMessage({ type: 'STATE_MUTATION', timestamp: Date.now() });
+      window._darcBroadcastChannel.postMessage({
+        type: delta ? 'GRANULAR_DELTA' : 'STATE_MUTATION',
+        delta,
+        timestamp: Date.now()
+      });
     } catch (e) {}
   }
 }
@@ -525,4 +699,5 @@ if (typeof window !== 'undefined') {
   window.notifyStateMutation = notifyStateMutation;
   window.disconnectSupabaseRealtime = disconnectSupabaseRealtime;
   window.recordRecentLocalMutation = recordRecentLocalMutation;
+  window.recalculateProjectProgressInMemory = recalculateProjectProgressInMemory;
 }
