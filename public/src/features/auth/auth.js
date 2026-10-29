@@ -352,7 +352,7 @@ export function renderLogin(errorMessage = '', mode = 'login', isSuccess = false
             isDone = true;
             resolve('fallback_client');
           }
-        }, 1800);
+        }, 1000);
 
         try {
           window.turnstile.execute(_turnstileWidgetId, {
