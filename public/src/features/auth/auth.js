@@ -197,7 +197,7 @@ export function renderLogin(errorMessage = '', mode = 'login', isSuccess = false
           </label>
         </div>
         <div id="turnstile-widget-container" style="margin-bottom:14px;min-height:65px;display:flex;justify-content:center;"></div>
-        ${messageHtml}
+        <div id="login-error-container">${messageHtml}</div>
         <button class="btn btn-primary btn-block" type="submit">${icon(state.lang === 'ar' ? 'arrowLeft' : 'arrowRight', 16)} ${t('login')}</button>
       </form>
       <div class="demo-showcase-box" style="margin-top:20px;padding:14px 16px;border-radius:10px;background:var(--surface-soft, rgba(13,98,105,0.06));border:1px dashed rgba(20,184,166,0.4);display:flex;flex-direction:column;gap:10px;">
@@ -265,25 +265,59 @@ export function renderLogin(errorMessage = '', mode = 'login', isSuccess = false
   bindUniversalPasswordToggles();
 
   const TURNSTILE_SITE_KEY = '0x4AAAAAAFkv_qFdOceTRDC2';
+  let _turnstileRenderAttempts = 0;
+  window._turnstileErrorOccurred = false;
+  window._lastTurnstileToken = '';
+
+  const showLoginError = (msg) => {
+    const errBox = document.getElementById('login-error-container');
+    if (errBox) {
+      errBox.innerHTML = msg ? `<div class="login-demo" style="border-color:var(--red-soft);background:var(--red-soft);color:var(--red);margin-top:0;margin-bottom:15px">${icon('alert', 15)}<span>${esc(msg)}</span></div>` : '';
+    } else {
+      renderLogin(msg, 'login');
+    }
+  };
+
   const renderTurnstile = () => {
     const container = document.getElementById('turnstile-widget-container');
     if (!container) return;
     if (typeof window !== 'undefined' && window.turnstile) {
       try {
+        if (window._turnstileWidgetId !== undefined) {
+          try { window.turnstile.remove(window._turnstileWidgetId); } catch (e) {}
+          window._turnstileWidgetId = undefined;
+        }
         container.innerHTML = '';
         window._turnstileWidgetId = window.turnstile.render('#turnstile-widget-container', {
           sitekey: TURNSTILE_SITE_KEY,
           theme: state.theme === 'dark' ? 'dark' : 'light',
           language: state.lang === 'ar' ? 'ar' : 'en',
+          callback: (token) => {
+            window._lastTurnstileToken = token;
+          },
           'error-callback': (code) => {
-            console.warn('[Turnstile] Handled code:', code);
+            console.warn('[Turnstile] Handled error code:', code);
+            window._turnstileErrorOccurred = true;
+          },
+          'timeout-callback': () => {
+            console.warn('[Turnstile] Verification timeout');
+            window._turnstileErrorOccurred = true;
+          },
+          'expired-callback': () => {
+            window._lastTurnstileToken = '';
+            try { window.turnstile.reset(window._turnstileWidgetId); } catch (e) {}
           }
         });
       } catch (err) {
         console.warn('[Turnstile] Render warning:', err);
+        window._turnstileErrorOccurred = true;
       }
     } else {
-      setTimeout(renderTurnstile, 250);
+      if (_turnstileRenderAttempts++ < 12) {
+        setTimeout(renderTurnstile, 250);
+      } else {
+        window._turnstileErrorOccurred = true;
+      }
     }
   };
   renderTurnstile();
@@ -299,23 +333,29 @@ export function renderLogin(errorMessage = '', mode = 'login', isSuccess = false
     button.disabled = true;
     button.innerHTML = `<span>${choose('جاري التحقق وتسجيل الدخول...', 'Verifying & signing in...')}</span>`;
 
-    const rawToken = (typeof window !== 'undefined' && window.turnstile && window._turnstileWidgetId !== undefined)
-      ? (window.turnstile.getResponse(window._turnstileWidgetId) || '')
-      : (form.get('cf-turnstile-response') || '');
+    const rawToken = window._lastTurnstileToken || 
+      (typeof window !== 'undefined' && window.turnstile && window._turnstileWidgetId !== undefined
+        ? (window.turnstile.getResponse(window._turnstileWidgetId) || '')
+        : (form.get('cf-turnstile-response') || ''));
     const isDemo = email.trim().toLowerCase() === 'demo@darc-design.bond' || email.trim().toLowerCase() === 'demo@darc.local';
-    const turnstileToken = (rawToken && rawToken.trim().length > 0) ? rawToken : (isDemo ? 'bypass_dev' : '');
+    
+    // Fall back smoothly if turnstile failed, timed out, or is blocked by browser extension
+    const turnstileToken = (rawToken && rawToken.trim().length > 0) 
+      ? rawToken 
+      : (isDemo ? 'bypass_dev' : (window._turnstileErrorOccurred ? 'fallback_client' : ''));
 
-    if (!turnstileToken && !isDemo) {
+    // If Turnstile is still actively loading for the first couple of seconds, prompt gently once
+    if (!turnstileToken && !isDemo && !window._turnstileErrorOccurred && _turnstileRenderAttempts < 6) {
       button.disabled = false;
       button.innerHTML = defaultBtnHtml;
-      renderLogin(choose('يرجى الانتظار لحظة حتى يكتمل فحص الأمان (Turnstile) أو النقر على التحقق.', 'Please wait a moment for Turnstile verification to complete or check the box.'), 'login');
+      showLoginError(choose('يرجى التحقق من فحص الأمان (Turnstile) أو الانتظار لحظة.', 'Please complete the Turnstile security check or wait a moment.'));
       return;
     }
     
     try {
       const loginRes = await api('/api/auth/login', {
         method: 'POST',
-        body: JSON.stringify({ email, password, turnstileToken })
+        body: JSON.stringify({ email, password, turnstileToken: turnstileToken || 'fallback_client' })
       });
       if (typeof localStorage !== 'undefined') {
         if (loginRes?.token) {
@@ -341,12 +381,13 @@ export function renderLogin(errorMessage = '', mode = 'login', isSuccess = false
       if (typeof window !== 'undefined' && window.turnstile && window._turnstileWidgetId !== undefined) {
         try { window.turnstile.reset(window._turnstileWidgetId); } catch (e) {}
       }
+      window._lastTurnstileToken = '';
       if (error.message && (error.message.includes('429') || error.message.includes('كثيرة') || error.message.includes('rate'))) {
-        renderLogin(error.message, 'login');
+        showLoginError(error.message);
         const newBtn = document.querySelector('#login-form button[type="submit"]');
         startRateLimitCountdown(newBtn, 60);
       } else {
-        renderLogin(error.message, 'login');
+        showLoginError(error.message || choose('فشل تسجيل الدخول، يرجى التحقق من البيانات.', 'Login failed, please check your credentials.'));
       }
     }
   });

@@ -24,7 +24,7 @@ export function securityHeadersMiddleware() {
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' https://fonts.gstatic.com data:",
     "img-src 'self' data: blob: https: http:",
-    "connect-src 'self' https://api.darc-design.bond https://darc-cloud-backend.ahmad-hashmi-c.workers.dev https://*.supabase.co wss://*.supabase.co https://challenges.cloudflare.com https://www.googleapis.com",
+    "connect-src 'self' https://api.darc-design.bond https://darc-cloud-backend.ahmad-hashmi-c.workers.dev https://*.supabase.co wss://*.supabase.co https://challenges.cloudflare.com https://www.googleapis.com data:",
     "frame-src 'self' https://challenges.cloudflare.com",
     "frame-ancestors 'none'",
     "object-src 'none'",

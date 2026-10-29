@@ -4,7 +4,7 @@ import { hasPermission, isProjectVisible } from '../../utils/permissions.js';
 import { toCamelCase } from '../../utils/transformers.js';
 import { createNotification } from '../notifications/notifications.service.js';
 import { invalidateBootstrapCache } from '../../core/cache.js';
-import { applyDemoTaskUpdate, createDemoTask } from '../demo/demo.service.js';
+import { applyDemoTaskUpdate, createDemoTask, getDemoPayload } from '../demo/demo.service.js';
 
 const app = new Hono();
 
@@ -12,6 +12,9 @@ app.use('*', async (c, next) => {
   c.set('supabase', getDB(c.env));
   await next();
 });
+
+// Helper: Validate entity ID format
+const isValidEntityId = (id) => typeof id === 'string' && /^[a-zA-Z0-9_-]{4,50}$/.test(id);
 
 // Helper: Calculate progress automatically based on task status
 function calculateAutoProgress(status) {
@@ -62,6 +65,27 @@ function sanitizeCustomFields(cf) {
   }
   return clean;
 }
+
+// GET /api/tasks — List all active tasks
+app.get('/', async (c) => {
+  const isDemo = c.get('isDemo');
+  if (isDemo) {
+    const demoData = getDemoPayload();
+    return c.json({ tasks: demoData.tasks || [] });
+  }
+  const userId = c.get('userId');
+  const roleId = c.get('roleId');
+  const supabase = c.get('supabase');
+
+  const { data, error } = await supabase
+    .from('tasks')
+    .select('*')
+    .is('deleted_at', null)
+    .order('sort_order', { ascending: true });
+
+  if (error) throw error;
+  return c.json({ tasks: toCamelCase(data || []) });
+});
 
 // POST /api/tasks
 app.post('/', async (c) => {
@@ -278,9 +302,6 @@ app.patch('/reorder', async (c) => {
   return c.json({ ok: true });
 });
 
-// Helper: Validate entity ID format
-const isValidEntityId = (id) => typeof id === 'string' && /^[a-zA-Z0-9_-]{4,50}$/.test(id);
-
 // PATCH /api/tasks/:id
 app.patch('/:id', async (c) => {
   const taskId = c.req.param('id');
@@ -429,6 +450,41 @@ app.delete('/:id', async (c) => {
   invalidateBootstrapCache();
 
   return c.json({ ok: true });
+});
+
+// GET /api/tasks/:id — Get details of a single task
+app.get('/:id', async (c) => {
+  const taskId = c.req.param('id');
+  if (!isValidEntityId(taskId)) {
+    return c.json({ error: 'معرف المهمة غير صالح' }, 400);
+  }
+  const isDemo = c.get('isDemo');
+  if (isDemo) {
+    const demoData = getDemoPayload();
+    const task = (demoData.tasks || []).find(t => t.id === taskId);
+    if (!task) return c.json({ error: 'المهمة غير موجودة' }, 404);
+    return c.json(task);
+  }
+  const userId = c.get('userId');
+  const roleId = c.get('roleId');
+  const supabase = c.get('supabase');
+
+  const { data: task, error } = await supabase
+    .from('tasks')
+    .select('*')
+    .eq('id', taskId)
+    .is('deleted_at', null)
+    .maybeSingle();
+
+  if (error || !task) {
+    return c.json({ error: 'المهمة غير موجودة' }, 404);
+  }
+
+  if (task.project_id && !(await isProjectVisible(supabase, userId, roleId, task.project_id))) {
+    return c.json({ error: 'غير مصرح' }, 403);
+  }
+
+  return c.json(toCamelCase(task));
 });
 
 // POST /api/tasks/:id/comments
