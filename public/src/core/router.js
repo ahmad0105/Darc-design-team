@@ -79,10 +79,10 @@ export function renderApp() {
       } else if (state.view === 'settings' && state.settingsSection) {
         targetHash = `settings?section=${encodeURIComponent(state.settingsSection)}`;
       }
-      window._isInternalNav = true;
       if (window.history && window.history.replaceState) {
         window.history.replaceState(null, '', `#${targetHash}`);
       } else {
+        window._isInternalNav = true;
         window.location.hash = `#${targetHash}`;
       }
     }
