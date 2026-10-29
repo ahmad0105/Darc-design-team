@@ -358,6 +358,24 @@ export async function recordErrorIncident(env, report = {}) {
  * Returns incidents grouped per user and system-wide incident statistics.
  */
 export function getIncidentsPerUser(filterUserId = null) {
+  // Ensure seed timestamps are adjusted to real runtime (avoids Cloudflare Worker module-eval epoch 0 / 1969 bug)
+  const now = Date.now();
+  for (const inc of _telemetryStore.recentIncidents) {
+    if (!inc.timestamp || new Date(inc.timestamp).getFullYear() < 2025) {
+      if (inc.id === 'inc_darc_01') {
+        inc.timestamp = new Date(now - 25 * 60 * 1000).toISOString();
+        if (inc.emailAlert) inc.emailAlert.deliveredAt = inc.timestamp;
+      } else if (inc.id === 'inc_darc_02') {
+        inc.timestamp = new Date(now - 75 * 60 * 1000).toISOString();
+        inc.resolvedAt = new Date(now - 40 * 60 * 1000).toISOString();
+        if (inc.emailAlert) inc.emailAlert.deliveredAt = inc.timestamp;
+      } else if (inc.id === 'inc_darc_03') {
+        inc.timestamp = new Date(now - 4 * 3600 * 1000).toISOString();
+        inc.resolvedAt = new Date(now - 3.5 * 3600 * 1000).toISOString();
+      }
+    }
+  }
+
   let incidents = _telemetryStore.recentIncidents;
   if (filterUserId && filterUserId !== 'all') {
     incidents = incidents.filter(inc => inc.userId === filterUserId);
