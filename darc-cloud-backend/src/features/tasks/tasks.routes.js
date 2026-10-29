@@ -4,7 +4,7 @@ import { hasPermission, isProjectVisible } from '../../utils/permissions.js';
 import { toCamelCase } from '../../utils/transformers.js';
 import { createNotification } from '../notifications/notifications.service.js';
 import { invalidateBootstrapCache } from '../../core/cache.js';
-import { applyDemoTaskUpdate, createDemoTask, getDemoPayload } from '../demo/demo.service.js';
+import { applyDemoTaskUpdate, createDemoTask, getDemoPayload, addDemoComment } from '../demo/demo.service.js';
 
 const app = new Hono();
 
@@ -495,6 +495,15 @@ app.post('/:id/comments', async (c) => {
   }
   const userId = c.get('userId');
   const roleId = c.get('roleId');
+
+  if (c.get('isDemo')) {
+    const body = await c.req.json();
+    const content = String(body.content || '').trim();
+    if (!content) return c.json({ error: 'التعليق فارغ' }, 400);
+    const newComment = addDemoComment(taskId, content, userId);
+    return c.json({ comment: newComment }, 201);
+  }
+
   const supabase = c.get('supabase');
 
   const { data: task } = await supabase.from('tasks').select('project_id, title_ar, assignee_id').eq('id', taskId).single();
@@ -601,6 +610,12 @@ app.patch('/:id/comments/:commentId', async (c) => {
   }
   const userId = c.get('userId');
   const roleId = c.get('roleId');
+
+  if (c.get('isDemo')) {
+    const body = await c.req.json();
+    return c.json({ ok: true, comment: { id: commentId, content: body.content, updatedAt: new Date().toISOString() } });
+  }
+
   const supabase = c.get('supabase');
 
   const { data: task } = await supabase.from('tasks').select('project_id').eq('id', taskId).single();
@@ -648,6 +663,11 @@ app.delete('/:id/comments/:commentId', async (c) => {
   }
   const userId = c.get('userId');
   const roleId = c.get('roleId');
+
+  if (c.get('isDemo')) {
+    return c.json({ ok: true });
+  }
+
   const supabase = c.get('supabase');
 
   const { data: task } = await supabase.from('tasks').select('project_id').eq('id', taskId).single();
@@ -687,6 +707,28 @@ app.get('/:id/comments', async (c) => {
   if (!isValidEntityId(taskId)) {
     return c.json({ error: 'معرف المهمة غير صالح' }, 400);
   }
+
+  const isDemo = c.get('isDemo');
+  if (isDemo) {
+    const demoData = getDemoPayload();
+    const taskComments = (demoData.comments || [])
+      .filter(cm => cm.taskId === taskId)
+      .map(cm => {
+        const u = (demoData.users || []).find(user => user.id === cm.userId) || {
+          id: cm.userId,
+          name: 'مستخدم تجريبي',
+          nameEn: 'Demo User',
+          email: 'demo@darc-design.bond',
+          avatarColor: '#0d6269'
+        };
+        return {
+          ...cm,
+          user: u
+        };
+      });
+    return c.json({ comments: taskComments });
+  }
+
   const userId = c.get('userId');
   const roleId = c.get('roleId');
   const supabase = c.get('supabase');

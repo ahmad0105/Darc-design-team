@@ -809,11 +809,11 @@ export function openProjectModal(project = null) {
         </div>
         <div class="field">
           <label>${t('startDate')}</label>
-          <input type="date" name="startDate" value="${esc(project?.startDate || '')}" />
+          <input type="date" name="startDate" value="${esc((project?.startDate || '').split('T')[0])}" />
         </div>
         <div class="field">
           <label>${t('dueDate')}</label>
-          <input type="date" name="dueDate" value="${esc(project?.dueDate || '')}" />
+          <input type="date" name="dueDate" value="${esc((project?.dueDate || '').split('T')[0])}" />
         </div>
 
         <!-- 👥 القسم 3: أعضاء فريق المشروع والمشاركون -->
@@ -979,7 +979,7 @@ export function openCloneModal(project) {
       
       <div class="field full">
         <label>${choose('تاريخ التسليم المتوقع', 'Expected Due Date')}</label>
-        <input name="dueDate" type="date" value="${project.dueDate || ''}" />
+        <input name="dueDate" type="date" value="${(project.dueDate || '').split('T')[0]}" />
       </div>
 
       <div style="background:var(--surface-soft);border:1px solid var(--border);border-radius:8px;padding:15px;margin-top:20px;display:flex;flex-direction:column;gap:12px">

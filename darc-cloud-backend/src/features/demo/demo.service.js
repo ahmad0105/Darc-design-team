@@ -100,3 +100,26 @@ export function addDemoDocument(docData) {
   _demoStore.documents.unshift(newDoc);
   return newDoc;
 }
+
+export function addDemoComment(taskId, content, userId = 'usr_demo') {
+  checkAndAutoReset();
+  const demoUser = (_demoStore.users || []).find(u => u.id === userId) || {
+    id: userId,
+    name: 'م. فهد القحطاني',
+    nameEn: 'Eng. Fahad Al-Qahtani',
+    email: 'fahad.q@darc.demo',
+    avatarColor: '#0d6269'
+  };
+  const newComment = {
+    id: 'cmt_demo_' + Math.random().toString(36).substr(2, 6),
+    taskId,
+    userId,
+    content,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    user: demoUser
+  };
+  if (!_demoStore.comments) _demoStore.comments = [];
+  _demoStore.comments.push(newComment);
+  return newComment;
+}

@@ -623,11 +623,11 @@ export function openTaskModal(task = null, presetTemplateId = null, presetProjec
       </div>
       <div class="field">
         <label>${t('startDate')}</label>
-        <input type="date" name="startDate" id="task-start-date" value="${esc(task?.startDate || '')}" onchange="const due = document.getElementById('task-due-date'); if (due && due.value && this.value > due.value) due.value = this.value; if (due) due.min = this.value;" />
+        <input type="date" name="startDate" id="task-start-date" value="${esc((task?.startDate || '').split('T')[0])}" onchange="const due = document.getElementById('task-due-date'); if (due && due.value && this.value > due.value) due.value = this.value; if (due) due.min = this.value;" />
       </div>
       <div class="field">
         <label>${t('dueDate')}</label>
-        <input type="date" name="dueDate" id="task-due-date" value="${esc(task?.dueDate || '')}" min="${esc(task?.startDate || '')}" onchange="const st = document.getElementById('task-start-date'); if (st && st.value && this.value < st.value) this.value = st.value;" />
+        <input type="date" name="dueDate" id="task-due-date" value="${esc((task?.dueDate || '').split('T')[0])}" min="${esc((task?.startDate || '').split('T')[0])}" onchange="const st = document.getElementById('task-start-date'); if (st && st.value && this.value < st.value) this.value = st.value;" />
       </div>
 
       <!-- أداة التذكيرات المتعددة التفاعلية -->
