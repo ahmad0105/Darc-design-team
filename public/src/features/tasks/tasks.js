@@ -1154,6 +1154,8 @@ export async function openDocumentPreviewModal(docId) {
   const isImage = /\.(jpe?g|png|gif|webp|svg|heic)$/i.test(doc.originalName) || (doc.mimeType && doc.mimeType.startsWith('image/'));
   const fileSize = doc.size > 1024 * 1024 ? (doc.size / (1024 * 1024)).toFixed(1) + ' MB' : Math.round((doc.size || 0) / 1024) + ' KB';
 
+  const isDemoDoc = (doc.id && String(doc.id).includes('demo')) || (driveId && driveId.startsWith('demo_sample_')) || Boolean(state.data?.isDemo);
+
   let overlay = document.getElementById('preview-modal-overlay');
   if (!overlay) {
     overlay = document.createElement('div');
@@ -1183,23 +1185,40 @@ export async function openDocumentPreviewModal(docId) {
           <button type="button" class="btn btn-soft btn-sm" data-action="copy-doc-link" data-doc-id="${esc(doc.id)}" style="display:flex;align-items:center;gap:6px;" title="${choose('نسخ رابط المشاركة', 'Copy share link')}">
             ${icon('link', 13)} <span class="hide-mobile">${choose('نسخ الرابط', 'Copy Link')}</span>
           </button>
+          ${!isDemoDoc ? `
           <a href="${esc(externalViewUrl)}" target="_blank" rel="noopener noreferrer" class="btn btn-soft btn-sm" style="text-decoration:none;display:flex;align-items:center;gap:6px;" title="${choose('فتح في Google Drive', 'Open in Google Drive')}">
             ${icon('globe', 13)} <span class="hide-mobile">${choose('فتح في Drive', 'Open in Drive')}</span>
           </a>
           <a href="${esc(downloadUrl)}" target="_blank" rel="noopener noreferrer" download class="btn btn-primary btn-sm" style="text-decoration:none;display:flex;align-items:center;gap:6px;" title="${choose('تحميل المخطط', 'Download')}">
             ${icon('download', 13)} <span class="hide-mobile">${choose('تحميل', 'Download')}</span>
           </a>
-          <button type="button" class="btn btn-ghost btn-sm" id="close-preview-modal-btn" style="padding:6px;min-width:0;margin-inline-start:4px;" title="${choose('إغلاق', 'Close')}">${icon('close', 18)}</button>
+          ` : ''}
+          <button type="button" class="btn btn-ghost btn-sm" id="close-preview-modal-btn" data-action="close-modal" style="padding:6px;min-width:0;margin-inline-start:4px;" title="${choose('إغلاق', 'Close')}">${icon('close', 18)}</button>
         </div>
       </div>
       <div style="flex:1;position:relative;background:#1a1a1a;overflow:hidden;display:flex;align-items:center;justify-content:center;">
-        ${!driveId && isImage ? `
+        ${isDemoDoc ? `
+          <div style="width:100%;height:100%;background:#0f172a;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#e2e8f0;padding:24px;text-align:center;">
+            <div style="position:absolute;inset:0;background-image:radial-gradient(rgba(20,184,166,0.15) 1px, transparent 1px);background-size:24px 24px;opacity:0.6;pointer-events:none;"></div>
+            <div style="background:rgba(15,23,42,0.85);backdrop-filter:blur(8px);border:1px solid rgba(20,184,166,0.3);border-radius:12px;padding:32px 40px;max-width:540px;box-shadow:0 20px 40px rgba(0,0,0,0.5);z-index:2;">
+              <div style="font-size:48px;margin-bottom:16px;">📐</div>
+              <h3 style="font-size:18px;font-weight:700;color:#fff;margin:0 0 8px 0;">${esc(doc.originalName)}</h3>
+              <p style="font-size:13px;color:#94a3b8;margin:0 0 20px 0;line-height:1.6;">
+                ${choose('مخطط معماري هندسي تفصيلي (بيئة عرض تجريبية). عند العمل على مشروع حقيقي يمكنك رفع ملفات PDF ومخططات DWG بدقة كاملة.', 'Detailed architectural CAD drawing (Demo showcase). In production projects, uploaded PDF and DWG drawings render directly here.')}
+              </p>
+              <div style="display:flex;justify-content:center;gap:12px;font-size:12px;color:#38bdf8;">
+                <span style="background:rgba(56,189,248,0.1);padding:4px 10px;border-radius:6px;border:1px solid rgba(56,189,248,0.2);">${choose('الحجم المقدر', 'Size')}: ${fileSize}</span>
+                <span style="background:rgba(20,184,166,0.1);padding:4px 10px;border-radius:6px;border:1px solid rgba(20,184,166,0.2);color:#2dd4bf;">${choose('مخطط معتمد', 'Approved Drawing')}</span>
+              </div>
+            </div>
+          </div>
+        ` : (!driveId && isImage ? `
           <div style="width:100%;height:100%;overflow:auto;display:flex;align-items:center;justify-content:center;padding:15px;">
             <img src="${esc(embedUrl)}" alt="${esc(doc.originalName)}" style="max-width:100%;max-height:100%;object-fit:contain;border-radius:4px;box-shadow:0 4px 20px rgba(0,0,0,0.5);" onerror="this.onerror=null;this.src='${esc(downloadUrl)}';" />
           </div>
         ` : `
           <iframe src="${esc(embedUrl)}" sandbox="allow-scripts allow-same-origin allow-popups" style="width:100%;height:100%;border:none;background:#fff;" allow="autoplay" loading="lazy"></iframe>
-        `}
+        `)}
       </div>
     </div>
   `;
