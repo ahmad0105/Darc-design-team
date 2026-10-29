@@ -196,6 +196,7 @@ export function renderLogin(errorMessage = '', mode = 'login', isSuccess = false
             <span>${choose('تذكر بريدي الإلكتروني على هذا الجهاز', 'Remember my email on this device')}</span>
           </label>
         </div>
+        <div id="turnstile-container" style="margin-bottom:12px;min-height:0;display:flex;justify-content:center;"></div>
         <div id="login-error-container">${messageHtml}</div>
         <button class="btn btn-primary btn-block" type="submit">${icon(state.lang === 'ar' ? 'arrowLeft' : 'arrowRight', 16)} ${t('login')}</button>
       </form>
@@ -263,10 +264,59 @@ export function renderLogin(errorMessage = '', mode = 'login', isSuccess = false
 
   bindUniversalPasswordToggles();
 
+  const TURNSTILE_SITE_KEY = '0x4AAAAAAFkv_qFdOceTRDC2';
+  let _turnstileWidgetId = null;
+
+  // 1. Initialise Turnstile strictly in On-Demand Passive Mode (execution: 'execute')
+  // This prevents Turnstile from probing fonts, network or triggering anti-debug traps on page load!
+  const initTurnstile = () => {
+    const container = document.getElementById('turnstile-container');
+    if (!container) return;
+    if (typeof window !== 'undefined' && window.turnstile) {
+      try {
+        if (_turnstileWidgetId !== null) {
+          try { window.turnstile.remove(_turnstileWidgetId); } catch (e) {}
+          _turnstileWidgetId = null;
+        }
+        container.innerHTML = '';
+        _turnstileWidgetId = window.turnstile.render('#turnstile-container', {
+          sitekey: TURNSTILE_SITE_KEY,
+          theme: state.theme === 'dark' ? 'dark' : 'light',
+          language: state.lang === 'ar' ? 'ar' : 'en',
+          execution: 'execute', // Passive mode: triggers strictly on submit, never loops or blocks
+          appearance: 'interaction-only',
+          retry: 'never',
+          'refresh-expired': 'auto'
+        });
+      } catch (err) {
+        console.warn('[Turnstile] Passive registration:', err.message);
+      }
+    }
+  };
+
+  if (typeof window !== 'undefined' && window.turnstile) {
+    initTurnstile();
+  } else {
+    let checkAttempts = 0;
+    const checkTimer = setInterval(() => {
+      checkAttempts++;
+      if (typeof window !== 'undefined' && window.turnstile) {
+        clearInterval(checkTimer);
+        initTurnstile();
+      } else if (checkAttempts > 15) {
+        clearInterval(checkTimer);
+      }
+    }, 200);
+  }
+
   const showLoginError = (msg) => {
     const errBox = document.getElementById('login-error-container');
     if (errBox) {
-      errBox.innerHTML = msg ? `<div class="login-demo" style="border-color:var(--red-soft);background:var(--red-soft);color:var(--red);margin-top:0;margin-bottom:15px">${icon('alert', 15)}<span>${esc(msg)}</span></div>` : '';
+      errBox.innerHTML = msg ? `
+        <div class="login-demo" style="border-color:rgba(239,68,68,0.3);background:rgba(239,68,68,0.08);color:var(--red);margin-top:0;margin-bottom:15px;padding:10px 14px;border-radius:8px;font-size:12.5px;display:flex;align-items:center;gap:8px;line-height:1.5;">
+          ${icon('alert', 16)}
+          <span>${esc(msg)}</span>
+        </div>` : '';
     } else {
       renderLogin(msg, 'login');
     }
@@ -280,11 +330,71 @@ export function renderLogin(errorMessage = '', mode = 'login', isSuccess = false
     const rememberMe = document.getElementById('remember-email-check')?.checked;
     const button = event.currentTarget.querySelector('button[type="submit"]');
     const defaultBtnHtml = `${icon(state.lang === 'ar' ? 'arrowLeft' : 'arrowRight', 16)} ${t('login')}`;
+    
+    // Clear previous error
+    showLoginError('');
+
     button.disabled = true;
-    button.innerHTML = `<span>${choose('جاري التحقق وتسجيل الدخول...', 'Verifying & signing in...')}</span>`;
+    button.innerHTML = `<span>⏳ ${choose('جاري التحقق وتسجيل الدخول...', 'Verifying & signing in...')}</span>`;
 
     const isDemo = email.trim().toLowerCase() === 'demo@darc-design.bond' || email.trim().toLowerCase() === 'demo@darc.local';
-    const turnstileToken = isDemo ? 'bypass_dev' : 'fallback_client';
+
+    // 2. Resolve Turnstile challenge on demand with a strict 1.8s timeout
+    const getTurnstileToken = async () => {
+      if (isDemo || typeof window === 'undefined' || !window.turnstile || _turnstileWidgetId === null) {
+        return isDemo ? 'bypass_dev' : 'fallback_client';
+      }
+
+      return new Promise((resolve) => {
+        let isDone = false;
+        const timer = setTimeout(() => {
+          if (!isDone) {
+            isDone = true;
+            resolve('fallback_client');
+          }
+        }, 1800);
+
+        try {
+          window.turnstile.execute(_turnstileWidgetId, {
+            callback: (token) => {
+              if (!isDone) {
+                isDone = true;
+                clearTimeout(timer);
+                resolve(token || 'fallback_client');
+              }
+            },
+            'error-callback': (code) => {
+              console.warn('[Turnstile] Challenge notice code:', code);
+              if (!isDone) {
+                isDone = true;
+                clearTimeout(timer);
+                resolve('fallback_client');
+              }
+            },
+            'timeout-callback': () => {
+              if (!isDone) {
+                isDone = true;
+                clearTimeout(timer);
+                resolve('fallback_client');
+              }
+            }
+          });
+        } catch (e) {
+          if (!isDone) {
+            isDone = true;
+            clearTimeout(timer);
+            resolve('fallback_client');
+          }
+        }
+      });
+    };
+
+    let turnstileToken = 'fallback_client';
+    try {
+      turnstileToken = await getTurnstileToken();
+    } catch (e) {
+      turnstileToken = 'fallback_client';
+    }
     
     try {
       const loginRes = await api('/api/auth/login', {
@@ -312,17 +422,43 @@ export function renderLogin(errorMessage = '', mode = 'login', isSuccess = false
         button.disabled = false;
         button.innerHTML = defaultBtnHtml;
       }
-      if (typeof window !== 'undefined' && window.turnstile && window._turnstileWidgetId !== undefined) {
-        try { window.turnstile.reset(window._turnstileWidgetId); } catch (e) {}
+      if (typeof window !== 'undefined' && window.turnstile && _turnstileWidgetId !== null) {
+        try { window.turnstile.reset(_turnstileWidgetId); } catch (e) {}
       }
-      window._lastTurnstileToken = '';
-      if (error.message && (error.message.includes('429') || error.message.includes('كثيرة') || error.message.includes('rate'))) {
-        showLoginError(error.message);
+
+      // 3. User-Friendly, crystal-clear Arabic error clarification
+      let friendlyMessage = error.message;
+
+      if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        friendlyMessage = choose(
+          'لا يوجد اتصال بالإنترنت. يرجى التحقق من الشبكة وإعادة المحاولة.',
+          'No internet connection. Please check your network and try again.'
+        );
+      } else if (error.message && (error.message.includes('429') || error.message.includes('كثيرة') || error.message.includes('rate'))) {
+        friendlyMessage = choose(
+          'تم تجاوز عدد محاولات الدخول المسموحة لحماية الحساب. يرجى الانتظار دقيقة واحدة قبل المحاولة مجدداً.',
+          'Too many login attempts. For security, please wait one minute before trying again.'
+        );
         const newBtn = document.querySelector('#login-form button[type="submit"]');
         startRateLimitCountdown(newBtn, 60);
-      } else {
-        showLoginError(error.message || choose('فشل تسجيل الدخول، يرجى التحقق من البيانات.', 'Login failed, please check your credentials.'));
+      } else if (error.message && (error.message.includes('401') || error.message.includes('غير صحيحة') || error.message.includes('credentials'))) {
+        friendlyMessage = choose(
+          'البريد الإلكتروني أو كلمة المرور غير صحيحة. يرجى التحقق من صحة المدخلات وإعادة المحاولة.',
+          'Incorrect email or password. Please verify your credentials and try again.'
+        );
+      } else if (error.message && (error.message.includes('مفعل') || error.message.includes('موقوف') || error.message.includes('inactive'))) {
+        friendlyMessage = choose(
+          'حسابك معطل أو غير مفعل حالياً. يرجى التواصل مع مسؤول النظام لإعادة التفعيل.',
+          'This account is suspended or inactive. Please contact your system administrator.'
+        );
+      } else if (!friendlyMessage || friendlyMessage.includes('Failed to fetch') || friendlyMessage.includes('NetworkError') || friendlyMessage.includes('Network request failed')) {
+        friendlyMessage = choose(
+          'تعذر الاتصال بخادم تسجيل الدخول. يرجى التأكد من استقرار الإنترنت وإعادة المحاولة.',
+          'Could not reach the authentication server. Please check your connection and try again.'
+        );
       }
+
+      showLoginError(friendlyMessage);
     }
   });
 
