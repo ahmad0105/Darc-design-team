@@ -31,6 +31,10 @@ app.get('/', async (c) => {
     hasManageTrash = userRole?.permissions?.includes('manage_trash') || userRole?.permissions?.includes('*');
   }
 
+  if (!hasManageTrash) {
+    return c.json({ error: 'غير مصرح لك بالوصول إلى سلة المهملات، تتطلب صلاحية إدارة سلة المهملات' }, 403);
+  }
+
   // 1. Fetch soft-deleted records and deletion audit logs in parallel
   const [projRes, taskRes, docRes, auditRes] = await Promise.all([
     supabase.from('projects')
@@ -208,11 +212,16 @@ app.get('/', async (c) => {
 // DELETE /api/trash/empty — Permanently purges all items currently in the trash bin
 app.delete('/empty', async (c) => {
   const roleId = c.get('roleId');
-  if (roleId !== 'admin') {
-    return c.json({ error: 'غير مصرح لك بإفراغ سلة المهملات، الصلاحية للمشرفين فقط' }, 403);
+  const supabase = c.get('supabase');
+  let hasManageTrash = roleId === 'admin';
+  if (!hasManageTrash) {
+    const { data: userRole } = await supabase.from('roles').select('permissions').eq('id', roleId).single();
+    hasManageTrash = userRole?.permissions?.includes('manage_trash') || userRole?.permissions?.includes('*');
   }
 
-  const supabase = c.get('supabase');
+  if (!hasManageTrash) {
+    return c.json({ error: 'غير مصرح لك بإفراغ سلة المهملات، الصلاحية للمشرفين ولمدراء سلة المهملات فقط' }, 403);
+  }
 
   try {
     // 1. Purge all soft-deleted documents (and remove from Google Drive)
@@ -295,6 +304,15 @@ app.delete('/:type/:id', async (c) => {
   const supabase = c.get('supabase');
 
   const isGlobalAdmin = roleId === 'admin';
+  let hasManageTrash = isGlobalAdmin;
+  if (!hasManageTrash) {
+    const { data: userRole } = await supabase.from('roles').select('permissions').eq('id', roleId).single();
+    hasManageTrash = userRole?.permissions?.includes('manage_trash') || userRole?.permissions?.includes('*');
+  }
+
+  if (!hasManageTrash) {
+    return c.json({ error: 'غير مصرح لك بالحذف النهائي، تتطلب هذه العملية صلاحية إدارة سلة المهملات' }, 403);
+  }
 
   try {
     if (type === 'document') {

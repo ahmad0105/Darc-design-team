@@ -30,8 +30,15 @@ export const PERMISSION_ALIASES = {
   delete_tasks: ['manage_tasks', 'delete_tasks', 'delete_task'],
   manage_tasks: ['manage_tasks', 'create_tasks', 'edit_tasks', 'delete_tasks', 'create_task', 'edit_task'],
   manage_templates: ['manage_templates', 'manage_template'],
-  manage_company: ['manage_company'],
-  manage_roles: ['manage_roles', 'manage_role']
+  manage_company: ['manage_company', 'manage_settings'],
+  manage_settings: ['manage_settings', 'manage_company'],
+  manage_roles: ['manage_roles', 'manage_role'],
+  manage_role: ['manage_roles', 'manage_role'],
+  manage_users: ['manage_users', 'manage_existing_account_permissions'],
+  manage_existing_account_permissions: ['manage_existing_account_permissions', 'manage_users'],
+  manage_trash: ['manage_trash'],
+  view_audit_logs: ['view_audit_logs'],
+  view_user_activity: ['view_user_activity', 'manage_users']
 };
 
 export async function hasPermission(supabase, userId, baseRoleId, permission, projectId = null) {

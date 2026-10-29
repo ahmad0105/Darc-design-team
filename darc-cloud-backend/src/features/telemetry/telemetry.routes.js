@@ -9,8 +9,32 @@ import {
   triggerManualIncidentTest
 } from './telemetry.service.js';
 import { sendEmail } from '../email/email.service.js';
+import { getDB } from '../../core/db.js';
+import { hasPermission } from '../../utils/permissions.js';
 
 const app = new Hono();
+
+app.use('*', async (c, next) => {
+  c.set('supabase', getDB(c.env));
+  await next();
+});
+
+const canViewAnalytics = async (c) => {
+  const roleId = c.get('roleId');
+  const userId = c.get('userId');
+  const supabase = c.get('supabase');
+  if (roleId === 'admin') return true;
+  return (await hasPermission(supabase, userId, roleId, 'manage_settings')) ||
+         (await hasPermission(supabase, userId, roleId, 'view_audit_logs'));
+};
+
+const canManageDiagnostics = async (c) => {
+  const roleId = c.get('roleId');
+  const userId = c.get('userId');
+  const supabase = c.get('supabase');
+  if (roleId === 'admin') return true;
+  return await hasPermission(supabase, userId, roleId, 'manage_settings');
+};
 
 // Helper to extract device and browser from User-Agent
 function parseClientInfo(userAgent = '') {
@@ -34,7 +58,10 @@ function parseClientInfo(userAgent = '') {
 }
 
 // 1. Analytics & Telemetry Overview for Admins & Performance Monitoring
-app.get('/analytics', (c) => {
+app.get('/analytics', async (c) => {
+  if (!(await canViewAnalytics(c))) {
+    return c.json({ error: 'غير مصرح لك بعرض لوحة التحليلات والمراقبة' }, 403);
+  }
   const analytics = getTelemetryAnalytics();
   return c.json({ ok: true, data: analytics });
 });
@@ -103,7 +130,10 @@ app.post('/report-error', async (c) => {
 });
 
 // 4. Get User Incidents & Diagnostics Breakdown
-app.get('/incidents', (c) => {
+app.get('/incidents', async (c) => {
+  if (!(await canManageDiagnostics(c))) {
+    return c.json({ error: 'غير مصرح لك بعرض تشخيصات وسجلات الأعطال' }, 403);
+  }
   const userIdFilter = c.req.query('userId') || null;
   const result = getIncidentsPerUser(userIdFilter);
   return c.json(result);
@@ -111,6 +141,9 @@ app.get('/incidents', (c) => {
 
 // 5. Resolve an Incident
 app.patch('/incidents/:id/resolve', async (c) => {
+  if (!(await canManageDiagnostics(c))) {
+    return c.json({ error: 'غير مصرح لك بمعالجة بلاغات الأعطال' }, 403);
+  }
   const incidentId = c.req.param('id');
   const userId = c.get('userId') || 'Admin';
   const result = resolveIncident(incidentId, userId);
@@ -119,6 +152,9 @@ app.patch('/incidents/:id/resolve', async (c) => {
 
 // 6. Trigger Test Incident (Simulates a deep error report + email alert)
 app.post('/test-error', async (c) => {
+  if (!(await canManageDiagnostics(c))) {
+    return c.json({ error: 'غير مصرح لك بإجراء محاكاة للأعطال' }, 403);
+  }
   const body = await c.req.json().catch(() => ({}));
   const userId = body.userId || c.get('userId') || 'usr_demo_arch';
   const result = await triggerManualIncidentTest(c.env, userId);
@@ -127,6 +163,9 @@ app.post('/test-error', async (c) => {
 
 // 7. Test Alert Email Dispatch directly
 app.post('/test-email', async (c) => {
+  if (!(await canManageDiagnostics(c))) {
+    return c.json({ error: 'غير مصرح لك باختبار التنبيهات البريدية' }, 403);
+  }
   try {
     const body = await c.req.json().catch(() => ({}));
     const recipient = body.to || c.env?.ALERT_EMAIL || 'admin@darc-design.bond';
@@ -150,6 +189,9 @@ app.post('/test-email', async (c) => {
 
 // 8. Trigger Test Anomaly Alert (For testing anomaly detection)
 app.post('/test-anomaly', async (c) => {
+  if (!(await canManageDiagnostics(c))) {
+    return c.json({ error: 'غير مصرح لك بإجراء محاكاة التنبيهات' }, 403);
+  }
   const userId = c.get('userId') || 'usr_demo';
   const result = triggerManualAnomalyTest(c.env, userId);
   return c.json({ ok: true, message: 'تم إطلاق فحص استهلاك الموارد بنجاح وإرسال التنبيه للإشعارات والبريد.', ...result });

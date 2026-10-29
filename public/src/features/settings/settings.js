@@ -596,29 +596,45 @@ export async function fetchFullAuditHistory() {
   }
 }
 
+export function canAccessSettingsSection(sectionKey) {
+  const userIsAdmin = isAdmin();
+  if (sectionKey === 'profile' || sectionKey === 'security') return true;
+  if (sectionKey === 'company') return userIsAdmin || can('manage_settings');
+  if (sectionKey === 'roles') return userIsAdmin || can('manage_roles');
+  if (sectionKey === 'accounts') return userIsAdmin || can('manage_users') || can('manage_existing_account_permissions') || can('view_user_activity');
+  if (sectionKey === 'trash') return userIsAdmin || can('manage_trash');
+  if (sectionKey === 'audit') return userIsAdmin || can('view_audit_logs');
+  if (sectionKey === 'analytics') return userIsAdmin || can('manage_settings') || can('view_audit_logs');
+  if (sectionKey === 'diagnostics') return userIsAdmin || can('manage_settings');
+  return false;
+}
+
 export function renderSettings() {
   const currentUserId = state.data?.user?.id;
   const userIsAdmin = isAdmin();
-  const canAccessAccounts = userIsAdmin || can('manage_users') || can('view_user_activity');
+  const canAccessCompany = canAccessSettingsSection('company');
+  const canAccessRoles = canAccessSettingsSection('roles');
+  const canAccessAccounts = canAccessSettingsSection('accounts');
+  const canAccessTrash = canAccessSettingsSection('trash');
+  const canAccessAudit = canAccessSettingsSection('audit');
+  const canAccessAnalytics = canAccessSettingsSection('analytics');
+  const canAccessDiagnostics = canAccessSettingsSection('diagnostics');
 
-  // Settings tabs: All users can access Profile and Security
-  // Admins or authorized roles also get Company, Roles, Accounts, Trash, Audit
+  // Granular settings tabs strictly gated by permissions
   const sections = [
     ['profile', choose('الملف الشخصي', 'Profile')],
-    ...(userIsAdmin || can('manage_settings') ? [['company', t('company')]] : []),
-    ...(userIsAdmin || can('manage_roles') ? [['roles', t('roles')]] : []),
+    ...(canAccessCompany ? [['company', t('company')]] : []),
+    ...(canAccessRoles ? [['roles', t('roles')]] : []),
     ...(canAccessAccounts ? [['accounts', t('accounts')]] : []),
     ['security', choose('الأمان', 'Security')],
-    ['trash', choose('سلة المهملات', 'Trash')],
-    ...(userIsAdmin || can('view_audit_logs') ? [['audit', t('audit')]] : []),
-    ...(userIsAdmin || can('view_dashboard') || can('view_reports') ? [
-      ['analytics', choose('المراقبة والزيارات والأداء 📈', 'Observability & Analytics 📈')],
-      ['diagnostics', choose('تشخيص الأعطال والمستخدمين 🛠️', 'Error Logs & User Diagnostics 🛠️')]
-    ] : [])
+    ...(canAccessTrash ? [['trash', choose('سلة المهملات', 'Trash')]] : []),
+    ...(canAccessAudit ? [['audit', t('audit')]] : []),
+    ...(canAccessAnalytics ? [['analytics', choose('المراقبة والزيارات والأداء 📈', 'Observability & Analytics 📈')]] : []),
+    ...(canAccessDiagnostics ? [['diagnostics', choose('تشخيص الأعطال والمستخدمين 🛠️', 'Error Logs & User Diagnostics 🛠️')]] : [])
   ];
 
   if (!sections.some(([k]) => k === state.settingsSection)) {
-    state.settingsSection = 'profile';
+    state.settingsSection = sections[0]?.[0] || 'profile';
   }
 
   const currentUser = state.data?.user || {};
@@ -922,8 +938,8 @@ export function renderSettings() {
     `;
   }
 
-  // TRASH SECTION (Available to all users, scoped by project membership)
-  if (state.settingsSection === 'trash') {
+  // TRASH SECTION (Strictly gated by manage_trash or admin)
+  if (state.settingsSection === 'trash' && canAccessTrash) {
     // Restore from session cache immediately to eliminate empty flash on refresh
     if (!state.trash && typeof sessionStorage !== 'undefined') {
       try {
@@ -1326,22 +1342,24 @@ export function renderSettings() {
     `;
   }
 
-  // ANALYTICS & OBSERVABILITY SECTION
-  if (state.settingsSection === 'analytics' && (userIsAdmin || can('view_dashboard') || can('view_reports'))) {
+  // ANALYTICS & OBSERVABILITY SECTION (Gated by manage_settings, view_audit_logs, or admin)
+  if (state.settingsSection === 'analytics' && canAccessAnalytics) {
     content = renderAnalyticsSection();
   }
 
-  // USER ERROR DIAGNOSTICS & INCIDENTS SECTION
-  if (state.settingsSection === 'diagnostics' && (userIsAdmin || can('view_dashboard') || can('view_reports'))) {
+  // USER ERROR DIAGNOSTICS & INCIDENTS SECTION (Strictly gated by manage_settings or admin)
+  if (state.settingsSection === 'diagnostics' && canAccessDiagnostics) {
     content = renderDiagnosticsSection();
   }
+
+  const hasAdminRights = userIsAdmin || can('manage_settings') || can('manage_roles') || can('manage_users') || can('manage_trash') || can('view_audit_logs');
 
   return `
     <div class="page-head">
       <div>
-        <p class="eyebrow">${userIsAdmin ? choose('تحكم مركزي', 'CENTRAL CONTROL') : choose('الملف الشخصي', 'USER PROFILE')}</p>
-        <h1>${userIsAdmin ? t('settings') : choose('الملف الشخصي والأمان', 'Profile & Security')}</h1>
-        <p>${userIsAdmin ? choose('إدارة إعدادات الشركة والحسابات والأدوار والنظام.', 'Manage workspace, accounts, roles, and settings.') : choose('إدارة معلومات حسابك وكلمة المرور وصورتك الشخصية.', 'Manage your account info, password, and personal avatar.')}</p>
+        <p class="eyebrow">${hasAdminRights ? choose('تحكم مركزي', 'CENTRAL CONTROL') : choose('الملف الشخصي', 'USER PROFILE')}</p>
+        <h1>${hasAdminRights ? t('settings') : choose('الملف الشخصي والأمان', 'Profile & Security')}</h1>
+        <p>${hasAdminRights ? choose('إدارة إعدادات الشركة والحسابات والأدوار والنظام.', 'Manage workspace, accounts, roles, and settings.') : choose('إدارة معلومات حسابك وكلمة المرور وصورتك الشخصية.', 'Manage your account info, password, and personal avatar.')}</p>
       </div>
       <div class="page-actions">
         <span class="status-badge done">${icon(userIsAdmin ? 'shield' : 'user', 13)} ${esc(roleName(currentUser))}</span>

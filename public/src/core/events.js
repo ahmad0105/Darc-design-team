@@ -8,7 +8,7 @@ import { showToast, modalShell, closeModal, renderLoading } from '../shared/ui.j
 import { setSavedTaskSort, openDocumentPreviewModal, renderTaskDocuments } from '../features/tasks/tasks.js';
 import { getPendingMutations, syncPendingMutations, getOfflineBootstrap, clearOfflineBootstrap, saveOfflineBootstrap } from './offline.js';
 import { exportPortfolioXLS, exportProjectXLS, exportProjectPDF, exportPortfolioPDF } from '../features/projects/projects.js';
-import { exportAuditLogsXLS, printAuditReport, fetchFullAuditHistory } from '../features/settings/settings.js';
+import { exportAuditLogsXLS, printAuditReport, fetchFullAuditHistory, canAccessSettingsSection } from '../features/settings/settings.js';
 import { fetchAnalyticsData } from '../features/settings/analytics.js';
 import { fetchDiagnosticsData, setDiagnosticsUserFilter, setDiagnosticsSeverityFilter, setDiagnosticsStatusFilter } from '../features/settings/diagnostics.js';
 import { renderActivation, renderLogin, renderResetPassword } from '../features/auth/auth.js';
@@ -197,6 +197,9 @@ export async function handleSubmit(event) {
     }
     
     if (form.id === 'force-password-form') {
+      if (!isAdmin() && !can('manage_users')) {
+        throw new Error(choose('غير مصرح لك بتعيين كلمة مرور للمستخدمين.', 'Permission denied to set user password.'));
+      }
       const userId = form.dataset.userId;
       const isPending = form.dataset.isPending === 'true';
       await api(`/api/users/${userId}/force-password`, { method: 'POST', body: JSON.stringify(values) });
@@ -211,6 +214,12 @@ export async function handleSubmit(event) {
     if (form.id === 'user-form') {
       const userId = form.dataset.userId;
       const isEdit = !!userId;
+      if (!isEdit && !isAdmin() && !can('manage_users')) {
+        throw new Error(choose('غير مصرح لك بإضافة مستخدمين جدد.', 'Permission denied to create new users.'));
+      }
+      if (isEdit && !isAdmin() && !can('manage_users') && !can('manage_existing_account_permissions')) {
+        throw new Error(choose('غير مصرح لك بتعديل بيانات أو صلاحيات المستخدمين.', 'Permission denied to edit user accounts or permissions.'));
+      }
       const res = await api(isEdit ? `/api/users/${userId}` : '/api/users', { method: isEdit ? 'PATCH' : 'POST', body: JSON.stringify(values) });
       if (res.user) {
         if (!state.data.users) state.data.users = [];
@@ -227,6 +236,9 @@ export async function handleSubmit(event) {
       return;
     }
     if (form.id === 'role-form') {
+      if (!isAdmin() && !can('manage_roles')) {
+        throw new Error(choose('غير مصرح لك بإدارة وتعديل الأدوار.', 'Permission denied to manage roles.'));
+      }
       const roleId = form.dataset.roleId;
       const permissions = [...form.querySelectorAll('input[name="permissions"]:checked')].map((el) => el.value);
       const isEdit = !!roleId;
@@ -280,6 +292,9 @@ export async function handleSubmit(event) {
       return;
     }
     if (form.dataset.action === 'update-company') {
+      if (!isAdmin() && !can('manage_settings')) {
+        throw new Error(choose('غير مصرح لك بتحديث إعدادات الشركة.', 'Permission denied to update company settings.'));
+      }
       const res = await api('/api/company', { method: 'PATCH', body: JSON.stringify(values) });
       if (res.company) state.data.company = { ...state.data.company, ...res.company };
       renderView();
@@ -353,6 +368,10 @@ export async function handleClick(event) {
   }
 
   if (action === 'trigger-company-logo-upload') {
+    if (!isAdmin() && !can('manage_settings')) {
+      showToast(choose('غير مصرح لك بتغيير شعار الشركة.', 'Permission denied to change company logo.'), true);
+      return;
+    }
     const input = document.getElementById('company-logo-file-input');
     if (input) input.click();
     return;
@@ -852,8 +871,22 @@ export async function handleClick(event) {
     return;
   }
   if (action === 'new-task') { openTaskModal(null, null, target.dataset.projectId); return; }
-  if (action === 'new-user') { openUserModal(); return; }
-  if (action === 'new-role') { openRoleModal(); return; }
+  if (action === 'new-user') {
+    if (!isAdmin() && !can('manage_users')) {
+      showToast(choose('غير مصرح لك بإضافة مستخدمين جدد.', 'Permission denied to create new users.'), true);
+      return;
+    }
+    openUserModal();
+    return;
+  }
+  if (action === 'new-role') {
+    if (!isAdmin() && !can('manage_roles')) {
+      showToast(choose('غير مصرح لك بإنشاء أدوار جديدة.', 'Permission denied to create new roles.'), true);
+      return;
+    }
+    openRoleModal();
+    return;
+  }
   if (action === 'new-template') { openTemplateModal(); return; }
   if (action === 'edit-template') { const template = state.data.templates.find((item) => item.id === target.dataset.templateId); if (template) openTemplateModal(template); return; }
   if (action === 'delete-template') { 
@@ -980,8 +1013,20 @@ export async function handleClick(event) {
     return;
   }
   if (action === 'use-template') { if (!state.data.projects.length) return showToast(t('noProjects'), true); openTaskModal(null, target.dataset.templateId, state.activeProjectId); return; }
-  if (action === 'open-user') { const user = state.data.users.find((item) => item.id === target.dataset.userId); if (user) openUserModal(user); return; }
+  if (action === 'open-user') {
+    if (!isAdmin() && !can('manage_users') && !can('manage_existing_account_permissions')) {
+      showToast(choose('غير مصرح لك بتعديل بيانات أو صلاحيات المستخدمين.', 'Permission denied to edit user accounts or permissions.'), true);
+      return;
+    }
+    const user = state.data.users.find((item) => item.id === target.dataset.userId);
+    if (user) openUserModal(user);
+    return;
+  }
   if (action === 'impersonate-user') {
+    if (!isAdmin()) {
+      showToast(choose('هذه الصلاحية خاصة بمدير النظام فقط.', 'Impersonation is restricted to system admin only.'), true);
+      return;
+    }
     if (!window.confirm('هل أنت متأكد أنك تريد الدخول كـ هذا الحساب؟ للعودة ستحتاج لتسجيل الخروج والدخول بحسابك مجدداً.')) return;
     try {
       const res = await api(`/api/users/${target.dataset.userId}/impersonate`, { method: 'POST' });
@@ -993,13 +1038,27 @@ export async function handleClick(event) {
     return;
   }
   if (action === 'force-password-user') {
+    if (!isAdmin() && !can('manage_users')) {
+      showToast(choose('غير مصرح لك بتعيين كلمة مرور للمستخدمين.', 'Permission denied to set user password.'), true);
+      return;
+    }
     const user = state.data.users.find((item) => item.id === target.dataset.userId);
     if (user) openForcePasswordModal(user);
     return;
   }
 
-  if (action === 'invite-user') { try { const result = await api(`/api/users/${target.dataset.userId}/invite`, { method: 'POST' }); await refreshView(); showToast(result.emailConfigured ? choose('تم إرسال الدعوة.', 'Invitation sent.') : choose('تم تجهيز الدعوة، لكن مزود البريد غير مكوّن.', 'Invite prepared, but the email provider is not configured.')); } catch (error) { showToast(error.message, true); } return; }
+  if (action === 'invite-user') { 
+    if (!isAdmin() && !can('manage_users')) {
+      showToast(choose('غير مصرح لك بإرسال دعوات للمستخدمين.', 'Permission denied to invite users.'), true);
+      return;
+    }
+    try { const result = await api(`/api/users/${target.dataset.userId}/invite`, { method: 'POST' }); await refreshView(); showToast(result.emailConfigured ? choose('تم إرسال الدعوة.', 'Invitation sent.') : choose('تم تجهيز الدعوة، لكن مزود البريد غير مكوّن.', 'Invite prepared, but the email provider is not configured.')); } catch (error) { showToast(error.message, true); } return; 
+  }
   if (action === 'deactivate-user') { 
+    if (!isAdmin() && !can('manage_users')) {
+      showToast(choose('غير مصرح لك بتعطيل حسابات المستخدمين.', 'Permission denied to deactivate users.'), true);
+      return;
+    }
     if (!window.confirm(t('confirmDeactivate'))) return; 
     
     const userId = target.dataset.userId;
@@ -1021,7 +1080,12 @@ export async function handleClick(event) {
     return; 
   }
   if (action === 'settings-section') { 
-    state.settingsSection = target.dataset.section || 'profile'; 
+    const requested = target.dataset.section || 'profile';
+    if (!canAccessSettingsSection(requested)) {
+      showToast(choose('غير مصرح لك بالوصول لهذا القسم من الإعدادات.', 'Access denied to this settings section.'), true);
+      return;
+    }
+    state.settingsSection = requested; 
     try {
       if (typeof window !== 'undefined') {
         window._isInternalNav = true;
@@ -1055,6 +1119,10 @@ export async function handleClick(event) {
     return; 
   }
   if (action === 'refresh-analytics') {
+    if (!canAccessSettingsSection('analytics')) {
+      showToast(choose('غير مصرح لك بعرض وتحديث التحليلات والمراقبة.', 'Permission denied to view and refresh analytics.'), true);
+      return;
+    }
     try {
       await fetchAnalyticsData(true);
       renderView();
@@ -1065,6 +1133,10 @@ export async function handleClick(event) {
     return;
   }
   if (action === 'test-anomaly-alert') {
+    if (!isAdmin() && !can('manage_settings')) {
+      showToast(choose('غير مصرح لك بإجراء محاكاة التنبيهات.', 'Permission denied to simulate anomaly alert.'), true);
+      return;
+    }
     try {
       const res = await api('/api/telemetry/test-anomaly', { method: 'POST' });
       await fetchAnalyticsData(true);
@@ -1077,6 +1149,10 @@ export async function handleClick(event) {
     return;
   }
   if (action === 'goto-diagnostics') {
+    if (!isAdmin() && !can('manage_settings')) {
+      showToast(choose('غير مصرح لك بالوصول لتشخيص الأعطال.', 'Permission denied to access diagnostics.'), true);
+      return;
+    }
     state.settingsSection = 'diagnostics';
     if (typeof history !== 'undefined' && history.replaceState) {
       history.replaceState(null, '', '#settings?section=diagnostics');
@@ -1085,6 +1161,10 @@ export async function handleClick(event) {
     return;
   }
   if (action === 'refresh-diagnostics') {
+    if (!isAdmin() && !can('manage_settings')) {
+      showToast(choose('غير مصرح لك بتحديث سجل الأعطال.', 'Permission denied to refresh diagnostics.'), true);
+      return;
+    }
     try {
       await fetchDiagnosticsData(true);
       renderView();
@@ -1095,6 +1175,10 @@ export async function handleClick(event) {
     return;
   }
   if (action === 'test-incident-simulate') {
+    if (!isAdmin() && !can('manage_settings')) {
+      showToast(choose('غير مصرح لك بإجراء محاكاة للأعطال.', 'Permission denied to simulate error incidents.'), true);
+      return;
+    }
     try {
       const res = await api('/api/telemetry/test-error', { method: 'POST' });
       await fetchDiagnosticsData(true);
@@ -1107,6 +1191,10 @@ export async function handleClick(event) {
     return;
   }
   if (action === 'test-diagnostic-email') {
+    if (!isAdmin() && !can('manage_settings')) {
+      showToast(choose('غير مصرح لك باختبار إرسال البريد.', 'Permission denied to test alert email.'), true);
+      return;
+    }
     try {
       const res = await api('/api/telemetry/test-email', { method: 'POST' });
       showToast(choose('✉️ تم إرسال رسالة اختبار التنبيهات البريدية للإدارة بنجاح!', '✉️ Test alert email dispatched to admin successfully!'));
@@ -1127,6 +1215,10 @@ export async function handleClick(event) {
     return;
   }
   if (action === 'resolve-diagnostic-incident') {
+    if (!isAdmin() && !can('manage_settings')) {
+      showToast(choose('غير مصرح لك بمعالجة بلاغات الأعطال.', 'Permission denied to resolve incidents.'), true);
+      return;
+    }
     const incId = target.dataset.incidentId;
     if (incId) {
       try {
@@ -1152,6 +1244,10 @@ export async function handleClick(event) {
     return;
   }
   if (action === 'restore-item') {
+    if (!isAdmin() && !can('manage_trash')) {
+      showToast(choose('غير مصرح لك باستعادة العناصر المحذوفة.', 'Permission denied to restore deleted items.'), true);
+      return;
+    }
     try {
       await api(`/api/restore/${target.dataset.type}/${target.dataset.id}`, { method: 'POST' });
       const data = await api('/api/trash');
@@ -1167,11 +1263,16 @@ export async function handleClick(event) {
     return;
   }
   if (action === 'filter-trash') {
+    if (!isAdmin() && !can('manage_trash')) return;
     state.trashFilter = target.dataset.filter;
     requestAnimationFrame(() => renderView());
     return;
   }
   if (action === 'purge-trash-item') {
+    if (!isAdmin() && !can('manage_trash')) {
+      showToast(choose('غير مصرح لك بحذف العناصر نهائياً من سلة المهملات.', 'Permission denied to permanently delete trash items.'), true);
+      return;
+    }
     const type = target.dataset.type;
     const id = target.dataset.id;
     if (!window.confirm(choose('هل أنت متأكد من الحذف النهائي لهذا العنصر؟ لا يمكن التراجع عن هذا الإجراء.', 'Are you sure you want to permanently delete this item? This action cannot be undone.'))) return;
@@ -1189,6 +1290,10 @@ export async function handleClick(event) {
     return;
   }
   if (action === 'empty-trash') {
+    if (!isAdmin() && !can('manage_trash')) {
+      showToast(choose('غير مصرح لك بإفراغ سلة المهملات.', 'Permission denied to empty trash.'), true);
+      return;
+    }
     if (!window.confirm(choose('هل أنت متأكد تماماً من إفراغ سلة المهملات بالكامل؟ سيتم مسح كافة العناصر المحذوفة نهائياً ولا يمكن استرجاعها.', 'Are you sure you want to empty the entire recycle bin? All items will be permanently erased.'))) return;
     try {
       await api('/api/trash/empty', { method: 'DELETE' });
@@ -1198,8 +1303,20 @@ export async function handleClick(event) {
     } catch(e) { showToast(e.message, true); }
     return;
   }
-  if (action === 'open-role') { const role = state.data.roles.find((item) => item.id === target.dataset.roleId); if (role) openRoleModal(role); return; }
+  if (action === 'open-role') {
+    if (!isAdmin() && !can('manage_roles')) {
+      showToast(choose('غير مصرح لك بتعديل الأدوار والصلاحيات.', 'Permission denied to modify roles.'), true);
+      return;
+    }
+    const role = state.data.roles.find((item) => item.id === target.dataset.roleId);
+    if (role) openRoleModal(role);
+    return;
+  }
   if (action === 'delete-role') { 
+    if (!isAdmin() && !can('manage_roles')) {
+      showToast(choose('غير مصرح لك بحذف الأدوار.', 'Permission denied to delete roles.'), true);
+      return;
+    }
     if (!window.confirm(t('confirmDeleteRole'))) return; 
     
     const roleId = target.dataset.roleId;
@@ -1276,6 +1393,10 @@ export async function handleClick(event) {
     return;
   }
   if (action === 'load-full-audit') {
+    if (!isAdmin() && !can('view_audit_logs')) {
+      showToast(choose('غير مصرح لك باستعراض سجل التدقيق الكامل.', 'Permission denied to view full audit logs.'), true);
+      return;
+    }
     fetchFullAuditHistory();
     return;
   }
@@ -1544,6 +1665,11 @@ export async function handleChange(event) {
   }
 
   if (event.target.id === 'company-logo-file-input') {
+    if (!isAdmin() && !can('manage_settings')) {
+      showToast(choose('غير مصرح لك بتغيير شعار الشركة.', 'Permission denied to change company logo.'), true);
+      event.target.value = '';
+      return;
+    }
     const file = event.target.files?.[0];
     if (!file) return;
     if (file.size > 3 * 1024 * 1024) {
@@ -2501,7 +2627,19 @@ if (typeof window !== 'undefined' && !window._hashChangeListenerSet) {
         const q = new URLSearchParams(queryPart);
         if (q.get('id')) pid = q.get('id');
         if (q.get('tab')) state.projectTab = q.get('tab');
-        if (q.get('section')) state.settingsSection = q.get('section');
+        if (q.get('section')) {
+          const reqSec = q.get('section');
+          if (viewPart === 'settings' && state.data && !canAccessSettingsSection(reqSec)) {
+            state.settingsSection = 'profile';
+            if (typeof window !== 'undefined' && window.history && window.history.replaceState) {
+              window.history.replaceState(null, '', '#settings?section=profile');
+            }
+          } else {
+            state.settingsSection = reqSec;
+          }
+        }
+      } else if (viewPart === 'settings' && state.data && !canAccessSettingsSection(state.settingsSection)) {
+        state.settingsSection = 'profile';
       }
       if (state.view !== viewPart || state.activeProjectId !== pid) {
         switchView(viewPart, pid);

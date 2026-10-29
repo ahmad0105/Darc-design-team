@@ -17,6 +17,16 @@ const requireAdmin = async (c, next) => {
   await next();
 };
 
+const requireManageUsers = async (c, next) => {
+  const currentRoleId = c.get('roleId');
+  const currentUserId = c.get('userId');
+  const supabase = c.get('supabase');
+  if (currentRoleId === 'admin' || (await hasPermission(supabase, currentUserId, currentRoleId, 'manage_users'))) {
+    return await next();
+  }
+  return c.json({ error: 'غير مصرح لك بتنفيذ هذه العملية، هذه الصلاحية لمدراء المستخدمين فقط' }, 403);
+};
+
 
 app.use('*', async (c, next) => {
   c.set('supabase', getDB(c.env));
@@ -136,10 +146,15 @@ app.patch('/me', async (c) => {
   return c.json({ ok: true, user: toCamelCase(data) });
 });
 
-app.post('/', requireAdmin, async (c) => {
+app.post('/', requireManageUsers, async (c) => {
   // Creating a new user
   const body = await c.req.json();
   const supabase = c.get('supabase');
+  const currentRoleId = c.get('roleId');
+
+  if (currentRoleId !== 'admin' && body.roleId === 'admin') {
+    return c.json({ error: 'لا يمكن لغير مدير النظام إنشاء حسابات برتبة مدير النظام.' }, 403);
+  }
 
   const email = String(body.email || '').trim().toLowerCase();
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -261,15 +276,19 @@ app.patch('/:id', async (c) => {
   return c.json({ ok: true, user: toCamelCase(data) });
 });
 
-app.post('/:id/deactivate', requireAdmin, async (c) => {
+app.post('/:id/deactivate', requireManageUsers, async (c) => {
   const targetId = c.req.param('id');
   if (!isValidEntityId(targetId)) return c.json({ error: 'معرف غير صالح' }, 400);
   const currentUserId = c.get('userId');
+  const currentRoleId = c.get('roleId');
   if ((targetId === 'usr_ahmad' || targetId === 'usr_ahmed') && currentUserId !== 'usr_ahmad') {
     return c.json({ error: 'محظور: لا يمكن تعديل أو تعطيل حساب مدير ومطور النظام.' }, 403);
   }
   const supabase = c.get('supabase');
-  const { data: user } = await supabase.from('users').select('custom_fields').eq('id', targetId).single();
+  const { data: user } = await supabase.from('users').select('role_id, custom_fields').eq('id', targetId).single();
+  if (user?.role_id === 'admin' && currentRoleId !== 'admin') {
+    return c.json({ error: 'لا يمكن لغير مدير النظام تعطيل حسابات مدراء النظام.' }, 403);
+  }
   const currentVer = Number(user?.custom_fields?.tokenVersion || 1);
   const nextVer = currentVer + 1;
   const newFields = { ...(user?.custom_fields || {}), tokenVersion: nextVer };
@@ -281,16 +300,20 @@ app.post('/:id/deactivate', requireAdmin, async (c) => {
   return c.json({ ok: true });
 });
 
-app.delete('/:id', requireAdmin, async (c) => {
+app.delete('/:id', requireManageUsers, async (c) => {
   const targetId = c.req.param('id');
   if (!isValidEntityId(targetId)) return c.json({ error: 'معرف غير صالح' }, 400);
   const currentUserId = c.get('userId');
+  const currentRoleId = c.get('roleId');
   if (targetId === currentUserId) return c.json({ error: 'لا يمكنك تعطيل حسابك الخاص.' }, 400);
   if ((targetId === 'usr_ahmad' || targetId === 'usr_ahmed') && currentUserId !== 'usr_ahmad') {
     return c.json({ error: 'محظور: لا يمكن تعديل أو تعطيل حساب مدير ومطور النظام.' }, 403);
   }
   const supabase = c.get('supabase');
-  const { data: user } = await supabase.from('users').select('custom_fields').eq('id', targetId).single();
+  const { data: user } = await supabase.from('users').select('role_id, custom_fields').eq('id', targetId).single();
+  if (user?.role_id === 'admin' && currentRoleId !== 'admin') {
+    return c.json({ error: 'لا يمكن لغير مدير النظام تعطيل أو حذف حسابات مدراء النظام.' }, 403);
+  }
   const currentVer = Number(user?.custom_fields?.tokenVersion || 1);
   const nextVer = currentVer + 1;
   const newFields = { ...(user?.custom_fields || {}), tokenVersion: nextVer };
@@ -313,10 +336,11 @@ async function hashPassword(password) {
   });
 }
 
-app.post('/:id/force-password', requireAdmin, async (c) => {
+app.post('/:id/force-password', requireManageUsers, async (c) => {
   const targetId = c.req.param('id');
   if (!isValidEntityId(targetId)) return c.json({ error: 'معرف غير صالح' }, 400);
   const currentUserId = c.get('userId');
+  const currentRoleId = c.get('roleId');
   if ((targetId === 'usr_ahmad' || targetId === 'usr_ahmed') && currentUserId !== 'usr_ahmad') {
     return c.json({ error: 'محظور: لا يمكن تعديل كلمة مرور حساب مدير ومطور النظام.' }, 403);
   }
@@ -325,7 +349,10 @@ app.post('/:id/force-password', requireAdmin, async (c) => {
   const newPassword = String(body.newPassword || body.password || '');
   if (newPassword.length < 10) return c.json({ error: 'كلمة المرور قصيرة جداً (10 أحرف كحد أدنى).' }, 400);
 
-  const { data: user } = await supabase.from('users').select('custom_fields').eq('id', targetId).single();
+  const { data: user } = await supabase.from('users').select('role_id, custom_fields').eq('id', targetId).single();
+  if (user?.role_id === 'admin' && currentRoleId !== 'admin') {
+    return c.json({ error: 'لا يمكن لغير مدير النظام تغيير كلمة مرور حسابات مدراء النظام.' }, 403);
+  }
   const currentVer = Number(user?.custom_fields?.tokenVersion || 1);
   const nextVer = currentVer + 1;
   const newFields = { ...(user?.custom_fields || {}), tokenVersion: nextVer };
@@ -339,16 +366,20 @@ app.post('/:id/force-password', requireAdmin, async (c) => {
   return c.json({ ok: true });
 });
 
-app.post('/:id/invite', requireAdmin, async (c) => {
+app.post('/:id/invite', requireManageUsers, async (c) => {
   const targetId = c.req.param('id');
   if (!isValidEntityId(targetId)) return c.json({ error: 'معرف غير صالح' }, 400);
   const currentUserId = c.get('userId');
+  const currentRoleId = c.get('roleId');
   if ((targetId === 'usr_ahmad' || targetId === 'usr_ahmed') && currentUserId !== 'usr_ahmad') {
     return c.json({ error: 'محظور: لا يمكن دعوة حساب مدير ومطور النظام.' }, 403);
   }
   const supabase = c.get('supabase');
-  const { data: user, error } = await supabase.from('users').select('id, email, name').eq('id', targetId).single();
+  const { data: user, error } = await supabase.from('users').select('id, role_id, email, name').eq('id', targetId).single();
   if (error || !user) return c.json({ error: 'المستخدم غير موجود.' }, 404);
+  if (user.role_id === 'admin' && currentRoleId !== 'admin') {
+    return c.json({ error: 'لا يمكن لغير مدير النظام دعوة حسابات برتبة مدير النظام.' }, 403);
+  }
   if (!user.email) return c.json({ error: 'لا يوجد بريد إلكتروني لهذا المستخدم.' }, 400);
   // Generate invite token and store it
   const { default: cryptoMod } = await import('node:crypto');

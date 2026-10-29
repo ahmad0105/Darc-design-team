@@ -1,27 +1,36 @@
 import { Hono } from 'hono';
 import { getDB } from '../../core/db.js';
-import { invalidateRolesCache } from '../../utils/permissions.js';
+import { invalidateRolesCache, hasPermission } from '../../utils/permissions.js';
 import { invalidateRolesCache as invalidateCoreRolesCache } from '../../core/cache.js';
 import { toCamelCase } from '../../utils/transformers.js';
 import { generateSecureId } from '../../core/security.js';
 
 const app = new Hono();
 
-const requireAdmin = async (c, next) => {
-  if (c.get('roleId') !== 'admin') {
-    return c.json({ error: 'غير مصرح لك بتنفيذ هذه العملية، هذه الصلاحية للمشرف فقط' }, 403);
-  }
-  await next();
-};
-
 app.use('*', async (c, next) => {
   c.set('supabase', getDB(c.env));
   await next();
 });
 
-app.post('/', requireAdmin, async (c) => {
+const requireManageRoles = async (c, next) => {
+  const roleId = c.get('roleId');
+  const userId = c.get('userId');
+  const supabase = c.get('supabase');
+  if (roleId === 'admin' || (await hasPermission(supabase, userId, roleId, 'manage_roles'))) {
+    return await next();
+  }
+  return c.json({ error: 'غير مصرح لك بتنفيذ هذه العملية، هذه الصلاحية لمدراء الأدوار فقط' }, 403);
+};
+
+app.post('/', requireManageRoles, async (c) => {
   const body = await c.req.json();
   const supabase = c.get('supabase');
+  const isSuperAdmin = c.get('roleId') === 'admin';
+
+  if (!isSuperAdmin && body.permissions && body.permissions.includes('*')) {
+    return c.json({ error: 'لا يمكن منح الصلاحية الكاملة (*) إلا من قِبل مدير النظام.' }, 403);
+  }
+
   const id = generateSecureId('rol_');
   
   const roleData = {
@@ -42,11 +51,16 @@ app.post('/', requireAdmin, async (c) => {
   return c.json({ ok: true, role: toCamelCase(data) });
 });
 
-app.patch('/:id', requireAdmin, async (c) => {
+app.patch('/:id', requireManageRoles, async (c) => {
   const roleId = c.req.param('id');
   if (!/^[a-zA-Z0-9_-]{3,64}$/.test(roleId)) {
     return c.json({ error: 'معرف الدور غير صالح' }, 400);
   }
+  const isSuperAdmin = c.get('roleId') === 'admin';
+  if (roleId === 'admin' && !isSuperAdmin) {
+    return c.json({ error: 'لا يمكن لغير مدير النظام تعديل دور المشرف العام.' }, 403);
+  }
+
   const body = await c.req.json();
   const supabase = c.get('supabase');
   
@@ -57,6 +71,9 @@ app.patch('/:id', requireAdmin, async (c) => {
   if (body.descriptionEn !== undefined) updates.description_en = body.descriptionEn;
   if (body.permissions !== undefined) {
     let perms = Array.isArray(body.permissions) ? [...body.permissions] : [];
+    if (!isSuperAdmin && perms.includes('*')) {
+      return c.json({ error: 'لا يمكن منح الصلاحية الكاملة (*) إلا من قِبل مدير النظام.' }, 403);
+    }
     if (roleId === 'admin' && !perms.includes('*')) {
       perms.push('*');
     }
@@ -71,7 +88,7 @@ app.patch('/:id', requireAdmin, async (c) => {
   return c.json({ ok: true, role: toCamelCase(data) });
 });
 
-app.delete('/:id', requireAdmin, async (c) => {
+app.delete('/:id', requireManageRoles, async (c) => {
   const roleId = c.req.param('id');
   if (!/^[a-zA-Z0-9_-]{3,64}$/.test(roleId)) {
     return c.json({ error: 'معرف الدور غير صالح' }, 400);

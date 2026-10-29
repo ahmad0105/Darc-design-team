@@ -28,6 +28,15 @@ app.post('/:type/:id', async (c) => {
   const now = new Date().toISOString();
 
   const isGlobalAdmin = roleId === 'admin';
+  let hasManageTrash = isGlobalAdmin;
+  if (!hasManageTrash) {
+    const { data: userRole } = await supabase.from('roles').select('permissions').eq('id', roleId).single();
+    hasManageTrash = userRole?.permissions?.includes('manage_trash') || userRole?.permissions?.includes('*');
+  }
+
+  if (!hasManageTrash) {
+    return c.json({ error: 'غير مصرح لك باستعادة العناصر، تتطلب هذه العملية صلاحية إدارة سلة المهملات' }, 403);
+  }
 
   if (type === 'document') {
     const { data: doc } = await supabase.from('documents').select('*').eq('id', id).single();
