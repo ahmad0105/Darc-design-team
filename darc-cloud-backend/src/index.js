@@ -159,7 +159,8 @@ app.post('/api/auth/login', async (c) => {
     try {
       const verifyRes = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
         method: 'POST',
-        body: verifyFormData
+        body: verifyFormData,
+        signal: AbortSignal.timeout(5000)
       });
       const verifyData = await verifyRes.json();
       if (!verifyData.success) {

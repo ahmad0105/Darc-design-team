@@ -1,5 +1,5 @@
 import { state } from './state.js';
-import { api } from './api.js';
+import { api, invalidateBootstrapEtag } from './api.js';
 import { can, isAdmin, choose, t, esc, icon, avatar, roleName, currentViewTitle } from './utils.js';
 import { saveOfflineBootstrap, getOfflineBootstrap, getOfflineBootstrapAsync, getPendingMutations, isOnline } from './offline.js';
 import { showToast } from '../shared/ui.js';
@@ -259,7 +259,7 @@ export async function loadData(silent = false) {
     let payload = await api('/api/bootstrap', { silent });
     if (payload === null) {
       // HTTP 304 Not Modified
-      if (state.data) {
+      if (state.data && state.data.user) {
         // Cache is completely identical and data is in memory: 0ms CPU & 0 DOM ops
         return;
       }
@@ -268,6 +268,7 @@ export async function loadData(silent = false) {
       if (offline && offline.user) {
         payload = offline;
       } else {
+        invalidateBootstrapEtag();
         payload = await api('/api/bootstrap', { silent: false, headers: { 'Cache-Control': 'no-cache, no-store' } });
       }
       if (!payload) return;
@@ -362,9 +363,9 @@ export async function loadData(silent = false) {
       state.data.auditLogs?.length !== payload.auditLogs?.length ||
       state.data.notifications?.length !== payload.notifications?.length;
     
-    if (isDataChanged) {
+    if (isDataChanged || state.view === 'login') {
       state.data = payload;
-      if (!canAccessView(state.view)) {
+      if (state.view === 'login' || !canAccessView(state.view)) {
         state.view = getFirstAllowedView();
       }
       const hasOpenModal = Boolean(document.getElementById('modal-root')?.children?.length);

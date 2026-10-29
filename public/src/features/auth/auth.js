@@ -1,8 +1,8 @@
 import { state } from '../../core/state.js';
-import { api } from '../../core/api.js';
+import { api, invalidateBootstrapEtag } from '../../core/api.js';
 import { choose, esc, icon, t, savePreferencesCookies } from '../../core/utils.js';
 import { modalShell } from '../../shared/ui.js';
-import { loadData } from '../../core/router.js';
+import { loadData, renderApp } from '../../core/router.js';
 
 // Calculate password strength score (0 to 4)
 export function calculatePasswordStrength(pass) {
@@ -295,6 +295,7 @@ export function renderLogin(errorMessage = '', mode = 'login', isSuccess = false
     const password = String(form.get('password') || '');
     const rememberMe = document.getElementById('remember-email-check')?.checked;
     const button = event.currentTarget.querySelector('button[type="submit"]');
+    const defaultBtnHtml = `${icon(state.lang === 'ar' ? 'arrowLeft' : 'arrowRight', 16)} ${t('login')}`;
     button.disabled = true;
     button.innerHTML = `<span>${choose('جاري التحقق وتسجيل الدخول...', 'Verifying & signing in...')}</span>`;
 
@@ -303,6 +304,13 @@ export function renderLogin(errorMessage = '', mode = 'login', isSuccess = false
       : (form.get('cf-turnstile-response') || '');
     const isDemo = email.trim().toLowerCase() === 'demo@darc-design.bond' || email.trim().toLowerCase() === 'demo@darc.local';
     const turnstileToken = (rawToken && rawToken.trim().length > 0) ? rawToken : (isDemo ? 'bypass_dev' : '');
+
+    if (!turnstileToken && !isDemo) {
+      button.disabled = false;
+      button.innerHTML = defaultBtnHtml;
+      renderLogin(choose('يرجى الانتظار لحظة حتى يكتمل فحص الأمان (Turnstile) أو النقر على التحقق.', 'Please wait a moment for Turnstile verification to complete or check the box.'), 'login');
+      return;
+    }
     
     try {
       const loginRes = await api('/api/auth/login', {
@@ -320,9 +328,16 @@ export function renderLogin(errorMessage = '', mode = 'login', isSuccess = false
         }
       }
       savePreferencesCookies({ theme: state.theme, lang: state.lang });
+      invalidateBootstrapEtag();
+      state.view = 'dashboard';
       await loadData();
+      renderApp();
     } catch (error) {
       console.error("Login Error:", error);
+      if (button) {
+        button.disabled = false;
+        button.innerHTML = defaultBtnHtml;
+      }
       if (typeof window !== 'undefined' && window.turnstile && window._turnstileWidgetId !== undefined) {
         try { window.turnstile.reset(window._turnstileWidgetId); } catch (e) {}
       }
