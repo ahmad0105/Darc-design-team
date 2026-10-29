@@ -802,8 +802,8 @@ export function renderSettings() {
         </div>
         <form data-action="change-password">
           <div class="form-grid" style="margin-top:18px">
-            <div class="field"><label>${choose('كلمة المرور الحالية', 'Current password')}</label><input type="password" name="oldPassword" required /></div>
-            <div class="field"><label>${choose('كلمة المرور الجديدة', 'New password')}</label><input type="password" name="newPassword" minlength="10" required /></div>
+            <div class="field"><label>${choose('كلمة المرور الحالية', 'Current password')}</label><input type="password" name="oldPassword" autocomplete="current-password" required /></div>
+            <div class="field"><label>${choose('كلمة المرور الجديدة', 'New password')}</label><input type="password" name="newPassword" minlength="10" autocomplete="new-password" required /></div>
           </div>
           <div class="form-actions" style="margin-top:20px"><button type="submit" class="btn btn-primary">${t('save')}</button></div>
         </form>
