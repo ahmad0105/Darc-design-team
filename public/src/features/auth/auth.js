@@ -414,6 +414,10 @@ export function renderLogin(errorMessage = '', mode = 'login', isSuccess = false
       savePreferencesCookies({ theme: state.theme, lang: state.lang });
       invalidateBootstrapEtag();
       state.view = 'dashboard';
+      if (typeof window !== 'undefined' && window.turnstile && _turnstileWidgetId !== null) {
+        try { window.turnstile.remove(_turnstileWidgetId); } catch (e) {}
+        _turnstileWidgetId = null;
+      }
       await loadData();
       renderApp();
     } catch (error) {
