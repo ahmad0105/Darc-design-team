@@ -392,7 +392,9 @@ export async function handleClick(event) {
     document.documentElement.lang = state.lang;
     document.documentElement.dir = state.lang === 'ar' ? 'rtl' : 'ltr';
     document.body.classList.toggle('is-ltr', state.lang === 'en');
-    if (state.data) { renderApp(); } else {
+    if (state.data?.user || (typeof localStorage !== 'undefined' && localStorage.getItem('darc_token'))) { 
+      renderApp(); 
+    } else {
       const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''));
       if (hash.get('activate')) renderActivation(hash.get('activate'));
       else if (hash.get('reset')) renderResetPassword(hash.get('reset'));
