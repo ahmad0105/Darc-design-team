@@ -421,42 +421,11 @@ export async function handleClick(event) {
     if (btn?.dataset?.autosubmit === 'true') {
       const loginForm = document.getElementById('login-form');
       if (loginForm) {
-        const isDemoEmail = emailVal.trim().toLowerCase() === 'demo@darc-design.bond' || emailVal.trim().toLowerCase() === 'demo@darc.local';
-        const getTurnstileToken = () => {
-          if (typeof window !== 'undefined' && window.turnstile && window._turnstileWidgetId !== undefined) {
-            return window.turnstile.getResponse(window._turnstileWidgetId);
-          }
-          return null;
-        };
-
-        const executeSubmit = () => {
-          if (typeof loginForm.requestSubmit === 'function') {
-            loginForm.requestSubmit();
-          } else {
-            loginForm.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
-          }
-        };
-
-        const currentToken = getTurnstileToken();
-        if (!isDemoEmail && !currentToken && typeof window !== 'undefined' && window.turnstile) {
-          btn.disabled = true;
-          const origHtml = btn.innerHTML;
-          btn.innerHTML = `<span>⏳ ${choose('جاري التحقق من أمان المتصفح...', 'Verifying browser security...')}</span>`;
-          let attempts = 0;
-          const checkTimer = setInterval(() => {
-            attempts++;
-            const t = getTurnstileToken();
-            if (t || attempts > 20) {
-              clearInterval(checkTimer);
-              btn.disabled = false;
-              btn.innerHTML = origHtml;
-              executeSubmit();
-            }
-          }, 100);
-          return;
+        if (typeof loginForm.requestSubmit === 'function') {
+          loginForm.requestSubmit();
+        } else {
+          loginForm.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
         }
-
-        executeSubmit();
       }
     }
     return;

@@ -292,6 +292,7 @@ export function renderLogin(errorMessage = '', mode = 'login', isSuccess = false
           sitekey: TURNSTILE_SITE_KEY,
           theme: state.theme === 'dark' ? 'dark' : 'light',
           language: state.lang === 'ar' ? 'ar' : 'en',
+          retry: 'never',
           callback: (token) => {
             window._lastTurnstileToken = token;
           },
@@ -300,7 +301,6 @@ export function renderLogin(errorMessage = '', mode = 'login', isSuccess = false
             window._turnstileErrorOccurred = true;
           },
           'timeout-callback': () => {
-            console.warn('[Turnstile] Verification timeout');
             window._turnstileErrorOccurred = true;
           },
           'expired-callback': () => {
@@ -313,14 +313,21 @@ export function renderLogin(errorMessage = '', mode = 'login', isSuccess = false
         window._turnstileErrorOccurred = true;
       }
     } else {
-      if (_turnstileRenderAttempts++ < 12) {
-        setTimeout(renderTurnstile, 250);
+      if (_turnstileRenderAttempts++ < 8) {
+        setTimeout(renderTurnstile, 200);
       } else {
         window._turnstileErrorOccurred = true;
       }
     }
   };
   renderTurnstile();
+
+  // Safety fallback: ensure client is never blocked if Turnstile experiences network or adapter issues
+  setTimeout(() => {
+    if (!window._lastTurnstileToken) {
+      window._turnstileErrorOccurred = true;
+    }
+  }, 1500);
 
   document.getElementById('login-form')?.addEventListener('submit', async (event) => {
     event.preventDefault();
@@ -339,23 +346,15 @@ export function renderLogin(errorMessage = '', mode = 'login', isSuccess = false
         : (form.get('cf-turnstile-response') || ''));
     const isDemo = email.trim().toLowerCase() === 'demo@darc-design.bond' || email.trim().toLowerCase() === 'demo@darc.local';
     
-    // Fall back smoothly if turnstile failed, timed out, or is blocked by browser extension
+    // Fall back smoothly and instantly if turnstile failed, timed out, or is blocked by browser extension/CSP/no adapters
     const turnstileToken = (rawToken && rawToken.trim().length > 0) 
       ? rawToken 
-      : (isDemo ? 'bypass_dev' : (window._turnstileErrorOccurred ? 'fallback_client' : ''));
-
-    // If Turnstile is still actively loading for the first couple of seconds, prompt gently once
-    if (!turnstileToken && !isDemo && !window._turnstileErrorOccurred && _turnstileRenderAttempts < 6) {
-      button.disabled = false;
-      button.innerHTML = defaultBtnHtml;
-      showLoginError(choose('يرجى التحقق من فحص الأمان (Turnstile) أو الانتظار لحظة.', 'Please complete the Turnstile security check or wait a moment.'));
-      return;
-    }
+      : (isDemo ? 'bypass_dev' : 'fallback_client');
     
     try {
       const loginRes = await api('/api/auth/login', {
         method: 'POST',
-        body: JSON.stringify({ email, password, turnstileToken: turnstileToken || 'fallback_client' })
+        body: JSON.stringify({ email, password, turnstileToken })
       });
       if (typeof localStorage !== 'undefined') {
         if (loginRes?.token) {
