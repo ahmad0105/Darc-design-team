@@ -7,20 +7,71 @@ import { loadData, renderApp } from '../../core/router.js';
 // Cloudflare Turnstile Configuration & On-Demand Lifecycle
 const TURNSTILE_SITE_KEY = '0x4AAAAAAFr3zLr2zpRS2ah4';
 let _turnstileWidgetId = null;
+let _turnstileLoadPromise = null;
+
+export function loadTurnstileScript() {
+  if (typeof window === 'undefined') return Promise.resolve();
+  if (window.turnstile) return Promise.resolve();
+  if (_turnstileLoadPromise) return _turnstileLoadPromise;
+
+  _turnstileLoadPromise = new Promise((resolve) => {
+    window.onloadTurnstileCallback = () => {
+      resolve();
+      if (typeof window.__darcInitTurnstile === 'function') {
+        window.__darcInitTurnstile();
+      }
+    };
+
+    const existing = document.getElementById('cf-turnstile-script');
+    if (existing) {
+      if (window.turnstile) resolve();
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.id = 'cf-turnstile-script';
+    script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&onload=onloadTurnstileCallback';
+    script.async = true;
+    script.defer = true;
+    script.onerror = () => {
+      console.warn('[Turnstile] Script failed to load, fallback mode enabled');
+      resolve();
+    };
+    document.body.appendChild(script);
+  });
+
+  return _turnstileLoadPromise;
+}
 
 export function cleanupTurnstile() {
-  if (typeof window !== 'undefined' && window.turnstile && _turnstileWidgetId !== null) {
+  if (typeof window === 'undefined') return;
+  if (window.turnstile && _turnstileWidgetId !== null) {
     try {
       window.turnstile.remove(_turnstileWidgetId);
     } catch (e) {}
     _turnstileWidgetId = null;
   }
+  try {
+    const container = document.getElementById('turnstile-container');
+    if (container) container.innerHTML = '';
+    document.querySelectorAll('iframe[src*="challenges.cloudflare.com"]').forEach(el => {
+      try { el.remove(); } catch (e) {}
+    });
+    const scriptEl = document.getElementById('cf-turnstile-script');
+    if (scriptEl) scriptEl.remove();
+    _turnstileLoadPromise = null;
+  } catch (e) {}
 }
 
-export function initTurnstile() {
+export async function initTurnstile() {
   if (typeof window === 'undefined') return;
   const container = document.getElementById('turnstile-container');
-  if (!container || !window.turnstile) return;
+  if (!container) return;
+
+  if (!window.turnstile) {
+    await loadTurnstileScript();
+  }
+  if (!window.turnstile) return;
 
   if (_turnstileWidgetId !== null) {
     try {
