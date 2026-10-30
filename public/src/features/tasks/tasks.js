@@ -1152,6 +1152,8 @@ export async function openDocumentPreviewModal(docId) {
   const downloadUrl = `/api/documents/${encodeURIComponent(doc.id)}`;
 
   const isImage = /\.(jpe?g|png|gif|webp|svg|heic)$/i.test(doc.originalName) || (doc.mimeType && doc.mimeType.startsWith('image/'));
+  const isVideo = /\.(mp4|webm|mov|m4v|ogv|ogg)$/i.test(doc.originalName) || (doc.mimeType && doc.mimeType.startsWith('video/'));
+  const isAudio = /\.(mp3|wav|m4a|aac|ogg)$/i.test(doc.originalName) || (doc.mimeType && doc.mimeType.startsWith('audio/'));
   const fileSize = doc.size > 1024 * 1024 ? (doc.size / (1024 * 1024)).toFixed(1) + ' MB' : Math.round((doc.size || 0) / 1024) + ' KB';
 
   const isDemoDoc = (doc.id && String(doc.id).includes('demo')) || (driveId && driveId.startsWith('demo_sample_')) || Boolean(state.data?.isDemo);
@@ -1212,13 +1214,35 @@ export async function openDocumentPreviewModal(docId) {
               </div>
             </div>
           </div>
+        ` : (!driveId && isVideo ? `
+          <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;padding:15px;background:#000;">
+            <video controls autoplay playsinline style="max-width:100%;max-height:100%;border-radius:6px;outline:none;box-shadow:0 8px 30px rgba(0,0,0,0.5);">
+              <source src="${esc(downloadUrl)}" type="${esc(doc.mimeType || 'video/mp4')}">
+              <source src="${esc(embedUrl)}">
+              <p style="color:#fff;text-align:center;">${choose('متصفحك لا يدعم تشغيل هذا الفيديو مباشرة.', 'Your browser does not support the video tag.')}</p>
+            </video>
+          </div>
+        ` : (!driveId && isAudio ? `
+          <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;padding:24px;background:#0f172a;">
+            <audio controls style="width:80%;max-width:500px;">
+              <source src="${esc(downloadUrl)}" type="${esc(doc.mimeType || 'audio/mpeg')}">
+              <source src="${esc(embedUrl)}">
+            </audio>
+          </div>
         ` : (!driveId && isImage ? `
           <div style="width:100%;height:100%;overflow:auto;display:flex;align-items:center;justify-content:center;padding:15px;">
             <img src="${esc(embedUrl)}" alt="${esc(doc.originalName)}" style="max-width:100%;max-height:100%;object-fit:contain;border-radius:4px;box-shadow:0 4px 20px rgba(0,0,0,0.5);" onerror="this.onerror=null;this.src='${esc(downloadUrl)}';" />
           </div>
         ` : `
-          <iframe src="${esc(embedUrl)}" sandbox="allow-scripts allow-same-origin allow-popups" style="width:100%;height:100%;border:none;background:#fff;" allow="autoplay" loading="lazy"></iframe>
-        `)}
+          <iframe 
+            src="${esc(embedUrl)}" 
+            sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-presentation allow-popups-to-escape-sandbox" 
+            style="width:100%;height:100%;border:none;background:#fff;" 
+            allow="autoplay; fullscreen; encrypted-media; picture-in-picture" 
+            allowfullscreen="true" 
+            loading="lazy">
+          </iframe>
+        `)))}
       </div>
     </div>
   `;
