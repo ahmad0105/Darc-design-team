@@ -1236,7 +1236,6 @@ export async function openDocumentPreviewModal(docId) {
         ` : `
           <iframe 
             src="${esc(embedUrl)}" 
-            sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-presentation allow-popups-to-escape-sandbox" 
             style="width:100%;height:100%;border:none;background:#fff;" 
             allow="autoplay; fullscreen; encrypted-media; picture-in-picture" 
             allowfullscreen="true" 
