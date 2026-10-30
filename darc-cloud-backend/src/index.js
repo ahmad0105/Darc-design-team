@@ -161,7 +161,9 @@ app.post('/api/auth/login', async (c) => {
       });
       const verifyData = await verifyRes.json();
       if (!verifyData.success) {
-        console.warn('[Turnstile] Token verification warning:', verifyData['error-codes']);
+        console.warn('[Turnstile] Token verification rejected:', verifyData['error-codes']);
+        recordAuthFailure(ip);
+        return c.json({ error: 'فشل التحقق الأمني (Turnstile). يرجى تحديث الصفحة والمحاولة مجدداً.' }, 403);
       }
     } catch (err) {
       console.warn('[Turnstile] Verification timeout or network warning:', err.message);

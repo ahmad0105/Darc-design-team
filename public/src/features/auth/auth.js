@@ -4,6 +4,101 @@ import { choose, esc, icon, t, savePreferencesCookies } from '../../core/utils.j
 import { modalShell } from '../../shared/ui.js';
 import { loadData, renderApp } from '../../core/router.js';
 
+// Cloudflare Turnstile Configuration & On-Demand Lifecycle
+const TURNSTILE_SITE_KEY = '0x4AAAAAAFr3zLr2zpRS2ah4';
+let _turnstileWidgetId = null;
+
+export function cleanupTurnstile() {
+  if (typeof window !== 'undefined' && window.turnstile && _turnstileWidgetId !== null) {
+    try {
+      window.turnstile.remove(_turnstileWidgetId);
+    } catch (e) {}
+    _turnstileWidgetId = null;
+  }
+}
+
+export function initTurnstile() {
+  if (typeof window === 'undefined') return;
+  const container = document.getElementById('turnstile-container');
+  if (!container || !window.turnstile) return;
+
+  if (_turnstileWidgetId !== null) {
+    try {
+      window.turnstile.remove(_turnstileWidgetId);
+    } catch (e) {}
+    _turnstileWidgetId = null;
+  }
+
+  try {
+    _turnstileWidgetId = window.turnstile.render(container, {
+      sitekey: TURNSTILE_SITE_KEY,
+      theme: state.theme === 'dark' ? 'dark' : 'light',
+      language: state.lang === 'ar' ? 'ar' : 'en',
+      execution: 'execute',
+      appearance: 'interaction-only',
+      retry: 'never',
+      'refresh-expired': 'auto'
+    });
+  } catch (err) {
+    console.warn('[Turnstile] Render notice:', err);
+  }
+}
+
+if (typeof window !== 'undefined') {
+  window.__darcInitTurnstile = initTurnstile;
+}
+
+async function getTurnstileToken() {
+  if (typeof window === 'undefined' || !window.turnstile || _turnstileWidgetId === null) {
+    return 'fallback_client';
+  }
+
+  return new Promise((resolve) => {
+    let settled = false;
+    const timer = setTimeout(() => {
+      if (!settled) {
+        settled = true;
+        console.warn('[Turnstile] Token fetch timed out, fallback applied');
+        resolve('fallback_client');
+      }
+    }, 3500);
+
+    try {
+      window.turnstile.execute(_turnstileWidgetId, {
+        callback: (token) => {
+          if (!settled) {
+            settled = true;
+            clearTimeout(timer);
+            resolve(token);
+          }
+        },
+        'error-callback': (err) => {
+          if (!settled) {
+            settled = true;
+            clearTimeout(timer);
+            console.warn('[Turnstile] Challenge execution error:', err);
+            resolve('fallback_client');
+          }
+        },
+        'expired-callback': () => {
+          if (!settled) {
+            settled = true;
+            clearTimeout(timer);
+            resolve('fallback_client');
+          }
+        }
+      });
+    } catch (err) {
+      if (!settled) {
+        settled = true;
+        clearTimeout(timer);
+        console.warn('[Turnstile] Execute threw:', err);
+        resolve('fallback_client');
+      }
+    }
+  });
+}
+
 // Calculate password strength score (0 to 4)
 export function calculatePasswordStrength(pass) {
   const password = String(pass || '');
@@ -197,6 +292,7 @@ export function renderLogin(errorMessage = '', mode = 'login', isSuccess = false
           </label>
         </div>
         <div id="login-error-container">${messageHtml}</div>
+        <div id="turnstile-container" style="margin-bottom:12px;min-height:0;display:flex;justify-content:center;"></div>
         <button class="btn btn-primary btn-block" type="submit">${icon(state.lang === 'ar' ? 'arrowLeft' : 'arrowRight', 16)} ${t('login')}</button>
       </form>
       <div class="demo-showcase-box" style="margin-top:20px;padding:14px 16px;border-radius:10px;background:var(--surface-soft, rgba(13,98,105,0.06));border:1px dashed rgba(20,184,166,0.4);display:flex;flex-direction:column;gap:10px;">
@@ -292,13 +388,17 @@ export function renderLogin(errorMessage = '', mode = 'login', isSuccess = false
     button.innerHTML = `<span>⏳ ${choose('جاري التحقق وتسجيل الدخول...', 'Verifying & signing in...')}</span>`;
 
     const isDemo = email.trim().toLowerCase() === 'demo@darc-design.bond' || email.trim().toLowerCase() === 'demo@darc.local';
-    const turnstileToken = isDemo ? 'bypass_dev' : 'fallback_client';
+    let turnstileToken = 'bypass_dev';
+    if (!isDemo) {
+      turnstileToken = await getTurnstileToken();
+    }
     
     try {
       const loginRes = await api('/api/auth/login', {
         method: 'POST',
         body: JSON.stringify({ email, password, turnstileToken })
       });
+      cleanupTurnstile();
       if (typeof localStorage !== 'undefined') {
         if (loginRes?.token) {
           localStorage.setItem('darc_token', loginRes.token);
@@ -316,6 +416,9 @@ export function renderLogin(errorMessage = '', mode = 'login', isSuccess = false
       renderApp();
     } catch (error) {
       console.error("Login Error:", error);
+      if (typeof window !== 'undefined' && window.turnstile && _turnstileWidgetId !== null) {
+        try { window.turnstile.reset(_turnstileWidgetId); } catch (e) {}
+      }
       if (button) {
         button.disabled = false;
         button.innerHTML = defaultBtnHtml;
@@ -328,6 +431,11 @@ export function renderLogin(errorMessage = '', mode = 'login', isSuccess = false
         friendlyMessage = choose(
           'لا يوجد اتصال بالإنترنت. يرجى التحقق من الشبكة وإعادة المحاولة.',
           'No internet connection. Please check your network and try again.'
+        );
+      } else if (error.message && (error.message.includes('Turnstile') || error.message.includes('التحقق الأمني'))) {
+        friendlyMessage = choose(
+          'فشل التحقق الأمني التلقائي (Cloudflare Turnstile). يرجى تحديث الصفحة والمحاولة مجدداً.',
+          'Security check (Turnstile) failed. Please refresh the page and try again.'
         );
       } else if (error.message && (error.message.includes('429') || error.message.includes('كثيرة') || error.message.includes('rate'))) {
         friendlyMessage = choose(
@@ -369,6 +477,12 @@ export function renderLogin(errorMessage = '', mode = 'login', isSuccess = false
       renderLogin(error.message, 'forgot');
     }
   });
+
+  if (mode === 'login') {
+    initTurnstile();
+  } else {
+    cleanupTurnstile();
+  }
 }
 
 export function renderActivation(token, errorMessage = '') {
