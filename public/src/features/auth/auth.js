@@ -8,6 +8,8 @@ import { loadData, renderApp } from '../../core/router.js';
 const TURNSTILE_SITE_KEY = '0x4AAAAAAFr3zLr2zpRS2ah4';
 let _turnstileWidgetId = null;
 let _turnstileLoadPromise = null;
+let _cachedTurnstileToken = null;
+let _isInitializingTurnstile = false;
 
 export function loadTurnstileScript() {
   if (typeof window === 'undefined') return Promise.resolve();
@@ -17,9 +19,6 @@ export function loadTurnstileScript() {
   _turnstileLoadPromise = new Promise((resolve) => {
     window.onloadTurnstileCallback = () => {
       resolve();
-      if (typeof window.__darcInitTurnstile === 'function') {
-        window.__darcInitTurnstile();
-      }
     };
 
     const existing = document.getElementById('cf-turnstile-script');
@@ -45,6 +44,7 @@ export function loadTurnstileScript() {
 
 export function cleanupTurnstile() {
   if (typeof window === 'undefined') return;
+  _cachedTurnstileToken = null;
   if (window.turnstile && _turnstileWidgetId !== null) {
     try {
       window.turnstile.remove(_turnstileWidgetId);
@@ -68,30 +68,57 @@ export async function initTurnstile() {
   const container = document.getElementById('turnstile-container');
   if (!container) return;
 
-  if (!window.turnstile) {
-    await loadTurnstileScript();
-  }
-  if (!window.turnstile) return;
-
-  if (_turnstileWidgetId !== null) {
-    try {
-      window.turnstile.remove(_turnstileWidgetId);
-    } catch (e) {}
-    _turnstileWidgetId = null;
-  }
+  if (_isInitializingTurnstile) return;
+  _isInitializingTurnstile = true;
 
   try {
-    _turnstileWidgetId = window.turnstile.render(container, {
+    if (!window.turnstile) {
+      await loadTurnstileScript();
+    }
+    if (!window.turnstile) {
+      _isInitializingTurnstile = false;
+      return;
+    }
+
+    const freshContainer = document.getElementById('turnstile-container');
+    if (!freshContainer) {
+      _isInitializingTurnstile = false;
+      return;
+    }
+
+    if (_turnstileWidgetId !== null) {
+      try {
+        window.turnstile.remove(_turnstileWidgetId);
+      } catch (e) {}
+      _turnstileWidgetId = null;
+    }
+
+    _cachedTurnstileToken = null;
+
+    _turnstileWidgetId = window.turnstile.render(freshContainer, {
       sitekey: TURNSTILE_SITE_KEY,
       theme: state.theme === 'dark' ? 'dark' : 'light',
       language: state.lang === 'ar' ? 'ar' : 'en',
-      execution: 'execute',
       appearance: 'interaction-only',
-      retry: 'never',
-      'refresh-expired': 'auto'
+      callback: (token) => {
+        _cachedTurnstileToken = token;
+      },
+      'error-callback': (err) => {
+        console.warn('[Turnstile] Handshake notice (shielded):', err);
+        _cachedTurnstileToken = 'fallback_client';
+      },
+      'expired-callback': () => {
+        _cachedTurnstileToken = null;
+        if (window.turnstile && _turnstileWidgetId !== null) {
+          try { window.turnstile.reset(_turnstileWidgetId); } catch (e) {}
+        }
+      }
     });
   } catch (err) {
-    console.warn('[Turnstile] Render notice:', err);
+    console.warn('[Turnstile] Init notice:', err);
+    _cachedTurnstileToken = 'fallback_client';
+  } finally {
+    _isInitializingTurnstile = false;
   }
 }
 
@@ -100,53 +127,61 @@ if (typeof window !== 'undefined') {
 }
 
 async function getTurnstileToken() {
-  if (typeof window === 'undefined' || !window.turnstile || _turnstileWidgetId === null) {
+  if (typeof window === 'undefined' || !window.turnstile) {
     return 'fallback_client';
   }
 
+  // 1. Instant check: token pre-resolved during render (0ms latency)
+  if (_cachedTurnstileToken) {
+    return _cachedTurnstileToken;
+  }
+
+  if (_turnstileWidgetId !== null) {
+    try {
+      const existing = window.turnstile.getResponse(_turnstileWidgetId);
+      if (existing) {
+        _cachedTurnstileToken = existing;
+        return existing;
+      }
+    } catch (e) {}
+  }
+
+  // 2. If Turnstile is still resolving, poll up to 1800ms max
   return new Promise((resolve) => {
     let settled = false;
     const timer = setTimeout(() => {
       if (!settled) {
         settled = true;
-        console.warn('[Turnstile] Token fetch timed out, fallback applied');
-        resolve('fallback_client');
+        resolve(_cachedTurnstileToken || 'fallback_client');
       }
-    }, 3500);
+    }, 1800);
 
-    try {
-      window.turnstile.execute(_turnstileWidgetId, {
-        callback: (token) => {
-          if (!settled) {
-            settled = true;
-            clearTimeout(timer);
-            resolve(token);
-          }
-        },
-        'error-callback': (err) => {
-          if (!settled) {
-            settled = true;
-            clearTimeout(timer);
-            console.warn('[Turnstile] Challenge execution error:', err);
-            resolve('fallback_client');
-          }
-        },
-        'expired-callback': () => {
-          if (!settled) {
-            settled = true;
-            clearTimeout(timer);
-            resolve('fallback_client');
-          }
-        }
-      });
-    } catch (err) {
-      if (!settled) {
+    const checkInterval = setInterval(() => {
+      if (settled) {
+        clearInterval(checkInterval);
+        return;
+      }
+      if (_cachedTurnstileToken) {
         settled = true;
         clearTimeout(timer);
-        console.warn('[Turnstile] Execute threw:', err);
-        resolve('fallback_client');
+        clearInterval(checkInterval);
+        resolve(_cachedTurnstileToken);
+        return;
       }
-    }
+      if (_turnstileWidgetId !== null && window.turnstile) {
+        try {
+          const resp = window.turnstile.getResponse(_turnstileWidgetId);
+          if (resp) {
+            settled = true;
+            clearTimeout(timer);
+            clearInterval(checkInterval);
+            _cachedTurnstileToken = resp;
+            resolve(resp);
+            return;
+          }
+        } catch (e) {}
+      }
+    }, 100);
   });
 }
 
@@ -243,7 +278,17 @@ function bindUniversalPasswordToggles() {
       const isPass = input.type === 'password';
       input.type = isPass ? 'text' : 'password';
       btn.style.color = isPass ? 'var(--teal)' : 'var(--ink-soft)';
-      btn.setAttribute('aria-label', isPass ? (state.lang === 'ar' ? 'إخفاء كلمة المرور' : 'Hide password') : (state.lang === 'ar' ? 'إظهار كلمة المرور' : 'Show password'));
+      const label = isPass ? (state.lang === 'ar' ? 'إخفاء كلمة المرور' : 'Hide password') : (state.lang === 'ar' ? 'إظهار كلمة المرور' : 'Show password');
+      btn.setAttribute('aria-label', label);
+      btn.setAttribute('title', label);
+      
+      // Dynamic SVG swap: Eye vs Eye-Off
+      if (isPass) {
+        btn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`;
+      } else {
+        btn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
+      }
+      try { input.focus(); } catch (err) {}
     };
   });
 
@@ -500,6 +545,11 @@ export function renderLogin(errorMessage = '', mode = 'login', isSuccess = false
           'البريد الإلكتروني أو كلمة المرور غير صحيحة. يرجى التحقق من صحة المدخلات وإعادة المحاولة.',
           'Incorrect email or password. Please verify your credentials and try again.'
         );
+        const passInput = document.getElementById('login-password');
+        if (passInput) {
+          passInput.value = '';
+          try { passInput.focus(); } catch (e) {}
+        }
       } else if (error.message && (error.message.includes('مفعل') || error.message.includes('موقوف') || error.message.includes('inactive'))) {
         friendlyMessage = choose(
           'حسابك معطل أو غير مفعل حالياً. يرجى التواصل مع مسؤول النظام لإعادة التفعيل.',
@@ -519,12 +569,21 @@ export function renderLogin(errorMessage = '', mode = 'login', isSuccess = false
   document.getElementById('forgot-form')?.addEventListener('submit', async (event) => {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
+    const email = String(form.get('email') || '').trim();
     const button = event.currentTarget.querySelector('button[type="submit"]');
-    button.disabled = true;
+    const originalText = button ? button.innerHTML : '';
+    if (button) {
+      button.disabled = true;
+      button.innerHTML = `<span>⏳ ${choose('جاري إرسال الرابط...', 'Sending reset link...')}</span>`;
+    }
     try {
-      await api('/api/auth/forgot-password', { method: 'POST', body: JSON.stringify({ email: form.get('email') }) });
-      renderLogin(choose('تم إرسال رابط الاستعادة إذا كان البريد مسجلاً.', 'Reset link sent if email is registered.'), 'forgot', true);
+      await api('/api/auth/forgot-password', { method: 'POST', body: JSON.stringify({ email }) });
+      renderLogin(choose('تم إرسال رابط استعادة كلمة المرور إلى بريدك الإلكتروني بنجاح ✨', 'Password reset link sent to your email successfully ✨'), 'forgot', true);
     } catch (error) {
+      if (button) {
+        button.disabled = false;
+        button.innerHTML = originalText;
+      }
       renderLogin(error.message, 'forgot');
     }
   });

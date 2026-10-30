@@ -398,7 +398,20 @@ export async function handleClick(event) {
       const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''));
       if (hash.get('activate')) renderActivation(hash.get('activate'));
       else if (hash.get('reset')) renderResetPassword(hash.get('reset'));
-      else renderLogin('', document.getElementById('forgot-form') ? 'forgot' : 'login');
+      else {
+        const currentEmail = document.getElementById('login-email')?.value || '';
+        const currentPass = document.getElementById('login-password')?.value || '';
+        const isForgot = !!document.getElementById('forgot-form');
+        renderLogin('', isForgot ? 'forgot' : 'login');
+        if (currentEmail) {
+          const newEmail = document.getElementById('login-email');
+          if (newEmail) newEmail.value = currentEmail;
+        }
+        if (currentPass) {
+          const newPass = document.getElementById('login-password');
+          if (newPass) newPass.value = currentPass;
+        }
+      }
     }
     return;
   }

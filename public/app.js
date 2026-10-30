@@ -84,7 +84,16 @@ window.addEventListener('resize', () => {
 // Global runtime error boundaries with automated reporting & email alert trigger
 window.addEventListener('error', (event) => {
   const msg = String(event?.message || event?.error?.message || '');
-  if (msg.includes('Turnstile') || msg.includes('turnstile') || msg.includes('Script error')) {
+  if (
+    msg.includes('Turnstile') || 
+    msg.includes('turnstile') || 
+    msg.includes('Script error') ||
+    msg.includes('challenges.cloudflare.com') ||
+    msg.includes('SafariExtensionMessageEvent') ||
+    msg.includes('Blocked a frame with origin') ||
+    msg.includes('No available adapters') ||
+    msg.includes('ResizeObserver loop')
+  ) {
     return;
   }
   console.error("Runtime Error:", event.error);
@@ -94,7 +103,16 @@ window.addEventListener('error', (event) => {
 
 window.addEventListener('unhandledrejection', (event) => {
   const msg = String(event?.reason?.message || event?.reason || '');
-  if (msg.includes('Turnstile') || msg.includes('turnstile') || msg.includes('Script error')) {
+  if (
+    msg.includes('Turnstile') || 
+    msg.includes('turnstile') || 
+    msg.includes('Script error') ||
+    msg.includes('challenges.cloudflare.com') ||
+    msg.includes('SafariExtensionMessageEvent') ||
+    msg.includes('Blocked a frame with origin') ||
+    msg.includes('No available adapters') ||
+    msg.includes('ResizeObserver loop')
+  ) {
     return;
   }
   console.error("Unhandled Rejection:", event.reason);

@@ -101,7 +101,8 @@ body.in-app {
   overflow: hidden;
 }
 
-#app:has(.login-shell) {
+#app:has(.login-shell),
+body:not(.in-app) {
   height: auto;
   min-height: 100%;
   min-height: 100dvh;
@@ -1675,9 +1676,10 @@ body:has(#floating-upload-manager) .toast-stack { bottom: 230px; }
   }
   .login-shell { padding: 12px; }
   .login-wrap { border-radius: 25px; }
-  .login-art, .login-card { padding: 24px 18px; }
-  .login-art { min-height: 280px; }
-  .login-art h1 { font-size: 28px; }
+  .login-card { padding: 24px 18px; }
+  .login-art { min-height: auto; padding: 20px 18px 16px; }
+  .login-art h1 { font-size: 20px; line-height: 1.35; margin: 0; }
+  .login-art-content { margin-top: 14px; }
   .metrics-grid, .project-cards, .team-grid { grid-template-columns: 1fr; }
   .workspace-content { padding: 18px 12px 36px; }
   .topbar { min-height: 62px; padding: 10px 12px; }
