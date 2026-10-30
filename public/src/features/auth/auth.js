@@ -1,8 +1,9 @@
 import { state } from '../../core/state.js';
 import { api, invalidateBootstrapEtag } from '../../core/api.js';
 import { choose, esc, icon, t, savePreferencesCookies } from '../../core/utils.js';
-import { modalShell } from '../../shared/ui.js';
+import { modalShell, renderLoading } from '../../shared/ui.js';
 import { loadData, renderApp } from '../../core/router.js';
+import { getOfflineBootstrap, saveOfflineBootstrap } from '../../core/offline.js';
 
 // Cloudflare Turnstile Configuration & On-Demand Lifecycle
 const TURNSTILE_SITE_KEY = '0x4AAAAAAFr3zLr2zpRS2ah4';
@@ -146,7 +147,7 @@ async function getTurnstileToken() {
     } catch (e) {}
   }
 
-  // 2. If Turnstile is still resolving, poll up to 1800ms max
+  // 2. If Turnstile is still resolving, poll with high-frequency 35ms intervals up to 1200ms max
   return new Promise((resolve) => {
     let settled = false;
     const timer = setTimeout(() => {
@@ -154,7 +155,7 @@ async function getTurnstileToken() {
         settled = true;
         resolve(_cachedTurnstileToken || 'fallback_client');
       }
-    }, 1800);
+    }, 1200);
 
     const checkInterval = setInterval(() => {
       if (settled) {
@@ -181,7 +182,7 @@ async function getTurnstileToken() {
           }
         } catch (e) {}
       }
-    }, 100);
+    }, 35);
   });
 }
 
@@ -506,8 +507,30 @@ export function renderLogin(errorMessage = '', mode = 'login', isSuccess = false
         }
       }
       savePreferencesCookies({ theme: state.theme, lang: state.lang });
-      invalidateBootstrapEtag();
       state.view = 'dashboard';
+
+      // 1. Ultra-Fast Zero-Latency Path: If backend pre-bundled bootstrap (e.g. demo sandbox)
+      if (loginRes?.bootstrap) {
+        state.data = loginRes.bootstrap;
+        saveOfflineBootstrap(loginRes.bootstrap);
+        renderApp();
+        loadData(true).catch(() => {});
+        return;
+      }
+
+      // 2. High-Performance Instant Paint: Use offline cache if matching user exists
+      const cached = getOfflineBootstrap();
+      if (cached && cached.user && (cached.user.id === loginRes?.user?.id || loginRes?.user?.email === cached.user?.email)) {
+        cached.user = loginRes.user || cached.user;
+        state.data = cached;
+        renderApp(); // Instant 0ms Paint!
+        loadData(true).catch(() => {});
+        return;
+      }
+
+      // 3. Clean first-time login transition
+      invalidateBootstrapEtag();
+      renderLoading();
       await loadData();
       renderApp();
     } catch (error) {

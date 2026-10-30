@@ -157,7 +157,7 @@ app.post('/api/auth/login', async (c) => {
       const verifyRes = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
         method: 'POST',
         body: verifyFormData,
-        signal: AbortSignal.timeout(4000)
+        signal: AbortSignal.timeout(2000)
       });
       const verifyData = await verifyRes.json();
       if (!verifyData.success) {
@@ -185,7 +185,7 @@ app.post('/api/auth/login', async (c) => {
       };
       const token = await sign(payload, c.env.JWT_SECRET);
       setSessionCookie(c, token, 604800);
-      return c.json({ token, user: demoData.user });
+      return c.json({ token, user: demoData.user, bootstrap: demoData });
     } else {
       recordAuthFailure(ip);
       return c.json({ error: 'البريد الإلكتروني أو كلمة المرور غير صحيحة' }, 401);
