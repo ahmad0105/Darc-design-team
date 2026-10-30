@@ -785,7 +785,7 @@ var Ha=Object.defineProperty,re=(e,a)=>{let n={};for(var r in e)Ha(n,r,{get:e[r]
           <iframe 
             src="${c(i)}" 
             style="width:100%;height:100%;border:none;background:#fff;" 
-            allow="autoplay; fullscreen; encrypted-media; picture-in-picture" 
+            allow="autoplay *; fullscreen *; encrypted-media *; picture-in-picture *" 
             allowfullscreen="true" 
             loading="lazy">
           </iframe>
