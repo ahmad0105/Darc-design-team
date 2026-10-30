@@ -3,7 +3,7 @@ import { api } from './api.js';
 import { renderView } from './router.js';
 import { showToast } from '../shared/ui.js';
 import { choose, can, isAdmin } from '../core/utils.js';
-import { getTaskSortOrder, setSavedTaskSort } from '../features/tasks/tasks.js';
+import { getTaskSortOrder, setSavedTaskSort, canUserMoveTask } from '../features/tasks/tasks.js';
 
 let placeholder = null;
 let activeDraggedTaskId = null;
@@ -124,8 +124,7 @@ document.addEventListener('dragstart', (event) => {
   const card = event.target.closest('.task-card');
   if (card) {
     const task = (state.data?.tasks || []).find(t => t.id === card.dataset.taskId);
-    const canEdit = isAdmin() || can('edit_tasks') || (task && task.assigneeId === state.data?.user?.id);
-    if (!canEdit) {
+    if (!canUserMoveTask(task)) {
       event.preventDefault();
       return;
     }
@@ -178,14 +177,28 @@ document.addEventListener('dragend', (event) => {
 });
 
 document.addEventListener('dragover', (event) => {
+  if (!isDraggingActive && !window._isDraggingTask) return;
+  event.preventDefault();
+  if (event.dataTransfer) {
+    event.dataTransfer.dropEffect = 'move';
+  }
+
   currentMouseX = event.clientX;
   currentMouseY = event.clientY;
 
-  const column = event.target.closest('.board-column');
-  if (column) {
-    event.preventDefault();
-    event.dataTransfer.dropEffect = 'move';
+  let column = event.target.closest('.board-column');
+  if (!column) {
+    const columns = Array.from(document.querySelectorAll('.board-column'));
+    if (columns.length > 0) {
+      column = columns.reduce((closest, col) => {
+        const rect = col.getBoundingClientRect();
+        const dist = Math.abs(event.clientX - (rect.left + rect.width / 2));
+        return dist < closest.dist ? { col, dist } : closest;
+      }, { col: null, dist: Infinity }).col;
+    }
+  }
 
+  if (column) {
     document.querySelectorAll('.board-column').forEach(col => {
       col.classList.toggle('drag-over', col === column);
     });
@@ -336,7 +349,27 @@ async function handleTaskDrop(column, clientY, explicitTaskId = null) {
   newColumnTaskIds.splice(insertIdx, 0, taskId);
 
   // 5. Update dragged task status
-  task.status = newStatus;
+  if (newStatus === 'review' && ['review', 'approval', 'blocked'].includes(task.status)) {
+    // Keep existing sub-status within review/approval/blocked grouping
+  } else {
+    task.status = newStatus;
+  }
+
+  // Register in recently moved tasks cache to protect against stale background polls
+  if (!window._recentlyMovedTasks) {
+    window._recentlyMovedTasks = new Map();
+  }
+  window._recentlyMovedTasks.set(taskId, {
+    status: task.status,
+    sortOrder: (insertIdx + 1) * 100,
+    timestamp: Date.now()
+  });
+  const nowCleanup = Date.now();
+  for (const [id, info] of window._recentlyMovedTasks.entries()) {
+    if (nowCleanup - info.timestamp > 30000) {
+      window._recentlyMovedTasks.delete(id);
+    }
+  }
 
   // 6. Assign clean, contiguous sortOrder (100, 200, 300, ...) to every task in this column
   newColumnTaskIds.forEach((id, idx) => {
@@ -418,8 +451,28 @@ async function handleTaskDrop(column, clientY, explicitTaskId = null) {
 }
 
 document.addEventListener('drop', async (event) => {
-  const column = event.target.closest('.board-column');
+  if (!isDraggingActive && !window._isDraggingTask) return;
   event.preventDefault();
+
+  let column = event.target.closest('.board-column');
+  if (!column && placeholder && placeholder.parentNode) {
+    column = placeholder.closest('.board-column');
+  }
+  if (!column) {
+    const el = document.elementFromPoint(event.clientX, event.clientY);
+    column = el?.closest('.board-column');
+  }
+  if (!column) {
+    const columns = Array.from(document.querySelectorAll('.board-column'));
+    if (columns.length > 0) {
+      column = columns.reduce((closest, col) => {
+        const rect = col.getBoundingClientRect();
+        const dist = Math.abs(event.clientX - (rect.left + rect.width / 2));
+        return dist < closest.dist ? { col, dist } : closest;
+      }, { col: null, dist: Infinity }).col;
+    }
+  }
+
   const taskId = activeDraggedTaskId || (event.dataTransfer ? event.dataTransfer.getData('text/plain') : null);
   await handleTaskDrop(column, event.clientY, taskId);
 });
@@ -467,8 +520,7 @@ document.addEventListener('touchstart', (e) => {
   if (!card || e.target.closest('button, a, input, select, textarea, .btn')) return;
 
   const task = (state.data?.tasks || []).find(t => t.id === card.dataset.taskId);
-  const canEdit = isAdmin() || can('edit_tasks') || (task && task.assigneeId === state.data?.user?.id);
-  if (!canEdit) return;
+  if (!canUserMoveTask(task)) return;
 
   touchCard = card;
   const touch = e.touches[0];
@@ -476,7 +528,7 @@ document.addEventListener('touchstart', (e) => {
   touchStartY = touch.clientY;
   isTouchDragging = false;
 
-  // 160ms Optimized Long-Press Timer: Ultra-fast tactile response without blocking scroll
+  // 120ms Optimized Tactile Pickup: Instant feedback without hindering normal fast swipe
   touchHoldTimer = setTimeout(() => {
     if (!touchCard) return;
     isTouchDragging = true;
@@ -534,7 +586,7 @@ document.addEventListener('touchstart', (e) => {
       }
     }
     startContinuousAutoScroll();
-  }, 160);
+  }, 120);
 }, { passive: true });
 
 document.addEventListener('touchmove', (e) => {
@@ -543,9 +595,9 @@ document.addEventListener('touchmove', (e) => {
   const deltaX = Math.abs(touch.clientX - touchStartX);
   const deltaY = Math.abs(touch.clientY - touchStartY);
 
-  // If user moves finger before long-press fires, they are scrolling: cancel drag timer!
+  // If user moves finger before hold timer fires, check natural finger wobble threshold (14px)
   if (!isTouchDragging) {
-    if (deltaX > 7 || deltaY > 7) {
+    if (deltaX > 14 || deltaY > 14) {
       if (touchHoldTimer) {
         clearTimeout(touchHoldTimer);
         touchHoldTimer = null;
@@ -570,7 +622,18 @@ document.addEventListener('touchmove', (e) => {
 
   // Find target element underneath finger
   const elUnder = document.elementFromPoint(touch.clientX, touch.clientY);
-  const column = elUnder?.closest('.board-column');
+  let column = elUnder?.closest('.board-column');
+  if (!column) {
+    const columns = Array.from(document.querySelectorAll('.board-column'));
+    if (columns.length > 0) {
+      column = columns.reduce((closest, col) => {
+        const rect = col.getBoundingClientRect();
+        const dist = Math.abs(touch.clientX - (rect.left + rect.width / 2));
+        return dist < closest.dist ? { col, dist } : closest;
+      }, { col: null, dist: Infinity }).col;
+    }
+  }
+
   document.querySelectorAll('.board-column').forEach(col => col.classList.toggle('drag-over', col === column));
 
   if (column) {
@@ -601,7 +664,17 @@ document.addEventListener('touchend', async (e) => {
   if (isTouchDragging) {
     const touch = e.changedTouches[0];
     const elUnder = document.elementFromPoint(touch.clientX, touch.clientY);
-    const column = elUnder?.closest('.board-column') || (placeholder && placeholder.closest('.board-column'));
+    let column = elUnder?.closest('.board-column') || (placeholder && placeholder.closest('.board-column'));
+    if (!column) {
+      const columns = Array.from(document.querySelectorAll('.board-column'));
+      if (columns.length > 0) {
+        column = columns.reduce((closest, col) => {
+          const rect = col.getBoundingClientRect();
+          const dist = Math.abs(touch.clientX - (rect.left + rect.width / 2));
+          return dist < closest.dist ? { col, dist } : closest;
+        }, { col: null, dist: Infinity }).col;
+      }
+    }
     const draggedId = activeDraggedTaskId;
 
     // Immediately remove ghost clone from DOM for crisp release

@@ -307,6 +307,19 @@ export async function loadData(silent = false) {
             payload.tasks.unshift(localTask);
             payloadTaskIds.add(localTask.id);
           }
+        } else {
+          // If task was recently moved (within last 12s) by drag & drop, preserve optimistic status and sortOrder against stale polls
+          const movedInfo = window._recentlyMovedTasks?.get(localTask.id);
+          if (movedInfo && (now - movedInfo.timestamp < 12000)) {
+            const targetInPayload = payload.tasks.find(t => t.id === localTask.id);
+            if (targetInPayload) {
+              targetInPayload.status = movedInfo.status;
+              if (movedInfo.sortOrder !== undefined) {
+                targetInPayload.sortOrder = movedInfo.sortOrder;
+                targetInPayload.sort_order = movedInfo.sortOrder;
+              }
+            }
+          }
         }
       }
     }

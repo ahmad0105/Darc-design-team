@@ -46,6 +46,27 @@ export function renderTaskAssignees(task) {
   return html;
 }
 
+export function canUserMoveTask(task) {
+  if (!task) return false;
+  if (isAdmin() || can('edit_tasks')) return true;
+  const userId = state.data?.user?.id;
+  if (!userId) return false;
+  if (task.assigneeId === userId) return true;
+  if (task.creatorId === userId || task.createdById === userId) return true;
+  if (task.reviewerId === userId || task.approverId === userId) return true;
+
+  const additional = task.customFields?.additionalAssignees || task.custom_fields?.additionalAssignees;
+  if (Array.isArray(additional) && additional.includes(userId)) return true;
+
+  if (task.projectId && state.data?.projects) {
+    const proj = state.data.projects.find(p => p.id === task.projectId);
+    if (proj && (proj.managerId === userId || proj.ownerId === userId || proj.leadId === userId || proj.createdById === userId)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 export function taskCard(task) {
   const overdue = isOverdue(task);
   const overdueBadge = overdue
@@ -63,7 +84,7 @@ export function taskCard(task) {
         ? 'var(--blue)'
         : 'var(--line)';
 
-  const canEditTask = isAdmin() || can('edit_tasks') || (task.assigneeId === state.data?.user?.id);
+  const canEditTask = canUserMoveTask(task);
 
   return `<article class="task-card ${overdue ? 'is-overdue' : ''} ${!canEditTask ? 'not-draggable' : ''}" draggable="${canEditTask ? 'true' : 'false'}" data-action="open-task" data-task-id="${esc(task.id)}">
     <div class="task-card-top">

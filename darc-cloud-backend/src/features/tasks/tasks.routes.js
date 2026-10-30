@@ -225,6 +225,13 @@ app.patch('/reorder', async (c) => {
   if (isGlobalAdmin) {
     for (const pid of projectIds) projectEditAllowed.set(pid, true);
   } else {
+    // Check if user is project manager directly on these projects
+    const { data: projectRows } = await supabase
+      .from('projects')
+      .select('id, manager_id')
+      .in('id', projectIds);
+    const pmMap = new Map((projectRows || []).map(p => [p.id, p.manager_id]));
+
     // Single query to fetch user memberships across all distinct projects in this batch
     const { data: memberships } = await supabase
       .from('project_members')
@@ -235,12 +242,16 @@ app.patch('/reorder', async (c) => {
     const memberRoleMap = new Map((memberships || []).map(m => [m.project_id, m.role_id]));
 
     for (const pid of projectIds) {
-      const activeRole = memberRoleMap.get(pid);
-      if (activeRole) {
-        const canEdit = await hasPermission(supabase, userId, activeRole, 'edit_tasks', pid);
-        projectEditAllowed.set(pid, canEdit);
+      if (pmMap.get(pid) === userId) {
+        projectEditAllowed.set(pid, true);
       } else {
-        projectEditAllowed.set(pid, false);
+        const activeRole = memberRoleMap.get(pid);
+        if (activeRole) {
+          const canEdit = await hasPermission(supabase, userId, activeRole, 'edit_tasks', pid);
+          projectEditAllowed.set(pid, canEdit);
+        } else {
+          projectEditAllowed.set(pid, false);
+        }
       }
     }
   }
@@ -254,12 +265,15 @@ app.patch('/reorder', async (c) => {
     const existing = taskMap.get(item.id);
     if (!existing) continue;
 
-    // Check project-level permission or assignee self-update
+    const existingCF = (existing.custom_fields && typeof existing.custom_fields === 'object') ? existing.custom_fields : {};
+    const additional = existingCF.additionalAssignees || [];
+    const isAdditional = Array.isArray(additional) && additional.includes(userId);
+
+    // Check project-level permission, assignee, or additionalAssignee self-update
     const canEditProject = projectEditAllowed.get(existing.project_id) || false;
-    const canEdit = canEditProject || existing.assignee_id === userId;
+    const canEdit = canEditProject || existing.assignee_id === userId || isAdditional;
     if (!canEdit) continue;
 
-    const existingCF = (existing.custom_fields && typeof existing.custom_fields === 'object') ? existing.custom_fields : {};
     const incomingCF = (item.customFields || item.custom_fields || {});
     const sortOrderVal = typeof item.sortOrder === 'number' ? item.sortOrder : (typeof item.sort_order === 'number' ? item.sort_order : 0);
     const mergedCF = {
