@@ -51,17 +51,24 @@ export function canUserMoveTask(task) {
   if (isAdmin() || can('edit_tasks')) return true;
   const userId = state.data?.user?.id;
   if (!userId) return false;
-  if (task.assigneeId === userId) return true;
-  if (task.creatorId === userId || task.createdById === userId) return true;
-  if (task.reviewerId === userId || task.approverId === userId) return true;
+  const assignee = task.assigneeId || task.assignee_id;
+  if (assignee === userId) return true;
+  const creator = task.creatorId || task.createdById || task.created_by_id || task.created_by;
+  if (creator === userId) return true;
+  const reviewer = task.reviewerId || task.reviewer_id;
+  const approver = task.approverId || task.approver_id;
+  if (reviewer === userId || approver === userId) return true;
 
-  const additional = task.customFields?.additionalAssignees || task.custom_fields?.additionalAssignees;
+  const additional = task.customFields?.additionalAssignees || task.customFields?.additional_assignees || task.custom_fields?.additionalAssignees || task.custom_fields?.additional_assignees;
   if (Array.isArray(additional) && additional.includes(userId)) return true;
 
-  if (task.projectId && state.data?.projects) {
-    const proj = state.data.projects.find(p => p.id === task.projectId);
-    if (proj && (proj.managerId === userId || proj.ownerId === userId || proj.leadId === userId || proj.createdById === userId)) {
-      return true;
+  const projectId = task.projectId || task.project_id;
+  if (projectId && state.data?.projects) {
+    const proj = state.data.projects.find(p => p.id === projectId);
+    if (proj) {
+      const pm = proj.managerId || proj.manager_id;
+      const owner = proj.ownerId || proj.owner_id || proj.leadId || proj.lead_id || proj.createdById || proj.created_by;
+      if (pm === userId || owner === userId) return true;
     }
   }
   return false;

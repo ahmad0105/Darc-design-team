@@ -42,6 +42,17 @@ export function applyDemoTaskUpdate(taskId, updates) {
     delete cleanUpdates.constructor;
     delete cleanUpdates.prototype;
     Object.assign(task, cleanUpdates, { updatedAt: new Date().toISOString() });
+    if (cleanUpdates.status) {
+      if (task.status === 'done') {
+        task.progress = 100;
+      } else if (task.status === 'not_started') {
+        task.progress = 0;
+      } else if (task.status === 'in_progress' && (task.progress === 0 || !task.progress)) {
+        task.progress = 50;
+      } else if (['review', 'approval'].includes(task.status) && (task.progress || 0) < 80) {
+        task.progress = 80;
+      }
+    }
     // Recalculate demo project progress
     const project = _demoStore.projects.find(p => p.id === task.projectId);
     if (project) {

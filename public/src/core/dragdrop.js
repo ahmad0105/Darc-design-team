@@ -348,11 +348,22 @@ async function handleTaskDrop(column, clientY, explicitTaskId = null) {
   const newColumnTaskIds = [...existingTaskIds];
   newColumnTaskIds.splice(insertIdx, 0, taskId);
 
-  // 5. Update dragged task status
+  // 5. Update dragged task status & optimistic progress
   if (newStatus === 'review' && ['review', 'approval', 'blocked'].includes(task.status)) {
     // Keep existing sub-status within review/approval/blocked grouping
   } else {
     task.status = newStatus;
+  }
+
+  // Automatic progress calculation matching backend business logic
+  if (task.status === 'done') {
+    task.progress = 100;
+  } else if (task.status === 'not_started') {
+    task.progress = 0;
+  } else if (task.status === 'in_progress' && (task.progress === 0 || !task.progress)) {
+    task.progress = 50;
+  } else if (['review', 'approval'].includes(task.status) && (task.progress || 0) < 80) {
+    task.progress = 80;
   }
 
   // Register in recently moved tasks cache to protect against stale background polls
@@ -362,6 +373,7 @@ async function handleTaskDrop(column, clientY, explicitTaskId = null) {
   window._recentlyMovedTasks.set(taskId, {
     status: task.status,
     sortOrder: (insertIdx + 1) * 100,
+    progress: task.progress,
     timestamp: Date.now()
   });
   const nowCleanup = Date.now();
@@ -387,10 +399,12 @@ async function handleTaskDrop(column, clientY, explicitTaskId = null) {
     }
   });
 
-  // Also adjust trailing orders for any non-visible tasks sharing this status
+  // Also adjust trailing orders for any non-visible tasks sharing this status within the same project
   const columnStatuses = (newStatus === 'review') ? ['review', 'approval', 'blocked'] : [newStatus];
+  const projectScope = task.projectId || task.project_id;
   let trailingOrder = (newColumnTaskIds.length + 1) * 100;
   (state.data.tasks || []).forEach(t => {
+    if (projectScope && (t.projectId || t.project_id) !== projectScope) return;
     if (columnStatuses.includes(t.status) && !newColumnTaskIds.includes(t.id)) {
       t.sortOrder = trailingOrder;
       t.sort_order = trailingOrder;
@@ -663,19 +677,7 @@ document.addEventListener('touchend', async (e) => {
 
   if (isTouchDragging) {
     const touch = e.changedTouches[0];
-    const elUnder = document.elementFromPoint(touch.clientX, touch.clientY);
-    let column = elUnder?.closest('.board-column') || (placeholder && placeholder.closest('.board-column'));
-    if (!column) {
-      const columns = Array.from(document.querySelectorAll('.board-column'));
-      if (columns.length > 0) {
-        column = columns.reduce((closest, col) => {
-          const rect = col.getBoundingClientRect();
-          const dist = Math.abs(touch.clientX - (rect.left + rect.width / 2));
-          return dist < closest.dist ? { col, dist } : closest;
-        }, { col: null, dist: Infinity }).col;
-      }
-    }
-    const draggedId = activeDraggedTaskId;
+    const moveDist = Math.hypot(touch.clientX - touchStartX, touch.clientY - touchStartY);
 
     // Immediately remove ghost clone from DOM for crisp release
     if (touchGhost && touchGhost.parentNode) {
@@ -683,8 +685,24 @@ document.addEventListener('touchend', async (e) => {
     }
     touchGhost = null;
 
-    if (column && draggedId) {
-      await handleTaskDrop(column, touch.clientY, draggedId);
+    // Only process drop if finger genuinely moved (> 6px); ignore stationary tap & hold
+    if (moveDist > 6) {
+      const elUnder = document.elementFromPoint(touch.clientX, touch.clientY);
+      let column = elUnder?.closest('.board-column') || (placeholder && placeholder.closest('.board-column'));
+      if (!column) {
+        const columns = Array.from(document.querySelectorAll('.board-column'));
+        if (columns.length > 0) {
+          column = columns.reduce((closest, col) => {
+            const rect = col.getBoundingClientRect();
+            const dist = Math.abs(touch.clientX - (rect.left + rect.width / 2));
+            return dist < closest.dist ? { col, dist } : closest;
+          }, { col: null, dist: Infinity }).col;
+        }
+      }
+      const draggedId = activeDraggedTaskId;
+      if (column && draggedId) {
+        await handleTaskDrop(column, touch.clientY, draggedId);
+      }
     }
     cleanTouchDrag();
   } else {
