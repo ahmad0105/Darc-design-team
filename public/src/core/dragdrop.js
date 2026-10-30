@@ -3,7 +3,7 @@ import { api } from './api.js';
 import { renderView } from './router.js';
 import { showToast } from '../shared/ui.js';
 import { choose, can, isAdmin } from '../core/utils.js';
-import { getTaskSortOrder } from '../features/tasks/tasks.js';
+import { getTaskSortOrder, setSavedTaskSort } from '../features/tasks/tasks.js';
 
 let placeholder = null;
 let activeDraggedTaskId = null;
@@ -219,13 +219,17 @@ document.addEventListener('dragleave', (event) => {
     if (event.relatedTarget && column.contains(event.relatedTarget)) {
       return; // Still inside column
     }
+    // Ignore synthetic 0,0 dragleave events frequently dispatched by WebKit/Safari
+    if (event.clientX === 0 && event.clientY === 0) return;
     const rect = column.getBoundingClientRect();
     const x = event.clientX;
     const y = event.clientY;
-    // Only remove placeholder if cursor is genuinely outside column boundary
-    if (x <= rect.left || x >= rect.right || y <= rect.top || y >= rect.bottom) {
+    // Only remove placeholder if cursor is genuinely outside the entire board area
+    if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
       column.classList.remove('drag-over');
-      removePlaceholder();
+      if (!isDraggingActive) {
+        removePlaceholder();
+      }
     }
   }
 });
@@ -239,112 +243,164 @@ async function handleTaskDrop(column, clientY, explicitTaskId = null) {
   }
   column.classList.remove('drag-over');
 
-  const cardsContainer = column.querySelector('.board-cards');
-  
-  // Determine exact drop position BEFORE removing placeholder
-  let insertBeforeTaskId = null;
-  if (placeholder && placeholder.parentNode === cardsContainer) {
-    const nextEl = placeholder.nextElementSibling;
-    if (nextEl && nextEl.classList.contains('task-card') && nextEl.dataset.taskId !== (explicitTaskId || activeDraggedTaskId)) {
-      insertBeforeTaskId = nextEl.dataset.taskId;
-    }
-  } else if (cardsContainer) {
-    const afterCard = getDragAfterElement(cardsContainer, clientY);
-    if (afterCard && afterCard.dataset.taskId !== (explicitTaskId || activeDraggedTaskId)) {
-      insertBeforeTaskId = afterCard.dataset.taskId;
-    }
-  }
-
-  removePlaceholder();
-  stopContinuousAutoScroll();
-  isDraggingActive = false;
-
   const taskId = explicitTaskId || activeDraggedTaskId;
   activeDraggedTaskId = null;
-
   const newStatus = column.dataset.status;
-  if (!taskId || !newStatus) return;
+
+  if (!taskId || !newStatus) {
+    removePlaceholder();
+    stopContinuousAutoScroll();
+    isDraggingActive = false;
+    return;
+  }
 
   const task = (state.data?.tasks || []).find(t => t.id === taskId);
-  if (!task) return;
+  if (!task) {
+    removePlaceholder();
+    stopContinuousAutoScroll();
+    isDraggingActive = false;
+    return;
+  }
 
+  const cardsContainer = column.querySelector('.board-cards');
+  if (!cardsContainer) {
+    removePlaceholder();
+    stopContinuousAutoScroll();
+    isDraggingActive = false;
+    return;
+  }
+
+  // 1. Dependency Validation: Cannot complete task before dependencies
   const isStatusSame = task.status === newStatus || (newStatus === 'review' && ['review', 'approval', 'blocked'].includes(task.status));
-
   if (!isStatusSame && newStatus === 'done' && task.dependencies && task.dependencies.length) {
     const incomplete = task.dependencies.filter(depId => {
       const dep = state.data.tasks.find(t => t.id === depId);
       return dep && dep.status !== 'done';
     });
     if (incomplete.length) {
+      removePlaceholder();
+      stopContinuousAutoScroll();
+      isDraggingActive = false;
       return showToast(choose('لا يمكن إكمال المهمة قبل إنجاز المهام المعتمدة عليها.', 'Cannot complete task before its dependencies.'), true);
     }
   }
 
-  // Set sort preferences to custom
-  state.projectTaskSort = 'custom';
-  state.myTaskSort = 'custom';
-  try { localStorage.setItem('darc_task_sort_pref', 'custom'); } catch(e) {}
+  // 2. Identify all visible cards in this target column (excluding the dragged card)
+  const existingCards = Array.from(cardsContainer.querySelectorAll('.task-card')).filter(c => c.dataset.taskId !== taskId);
+  const existingTaskIds = existingCards.map(c => c.dataset.taskId).filter(Boolean);
 
-  // Find all sibling tasks in this target column (scope reordering to this column & project)
-  const columnStatuses = (newStatus === 'review') ? ['review', 'approval', 'blocked'] : [newStatus];
-  let targetColumnTasks = (state.data.tasks || []).filter(t => 
-    t.projectId === task.projectId && 
-    (columnStatuses.includes(t.status) || t.id === taskId)
-  );
+  // 3. Determine exact insertion index (0 = very top/first, length = very bottom/last)
+  let insertIdx = existingTaskIds.length; // default to end
 
-  // Remove dragged task from column tasks list if present
-  const existingColIdx = targetColumnTasks.findIndex(t => t.id === taskId);
-  if (existingColIdx !== -1) {
-    targetColumnTasks.splice(existingColIdx, 1);
+  if (placeholder && placeholder.parentNode === cardsContainer) {
+    // Exact WYSIWYG: Placeholder is positioned directly inside the column
+    const nextEl = placeholder.nextElementSibling;
+    if (!nextEl || !nextEl.classList.contains('task-card')) {
+      // Placeholder is at the bottom of the column
+      insertIdx = existingTaskIds.length;
+    } else {
+      const nextTaskId = nextEl.dataset.taskId;
+      const idx = existingTaskIds.indexOf(nextTaskId);
+      if (idx !== -1) {
+        insertIdx = idx;
+      }
+    }
+  } else if (existingCards.length > 0) {
+    // Fallback if placeholder was detached right before drop: calculate via clientY
+    const firstRect = existingCards[0].getBoundingClientRect();
+    const lastRect = existingCards[existingCards.length - 1].getBoundingClientRect();
+
+    if (clientY <= firstRect.top + firstRect.height / 2) {
+      insertIdx = 0; // Guaranteed TOP of the column
+    } else if (clientY >= lastRect.bottom - lastRect.height / 3) {
+      insertIdx = existingTaskIds.length; // Guaranteed BOTTOM of the column
+    } else {
+      const afterCard = getDragAfterElement(cardsContainer, clientY);
+      if (afterCard) {
+        const idx = existingTaskIds.indexOf(afterCard.dataset.taskId);
+        if (idx !== -1) insertIdx = idx;
+      }
+    }
+  } else {
+    // Column is currently empty
+    insertIdx = 0;
   }
 
-  // Ensure tasks are sorted by current order first so relative insertion is exact
-  targetColumnTasks.sort((a, b) => getTaskSortOrder(a) - getTaskSortOrder(b));
+  // Clean up drag visuals immediately
+  removePlaceholder();
+  stopContinuousAutoScroll();
+  isDraggingActive = false;
 
-  // Update dragged task status
+  // 4. Build the final ordered list of task IDs for this column
+  const newColumnTaskIds = [...existingTaskIds];
+  newColumnTaskIds.splice(insertIdx, 0, taskId);
+
+  // 5. Update dragged task status
   task.status = newStatus;
 
-  // Insert at the exact calculated location
-  let insertIdx = targetColumnTasks.length; // default to end
-  if (insertBeforeTaskId) {
-    let nextIdx = targetColumnTasks.findIndex(t => t.id === insertBeforeTaskId);
-    if (nextIdx !== -1) insertIdx = nextIdx;
-  }
-  targetColumnTasks.splice(insertIdx, 0, task);
-
-  // Re-assign distinct sortOrder to every task in this column
-  targetColumnTasks.forEach((t, idx) => {
-    const newOrder = (idx + 1) * 100;
-    t.sortOrder = newOrder;
-    t.sort_order = newOrder;
-    t.customFields = { ...(t.customFields || {}), sortOrder: newOrder, sort_order: newOrder };
-    t.custom_fields = { ...(t.custom_fields || {}), sortOrder: newOrder, sort_order: newOrder };
+  // 6. Assign clean, contiguous sortOrder (100, 200, 300, ...) to every task in this column
+  newColumnTaskIds.forEach((id, idx) => {
+    const t = (state.data.tasks || []).find(x => x.id === id);
+    if (t) {
+      const order = (idx + 1) * 100;
+      t.sortOrder = order;
+      t.sort_order = order;
+      if (!t.customFields) t.customFields = {};
+      t.customFields.sortOrder = order;
+      t.customFields.sort_order = order;
+      if (!t.custom_fields) t.custom_fields = {};
+      t.custom_fields.sortOrder = order;
+      t.custom_fields.sort_order = order;
+    }
   });
 
-  // Re-render board immediately (instant UI response)
+  // Also adjust trailing orders for any non-visible tasks sharing this status
+  const columnStatuses = (newStatus === 'review') ? ['review', 'approval', 'blocked'] : [newStatus];
+  let trailingOrder = (newColumnTaskIds.length + 1) * 100;
+  (state.data.tasks || []).forEach(t => {
+    if (columnStatuses.includes(t.status) && !newColumnTaskIds.includes(t.id)) {
+      t.sortOrder = trailingOrder;
+      t.sort_order = trailingOrder;
+      if (t.customFields) { t.customFields.sortOrder = trailingOrder; t.customFields.sort_order = trailingOrder; }
+      if (t.custom_fields) { t.custom_fields.sortOrder = trailingOrder; t.custom_fields.sort_order = trailingOrder; }
+      trailingOrder += 100;
+    }
+  });
+
+  // 7. Enforce Custom Sort mode across state and storage so board renders the exact drop order
+  setSavedTaskSort('custom');
+  state.taskSortPref = 'custom';
+  state.projectTaskSort = 'custom';
+  state.myTaskSort = 'custom';
+
+  // 8. Re-render board immediately (instant 0ms response)
   renderView();
 
-  // Tactile haptic feedback on touch devices
+  // 9. Tactile haptic feedback on touch devices
   if (typeof navigator !== 'undefined' && navigator.vibrate) {
     try { navigator.vibrate(20); } catch(e) {}
   }
 
+  // 10. Landing visual pulse
   const droppedCardEl = document.querySelector(`.task-card[data-task-id="${taskId}"]`);
   if (droppedCardEl) {
     droppedCardEl.classList.add('just-dropped');
     setTimeout(() => droppedCardEl?.classList.remove('just-dropped'), 450);
   }
 
-  // Debounce & Queue batch reorder API sync to consolidate rapid consecutive drops
+  // 11. Debounce & Queue batch reorder API sync to consolidate rapid consecutive drops
   if (window._reorderSyncTimer) clearTimeout(window._reorderSyncTimer);
   window._pendingReorderBatch = window._pendingReorderBatch || new Map();
-  targetColumnTasks.forEach(t => {
-    window._pendingReorderBatch.set(t.id, {
-      id: t.id,
-      status: t.status,
-      sortOrder: t.sortOrder,
-      customFields: t.customFields
-    });
+  newColumnTaskIds.forEach(id => {
+    const t = (state.data.tasks || []).find(x => x.id === id);
+    if (t) {
+      window._pendingReorderBatch.set(t.id, {
+        id: t.id,
+        status: t.status,
+        sortOrder: t.sortOrder,
+        customFields: t.customFields
+      });
+    }
   });
 
   window._reorderSyncTimer = setTimeout(() => {
