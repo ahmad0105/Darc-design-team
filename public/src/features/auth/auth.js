@@ -196,7 +196,6 @@ export function renderLogin(errorMessage = '', mode = 'login', isSuccess = false
             <span>${choose('تذكر بريدي الإلكتروني على هذا الجهاز', 'Remember my email on this device')}</span>
           </label>
         </div>
-        <div id="turnstile-container" style="margin-bottom:12px;min-height:0;display:flex;justify-content:center;"></div>
         <div id="login-error-container">${messageHtml}</div>
         <button class="btn btn-primary btn-block" type="submit">${icon(state.lang === 'ar' ? 'arrowLeft' : 'arrowRight', 16)} ${t('login')}</button>
       </form>
@@ -264,51 +263,6 @@ export function renderLogin(errorMessage = '', mode = 'login', isSuccess = false
 
   bindUniversalPasswordToggles();
 
-  const TURNSTILE_SITE_KEY = '0x4AAAAAAFkv_qFdOceTRDC2';
-  let _turnstileWidgetId = null;
-
-  // 1. Initialise Turnstile strictly in On-Demand Passive Mode (execution: 'execute')
-  // This prevents Turnstile from probing fonts, network or triggering anti-debug traps on page load!
-  const initTurnstile = () => {
-    const container = document.getElementById('turnstile-container');
-    if (!container) return;
-    if (typeof window !== 'undefined' && window.turnstile) {
-      try {
-        if (_turnstileWidgetId !== null) {
-          try { window.turnstile.remove(_turnstileWidgetId); } catch (e) {}
-          _turnstileWidgetId = null;
-        }
-        container.innerHTML = '';
-        _turnstileWidgetId = window.turnstile.render('#turnstile-container', {
-          sitekey: TURNSTILE_SITE_KEY,
-          theme: state.theme === 'dark' ? 'dark' : 'light',
-          language: state.lang === 'ar' ? 'ar' : 'en',
-          execution: 'execute', // Passive mode: triggers strictly on submit, never loops or blocks
-          appearance: 'interaction-only',
-          retry: 'never',
-          'refresh-expired': 'auto'
-        });
-      } catch (err) {
-        console.warn('[Turnstile] Passive registration:', err.message);
-      }
-    }
-  };
-
-  if (typeof window !== 'undefined' && window.turnstile) {
-    initTurnstile();
-  } else {
-    let checkAttempts = 0;
-    const checkTimer = setInterval(() => {
-      checkAttempts++;
-      if (typeof window !== 'undefined' && window.turnstile) {
-        clearInterval(checkTimer);
-        initTurnstile();
-      } else if (checkAttempts > 15) {
-        clearInterval(checkTimer);
-      }
-    }, 200);
-  }
-
   const showLoginError = (msg) => {
     const errBox = document.getElementById('login-error-container');
     if (errBox) {
@@ -338,63 +292,7 @@ export function renderLogin(errorMessage = '', mode = 'login', isSuccess = false
     button.innerHTML = `<span>⏳ ${choose('جاري التحقق وتسجيل الدخول...', 'Verifying & signing in...')}</span>`;
 
     const isDemo = email.trim().toLowerCase() === 'demo@darc-design.bond' || email.trim().toLowerCase() === 'demo@darc.local';
-
-    // 2. Resolve Turnstile challenge on demand with a strict 1.8s timeout
-    const getTurnstileToken = async () => {
-      if (isDemo || typeof window === 'undefined' || !window.turnstile || _turnstileWidgetId === null) {
-        return isDemo ? 'bypass_dev' : 'fallback_client';
-      }
-
-      return new Promise((resolve) => {
-        let isDone = false;
-        const timer = setTimeout(() => {
-          if (!isDone) {
-            isDone = true;
-            resolve('fallback_client');
-          }
-        }, 1000);
-
-        try {
-          window.turnstile.execute(_turnstileWidgetId, {
-            callback: (token) => {
-              if (!isDone) {
-                isDone = true;
-                clearTimeout(timer);
-                resolve(token || 'fallback_client');
-              }
-            },
-            'error-callback': (code) => {
-              console.warn('[Turnstile] Challenge notice code:', code);
-              if (!isDone) {
-                isDone = true;
-                clearTimeout(timer);
-                resolve('fallback_client');
-              }
-            },
-            'timeout-callback': () => {
-              if (!isDone) {
-                isDone = true;
-                clearTimeout(timer);
-                resolve('fallback_client');
-              }
-            }
-          });
-        } catch (e) {
-          if (!isDone) {
-            isDone = true;
-            clearTimeout(timer);
-            resolve('fallback_client');
-          }
-        }
-      });
-    };
-
-    let turnstileToken = 'fallback_client';
-    try {
-      turnstileToken = await getTurnstileToken();
-    } catch (e) {
-      turnstileToken = 'fallback_client';
-    }
+    const turnstileToken = isDemo ? 'bypass_dev' : 'fallback_client';
     
     try {
       const loginRes = await api('/api/auth/login', {
@@ -414,10 +312,6 @@ export function renderLogin(errorMessage = '', mode = 'login', isSuccess = false
       savePreferencesCookies({ theme: state.theme, lang: state.lang });
       invalidateBootstrapEtag();
       state.view = 'dashboard';
-      if (typeof window !== 'undefined' && window.turnstile && _turnstileWidgetId !== null) {
-        try { window.turnstile.remove(_turnstileWidgetId); } catch (e) {}
-        _turnstileWidgetId = null;
-      }
       await loadData();
       renderApp();
     } catch (error) {
@@ -426,11 +320,8 @@ export function renderLogin(errorMessage = '', mode = 'login', isSuccess = false
         button.disabled = false;
         button.innerHTML = defaultBtnHtml;
       }
-      if (typeof window !== 'undefined' && window.turnstile && _turnstileWidgetId !== null) {
-        try { window.turnstile.reset(_turnstileWidgetId); } catch (e) {}
-      }
 
-      // 3. User-Friendly, crystal-clear Arabic error clarification
+      // User-friendly, crystal-clear Arabic error clarification
       let friendlyMessage = error.message;
 
       if (typeof navigator !== 'undefined' && !navigator.onLine) {
