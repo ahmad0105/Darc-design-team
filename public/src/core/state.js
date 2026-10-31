@@ -71,7 +71,7 @@ function resolveInitialRoute() {
           const rawTab = q.get('tab');
           if (rawTab && ['overview', 'tasks', 'drawings', 'documents', 'timeline', 'activity'].includes(rawTab)) projectTab = rawTab;
           const rawSection = q.get('section');
-          if (rawSection && ['profile', 'company', 'roles', 'accounts', 'audit', 'trash', 'preferences'].includes(rawSection)) settingsSection = rawSection;
+          if (rawSection && ['profile', 'company', 'roles', 'accounts', 'whatsapp', 'audit', 'trash', 'analytics', 'diagnostics', 'preferences'].includes(rawSection)) settingsSection = rawSection;
         }
         return { view: viewPart, activeProjectId, projectTab, settingsSection };
       }

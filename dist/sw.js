@@ -1,5 +1,5 @@
 // DARC Design Team — High-Resilience Service Worker (Vite Architecture)
-const CACHE_NAME = 'darc-cache-v4.9.0';
+const CACHE_NAME = 'darc-cache-v4.9.1';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
