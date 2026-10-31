@@ -21,6 +21,8 @@ export async function getWhatsAppConfig(supabase) {
       notifyOnBlocked: cf.notifyOnBlocked !== false,
       notifyOnApproval: cf.notifyOnApproval !== false,
       notifyOnDrawing: cf.notifyOnDrawing !== false,
+      notifyOnCollectiveMention: cf.notifyOnCollectiveMention !== false,
+      sendGroupBroadcast: Boolean(cf.sendGroupBroadcast),
       provider: cf.provider || 'evolution'
     };
   } catch (err) {
@@ -88,6 +90,32 @@ export function formatWhatsAppMessage(type, data) {
         `👤 *المبلغ:* ${blockedBy || 'مهندس الموقع'}\n` +
         `🔗 *فتح المهمة:* ${portalUrl}/#tasks\n` +
         `━━━━━━━━━━━━━━━━━━━━`
+      );
+    }
+    case 'collective_mention': {
+      const { taskTitle, projectName, senderName, content } = data;
+      return (
+        `📢 *إشارة جماعية لفريق العمل والإدارة 👥*\n` +
+        `━━━━━━━━━━━━━━━━━━━━\n` +
+        (projectName ? `🏢 *المشروع:* ${projectName}\n` : '') +
+        (taskTitle ? `📋 *المهمة:* ${taskTitle}\n` : '') +
+        (senderName ? `👤 *المرسل:* ${senderName}\n` : '') +
+        `💬 *الرسالة:*\n${content || ''}\n` +
+        `━━━━━━━━━━━━━━━━━━━━\n` +
+        `🔗 *فتح المهمة:* ${portalUrl}/#tasks`
+      );
+    }
+    case 'mention': {
+      const { taskTitle, projectName, senderName, content } = data;
+      return (
+        `📌 *إشارة جديدة لك في مساحة العمل*\n` +
+        `━━━━━━━━━━━━━━━━━━━━\n` +
+        (projectName ? `🏢 *المشروع:* ${projectName}\n` : '') +
+        (taskTitle ? `📋 *المهمة:* ${taskTitle}\n` : '') +
+        (senderName ? `👤 *المرسل:* ${senderName}\n` : '') +
+        `💬 *الرسالة:*\n${content || ''}\n` +
+        `━━━━━━━━━━━━━━━━━━━━\n` +
+        `🔗 *المعاينة:* ${portalUrl}/#tasks`
       );
     }
     case 'direct_notification': {
@@ -404,9 +432,9 @@ export async function dispatchDirectNotificationAlert(supabase, userId, notifica
       return { ok: false, skipped: true };
     }
 
-    // Strict: only fetch user's real phone from database
-    const { data: userRec } = await supabase.from('users').select('id, name, custom_fields').eq('id', userId).maybeSingle();
-    const rawPhone = userRec?.custom_fields?.phone;
+    // Strict: fetch user's real phone from database (phone column or custom_fields.phone)
+    const { data: userRec } = await supabase.from('users').select('id, name, phone, custom_fields').eq('id', userId).maybeSingle();
+    const rawPhone = userRec?.phone || userRec?.custom_fields?.phone;
     if (!rawPhone || typeof rawPhone !== 'string') {
       return { ok: false, skipped: true, reason: 'No phone number configured for this user' };
     }
@@ -416,7 +444,8 @@ export async function dispatchDirectNotificationAlert(supabase, userId, notifica
       return { ok: false, skipped: true, reason: 'Invalid user phone format' };
     }
 
-    return await sendWhatsAppAlert({ ...config, recipient: cleanPhone }, 'direct_notification', notificationData, supabase);
+    const alertType = notificationData.type || 'direct_notification';
+    return await sendWhatsAppAlert({ ...config, recipient: cleanPhone }, alertType, notificationData, supabase);
   } catch (err) {
     console.warn('[WhatsApp] dispatchDirectNotificationAlert error:', err.message);
     return { ok: false, error: err.message };

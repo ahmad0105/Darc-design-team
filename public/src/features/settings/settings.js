@@ -1417,14 +1417,22 @@ export function renderSettings() {
           </div>
 
           <div class="field">
-            <label>${choose('المستلم الافتراضي (Target Recipient) *', 'Target Recipient *')}</label>
-            <input type="text" name="recipient" value="${esc(wa.recipient || '')}" placeholder="${choose('كود قروب واتساب المهندسين (1203630...@g.us) أو رقم جوال (96650xxxxxxx)', 'WhatsApp Group JID (1203630...@g.us) or Phone (96650xxxxxxx)')}" />
-            <small style="font-size:11px;color:var(--teal);margin-top:4px;display:block;">${choose('💡 نصيحة الأمان: الإرسال داخل قروب واتساب يقلل احتمالية الحظر لـ 0% مقارنة بالمحادثات الفردية.', '💡 Anti-Ban Tip: Sending inside a WhatsApp Group virtually eliminates ban risk (near 0%).')}</small>
+            <label>${choose('المستلم الافتراضي / قروب الواتساب (اختياري)', 'Default Recipient / WhatsApp Group (Optional)')}</label>
+            <input type="text" name="recipient" value="${esc(wa.recipient || '')}" placeholder="${choose('كود قروب واتساب المهندسين (1203630...@g.us) أو رقم جوال الإدارة', 'WhatsApp Group JID (1203630...@g.us) or Management Phone')}" />
+            <small style="font-size:11px;color:var(--teal);margin-top:4px;display:block;">${choose('💡 ملاحظة: هذا الحقل اختياري. في حال عدم وجود قروب حالياً، يمكنك تركه فارغاً وسيتكفل النظام بإرسال كافة التنبيهات والمنشن كرسائل فردية مباشرة إلى هواتف المهندسين والمدير المسجلة في حساباتهم.', '💡 Note: This field is optional. If you do not have a group yet, leave it blank and the system will automatically send alerts & mentions directly to engineers & manager personal phones.')}</small>
           </div>
 
           <div style="background:var(--surface-soft);border:1px solid var(--border);border-radius:12px;padding:16px;">
             <strong style="display:block;font-size:13px;color:var(--ink);margin-bottom:10px;">${choose('أحداث التنبيه الفوري التلقائية:', 'Automated Trigger Events:')}</strong>
             <div style="display:grid;gap:8px;">
+              <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink);cursor:pointer;">
+                <input type="checkbox" name="notifyOnCollectiveMention" ${wa.notifyOnCollectiveMention !== false ? 'checked' : ''} />
+                <span>📢 ${choose('عند المنشن الجماعي (@all / @الكل): إرسال تنبيه مباشر لكل أعضاء المشروع والإدارة حتى المدير', 'When collective mention (@all / @everyone): send direct alert to all project members and managers')}</span>
+              </label>
+              <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink);cursor:pointer;">
+                <input type="checkbox" name="sendGroupBroadcast" ${wa.sendGroupBroadcast ? 'checked' : ''} />
+                <span>👥 ${choose('إرسال نسخة لقروب الواتساب العام (في حال إدخال كود القروب في الحقل أعلاه)', 'Send a copy to the WhatsApp Group (if Group JID is set above)')}</span>
+              </label>
               <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink);cursor:pointer;">
                 <input type="checkbox" name="notifyOnBlocked" ${wa.notifyOnBlocked !== false ? 'checked' : ''} />
                 <span>⚠️ ${choose('عند تعليق مهمة هندسية (Task Blocked) لتنبيه الموقع فوراً', 'When a task is blocked to alert field engineers instantly')}</span>

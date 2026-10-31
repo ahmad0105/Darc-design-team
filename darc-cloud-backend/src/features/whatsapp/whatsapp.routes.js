@@ -67,6 +67,8 @@ app.post('/config', async (c) => {
     notifyOnBlocked: incoming.notifyOnBlocked !== false,
     notifyOnApproval: incoming.notifyOnApproval !== false,
     notifyOnDrawing: incoming.notifyOnDrawing !== false,
+    notifyOnCollectiveMention: incoming.notifyOnCollectiveMention !== false,
+    sendGroupBroadcast: Boolean(incoming.sendGroupBroadcast),
     provider: incoming.provider === 'webhook' ? 'webhook' : 'evolution',
     updatedAt: new Date().toISOString()
   };
@@ -107,8 +109,18 @@ app.post('/test', async (c) => {
     config = await getWhatsAppConfig(supabase);
   }
 
+  // If no group or recipient is entered in form, check admin's own profile phone
+  if (!config.recipient) {
+    const currentUserId = c.get('userId');
+    const { data: adminUser } = await supabase.from('users').select('phone, custom_fields').eq('id', currentUserId).maybeSingle();
+    const adminPhone = adminUser?.phone || adminUser?.custom_fields?.phone;
+    if (adminPhone) {
+      config.recipient = adminPhone;
+    }
+  }
+
   if (!config.serverUrl || !config.recipient) {
-    return c.json({ error: 'يرجى إدخال رابط الخادم ورقم الهاتف أو كود القروب أولاً' }, 400);
+    return c.json({ error: 'يرجى إدخال رابط الخادم ورقم الهاتف أو كود القروب (أو تسجيل رقمك في ملفك الشخصي) لإجراء الاختبار' }, 400);
   }
 
   // SSRF Protection (CWE-918): Strictly validate outbound serverUrl

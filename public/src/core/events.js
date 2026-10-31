@@ -316,7 +316,9 @@ export async function handleSubmit(event) {
         recipient: values.recipient || '',
         notifyOnBlocked: form.querySelector('input[name="notifyOnBlocked"]')?.checked || false,
         notifyOnApproval: form.querySelector('input[name="notifyOnApproval"]')?.checked || false,
-        notifyOnDrawing: form.querySelector('input[name="notifyOnDrawing"]')?.checked || false
+        notifyOnDrawing: form.querySelector('input[name="notifyOnDrawing"]')?.checked || false,
+        notifyOnCollectiveMention: form.querySelector('input[name="notifyOnCollectiveMention"]')?.checked !== false,
+        sendGroupBroadcast: form.querySelector('input[name="sendGroupBroadcast"]')?.checked || false
       };
       const res = await api('/api/whatsapp/config', { method: 'POST', body: JSON.stringify({ config }) });
       if (res.config) {
@@ -1459,8 +1461,24 @@ export function handleInput(event) {
       const query = match[1].toLowerCase();
       const users = (state.data?.users || []).filter(u => u.status !== 'inactive');
       const filtered = users.filter(u => `${u.name || ''} ${u.nameEn || ''} ${u.email || ''}`.toLowerCase().includes(query));
+
+      const matchesCollective = !query || 'all'.startsWith(query) || 'الكل'.startsWith(query) || 'everyone'.startsWith(query) || 'الجميع'.startsWith(query) || 'فريق'.startsWith(query);
+      let itemsHtml = '';
+
+      if (matchesCollective) {
+        itemsHtml += `
+          <div class="mention-option collective-mention" data-username="all" style="padding:8px 12px;cursor:pointer;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--line);background:rgba(20,184,166,0.06);">
+            <div style="width:28px;height:28px;border-radius:50%;background:var(--brand-teal);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;">📢</div>
+            <div style="display:flex;flex-direction:column;gap:1px;text-align:start;">
+              <strong style="font-size:12px;color:var(--brand-teal);">@all · ${choose('الكل / الجميع (منشن لكافة الفريق والمدير)', 'Everyone (Team & Management)')}</strong>
+              <span style="font-size:10px;color:var(--muted);">${choose('إرسال تنبيه مباشر لكل أعضاء المشروع والإدارة عبر واتساب', 'Direct WhatsApp alert to all project members & managers')}</span>
+            </div>
+          </div>
+        `;
+      }
+
       if (filtered.length) {
-        dropdown.innerHTML = filtered.map(u => {
+        itemsHtml += filtered.map(u => {
           const rawName = u.name || u.nameEn || u.email || 'user';
           const username = rawName.trim().split(/\s+/)[0];
           return `
@@ -1470,6 +1488,10 @@ export function handleInput(event) {
             </div>
           `;
         }).join('');
+      }
+
+      if (itemsHtml) {
+        dropdown.innerHTML = itemsHtml;
         dropdown.style.display = 'block';
         
         const options = dropdown.querySelectorAll('.mention-option');

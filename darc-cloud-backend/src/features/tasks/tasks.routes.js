@@ -648,42 +648,119 @@ app.post('/:id/comments', async (c) => {
       if (mentionsMatch) {
         const usernames = Array.from(new Set(mentionsMatch.map(m => m.slice(1).toLowerCase())));
         if (usernames.length > 0) {
-          const { data: members } = await supabase
+          const COLLECTIVE_KEYWORDS = new Set(['all', 'الكل', 'everyone', 'team', 'الجميع', 'فريق', 'here', 'channel']);
+          const isCollectiveMention = usernames.some(u => COLLECTIVE_KEYWORDS.has(u));
+
+          // 1. Fetch project members
+          const { data: projectMembers } = await supabase
             .from('project_members')
-            .select('user_id, users!inner(name_en, name, email)')
+            .select('user_id, users(id, name, name_en, email, role_id, phone, custom_fields)')
             .eq('project_id', task.project_id);
-            
-          if (members) {
-            const notifications = [];
+
+          // 2. Fetch all active admins/managers (حتى المدير!)
+          const { data: adminUsers } = await supabase
+            .from('users')
+            .select('id, name, name_en, email, role_id, phone, custom_fields')
+            .eq('role_id', 'admin')
+            .eq('status', 'active');
+
+          const targetUsersMap = new Map();
+
+          if (isCollectiveMention) {
+            // Add all project members
+            (projectMembers || []).forEach(pm => {
+              if (pm.user_id && pm.user_id !== userId) {
+                targetUsersMap.set(pm.user_id, pm.users || { id: pm.user_id });
+              }
+            });
+            // Add all admins / directors (حتى المدير!)
+            (adminUsers || []).forEach(adm => {
+              if (adm.id && adm.id !== userId) {
+                targetUsersMap.set(adm.id, adm);
+              }
+            });
+          } else {
+            // Match individual mentions
+            const allCandidates = [
+              ...(projectMembers || []).map(pm => pm.users).filter(Boolean),
+              ...(adminUsers || [])
+            ];
             for (const username of usernames) {
-              const mentionedUser = members.find(m => 
-                m.user_id !== userId &&
-                ((m.users.name_en && m.users.name_en.toLowerCase().replace(/\s+/g, '') === username) ||
-                 (m.users.name && m.users.name.toLowerCase().replace(/\s+/g, '') === username) ||
-                 (m.users.email && m.users.email.split('@')[0].toLowerCase() === username))
+              const found = allCandidates.find(u =>
+                u.id !== userId &&
+                ((u.name_en && u.name_en.toLowerCase().replace(/\s+/g, '') === username) ||
+                 (u.name && u.name.toLowerCase().replace(/\s+/g, '') === username) ||
+                 (u.email && u.email.split('@')[0].toLowerCase() === username))
               );
-              if (mentionedUser) {
-                notifications.push({
-                  user_id: mentionedUser.user_id,
-                  type: 'mention',
-                  title_ar: 'إشارة جديدة',
-                  title_en: 'New Mention',
-                  body_ar: `تمت الإشارة إليك في المهمة: ${task.title_ar}`,
-                  body_en: `You were mentioned in: ${task.title_ar}`,
-                  link: `/project/${task.project_id}?task=${taskId}`
-                });
+              if (found) {
+                targetUsersMap.set(found.id, found);
               }
             }
+          }
+
+          if (targetUsersMap.size > 0) {
+            const { data: author } = await supabase.from('users').select('name, name_en').eq('id', userId).maybeSingle();
+            const senderName = author?.name || author?.name_en || 'أحد أعضاء الفريق';
+
+            const { data: proj } = await supabase.from('projects').select('name_ar, name_en').eq('id', task.project_id).maybeSingle();
+            const projectName = proj?.name_ar || proj?.name_en || 'مشروع هندسي';
+
+            const notifications = [];
+            for (const [targetId] of targetUsersMap.entries()) {
+              notifications.push({
+                user_id: targetId,
+                type: 'mention',
+                title_ar: isCollectiveMention ? '📢 إشارة جماعية في مهمة' : 'إشارة جديدة في مهمة',
+                title_en: isCollectiveMention ? '📢 Collective Mention in Task' : 'New Mention in Task',
+                body_ar: isCollectiveMention
+                  ? `أشار ${senderName} إلى كافة أعضاء المشروع والإدارة في: ${task.title_ar}`
+                  : `أشار إليك ${senderName} في المهمة: ${task.title_ar}`,
+                body_en: isCollectiveMention
+                  ? `${senderName} mentioned everyone in: ${task.title_ar}`
+                  : `${senderName} mentioned you in: ${task.title_ar}`,
+                link: `/project/${task.project_id}?task=${taskId}`,
+                task_id: taskId,
+                project_id: task.project_id
+              });
+            }
+
             if (notifications.length > 0) {
               await supabase.from('notifications').insert(notifications);
+
               // Dispatch WhatsApp direct alerts for mentions
-              import('../whatsapp/whatsapp.service.js').then(({ dispatchDirectNotificationAlert }) => {
+              import('../whatsapp/whatsapp.service.js').then(async ({ dispatchDirectNotificationAlert, getWhatsAppConfig, sendWhatsAppAlert }) => {
+                const waConfig = await getWhatsAppConfig(supabase);
+                if (!waConfig || !waConfig.enabled) return;
+
+                if (isCollectiveMention && waConfig.notifyOnCollectiveMention === false) {
+                  return;
+                }
+
+                // 1. Direct Alerts: Send personal WhatsApp alert to each member and manager
                 for (const n of notifications) {
-                  dispatchDirectNotificationAlert(supabase, n.user_id, {
+                  await dispatchDirectNotificationAlert(supabase, n.user_id, {
                     title: n.title_ar,
-                    content: n.body_ar,
-                    type: 'mention'
-                  }).catch(() => {});
+                    content: content,
+                    type: isCollectiveMention ? 'collective_mention' : 'mention',
+                    taskTitle: task.title_ar,
+                    projectName: projectName,
+                    senderName: senderName,
+                    taskId: taskId,
+                    projectId: task.project_id
+                  }).catch(err => console.warn('[WhatsApp Mention Direct Alert]', err.message));
+                }
+
+                // 2. Group Broadcast (Optional): If a group recipient is configured in settings
+                if (isCollectiveMention && waConfig.recipient && (waConfig.recipient.includes('@g.us') || waConfig.sendGroupBroadcast)) {
+                  await sendWhatsAppAlert(waConfig, 'collective_mention', {
+                    title: '📢 منشن جماعي لفريق العمل والإدارة',
+                    content: content,
+                    taskTitle: task.title_ar,
+                    projectName: projectName,
+                    senderName: senderName,
+                    taskId: taskId,
+                    projectId: task.project_id
+                  }, supabase).catch(err => console.warn('[WhatsApp Group Mention Broadcast]', err.message));
                 }
               }).catch(() => {});
             }
