@@ -692,7 +692,7 @@ app.patch('/:id', async (c) => {
   if (!/^[a-zA-Z0-9_-]{4,50}$/.test(docId)) {
     return c.json({ error: 'معرف المستند غير صالح' }, 400);
   }
-  const body = await c.req.json();
+  const body = await c.req.json().catch(() => ({}));
   const supabase = c.get('supabase');
   const userId = c.get('userId');
   const roleId = c.get('roleId');
@@ -749,6 +749,21 @@ app.patch('/:id', async (c) => {
         taskId: doc.task_id
       }).catch(() => {});
     }
+
+    // Dispatch company-level WhatsApp alert if notifyOnApproval is enabled
+    import('../whatsapp/whatsapp.service.js').then(async ({ getWhatsAppConfig, sendWhatsAppAlert }) => {
+      const waConfig = await getWhatsAppConfig(supabase);
+      if (waConfig.enabled && waConfig.notifyOnApproval) {
+        const { data: proj } = await supabase.from('projects').select('name_ar, name_en').eq('id', doc.project_id).maybeSingle();
+        const { data: approver } = await supabase.from('users').select('name, name_en').eq('id', userId).maybeSingle();
+        await sendWhatsAppAlert(waConfig, 'document_approved', {
+          docName: updates.original_name || doc.original_name,
+          projectName: proj?.name_ar || proj?.name_en || 'مشروع هندسي',
+          version: 'معتمد',
+          approvedBy: approver?.name || approver?.name_en || 'المشرف الهندسي'
+        }, supabase).catch(() => {});
+      }
+    }).catch(() => {});
   } else if (body.status === 'review' && doc.status !== 'review' && doc.project_id) {
     notifyReviewersOfDocument(supabase, {
       docId,

@@ -43,7 +43,7 @@ export function setSessionCookie(c, token, maxAgeSeconds = DEFAULT_SESSION_MAX_A
   setCookie(c, SESSION_COOKIE_NAME, token, {
     path: '/',
     httpOnly: true,
-    secure: true,
+    secure: secure,
     sameSite: 'Lax',
     domain: cookieDomain,
     maxAge: maxAgeSeconds
@@ -55,6 +55,7 @@ export function setSessionCookie(c, token, maxAgeSeconds = DEFAULT_SESSION_MAX_A
  * the path, secure, sameSite, and httpOnly flags.
  */
 export function clearSessionCookie(c) {
+  const secure = isSecureRequest(c);
   let cookieDomain = undefined;
   try {
     const host = new URL(c.req.url).hostname;
@@ -66,7 +67,7 @@ export function clearSessionCookie(c) {
   deleteCookie(c, SESSION_COOKIE_NAME, {
     path: '/',
     httpOnly: true,
-    secure: true,
+    secure: secure,
     sameSite: 'Lax',
     domain: cookieDomain
   });

@@ -424,20 +424,8 @@ app.delete('/:type/:id', async (c) => {
   }
 });
 
-// POST /api/trash/cleanup — Permanently deletes soft-deleted items older than TTL threshold (default 30 days)
-app.post('/cleanup', async (c) => {
-  const roleId = c.get('roleId');
-  if (roleId !== 'admin') {
-    return c.json({ error: 'غير مصرح لك بتنفيذ عملية تنظيف سلة المهملات، الصلاحية للمشرفين فقط' }, 403);
-  }
-
-  const supabase = c.get('supabase');
-  let body = {};
-  try { body = await c.req.json(); } catch (e) {}
-  const parsedDays = parseInt(body.days, 10);
-  const daysThreshold = (!isNaN(parsedDays) && parsedDays >= 1 && parsedDays <= 365) ? parsedDays : 30;
+export async function purgeExpiredTrash(supabase, env, daysThreshold = 30) {
   const cutoffDate = new Date(Date.now() - daysThreshold * 24 * 60 * 60 * 1000).toISOString();
-
   let deletedDocsCount = 0;
   let deletedTasksCount = 0;
   let deletedProjectsCount = 0;
@@ -452,7 +440,7 @@ app.post('/cleanup', async (c) => {
     if (expiredDocs && expiredDocs.length > 0) {
       for (const d of expiredDocs) {
         const fileId = extractDriveFileId(d.disk_filename);
-        if (fileId) await deleteFromGoogleDrive(c.env, fileId).catch(e => console.warn(e));
+        if (fileId && env) await deleteFromGoogleDrive(env, fileId).catch(e => console.warn(e));
       }
       const docIds = expiredDocs.map(d => d.id);
       await supabase.from('documents').delete().in('id', docIds);
@@ -474,20 +462,38 @@ app.post('/cleanup', async (c) => {
     }
 
     invalidateBootstrapCache();
+    return { ok: true, deletedDocsCount, deletedTasksCount, deletedProjectsCount };
+  } catch (err) {
+    console.warn('[Trash Auto-Purge]', err.message);
+    return { ok: false, error: err.message };
+  }
+}
 
-    return c.json({
-      ok: true,
-      cutoffDate,
-      daysThreshold,
-      deletedDocsCount,
-      deletedTasksCount,
-      deletedProjectsCount,
-      message: `تم تنظيف العناصر المحذوفة منذ أكثر من ${daysThreshold} يوماً بنجاح.`
-    });
-  } catch (error) {
-    console.error('[Purge Trash Error]', error.message);
+// POST /api/trash/cleanup — Permanently deletes soft-deleted items older than TTL threshold (default 30 days)
+app.post('/cleanup', async (c) => {
+  const roleId = c.get('roleId');
+  if (roleId !== 'admin') {
+    return c.json({ error: 'غير مصرح لك بتنفيذ عملية تنظيف سلة المهملات، الصلاحية للمشرفين فقط' }, 403);
+  }
+
+  const supabase = c.get('supabase');
+  const body = await c.req.json().catch(() => ({}));
+  const parsedDays = parseInt(body.days, 10);
+  const daysThreshold = (!isNaN(parsedDays) && parsedDays >= 1 && parsedDays <= 365) ? parsedDays : 30;
+
+  const res = await purgeExpiredTrash(supabase, c.env, daysThreshold);
+  if (!res.ok) {
     return c.json({ error: 'فشلت عملية تنظيف سلة المهملات، يرجى المحاولة لاحقاً.' }, 500);
   }
+
+  return c.json({
+    ok: true,
+    daysThreshold,
+    deletedDocsCount: res.deletedDocsCount,
+    deletedTasksCount: res.deletedTasksCount,
+    deletedProjectsCount: res.deletedProjectsCount,
+    message: `تم تنظيف العناصر المحذوفة منذ أكثر من ${daysThreshold} يوماً بنجاح.`
+  });
 });
 
 export default app;

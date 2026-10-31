@@ -74,9 +74,10 @@ export async function api(path, options = {}) {
   const shouldSendEtag = Boolean(_lastBootstrapEtag) && (isSilent || Boolean(state.data) || hasOfflineData);
   const clientMutationId = isMutation ? (`mut_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`) : null;
 
+  const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
   const headers = {
     ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-    ...(options.body ? { 'Content-Type': 'application/json' } : {}),
+    ...(options.body && !isFormData ? { 'Content-Type': 'application/json' } : {}),
     ...(clientMutationId ? { 'X-Mutation-ID': clientMutationId } : {}),
     ...(path === '/api/bootstrap' && shouldSendEtag ? { 'If-None-Match': _lastBootstrapEtag } : {}),
     ...(path === '/api/bootstrap' && !shouldSendEtag ? { 'Cache-Control': 'no-cache, no-store' } : {}),

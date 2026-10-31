@@ -18,7 +18,7 @@ import documentsApp     from './features/documents/documents.routes.js';
 import remindersApp     from './features/reminders/reminders.routes.js';
 import restoreApp       from './features/trash/restore.routes.js';
 import templatesApp     from './features/templates/templates.routes.js';
-import trashApp         from './features/trash/trash.routes.js';
+import trashApp, { purgeExpiredTrash } from './features/trash/trash.routes.js';
 import bootstrapApp, { generateBootstrapPayloadForUser } from './features/bootstrap/bootstrap.route.js';
 import auditApp         from './features/audit/audit.routes.js';
 import telemetryApp     from './features/telemetry/telemetry.routes.js';
@@ -561,10 +561,22 @@ export default {
   async scheduled(event, env, ctx) {
     try {
       const supabase = getDB(env);
+      const tasks = [];
+
+      // 1. Drain queued WhatsApp messages for safe hours
+      tasks.push(processWhatsAppQueue(supabase));
+
+      // 2. Daily automated maintenance: purge soft-deleted trash older than 30 days (runs at 7:00 AM AST / 04:00 UTC)
+      const nowUtcHours = new Date().getUTCHours();
+      const nowUtcMinutes = new Date().getUTCMinutes();
+      if (nowUtcHours === 4 && nowUtcMinutes < 16) {
+        tasks.push(purgeExpiredTrash(supabase, env, 30));
+      }
+
       if (ctx && typeof ctx.waitUntil === 'function') {
-        ctx.waitUntil(processWhatsAppQueue(supabase));
+        tasks.forEach(t => ctx.waitUntil(t));
       } else {
-        await processWhatsAppQueue(supabase);
+        await Promise.allSettled(tasks);
       }
     } catch (err) {
       console.warn('[Cron] scheduled error:', err.message);
