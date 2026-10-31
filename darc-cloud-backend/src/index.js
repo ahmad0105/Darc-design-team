@@ -23,6 +23,7 @@ import bootstrapApp, { generateBootstrapPayloadForUser } from './features/bootst
 import auditApp         from './features/audit/audit.routes.js';
 import telemetryApp     from './features/telemetry/telemetry.routes.js';
 import whatsappApp      from './features/whatsapp/whatsapp.routes.js';
+import { processWhatsAppQueue } from './features/whatsapp/whatsapp.service.js';
 
 // Core Security, Error Resilience & Performance
 import { createErrorHandler } from './core/errors.js';
@@ -521,6 +522,22 @@ app.use('/api/*', async (c, next) => {
   }
 });
 
+// Opportunistic queue drain during active user usage (throttled to at most once every 5 minutes)
+let _lastOpportunisticDrain = 0;
+app.use('*', async (c, next) => {
+  await next();
+  const now = Date.now();
+  if (now - _lastOpportunisticDrain > 5 * 60 * 1000) {
+    _lastOpportunisticDrain = now;
+    if (c.executionCtx && typeof c.executionCtx.waitUntil === 'function') {
+      try {
+        const supabase = getDB(c.env);
+        c.executionCtx.waitUntil(processWhatsAppQueue(supabase));
+      } catch (_) {}
+    }
+  }
+});
+
 // Route mounting
 app.route('/api/audit',          auditApp);
 app.route('/api/projects',      projectsApp);
@@ -539,4 +556,18 @@ app.route('/api/bootstrap',     bootstrapApp);
 app.route('/api/telemetry',     telemetryApp);
 app.route('/api/whatsapp',      whatsappApp);
 
-export default app;
+export default {
+  fetch: app.fetch,
+  async scheduled(event, env, ctx) {
+    try {
+      const supabase = getDB(env);
+      if (ctx && typeof ctx.waitUntil === 'function') {
+        ctx.waitUntil(processWhatsAppQueue(supabase));
+      } else {
+        await processWhatsAppQueue(supabase);
+      }
+    } catch (err) {
+      console.warn('[Cron] scheduled error:', err.message);
+    }
+  }
+};

@@ -8,6 +8,9 @@ routes = [
   { pattern = "api.darc-design.bond", custom_domain = true }
 ]
 
+[triggers]
+crons = ["*/15 * * * *"]
+
 [vars]
 SUPABASE_URL = "https://yjfmrpwkjstxldnwegob.supabase.co"
 

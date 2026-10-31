@@ -107,6 +107,7 @@ export function formatWhatsAppMessage(type, data) {
 
 let _whatsappQueuePromise = Promise.resolve();
 const _recentWhatsAppAlerts = new Map(); // hash -> timestamp
+let _isDrainingQueue = false;
 
 // Anti-Ban: Daily message counter (resets at midnight AST)
 const _dailySendLog = new Map(); // 'YYYY-MM-DD' -> count
@@ -116,7 +117,7 @@ const DAILY_SEND_LIMIT = 50; // Max messages per calendar day (AST)
 const SAFE_HOUR_START = 7;  // 7:00 AM
 const SAFE_HOUR_END   = 23; // 11:00 PM
 
-function isSafeHour() {
+export function isSafeHour() {
   const nowAst = new Date(Date.now() + 3 * 60 * 60 * 1000); // UTC → AST
   const hour = nowAst.getUTCHours();
   return hour >= SAFE_HOUR_START && hour < SAFE_HOUR_END;
@@ -152,7 +153,111 @@ function isDuplicateAlert(recipient, type, text) {
   return false;
 }
 
-export async function sendWhatsAppAlert(config, type, payload) {
+/**
+ * Enqueue an alert to be sent during morning safe hours (Zero DB Migration)
+ */
+export async function enqueueWhatsAppAlert(supabase, item) {
+  if (!supabase) return false;
+  try {
+    let comp = null;
+    const { data } = await supabase.from('company').select('id, settings, custom_fields').eq('id', 'default').maybeSingle();
+    comp = data;
+    if (!comp) {
+      const fallback = await supabase.from('companies').select('id, settings, custom_fields').limit(1).maybeSingle();
+      comp = fallback.data;
+    }
+    if (!comp) return false;
+
+    const existingSettings = comp.settings || comp.custom_fields || {};
+    const existingQueue = Array.isArray(existingSettings.whatsapp_queue) ? existingSettings.whatsapp_queue : [];
+
+    // Keep queue bounded to max 30 alerts (FIFO)
+    const newQueue = [
+      ...existingQueue.slice(-29),
+      {
+        id: 'waq_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+        ...item,
+        queuedAt: new Date().toISOString()
+      }
+    ];
+
+    const updatedSettings = { ...existingSettings, whatsapp_queue: newQueue };
+    const targetCol = comp.settings !== undefined ? 'settings' : 'custom_fields';
+
+    await supabase.from('company').update({
+      [targetCol]: updatedSettings,
+      updated_at: new Date().toISOString()
+    }).eq('id', comp.id);
+
+    return true;
+  } catch (err) {
+    console.warn('[WhatsApp Queue] enqueue error:', err.message);
+    return false;
+  }
+}
+
+/**
+ * Drain and dispatch queued messages gently during safe hours (7 AM - 11 PM AST)
+ */
+export async function processWhatsAppQueue(supabase) {
+  if (!supabase) return { processed: 0 };
+  if (!isSafeHour()) return { processed: 0, reason: 'Outside safe hours' };
+  if (_isDrainingQueue) return { processed: 0, reason: 'Already draining' };
+
+  _isDrainingQueue = true;
+  try {
+    let comp = null;
+    const { data } = await supabase.from('company').select('id, settings, custom_fields').eq('id', 'default').maybeSingle();
+    comp = data;
+    if (!comp) {
+      const fallback = await supabase.from('companies').select('id, settings, custom_fields').limit(1).maybeSingle();
+      comp = fallback.data;
+    }
+    if (!comp) return { processed: 0 };
+
+    const settings = comp.settings || comp.custom_fields || {};
+    const queue = Array.isArray(settings.whatsapp_queue) ? [...settings.whatsapp_queue] : [];
+    if (queue.length === 0) return { processed: 0 };
+
+    // Anti-burst: process at most 3 messages per tick to prevent sudden activity spike
+    const batchSize = Math.min(queue.length, 3);
+    const toProcess = queue.slice(0, batchSize);
+    const remaining = queue.slice(batchSize);
+
+    let processedCount = 0;
+    for (const item of toProcess) {
+      if (item.config && item.recipient && item.type) {
+        await sendWhatsAppAlert(
+          { ...item.config, recipient: item.recipient },
+          item.type,
+          item.payload,
+          supabase,
+          { isQueueDrain: true }
+        );
+        processedCount++;
+        // Polite delay between queued dispatches
+        await new Promise(r => setTimeout(r, 2500));
+      }
+    }
+
+    // Update remaining queue in DB
+    const updatedSettings = { ...settings, whatsapp_queue: remaining };
+    const targetCol = comp.settings !== undefined ? 'settings' : 'custom_fields';
+    await supabase.from('company').update({
+      [targetCol]: updatedSettings,
+      updated_at: new Date().toISOString()
+    }).eq('id', comp.id);
+
+    return { processed: processedCount, remaining: remaining.length };
+  } catch (err) {
+    console.warn('[WhatsApp Queue] process error:', err.message);
+    return { processed: 0, error: err.message };
+  } finally {
+    _isDrainingQueue = false;
+  }
+}
+
+export async function sendWhatsAppAlert(config, type, payload, supabase = null, options = {}) {
   if (!config || !config.enabled || !config.serverUrl || !config.recipient) {
     return { ok: false, skipped: true, reason: 'WhatsApp alerts not configured or disabled' };
   }
@@ -172,17 +277,32 @@ export async function sendWhatsAppAlert(config, type, payload) {
   }
 
   // Anti-Spam: Suppress duplicate alerts for the same target within 30 seconds
-  if (isDuplicateAlert(recipient, type, messageText)) {
+  if (!options.isQueueDrain && isDuplicateAlert(recipient, type, messageText)) {
     return { ok: true, skipped: true, reason: 'Duplicate alert suppressed within 30s' };
   }
 
-  // Anti-Ban: Do not send during night hours (11 PM – 7 AM AST)
-  if (!isSafeHour()) {
+  // Anti-Ban: Defer night hours (11 PM – 7 AM AST) to the morning queue
+  if (!options.isTest && !options.isQueueDrain && !isSafeHour()) {
+    if (supabase) {
+      await enqueueWhatsAppAlert(supabase, {
+        config: {
+          serverUrl: cleanServerUrl,
+          apiKey: config.apiKey,
+          instanceName: instance,
+          provider: config.provider,
+          enabled: true
+        },
+        recipient,
+        type,
+        payload
+      });
+      return { ok: true, queued: true, reason: 'Queued for morning delivery (safe hours start at 7:00 AM AST)' };
+    }
     return { ok: true, skipped: true, reason: 'Outside safe sending hours (7AM–11PM AST)' };
   }
 
   // Anti-Ban: Circuit breaker — max 50 messages per day
-  if (isDailyLimitReached()) {
+  if (!options.isTest && isDailyLimitReached()) {
     console.warn('[WhatsApp] Daily send limit reached (50/day). Message suppressed.');
     return { ok: true, skipped: true, reason: 'Daily send limit reached' };
   }
@@ -272,7 +392,7 @@ export async function dispatchDirectNotificationAlert(supabase, userId, notifica
       return { ok: false, skipped: true, reason: 'Invalid user phone format' };
     }
 
-    return await sendWhatsAppAlert({ ...config, recipient: cleanPhone }, 'direct_notification', notificationData);
+    return await sendWhatsAppAlert({ ...config, recipient: cleanPhone }, 'direct_notification', notificationData, supabase);
   } catch (err) {
     console.warn('[WhatsApp] dispatchDirectNotificationAlert error:', err.message);
     return { ok: false, error: err.message };

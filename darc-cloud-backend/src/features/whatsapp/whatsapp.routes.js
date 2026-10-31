@@ -110,7 +110,9 @@ app.post('/test', async (c) => {
   const res = await sendWhatsAppAlert(
     { ...config, enabled: true },
     'custom',
-    { text: '✨ *تم التحقق من اتصال منصة DARC بنجاح!*\nأنت الآن جاهز لاستلام تنبيهات المشاريع والمهام الهندسية مباشرة.' }
+    { text: '✨ *تم التحقق من اتصال منصة DARC بنجاح!*\nأنت الآن جاهز لاستلام تنبيهات المشاريع والمهام الهندسية مباشرة.' },
+    supabase,
+    { isTest: true }
   );
 
   if (!res.ok) {
