@@ -19,7 +19,7 @@ import remindersApp     from './features/reminders/reminders.routes.js';
 import restoreApp       from './features/trash/restore.routes.js';
 import templatesApp     from './features/templates/templates.routes.js';
 import trashApp         from './features/trash/trash.routes.js';
-import bootstrapApp     from './features/bootstrap/bootstrap.route.js';
+import bootstrapApp, { generateBootstrapPayloadForUser } from './features/bootstrap/bootstrap.route.js';
 import auditApp         from './features/audit/audit.routes.js';
 import telemetryApp     from './features/telemetry/telemetry.routes.js';
 
@@ -253,7 +253,19 @@ app.post('/api/auth/login', async (c) => {
     bgTasks().catch(() => {});
   }
 
-  return c.json({ token, user: toSafeUser({ ...user, custom_fields: updatedCustomFields, last_login_at: nowIso, last_active_at: nowIso }) });
+  let bootstrapData = null;
+  try {
+    const bRes = await generateBootstrapPayloadForUser(c.env, user.id, user.role_id);
+    bootstrapData = bRes.responsePayload;
+  } catch (bErr) {
+    console.warn('[Login] Pre-bundled bootstrap notice:', bErr.message);
+  }
+
+  return c.json({
+    token,
+    user: toSafeUser({ ...user, custom_fields: updatedCustomFields, last_login_at: nowIso, last_active_at: nowIso }),
+    bootstrap: bootstrapData
+  });
 });
 
 app.post('/api/auth/logout', async (c) => {

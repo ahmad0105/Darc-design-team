@@ -308,9 +308,9 @@ export async function loadData(silent = false) {
             payloadTaskIds.add(localTask.id);
           }
         } else {
-          // If task was recently moved (within last 12s) by drag & drop, preserve optimistic status, progress, and sortOrder against stale polls
+          // If task was recently moved (within last 20s) by drag & drop, preserve optimistic status, progress, and sortOrder against stale polls
           const movedInfo = window._recentlyMovedTasks?.get(localTask.id);
-          if (movedInfo && (now - movedInfo.timestamp < 12000)) {
+          if (movedInfo && (now - movedInfo.timestamp < 20000)) {
             const targetInPayload = payload.tasks.find(t => t.id === localTask.id);
             if (targetInPayload) {
               targetInPayload.status = movedInfo.status;
@@ -320,6 +320,12 @@ export async function loadData(silent = false) {
               if (movedInfo.sortOrder !== undefined) {
                 targetInPayload.sortOrder = movedInfo.sortOrder;
                 targetInPayload.sort_order = movedInfo.sortOrder;
+                if (!targetInPayload.customFields) targetInPayload.customFields = {};
+                targetInPayload.customFields.sortOrder = movedInfo.sortOrder;
+                targetInPayload.customFields.sort_order = movedInfo.sortOrder;
+                if (!targetInPayload.custom_fields) targetInPayload.custom_fields = {};
+                targetInPayload.custom_fields.sortOrder = movedInfo.sortOrder;
+                targetInPayload.custom_fields.sort_order = movedInfo.sortOrder;
               }
             }
           }

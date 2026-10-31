@@ -188,7 +188,7 @@ export function sortTasksByImportance(tasks = []) {
 }
 
 export function getSavedTaskSort() {
-  return localStorage.getItem('darc_task_sort_pref') || 'importance';
+  return localStorage.getItem('darc_task_sort_pref') || 'custom';
 }
 
 export function setSavedTaskSort(mode) {
@@ -204,9 +204,9 @@ export function renderTaskSortSelect(currentSort, actionName = 'sort-project-tas
     <div class="sort-box">
       <span>${choose('الترتيب:', 'Sort:')}</span>
       <select class="filter-select select-compact" data-action="${actionName}">
-        <option value="importance" ${activeSort === 'importance' ? 'selected' : ''}>${choose('حسب الأهمية والأولوية (افتراضي)', 'By Importance & Priority (Default)')}</option>
-        <option value="deadline" ${activeSort === 'deadline' ? 'selected' : ''}>${choose('الأقرب استحقاقاً', 'Earliest Deadline')}</option>
         <option value="custom" ${activeSort === 'custom' ? 'selected' : ''}>${choose('ترتيب مخصص (السحب والإسقاط)', 'Custom (Drag & Drop)')}</option>
+        <option value="importance" ${activeSort === 'importance' ? 'selected' : ''}>${choose('حسب الأهمية والأولوية', 'By Importance & Priority')}</option>
+        <option value="deadline" ${activeSort === 'deadline' ? 'selected' : ''}>${choose('الأقرب استحقاقاً', 'Earliest Deadline')}</option>
         <option value="alpha" ${activeSort === 'alpha' ? 'selected' : ''}>${choose('أبجدياً', 'Alphabetical')}</option>
       </select>
     </div>
@@ -1242,17 +1242,19 @@ export async function openDocumentPreviewModal(docId) {
               </div>
             </div>
           </div>
-        ` : (!driveId && isVideo ? `
+        ` : (isVideo ? `
           <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;padding:15px;background:#000;">
             <video controls autoplay playsinline style="max-width:100%;max-height:100%;border-radius:6px;outline:none;box-shadow:0 8px 30px rgba(0,0,0,0.5);">
+              ${driveId ? `<source src="https://drive.google.com/uc?export=download&id=${esc(driveId)}" type="${esc(doc.mimeType || 'video/mp4')}">` : ''}
               <source src="${esc(downloadUrl)}" type="${esc(doc.mimeType || 'video/mp4')}">
               <source src="${esc(embedUrl)}">
               <p style="color:#fff;text-align:center;">${choose('متصفحك لا يدعم تشغيل هذا الفيديو مباشرة.', 'Your browser does not support the video tag.')}</p>
             </video>
           </div>
-        ` : (!driveId && isAudio ? `
+        ` : (isAudio ? `
           <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;padding:24px;background:#0f172a;">
             <audio controls style="width:80%;max-width:500px;">
+              ${driveId ? `<source src="https://drive.google.com/uc?export=download&id=${esc(driveId)}" type="${esc(doc.mimeType || 'audio/mpeg')}">` : ''}
               <source src="${esc(downloadUrl)}" type="${esc(doc.mimeType || 'audio/mpeg')}">
               <source src="${esc(embedUrl)}">
             </audio>
@@ -1265,8 +1267,8 @@ export async function openDocumentPreviewModal(docId) {
           <iframe 
             src="${esc(embedUrl)}" 
             style="width:100%;height:100%;border:none;background:#fff;" 
-            allow="autoplay *; fullscreen *; encrypted-media *; picture-in-picture *" 
-            allowfullscreen="true" 
+            allow="autoplay; fullscreen; encrypted-media; picture-in-picture" 
+            allowfullscreen 
             loading="lazy">
           </iframe>
         `)))}

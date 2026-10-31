@@ -269,10 +269,11 @@ app.patch('/reorder', async (c) => {
     const additional = existingCF.additionalAssignees || [];
     const isAdditional = Array.isArray(additional) && additional.includes(userId);
 
-    // Check project-level permission, assignee, or additionalAssignee self-update
+    // Check project-level permission, assignee, or additionalAssignee update
     const canEditProject = projectEditAllowed.get(existing.project_id) || false;
     const canEdit = canEditProject || existing.assignee_id === userId || isAdditional;
-    if (!canEdit) continue;
+    const isStatusChanging = item.status && item.status !== existing.status;
+    if (isStatusChanging && !canEdit) continue;
 
     const incomingCF = (item.customFields || item.custom_fields || {});
     const sortOrderVal = typeof item.sortOrder === 'number' ? item.sortOrder : (typeof item.sort_order === 'number' ? item.sort_order : 0);

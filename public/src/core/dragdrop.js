@@ -136,22 +136,25 @@ document.addEventListener('dragstart', (event) => {
     const rect = card.getBoundingClientRect();
     draggedCardHeight = rect.height;
 
-    event.dataTransfer.effectAllowed = 'move';
-    try { event.dataTransfer.setData('text/plain', activeDraggedTaskId); } catch(e) {}
+    if (event.dataTransfer) {
+      try { event.dataTransfer.effectAllowed = 'move'; } catch(e) {}
+      try { event.dataTransfer.setData('text/plain', activeDraggedTaskId); } catch(e) {}
+    }
 
-    // Subtle custom drag ghost if supported
     try {
-      const dragGhost = card.cloneNode(true);
-      dragGhost.style.width = `${rect.width}px`;
-      dragGhost.style.position = 'absolute';
-      dragGhost.style.top = '-9999px';
-      dragGhost.style.left = '-9999px';
-      dragGhost.style.opacity = '0.94';
-      dragGhost.style.boxShadow = '0 16px 36px rgba(0,0,0,0.25)';
-      dragGhost.style.transform = 'scale(1.02) rotate(1deg)';
-      document.body.appendChild(dragGhost);
-      event.dataTransfer.setDragImage(dragGhost, event.clientX - rect.left, event.clientY - rect.top);
-      setTimeout(() => dragGhost.remove(), 0);
+      if (event.dataTransfer && typeof event.dataTransfer.setDragImage === 'function') {
+        const dragGhost = card.cloneNode(true);
+        dragGhost.style.width = `${rect.width}px`;
+        dragGhost.style.position = 'absolute';
+        dragGhost.style.top = '-9999px';
+        dragGhost.style.left = '-9999px';
+        dragGhost.style.opacity = '0.94';
+        dragGhost.style.boxShadow = '0 16px 36px rgba(0,0,0,0.25)';
+        dragGhost.style.transform = 'scale(1.02) rotate(1deg)';
+        document.body.appendChild(dragGhost);
+        event.dataTransfer.setDragImage(dragGhost, event.clientX - rect.left, event.clientY - rect.top);
+        setTimeout(() => dragGhost.remove(), 0);
+      }
     } catch(e) {}
 
     card.classList.add('is-dragging');
@@ -307,28 +310,32 @@ async function handleTaskDrop(column, clientY, explicitTaskId = null) {
 
   if (placeholder && placeholder.parentNode === cardsContainer) {
     // Exact WYSIWYG: Placeholder is positioned directly inside the column
-    const nextEl = placeholder.nextElementSibling;
-    if (!nextEl || !nextEl.classList.contains('task-card')) {
-      // Placeholder is at the bottom of the column
-      insertIdx = existingTaskIds.length;
+    if (!placeholder.previousElementSibling || placeholder.previousElementSibling.classList?.contains('empty')) {
+      insertIdx = 0; // Guaranteed TOP of the column
     } else {
-      const nextTaskId = nextEl.dataset.taskId;
-      const idx = existingTaskIds.indexOf(nextTaskId);
-      if (idx !== -1) {
-        insertIdx = idx;
+      let cur = placeholder.nextElementSibling;
+      while (cur && !cur.classList?.contains('task-card')) {
+        cur = cur.nextElementSibling;
+      }
+      if (cur && cur.dataset?.taskId) {
+        const idx = existingTaskIds.indexOf(cur.dataset.taskId);
+        insertIdx = (idx !== -1) ? idx : 0;
+      } else {
+        insertIdx = existingTaskIds.length;
       }
     }
   } else if (existingCards.length > 0) {
-    // Fallback if placeholder was detached right before drop: calculate via clientY
+    // Fallback if placeholder was detached right before drop: calculate via clientY / currentMouseY
+    const effectiveY = (clientY && clientY > 0) ? clientY : (currentMouseY > 0 ? currentMouseY : 0);
     const firstRect = existingCards[0].getBoundingClientRect();
     const lastRect = existingCards[existingCards.length - 1].getBoundingClientRect();
 
-    if (clientY <= firstRect.top + firstRect.height / 2) {
+    if (effectiveY <= firstRect.top + firstRect.height * 0.45) {
       insertIdx = 0; // Guaranteed TOP of the column
-    } else if (clientY >= lastRect.bottom - lastRect.height / 3) {
+    } else if (effectiveY >= lastRect.bottom - lastRect.height * 0.45) {
       insertIdx = existingTaskIds.length; // Guaranteed BOTTOM of the column
     } else {
-      const afterCard = getDragAfterElement(cardsContainer, clientY);
+      const afterCard = getDragAfterElement(cardsContainer, effectiveY);
       if (afterCard) {
         const idx = existingTaskIds.indexOf(afterCard.dataset.taskId);
         if (idx !== -1) insertIdx = idx;
@@ -366,26 +373,15 @@ async function handleTaskDrop(column, clientY, explicitTaskId = null) {
     task.progress = 80;
   }
 
-  // Register in recently moved tasks cache to protect against stale background polls
+  // 6. Assign clean, contiguous sortOrder (100, 200, 300, ...) to every task in this column
+  // And register ALL affected tasks in recently moved tasks cache to protect against stale background polls
   if (!window._recentlyMovedTasks) {
     window._recentlyMovedTasks = new Map();
   }
-  window._recentlyMovedTasks.set(taskId, {
-    status: task.status,
-    sortOrder: (insertIdx + 1) * 100,
-    progress: task.progress,
-    timestamp: Date.now()
-  });
-  const nowCleanup = Date.now();
-  for (const [id, info] of window._recentlyMovedTasks.entries()) {
-    if (nowCleanup - info.timestamp > 30000) {
-      window._recentlyMovedTasks.delete(id);
-    }
-  }
+  const nowMovedAt = Date.now();
 
-  // 6. Assign clean, contiguous sortOrder (100, 200, 300, ...) to every task in this column
   newColumnTaskIds.forEach((id, idx) => {
-    const t = (state.data.tasks || []).find(x => x.id === id);
+    const t = (state.data?.tasks || []).find(x => x.id === id);
     if (t) {
       const order = (idx + 1) * 100;
       t.sortOrder = order;
@@ -396,14 +392,28 @@ async function handleTaskDrop(column, clientY, explicitTaskId = null) {
       if (!t.custom_fields) t.custom_fields = {};
       t.custom_fields.sortOrder = order;
       t.custom_fields.sort_order = order;
+
+      window._recentlyMovedTasks.set(id, {
+        status: t.status,
+        sortOrder: order,
+        progress: t.progress,
+        timestamp: nowMovedAt
+      });
     }
   });
+
+  // Cleanup old entries (> 45s) from recently moved cache
+  for (const [id, info] of window._recentlyMovedTasks.entries()) {
+    if (nowMovedAt - info.timestamp > 45000) {
+      window._recentlyMovedTasks.delete(id);
+    }
+  }
 
   // Also adjust trailing orders for any non-visible tasks sharing this status within the same project
   const columnStatuses = (newStatus === 'review') ? ['review', 'approval', 'blocked'] : [newStatus];
   const projectScope = task.projectId || task.project_id;
   let trailingOrder = (newColumnTaskIds.length + 1) * 100;
-  (state.data.tasks || []).forEach(t => {
+  (state.data?.tasks || []).forEach(t => {
     if (projectScope && (t.projectId || t.project_id) !== projectScope) return;
     if (columnStatuses.includes(t.status) && !newColumnTaskIds.includes(t.id)) {
       t.sortOrder = trailingOrder;
