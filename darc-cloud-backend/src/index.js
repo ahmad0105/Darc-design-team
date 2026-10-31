@@ -310,6 +310,21 @@ app.use('/api/*', async (c, next) => {
     }
     c.set('userId', payload.userId);
     c.set('roleId', payload.roleId);
+
+    // Sliding Session Window: If token has less than 2 days remaining, refresh session cookie seamlessly
+    const remainingSeconds = (payload.exp || 0) - Math.floor(Date.now() / 1000);
+    if (remainingSeconds > 0 && remainingSeconds < 2 * 24 * 3600 && payload.userId !== 'usr_demo') {
+      const refreshedPayload = {
+        userId: payload.userId,
+        roleId: payload.roleId,
+        v: payload.v || 1,
+        fpt: payload.fpt,
+        exp: Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60
+      };
+      sign(refreshedPayload, c.env.JWT_SECRET).then(newToken => {
+        setSessionCookie(c, newToken, 604800);
+      }).catch(() => {});
+    }
   } catch (err) {
     return c.json({ error: 'الجلسة منتهية أو غير صالحة' }, 401);
   }

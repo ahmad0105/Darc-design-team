@@ -104,6 +104,26 @@ export function formatWhatsAppMessage(type, data) {
   }
 }
 
+let _whatsappQueuePromise = Promise.resolve();
+const _recentWhatsAppAlerts = new Map(); // hash -> timestamp
+
+function isDuplicateAlert(recipient, type, text) {
+  const hash = `${recipient}:${type}:${String(text).slice(0, 50)}`;
+  const now = Date.now();
+  const lastTime = _recentWhatsAppAlerts.get(hash);
+  if (lastTime && now - lastTime < 30000) {
+    return true; // Duplicate alert within 30 seconds
+  }
+  _recentWhatsAppAlerts.set(hash, now);
+  // Auto-prune old entries
+  if (_recentWhatsAppAlerts.size > 200) {
+    for (const [k, v] of _recentWhatsAppAlerts.entries()) {
+      if (now - v > 60000) _recentWhatsAppAlerts.delete(k);
+    }
+  }
+  return false;
+}
+
 export async function sendWhatsAppAlert(config, type, payload) {
   if (!config || !config.enabled || !config.serverUrl || !config.recipient) {
     return { ok: false, skipped: true, reason: 'WhatsApp alerts not configured or disabled' };
@@ -117,58 +137,69 @@ export async function sendWhatsAppAlert(config, type, payload) {
     return { ok: false, skipped: true, reason: 'Invalid recipient phone number format' };
   }
 
-  try {
-    // Anti-Ban Hygiene: Random Human-like Delay (800ms - 2200ms)
-    const jitterMs = Math.floor(Math.random() * 1400) + 800;
-    await new Promise(r => setTimeout(r, jitterMs));
-
-    // Support both Evolution API standard endpoint and generic webhook
-    let targetEndpoint = `${cleanServerUrl}/message/sendText/${encodeURIComponent(instance)}`;
-    let requestBody = {
-      number: recipient,
-      text: messageText,
-      options: {
-        delay: 1200,
-        presence: 'composing',
-        linkPreview: false
-      }
-    };
-
-    if (config.provider === 'webhook') {
-      targetEndpoint = cleanServerUrl;
-      requestBody = {
-        recipient,
-        message: messageText,
-        type,
-        payload,
-        timestamp: new Date().toISOString()
-      };
-    }
-
-    const headers = {
-      'Content-Type': 'application/json'
-    };
-    if (config.apiKey) {
-      headers['apikey'] = config.apiKey;
-      headers['Authorization'] = `Bearer ${config.apiKey}`;
-    }
-
-    const res = await fetch(targetEndpoint, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(requestBody),
-      signal: AbortSignal.timeout(6000)
-    });
-
-    if (!res.ok) {
-      const errText = await res.text();
-      return { ok: false, status: res.status, error: errText };
-    }
-
-    return { ok: true, sent: true };
-  } catch (err) {
-    return { ok: false, error: err.message };
+  // Anti-Spam: Suppress duplicate alerts for the same target within 30 seconds
+  if (isDuplicateAlert(recipient, type, messageText)) {
+    return { ok: true, skipped: true, reason: 'Duplicate alert suppressed within 30s' };
   }
+
+  // Anti-Ban Serial Queue: Chain onto promise queue to enforce strict serial transmission
+  const task = _whatsappQueuePromise.then(async () => {
+    try {
+      // Anti-Ban Hygiene: Random Human-like Delay (900ms - 2200ms)
+      const jitterMs = Math.floor(Math.random() * 1300) + 900;
+      await new Promise(r => setTimeout(r, jitterMs));
+
+      // Support both Evolution API standard endpoint and generic webhook
+      let targetEndpoint = `${cleanServerUrl}/message/sendText/${encodeURIComponent(instance)}`;
+      let requestBody = {
+        number: recipient,
+        text: messageText,
+        options: {
+          delay: 1200,
+          presence: 'composing',
+          linkPreview: false
+        }
+      };
+
+      if (config.provider === 'webhook') {
+        targetEndpoint = cleanServerUrl;
+        requestBody = {
+          recipient,
+          message: messageText,
+          type,
+          payload,
+          timestamp: new Date().toISOString()
+        };
+      }
+
+      const headers = {
+        'Content-Type': 'application/json'
+      };
+      if (config.apiKey) {
+        headers['apikey'] = config.apiKey;
+        headers['Authorization'] = `Bearer ${config.apiKey}`;
+      }
+
+      const res = await fetch(targetEndpoint, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(requestBody),
+        signal: AbortSignal.timeout(6000)
+      });
+
+      if (!res.ok) {
+        const errText = await res.text();
+        return { ok: false, status: res.status, error: errText };
+      }
+
+      return { ok: true, sent: true };
+    } catch (err) {
+      return { ok: false, error: err.message };
+    }
+  });
+
+  _whatsappQueuePromise = task.catch(() => {});
+  return task;
 }
 
 /**
