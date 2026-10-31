@@ -28,6 +28,17 @@ export async function getWhatsAppConfig(supabase) {
   }
 }
 
+export function normalizeWhatsAppNumber(raw) {
+  if (!raw) return '';
+  let str = String(raw).trim().replace(/[\s\-\(\)]/g, '');
+  if (str.includes('@g.us')) return str;
+  if (str.startsWith('+')) str = str.slice(1);
+  if (/^05[0-9]{8}$/.test(str)) {
+    str = '966' + str.slice(1);
+  }
+  return str.replace(/[^0-9@.-]/g, '');
+}
+
 export function formatWhatsAppMessage(type, data) {
   const portalUrl = 'https://panel.darc-design.bond';
   switch (type) {
@@ -101,7 +112,10 @@ export async function sendWhatsAppAlert(config, type, payload) {
   const messageText = formatWhatsAppMessage(type, payload);
   const cleanServerUrl = config.serverUrl.replace(/\/+$/, '');
   const instance = config.instanceName || 'darc-workspace';
-  const recipient = String(config.recipient).replace(/[^0-9@.-]/g, '');
+  const recipient = normalizeWhatsAppNumber(config.recipient);
+  if (!recipient) {
+    return { ok: false, skipped: true, reason: 'Invalid recipient phone number format' };
+  }
 
   try {
     // Anti-Ban Hygiene: Random Human-like Delay (800ms - 2200ms)
@@ -177,8 +191,8 @@ export async function dispatchDirectNotificationAlert(supabase, userId, notifica
       return { ok: false, skipped: true, reason: 'No phone number configured for this user' };
     }
 
-    const cleanPhone = rawPhone.trim().replace(/[\s\-\(\)]/g, '');
-    if (!/^\+?[0-9]{7,16}$/.test(cleanPhone)) {
+    const cleanPhone = normalizeWhatsAppNumber(rawPhone);
+    if (!cleanPhone || (!cleanPhone.includes('@g.us') && !/^[0-9]{8,16}$/.test(cleanPhone))) {
       return { ok: false, skipped: true, reason: 'Invalid user phone format' };
     }
 
