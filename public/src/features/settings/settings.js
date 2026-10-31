@@ -600,6 +600,7 @@ export function canAccessSettingsSection(sectionKey) {
   const userIsAdmin = isAdmin();
   if (sectionKey === 'profile' || sectionKey === 'security') return true;
   if (sectionKey === 'company') return userIsAdmin || can('manage_settings');
+  if (sectionKey === 'whatsapp') return userIsAdmin || can('manage_settings');
   if (sectionKey === 'roles') return userIsAdmin || can('manage_roles');
   if (sectionKey === 'accounts') return userIsAdmin || can('manage_users') || can('manage_existing_account_permissions') || can('view_user_activity');
   if (sectionKey === 'trash') return userIsAdmin || can('manage_trash');
@@ -613,6 +614,7 @@ export function renderSettings() {
   const currentUserId = state.data?.user?.id;
   const userIsAdmin = isAdmin();
   const canAccessCompany = canAccessSettingsSection('company');
+  const canAccessWhatsApp = canAccessSettingsSection('whatsapp');
   const canAccessRoles = canAccessSettingsSection('roles');
   const canAccessAccounts = canAccessSettingsSection('accounts');
   const canAccessTrash = canAccessSettingsSection('trash');
@@ -624,6 +626,7 @@ export function renderSettings() {
   const sections = [
     ['profile', choose('الملف الشخصي', 'Profile')],
     ...(canAccessCompany ? [['company', t('company')]] : []),
+    ...(canAccessWhatsApp ? [['whatsapp', choose('تنبيهات واتساب 💬', 'WhatsApp Alerts 💬')]] : []),
     ...(canAccessRoles ? [['roles', t('roles')]] : []),
     ...(canAccessAccounts ? [['accounts', t('accounts')]] : []),
     ['security', choose('الأمان', 'Security')],
@@ -1350,6 +1353,96 @@ export function renderSettings() {
   // USER ERROR DIAGNOSTICS & INCIDENTS SECTION (Strictly gated by manage_settings or admin)
   if (state.settingsSection === 'diagnostics' && canAccessDiagnostics) {
     content = renderDiagnosticsSection();
+  }
+
+  // WHATSAPP ALERTS SECTION
+  if (state.settingsSection === 'whatsapp' && canAccessWhatsApp) {
+    const wa = state.data?.company?.customFields?.whatsapp || state.data?.company?.custom_fields?.whatsapp || {};
+    content = `
+      <section class="setting-section">
+        <div class="panel-head" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;">
+          <div>
+            <h2>${choose('تنبيهات واتساب الميدانية للمشاريع', 'Field WhatsApp Alerts')}</h2>
+            <p>${choose('ربط آمن عبر بروتوكول Multi-Device المباشر مع خوارزميات محاكاة السلوك البشري لحماية الأرقام من الحظر.', 'Secure connection via Multi-Device protocol with anti-ban human behavior simulation.')}</p>
+          </div>
+          <span class="status-badge ${wa.enabled ? 'done' : 'neutral'}">
+            ${wa.enabled ? choose('مفعل نشط ✅', 'Active ✅') : choose('معطل ⏸️', 'Disabled ⏸️')}
+          </span>
+        </div>
+
+        <form data-action="update-whatsapp" class="settings-form" style="max-width:740px;display:grid;gap:18px;">
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;display:flex;align-items:center;justify-content:space-between;gap:16px;">
+            <div>
+              <strong style="display:block;font-size:14px;color:var(--ink);margin-bottom:4px;">${choose('تفعيل إرسال التنبيهات عبر واتساب', 'Enable WhatsApp Notifications')}</strong>
+              <span style="font-size:12px;color:var(--muted);">${choose('إرسال إشعارات فورية لمهندسي الموقع والإدارة عند حدوث تغييرات حرجة.', 'Send instant alerts to field engineers & management upon critical updates.')}</span>
+            </div>
+            <label class="switch" style="position:relative;display:inline-block;width:44px;height:24px;flex-shrink:0;">
+              <input type="checkbox" name="enabled" ${wa.enabled ? 'checked' : ''} style="opacity:0;width:0;height:0;" id="wa-toggle-enabled" />
+              <span class="slider round" style="position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background-color:var(--line);transition:.3s;border-radius:24px;"></span>
+            </label>
+          </div>
+
+          <div class="form-grid">
+            <div class="field">
+              <label>${choose('نوع مزود البوابة (Provider)', 'Gateway Provider')}</label>
+              <select name="provider" class="select-compact" style="width:100%;height:42px;">
+                <option value="evolution" ${wa.provider !== 'webhook' ? 'selected' : ''}>Evolution API / Baileys (بروتوكول ويب - أقل ريسك 🏆)</option>
+                <option value="webhook" ${wa.provider === 'webhook' ? 'selected' : ''}>Webhook مخصص (Custom Webhook URL)</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label>${choose('اسم جلسة الربط (Instance Name)', 'Instance Name')}</label>
+              <input type="text" name="instanceName" value="${esc(wa.instanceName || 'darc-workspace')}" placeholder="darc-workspace" required />
+            </div>
+          </div>
+
+          <div class="field">
+            <label>${choose('رابط خادم البوابة (Server Gateway URL) *', 'Server Gateway URL *')}</label>
+            <input type="url" name="serverUrl" value="${esc(wa.serverUrl || '')}" placeholder="https://evolution-api.example.com" />
+            <small style="font-size:11px;color:var(--muted);margin-top:4px;display:block;">${choose('رابط خادم Evolution API الخاص بمكتبكم (أو رابط الـ Webhook المستلم).', 'Your office Evolution API instance URL or receiving Webhook.')}</small>
+          </div>
+
+          <div class="field">
+            <label>${choose('مفتاح الأمان (API Key / Token)', 'API Key / Token')}</label>
+            <input type="password" name="apiKey" value="${esc(wa.apiKey || '')}" placeholder="••••••••••••••••" />
+          </div>
+
+          <div class="field">
+            <label>${choose('المستلم الافتراضي (Target Recipient) *', 'Target Recipient *')}</label>
+            <input type="text" name="recipient" value="${esc(wa.recipient || '')}" placeholder="${choose('كود قروب واتساب المهندسين (1203630...@g.us) أو رقم جوال (96650xxxxxxx)', 'WhatsApp Group JID (1203630...@g.us) or Phone (96650xxxxxxx)')}" />
+            <small style="font-size:11px;color:var(--teal);margin-top:4px;display:block;">${choose('💡 نصيحة الأمان: الإرسال داخل قروب واتساب يقلل احتمالية الحظر لـ 0% مقارنة بالمحادثات الفردية.', '💡 Anti-Ban Tip: Sending inside a WhatsApp Group virtually eliminates ban risk (near 0%).')}</small>
+          </div>
+
+          <div style="background:var(--surface-soft);border:1px solid var(--border);border-radius:12px;padding:16px;">
+            <strong style="display:block;font-size:13px;color:var(--ink);margin-bottom:10px;">${choose('أحداث التنبيه الفوري التلقائية:', 'Automated Trigger Events:')}</strong>
+            <div style="display:grid;gap:8px;">
+              <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink);cursor:pointer;">
+                <input type="checkbox" name="notifyOnBlocked" ${wa.notifyOnBlocked !== false ? 'checked' : ''} />
+                <span>⚠️ ${choose('عند تعليق مهمة هندسية (Task Blocked) لتنبيه الموقع فوراً', 'When a task is blocked to alert field engineers instantly')}</span>
+              </label>
+              <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink);cursor:pointer;">
+                <input type="checkbox" name="notifyOnApproval" ${wa.notifyOnApproval !== false ? 'checked' : ''} />
+                <span>🔍 ${choose('عند إحالة مهمة للمراجعة والاعتماد (Review / Approval)', 'When a deliverable is submitted for review & approval')}</span>
+              </label>
+              <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink);cursor:pointer;">
+                <input type="checkbox" name="notifyOnDrawing" ${wa.notifyOnDrawing !== false ? 'checked' : ''} />
+                <span>📐 ${choose('عند اعتماد أو رفع مخطط معماري أو إنشائي جديد (New Drawing)', 'When an architectural or structural drawing is approved/uploaded')}</span>
+              </label>
+            </div>
+          </div>
+
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-top:10px;">
+            <button type="submit" class="btn btn-primary" style="display:inline-flex;align-items:center;gap:7px;">
+              ${icon('check', 14)} <span>${choose('حفظ إعدادات واتساب', 'Save WhatsApp Settings')}</span>
+            </button>
+            <button type="button" class="btn btn-soft" data-action="test-whatsapp" style="display:inline-flex;align-items:center;gap:7px;">
+              <span>📲</span> <span>${choose('إرسال تنبيه تجريبي للواتساب', 'Send Test WhatsApp Alert')}</span>
+            </button>
+          </div>
+        </form>
+      </section>
+    `;
   }
 
   const hasAdminRights = userIsAdmin || can('manage_settings') || can('manage_roles') || can('manage_users') || can('manage_trash') || can('view_audit_logs');

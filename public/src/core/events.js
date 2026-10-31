@@ -302,6 +302,33 @@ export async function handleSubmit(event) {
       if (submitButton) submitButton.disabled = false;
       return;
     }
+    if (form.dataset.action === 'update-whatsapp') {
+      if (!isAdmin() && !can('manage_settings')) {
+        throw new Error(choose('غير مصرح لك بتحديث إعدادات التنبيهات.', 'Permission denied to update alert settings.'));
+      }
+      const isEnabled = form.querySelector('input[name="enabled"]')?.checked || false;
+      const config = {
+        enabled: isEnabled,
+        provider: values.provider || 'evolution',
+        instanceName: values.instanceName || 'darc-workspace',
+        serverUrl: values.serverUrl || '',
+        apiKey: values.apiKey || '',
+        recipient: values.recipient || '',
+        notifyOnBlocked: form.querySelector('input[name="notifyOnBlocked"]')?.checked || false,
+        notifyOnApproval: form.querySelector('input[name="notifyOnApproval"]')?.checked || false,
+        notifyOnDrawing: form.querySelector('input[name="notifyOnDrawing"]')?.checked || false
+      };
+      const res = await api('/api/whatsapp/config', { method: 'POST', body: JSON.stringify({ config }) });
+      if (res.config) {
+        if (!state.data.company) state.data.company = {};
+        if (!state.data.company.customFields) state.data.company.customFields = {};
+        state.data.company.customFields.whatsapp = res.config;
+      }
+      showToast(choose('تم حفظ إعدادات تنبيهات واتساب بنجاح ✅', 'WhatsApp alert settings saved successfully ✅'));
+      renderView();
+      if (submitButton) submitButton.disabled = false;
+      return;
+    }
     if (form.dataset.action === 'change-password') {
       if (values.newPassword.length < 10) throw new Error(choose('كلمة المرور يجب أن تكون 10 أحرف على الأقل.', 'Password must be at least 10 characters.'));
       await api('/api/auth/change-password', { method: 'POST', body: JSON.stringify(values) });
@@ -350,6 +377,30 @@ export async function handleClick(event) {
   const target = event.target.closest('[data-action], [data-view]');
   if (!target) return;
   const action = target.dataset.action;
+
+  if (action === 'test-whatsapp') {
+    const btn = target.closest('[data-action="test-whatsapp"]');
+    if (btn) btn.disabled = true;
+    showToast(choose('جاري إرسال تنبيه تجريبي للواتساب...', 'Sending test WhatsApp alert...'));
+    try {
+      const serverUrl = document.querySelector('input[name="serverUrl"]')?.value || '';
+      const apiKey = document.querySelector('input[name="apiKey"]')?.value || '';
+      const recipient = document.querySelector('input[name="recipient"]')?.value || '';
+      const instanceName = document.querySelector('input[name="instanceName"]')?.value || 'darc-workspace';
+      const provider = document.querySelector('select[name="provider"]')?.value || 'evolution';
+
+      const res = await api('/api/whatsapp/test', {
+        method: 'POST',
+        body: JSON.stringify({ config: { serverUrl, apiKey, recipient, instanceName, provider } })
+      });
+      showToast(res.message || choose('تم إرسال الرسالة بنجاح! 🚀', 'Test message sent successfully! 🚀'));
+    } catch (err) {
+      showToast(err.message || choose('فشل إرسال رسالة الاختبار، تحقق من صحة البيانات.', 'Failed to send test alert.'), true);
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+    return;
+  }
 
   if (target.classList.contains('menu-item')) {
     const pMenu = target.closest('.dropdown-menu');

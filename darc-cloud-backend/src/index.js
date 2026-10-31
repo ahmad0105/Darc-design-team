@@ -22,6 +22,7 @@ import trashApp         from './features/trash/trash.routes.js';
 import bootstrapApp, { generateBootstrapPayloadForUser } from './features/bootstrap/bootstrap.route.js';
 import auditApp         from './features/audit/audit.routes.js';
 import telemetryApp     from './features/telemetry/telemetry.routes.js';
+import whatsappApp      from './features/whatsapp/whatsapp.routes.js';
 
 // Core Security, Error Resilience & Performance
 import { createErrorHandler } from './core/errors.js';
@@ -504,5 +505,6 @@ app.route('/api/templates',     templatesApp);
 app.route('/api/trash',         trashApp);
 app.route('/api/bootstrap',     bootstrapApp);
 app.route('/api/telemetry',     telemetryApp);
+app.route('/api/whatsapp',      whatsappApp);
 
 export default app;
