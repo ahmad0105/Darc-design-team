@@ -671,6 +671,16 @@ app.post('/:id/comments', async (c) => {
             }
             if (notifications.length > 0) {
               await supabase.from('notifications').insert(notifications);
+              // Dispatch WhatsApp direct alerts for mentions
+              import('../whatsapp/whatsapp.service.js').then(({ dispatchDirectNotificationAlert }) => {
+                for (const n of notifications) {
+                  dispatchDirectNotificationAlert(supabase, n.user_id, {
+                    title: n.title_ar,
+                    content: n.body_ar,
+                    type: 'mention'
+                  }).catch(() => {});
+                }
+              }).catch(() => {});
             }
           }
         }
