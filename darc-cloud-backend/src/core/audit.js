@@ -1,4 +1,4 @@
-const SENSITIVE_KEYS = new Set(['password', 'password_hash', 'passwordHash', 'newPassword', 'oldPassword', 'token', 'inviteToken', 'invite_token', 'resetToken', 'turnstileToken', 'secret']);
+const SENSITIVE_KEYS = new Set(['password', 'password_hash', 'passwordHash', 'newPassword', 'oldPassword', 'token', 'inviteToken', 'invite_token', 'resetToken', 'turnstileToken', 'secret', 'apiKey', 'apikey', 'authorization']);
 const DANGEROUS_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
 
 function sanitizeAuditDetails(obj, depth = 0) {

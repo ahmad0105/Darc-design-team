@@ -42,7 +42,7 @@ import { getDemoPayload } from '../demo/demo.service.js';
 
 const app = new Hono();
 
-const JSONB_PASSTHROUGH_KEYS = new Set(['custom_fields', 'permissions', 'details']);
+const JSONB_PASSTHROUGH_KEYS = new Set(['custom_fields', 'permissions', 'details', 'settings']);
 
 function toCamelCase(obj) {
   if (obj === null || typeof obj !== 'object') return obj;
@@ -54,6 +54,7 @@ function toCamelCase(obj) {
   }
   const result = {};
   for (const key of Object.keys(obj)) {
+    if (key === '__proto__' || key === 'constructor' || key === 'prototype') continue;
     const camelKey = key.indexOf('_') === -1 ? key : key.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
     const val = obj[key];
     if (JSONB_PASSTHROUGH_KEYS.has(key)) {

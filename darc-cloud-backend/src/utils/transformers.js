@@ -1,4 +1,4 @@
-const JSONB_PASSTHROUGH_KEYS = new Set(['custom_fields', 'permissions', 'details']);
+const JSONB_PASSTHROUGH_KEYS = new Set(['custom_fields', 'permissions', 'details', 'settings']);
 
 export function toCamelCase(obj) {
   if (obj === null || typeof obj !== 'object') return obj;
@@ -11,6 +11,7 @@ export function toCamelCase(obj) {
   }
   const result = {};
   for (const key of Object.keys(obj)) {
+    if (key === '__proto__' || key === 'constructor' || key === 'prototype') continue;
     const camelKey = key.indexOf('_') === -1 ? key : key.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
     const val = obj[key];
     if (JSONB_PASSTHROUGH_KEYS.has(key)) {
@@ -26,6 +27,7 @@ export function toSnakeCase(obj) {
   if (Array.isArray(obj)) return obj.map(v => toSnakeCase(v));
   if (obj !== null && typeof obj === 'object') {
     return Object.keys(obj).reduce((result, key) => {
+      if (key === '__proto__' || key === 'constructor' || key === 'prototype') return result;
       const snakeKey = key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
       result[snakeKey] = toSnakeCase(obj[key]);
       return result;

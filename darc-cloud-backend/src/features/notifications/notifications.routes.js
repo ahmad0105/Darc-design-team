@@ -37,4 +37,15 @@ app.patch('/:id', async (c) => {
   return c.json({ ok: true });
 });
 
+app.delete('/:id', async (c) => {
+  const notificationId = c.req.param('id');
+  if (!/^[a-zA-Z0-9_-]{3,64}$/.test(notificationId)) {
+    return c.json({ error: 'معرف الإشعار غير صالح' }, 400);
+  }
+  const userId = c.get('userId');
+  const supabase = c.get('supabase');
+  await supabase.from('notifications').delete().eq('id', notificationId).eq('user_id', userId);
+  return c.json({ ok: true });
+});
+
 export default app;

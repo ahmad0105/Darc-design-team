@@ -163,7 +163,12 @@ app.patch('/:id', async (c) => {
     await supabase.from('project_members').upsert([{ project_id: projectId, user_id: updates.manager_id, role_id: 'project_manager' }], { onConflict: 'project_id,user_id' });
   }
 
-  supabase.from('audit_logs').insert([{ user_id: userId, action: 'update', entity_type: 'project', entity_id: projectId, details: body }]).then().catch(() => {});
+  // Sanitize audit details to prevent any sensitive fields from leaking into logs
+  const safeAuditDetails = { ...body };
+  delete safeAuditDetails.password;
+  delete safeAuditDetails.token;
+  delete safeAuditDetails.apiKey;
+  supabase.from('audit_logs').insert([{ user_id: userId, action: 'update', entity_type: 'project', entity_id: projectId, details: safeAuditDetails }]).then().catch(() => {});
 
   invalidateBootstrapCache();
 
@@ -179,6 +184,9 @@ app.delete('/:id', async (c) => {
   const userId = c.get('userId');
   const roleId = c.get('roleId');
   const supabase = c.get('supabase');
+
+  const { data: project } = await supabase.from('projects').select('id, manager_id').eq('id', projectId).single();
+  if (!project) return c.json({ error: 'المشروع غير موجود' }, 404);
 
   const canDelete = (roleId === 'admin') ||
     (await hasPermission(supabase, userId, roleId, 'delete_projects', projectId)) ||
