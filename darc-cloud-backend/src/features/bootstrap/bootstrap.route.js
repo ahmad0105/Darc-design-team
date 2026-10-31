@@ -258,7 +258,8 @@ export async function generateBootstrapPayloadForUser(env, userId, roleId) {
       if (t.status === 'review' || t.status === 'approval') pendingApprovals++;
     }
 
-    const currentUser = userMap.get(userId) || {};
+    const currentUser = { ...(userMap.get(userId) || {}) };
+    currentUser.phone = currentUser.phone || currentUser.custom_fields?.phone || null;
 
     // Activity Permission Guard: only users with view_user_activity or admin can see login/active times
     const canViewActivity = isGlobalAdmin || userRole?.permissions?.includes('view_user_activity') || userRole?.permissions?.includes('*');
@@ -266,6 +267,7 @@ export async function generateBootstrapPayloadForUser(env, userId, roleId) {
     // Stealth Super Admin: Ahmad is completely invisible to any other user across the entire system
     const exposedUsers = (isAhmad ? activeUsers : activeUsers.filter(u => u.id !== 'usr_ahmad')).map(u => {
       const copy = { ...u };
+      copy.phone = copy.phone || copy.custom_fields?.phone || null;
       if (!canViewActivity) {
         delete copy.last_login_at;
         delete copy.last_active_at;

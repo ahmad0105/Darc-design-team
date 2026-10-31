@@ -24,6 +24,19 @@ export async function createNotification(supabase, { userId, type, titleAr, titl
       read_at: null,
       created_at: new Date().toISOString()
     }]);
+
+    // Dispatch WhatsApp alert to the individual user if they have a real phone number configured
+    if (userId) {
+      import('../whatsapp/whatsapp.service.js').then(({ dispatchDirectNotificationAlert }) => {
+        dispatchDirectNotificationAlert(supabase, userId, {
+          title: finalTitleAr,
+          content: finalMsgAr,
+          type: type || 'general',
+          taskId,
+          projectId
+        }).catch(err => console.warn('[WhatsApp Direct Alert]', err.message));
+      }).catch(() => {});
+    }
   } catch(e) {
     console.warn('[Notifications] Could not create:', e.message);
   }

@@ -52,6 +52,8 @@ app.get('/', async (c) => {
     avatar_color: u.avatar_color,
     avatar_url: u.avatar_url || u.custom_fields?.avatarUrl || null,
     specialty: u.specialty || u.custom_fields?.specialty || '',
+    phone: u.custom_fields?.phone || null,
+    custom_fields: u.custom_fields || null,
     ...(canViewActivity ? {
       last_login_at: u.last_login_at || u.custom_fields?.lastLoginAt || null,
       last_active_at: u.last_active_at || u.custom_fields?.lastActiveAt || null
@@ -122,6 +124,19 @@ app.patch('/me', async (c) => {
       customFields.calendarSystem = body.calendarSystem;
     }
   }
+
+  if (body.phone !== undefined) {
+    if (body.phone === null || body.phone === '') {
+      customFields.phone = null;
+    } else {
+      const cleanPhone = String(body.phone).trim().replace(/[\s\-\(\)]/g, '');
+      if (!/^\+?[0-9]{7,16}$/.test(cleanPhone)) {
+        return c.json({ error: 'صيغة رقم الواتساب غير صالحة. يرجى إدخال رقم هاتف صحيح مع مفتاح الدولة (مثال: +966501234567).' }, 400);
+      }
+      customFields.phone = cleanPhone;
+    }
+  }
+
   updates.custom_fields = customFields;
 
   let { data, error } = await supabase.from('users').update(updates).eq('id', currentUserId).select().single();
@@ -142,6 +157,7 @@ app.patch('/me', async (c) => {
     delete data.password_hash;
     delete data.invite_token;
     data.avatar_url = data.avatar_url || data.custom_fields?.avatarUrl || null;
+    data.phone = data.phone || data.custom_fields?.phone || null;
   }
   return c.json({ ok: true, user: toCamelCase(data) });
 });
@@ -173,6 +189,16 @@ app.post('/', requireManageUsers, async (c) => {
   const { default: cryptoMod } = await import('node:crypto');
   const id = 'usr_' + cryptoMod.randomBytes(6).toString('hex');
   
+  let cleanPhone = null;
+  if (body.phone !== undefined && body.phone !== null && String(body.phone).trim()) {
+    cleanPhone = String(body.phone).trim().replace(/[\s\-\(\)]/g, '');
+    if (!/^\+?[0-9]{7,16}$/.test(cleanPhone)) {
+      return c.json({ error: 'صيغة رقم الواتساب غير صالحة. يرجى إدخال رقم صحيح مع مفتاح الدولة.' }, 400);
+    }
+  }
+
+  const customFields = cleanPhone ? { phone: cleanPhone } : {};
+
   const userData = {
     id,
     name,
@@ -182,7 +208,8 @@ app.post('/', requireManageUsers, async (c) => {
     job_title_en: body.jobTitleEn || '',
     role_id: body.roleId || 'member',
     status: 'pending',
-    avatar_color: body.avatarColor || '#0d6269'
+    avatar_color: body.avatarColor || '#0d6269',
+    custom_fields: customFields
   };
   
   const { data, error } = await supabase.from('users').insert([userData]).select().single();
@@ -193,6 +220,7 @@ app.post('/', requireManageUsers, async (c) => {
   if (data) {
     delete data.password_hash;
     delete data.invite_token;
+    data.phone = data.phone || data.custom_fields?.phone || null;
   }
 
   return c.json({ ok: true, user: toCamelCase(data) });
@@ -219,7 +247,7 @@ app.patch('/:id', async (c) => {
     return c.json({ error: 'غير مصرح لك بتنفيذ هذه العملية، هذه الصلاحية للمشرف فقط' }, 403);
   }
 
-  const { data: targetUser } = await supabase.from('users').select('id, role_id').eq('id', userId).single();
+  const { data: targetUser } = await supabase.from('users').select('id, role_id, custom_fields').eq('id', userId).single();
   if (!targetUser) {
     return c.json({ error: 'المستخدم غير موجود' }, 404);
   }
@@ -260,6 +288,21 @@ app.patch('/:id', async (c) => {
   if (body.jobTitleEn !== undefined) updates.job_title_en = body.jobTitleEn;
   if (body.roleId !== undefined) updates.role_id = body.roleId;
   if (body.status !== undefined) updates.status = body.status;
+
+  if (body.phone !== undefined) {
+    const customFields = { ...(targetUser.custom_fields || {}) };
+    if (body.phone === null || body.phone === '') {
+      customFields.phone = null;
+    } else {
+      const cleanPhone = String(body.phone).trim().replace(/[\s\-\(\)]/g, '');
+      if (!/^\+?[0-9]{7,16}$/.test(cleanPhone)) {
+        return c.json({ error: 'صيغة رقم الواتساب غير صالحة. يرجى إدخال رقم صحيح مع مفتاح الدولة.' }, 400);
+      }
+      customFields.phone = cleanPhone;
+    }
+    updates.custom_fields = customFields;
+  }
+
   updates.updated_at = new Date().toISOString();
   
   const { data, error } = await supabase.from('users').update(updates).eq('id', userId).select().single();
@@ -271,6 +314,7 @@ app.patch('/:id', async (c) => {
   if (data) {
     delete data.password_hash;
     delete data.invite_token;
+    data.phone = data.phone || data.custom_fields?.phone || null;
   }
   
   return c.json({ ok: true, user: toCamelCase(data) });

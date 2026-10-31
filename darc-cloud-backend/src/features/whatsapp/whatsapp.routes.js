@@ -1,25 +1,8 @@
 import { Hono } from 'hono';
 import { getDB } from '../../core/db.js';
-import { sendWhatsAppAlert } from './whatsapp.service.js';
+import { sendWhatsAppAlert, getWhatsAppConfig } from './whatsapp.service.js';
 
 const app = new Hono();
-
-// Helper: load whatsapp configuration from company custom_fields or settings
-async function getWhatsAppConfig(supabase) {
-  const { data: comp } = await supabase.from('companies').select('custom_fields').limit(1).single();
-  const cf = comp?.custom_fields || {};
-  return cf.whatsapp || {
-    enabled: false,
-    serverUrl: '',
-    apiKey: '',
-    instanceName: 'darc-workspace',
-    recipient: '', // Phone number or Group JID (e.g. 1203630...@g.us)
-    notifyOnBlocked: true,
-    notifyOnApproval: true,
-    notifyOnDrawing: true,
-    provider: 'evolution'
-  };
-}
 
 // GET /api/whatsapp/config
 app.get('/config', async (c) => {
@@ -39,10 +22,13 @@ app.post('/config', async (c) => {
   const body = await c.req.json();
   const incoming = body.config || {};
 
-  const { data: comp } = await supabase.from('companies').select('id, custom_fields').limit(1).single();
-  if (!comp) return c.json({ error: 'الشركة غير موجودة' }, 404);
+  let { data: comp } = await supabase.from('company').select('id, settings, custom_fields').eq('id', 'default').maybeSingle();
+  if (!comp) {
+    const fallback = await supabase.from('companies').select('id, settings, custom_fields').limit(1).maybeSingle();
+    comp = fallback.data;
+  }
 
-  const existingCF = comp.custom_fields || {};
+  const existingSettings = comp?.settings || comp?.custom_fields || {};
   const updatedWhatsApp = {
     enabled: Boolean(incoming.enabled),
     serverUrl: String(incoming.serverUrl || '').trim(),
@@ -56,13 +42,21 @@ app.post('/config', async (c) => {
     updatedAt: new Date().toISOString()
   };
 
-  const newCF = { ...existingCF, whatsapp: updatedWhatsApp };
-  const { error } = await supabase.from('companies').update({
-    custom_fields: newCF,
+  const newSettings = { ...existingSettings, whatsapp: updatedWhatsApp };
+  
+  let { error } = await supabase.from('company').upsert([{
+    id: comp?.id || 'default',
+    settings: newSettings,
     updated_at: new Date().toISOString()
-  }).eq('id', comp.id);
+  }]);
 
-  if (error) return c.json({ error: error.message }, 500);
+  if (error) {
+    await supabase.from('company').upsert([{
+      id: comp?.id || 'default',
+      custom_fields: newSettings,
+      updated_at: new Date().toISOString()
+    }]);
+  }
 
   return c.json({ ok: true, config: updatedWhatsApp });
 });

@@ -1,11 +1,38 @@
 // DARC Design Team — Low-Risk WhatsApp Notification Gateway Service
 // Built on Evolution API / Baileys Multi-Device Protocol with Anti-Ban Hygiene
 
+export async function getWhatsAppConfig(supabase) {
+  try {
+    let comp = null;
+    const { data } = await supabase.from('company').select('*').eq('id', 'default').maybeSingle();
+    comp = data;
+    if (!comp) {
+      const res = await supabase.from('companies').select('*').limit(1).maybeSingle();
+      comp = res.data;
+    }
+    const cf = comp?.settings?.whatsapp || comp?.custom_fields?.whatsapp || {};
+    return {
+      enabled: Boolean(cf.enabled),
+      serverUrl: cf.serverUrl || '',
+      apiKey: cf.apiKey || '',
+      instanceName: cf.instanceName || 'darc-workspace',
+      recipient: cf.recipient || '', // Team group or fallback recipient
+      notifyOnBlocked: cf.notifyOnBlocked !== false,
+      notifyOnApproval: cf.notifyOnApproval !== false,
+      notifyOnDrawing: cf.notifyOnDrawing !== false,
+      provider: cf.provider || 'evolution'
+    };
+  } catch (err) {
+    console.warn('[WhatsApp] getWhatsAppConfig error:', err.message);
+    return { enabled: false };
+  }
+}
+
 export function formatWhatsAppMessage(type, data) {
   const portalUrl = 'https://panel.darc-design.bond';
   switch (type) {
     case 'task_status': {
-      const { taskTitle, projectName, statusAr, updatedBy, taskId } = data;
+      const { taskTitle, projectName, statusAr, updatedBy } = data;
       return (
         `🏗️ *تنبيه من DARC Design Team*\n` +
         `━━━━━━━━━━━━━━━━━━━━\n` +
@@ -35,11 +62,22 @@ export function formatWhatsAppMessage(type, data) {
       return (
         `⚠️ *تنبيه عاجل: مهمة هندسية معلقة (Blocked)*\n` +
         `━━━━━━━━━━━━━━━━━━━━\n` +
-        `📋 *المهمة:* ${taskTitle}\n` +
-        `🏢 *المشروع:* ${projectName}\n` +
+        `📋 *المهمة:* ${taskTitle || 'مهمة'}\n` +
+        `🏢 *المشروع:* ${projectName || 'مشروع'}\n` +
         `🛑 *ملاحظة:* ${reason || 'بحاجة لتدخل وتوضيح هندسي'}\n` +
         `👤 *المبلغ:* ${blockedBy || 'مهندس الموقع'}\n` +
         `🔗 *فتح المهمة:* ${portalUrl}/#tasks\n` +
+        `━━━━━━━━━━━━━━━━━━━━`
+      );
+    }
+    case 'direct_notification': {
+      const { title, content } = data;
+      return (
+        `🔔 *تنبيه شخصي — DARC Design Team*\n` +
+        `━━━━━━━━━━━━━━━━━━━━\n` +
+        `📌 *${title || 'إشعار جديد'}*\n` +
+        `${content || ''}\n` +
+        `🔗 ${portalUrl}\n` +
         `━━━━━━━━━━━━━━━━━━━━`
       );
     }
@@ -47,7 +85,7 @@ export function formatWhatsAppMessage(type, data) {
       return (
         `🔔 *تنبيه من DARC Design Team*\n` +
         `━━━━━━━━━━━━━━━━━━━━\n` +
-        `${data.text || 'تحديث جديد في مساحة العمل.'}\n` +
+        `${data.text || data.content || 'تحديث جديد في مساحة العمل.'}\n` +
         `🔗 ${portalUrl}\n` +
         `━━━━━━━━━━━━━━━━━━━━`
       );
@@ -63,7 +101,7 @@ export async function sendWhatsAppAlert(config, type, payload) {
   const messageText = formatWhatsAppMessage(type, payload);
   const cleanServerUrl = config.serverUrl.replace(/\/+$/, '');
   const instance = config.instanceName || 'darc-workspace';
-  const recipient = config.recipient.replace(/[^0-9@.-]/g, '');
+  const recipient = String(config.recipient).replace(/[^0-9@.-]/g, '');
 
   try {
     // Anti-Ban Hygiene: Random Human-like Delay (800ms - 2200ms)
@@ -115,6 +153,38 @@ export async function sendWhatsAppAlert(config, type, payload) {
 
     return { ok: true, sent: true };
   } catch (err) {
+    return { ok: false, error: err.message };
+  }
+}
+
+/**
+ * Dispatch alert directly to an individual user's personal WhatsApp phone number
+ * (retrieved strictly from user profile custom_fields.phone — NEVER mocked or fabricated).
+ */
+export async function dispatchDirectNotificationAlert(supabase, userId, notificationData) {
+  if (!userId || !supabase) return { ok: false, skipped: true };
+
+  try {
+    const config = await getWhatsAppConfig(supabase);
+    if (!config || !config.enabled || !config.serverUrl) {
+      return { ok: false, skipped: true };
+    }
+
+    // Strict: only fetch user's real phone from database
+    const { data: userRec } = await supabase.from('users').select('id, name, custom_fields').eq('id', userId).maybeSingle();
+    const rawPhone = userRec?.custom_fields?.phone;
+    if (!rawPhone || typeof rawPhone !== 'string') {
+      return { ok: false, skipped: true, reason: 'No phone number configured for this user' };
+    }
+
+    const cleanPhone = rawPhone.trim().replace(/[\s\-\(\)]/g, '');
+    if (!/^\+?[0-9]{7,16}$/.test(cleanPhone)) {
+      return { ok: false, skipped: true, reason: 'Invalid user phone format' };
+    }
+
+    return await sendWhatsAppAlert({ ...config, recipient: cleanPhone }, 'direct_notification', notificationData);
+  } catch (err) {
+    console.warn('[WhatsApp] dispatchDirectNotificationAlert error:', err.message);
     return { ok: false, error: err.message };
   }
 }
