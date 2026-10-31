@@ -97,6 +97,17 @@ app.patch('/me', async (c) => {
     updates.avatar_color = body.avatarColor;
   }
 
+  if (body.specialty !== undefined) {
+    const validSpecs = ['architecture', 'structure', 'mep', 'interior', 'landscape', 'civil', 'project_management', 'general'];
+    if (body.specialty === null || body.specialty === '') {
+      updates.specialty = null;
+      customFields.specialty = null;
+    } else if (validSpecs.includes(body.specialty)) {
+      updates.specialty = body.specialty;
+      customFields.specialty = body.specialty;
+    }
+  }
+
   if (body.avatarUrl !== undefined) {
     if (body.avatarUrl === null || body.avatarUrl === '') {
       customFields.avatarUrl = null;
@@ -288,6 +299,15 @@ app.patch('/:id', async (c) => {
   if (body.jobTitleEn !== undefined) updates.job_title_en = body.jobTitleEn;
   if (body.roleId !== undefined) updates.role_id = body.roleId;
   if (body.status !== undefined) updates.status = body.status;
+
+  if (body.specialty !== undefined) {
+    const validSpecs = ['architecture', 'structure', 'mep', 'interior', 'landscape', 'civil', 'project_management', 'general'];
+    if (body.specialty === null || body.specialty === '') {
+      updates.specialty = null;
+    } else if (validSpecs.includes(body.specialty)) {
+      updates.specialty = body.specialty;
+    }
+  }
 
   if (body.phone !== undefined) {
     const customFields = { ...(targetUser.custom_fields || {}) };

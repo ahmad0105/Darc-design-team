@@ -14,6 +14,7 @@ import { invalidateBootstrapCache } from '../../core/cache.js';
 import { inspectFileBuffer } from '../../core/antivirus.js';
 import { addDemoDocument } from '../demo/demo.service.js';
 import { uploadRateLimiter } from '../../core/rate-limit.js';
+import { createNotification } from '../notifications/notifications.service.js';
 
 const DANGEROUS_EXTENSIONS = new Set([
   'exe', 'bat', 'cmd', 'sh', 'bash', 'ps1', 'vbs', 'js', 'mjs', 'cjs',
@@ -213,6 +214,20 @@ async function notifyReviewersOfDocument(supabase, { docId, docName, projectId, 
     });
 
     await supabase.from('notifications').insert(notifications);
+
+    // Also dispatch direct WhatsApp alerts to any reviewer with a registered phone
+    import('../whatsapp/whatsapp.service.js').then(({ dispatchDirectNotificationAlert }) => {
+      for (const uid of recipientIds) {
+        dispatchDirectNotificationAlert(supabase, uid, {
+          title: titleAr,
+          content: messageAr,
+          type: 'document_review',
+          taskId,
+          projectId
+        }).catch(() => {});
+      }
+    }).catch(() => {});
+
     invalidateBootstrapCache();
   } catch (err) {
     console.warn('[Documents] Failed to notify reviewers:', err.message);
@@ -713,6 +728,19 @@ app.patch('/:id', async (c) => {
 
   if (body.status === 'approved' && doc.project_id) {
     await autoSupersedePriorVersions(supabase, doc.project_id, docId, updates.original_name || doc.original_name);
+    if (doc.uploader_id && doc.uploader_id !== userId) {
+      createNotification(supabase, {
+        userId: doc.uploader_id,
+        type: 'document_approved',
+        titleAr: 'تم اعتماد المخطط الهندسي بنجاح ✅',
+        titleEn: 'Engineering Drawing Approved Successfully ✅',
+        messageAr: `تم اعتماد المخطط "${updates.original_name || doc.original_name}".`,
+        messageEn: `The drawing "${updates.original_name || doc.original_name}" has been approved.`,
+        content: `تم اعتماد المخطط "${updates.original_name || doc.original_name}".`,
+        projectId: doc.project_id,
+        taskId: doc.task_id
+      }).catch(() => {});
+    }
   } else if (body.status === 'review' && doc.status !== 'review' && doc.project_id) {
     notifyReviewersOfDocument(supabase, {
       docId,

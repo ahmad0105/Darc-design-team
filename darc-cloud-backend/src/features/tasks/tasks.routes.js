@@ -180,6 +180,21 @@ app.post('/', async (c) => {
 
   invalidateBootstrapCache();
 
+  // Notify assignee on task creation if assigned to a team member
+  if (task.assignee_id && task.assignee_id !== userId) {
+    createNotification(supabase, {
+      userId: task.assignee_id,
+      type: 'assignment',
+      titleAr: 'مهمة جديدة مسندة إليك 📋',
+      titleEn: 'New Task Assigned to You 📋',
+      messageAr: `تم إسناد المهمة "${task.title_ar}" إليك.`,
+      messageEn: `You have been assigned to task "${task.title_en || task.title_ar}".`,
+      content: `تم إسناد المهمة "${task.title_ar}" إليك.`,
+      taskId: task.id,
+      projectId: task.project_id
+    }).catch(() => {});
+  }
+
   supabase.from('audit_logs').insert([{ user_id: userId, action: 'create', entity_type: 'task', entity_id: task.id, details: { title: task.title_ar } }]).then().catch(() => {});
 
   return c.json({ task: toCamelCase(task) }, 201);
@@ -394,7 +409,7 @@ app.patch('/:id', async (c) => {
         if (isNaN(num)) continue;
         val = Math.max(0, Math.min(100, Math.round(num)));
       }
-      if (snake === 'status' && val && !['not_started', 'in_progress', 'review', 'approval', 'done', 'canceled'].includes(val)) {
+      if (snake === 'status' && val && !['not_started', 'in_progress', 'review', 'approval', 'done', 'blocked', 'canceled'].includes(val)) {
         continue;
       }
       if (snake === 'priority' && val && !['low', 'medium', 'high', 'urgent'].includes(val)) {
@@ -426,6 +441,62 @@ app.patch('/:id', async (c) => {
   if (error) throw error;
 
   invalidateBootstrapCache();
+
+  // Async smart notifications dispatch
+  (async () => {
+    try {
+      // 1. If assignee changed to someone else, notify the new assignee
+      if (updates.assignee_id && updates.assignee_id !== task.assignee_id && updates.assignee_id !== userId) {
+        await createNotification(supabase, {
+          userId: updates.assignee_id,
+          type: 'assignment',
+          titleAr: 'مهمة جديدة مسندة إليك 📋',
+          titleEn: 'New Task Assigned to You 📋',
+          messageAr: `تم إسناد المهمة "${updatedTask.title_ar || task.title_ar}" إليك.`,
+          messageEn: `You have been assigned to task "${updatedTask.title_en || task.title_en || task.title_ar}".`,
+          content: `تم إسناد المهمة "${updatedTask.title_ar || task.title_ar}" إليك.`,
+          taskId,
+          projectId: task.project_id
+        });
+      }
+
+      // 2. If status changed to blocked, notify the assignee or project manager
+      if (updates.status === 'blocked' && task.status !== 'blocked') {
+        const notifyTarget = (task.assignee_id && task.assignee_id !== userId) ? task.assignee_id : null;
+        if (notifyTarget) {
+          await createNotification(supabase, {
+            userId: notifyTarget,
+            type: 'task_blocked',
+            titleAr: 'تنبيه: مهمة معلقة (Blocked) ⚠️',
+            titleEn: 'Alert: Task Blocked ⚠️',
+            messageAr: `تم تعليق المهمة "${task.title_ar}". يرجى مراجعة التحديثات.`,
+            content: `تم تعليق المهمة "${task.title_ar}". يرجى مراجعة التحديثات.`,
+            taskId,
+            projectId: task.project_id
+          });
+        }
+      }
+
+      // 3. If status changed to review or approval, notify reviewer/approver
+      if ((updates.status === 'review' || updates.status === 'approval') && task.status !== updates.status) {
+        const target = updates.status === 'approval' ? (task.approver_id || task.reviewer_id) : (task.reviewer_id || task.approver_id);
+        if (target && target !== userId) {
+          await createNotification(supabase, {
+            userId: target,
+            type: 'task_status',
+            titleAr: updates.status === 'approval' ? 'مهمة بانتظار الاعتماد النهائي ✍️' : 'مهمة بانتظار المراجعة الفنية 🔍',
+            titleEn: updates.status === 'approval' ? 'Task Pending Final Approval ✍️' : 'Task Pending Technical Review 🔍',
+            messageAr: `المهمة "${task.title_ar}" بانتظار المراجعة والاعتماد الهندسي.`,
+            content: `المهمة "${task.title_ar}" بانتظار المراجعة والاعتماد الهندسي.`,
+            taskId,
+            projectId: task.project_id
+          });
+        }
+      }
+    } catch (notifErr) {
+      console.warn('[Tasks Notification Error]', notifErr.message);
+    }
+  })().catch(() => {});
 
   supabase.from('audit_logs').insert([{ user_id: userId, action: 'update', entity_type: 'task', entity_id: taskId, details: body }]).then().catch(() => {});
 
