@@ -108,6 +108,33 @@ export function formatWhatsAppMessage(type, data) {
 let _whatsappQueuePromise = Promise.resolve();
 const _recentWhatsAppAlerts = new Map(); // hash -> timestamp
 
+// Anti-Ban: Daily message counter (resets at midnight AST)
+const _dailySendLog = new Map(); // 'YYYY-MM-DD' -> count
+const DAILY_SEND_LIMIT = 50; // Max messages per calendar day (AST)
+
+// Anti-Ban: Safe sending hours (Saudi Arabia AST = UTC+3)
+const SAFE_HOUR_START = 7;  // 7:00 AM
+const SAFE_HOUR_END   = 23; // 11:00 PM
+
+function isSafeHour() {
+  const nowAst = new Date(Date.now() + 3 * 60 * 60 * 1000); // UTC → AST
+  const hour = nowAst.getUTCHours();
+  return hour >= SAFE_HOUR_START && hour < SAFE_HOUR_END;
+}
+
+function isDailyLimitReached() {
+  const nowAst = new Date(Date.now() + 3 * 60 * 60 * 1000);
+  const today = nowAst.toISOString().slice(0, 10); // 'YYYY-MM-DD'
+  const count = _dailySendLog.get(today) || 0;
+  if (count >= DAILY_SEND_LIMIT) return true;
+  _dailySendLog.set(today, count + 1);
+  // Prune old days (keep only last 2 days)
+  for (const key of _dailySendLog.keys()) {
+    if (key < today) _dailySendLog.delete(key);
+  }
+  return false;
+}
+
 function isDuplicateAlert(recipient, type, text) {
   const hash = `${recipient}:${type}:${String(text).slice(0, 50)}`;
   const now = Date.now();
@@ -149,11 +176,22 @@ export async function sendWhatsAppAlert(config, type, payload) {
     return { ok: true, skipped: true, reason: 'Duplicate alert suppressed within 30s' };
   }
 
+  // Anti-Ban: Do not send during night hours (11 PM – 7 AM AST)
+  if (!isSafeHour()) {
+    return { ok: true, skipped: true, reason: 'Outside safe sending hours (7AM–11PM AST)' };
+  }
+
+  // Anti-Ban: Circuit breaker — max 50 messages per day
+  if (isDailyLimitReached()) {
+    console.warn('[WhatsApp] Daily send limit reached (50/day). Message suppressed.');
+    return { ok: true, skipped: true, reason: 'Daily send limit reached' };
+  }
+
   // Anti-Ban Serial Queue: Chain onto promise queue to enforce strict serial transmission
   const task = _whatsappQueuePromise.then(async () => {
     try {
-      // Anti-Ban Hygiene: Random Human-like Delay (900ms - 2200ms)
-      const jitterMs = Math.floor(Math.random() * 1300) + 900;
+      // Anti-Ban Hygiene: Random Human-like Delay (2000ms - 5000ms)
+      const jitterMs = Math.floor(Math.random() * 3000) + 2000;
       await new Promise(r => setTimeout(r, jitterMs));
 
       // Support both Evolution API standard endpoint and generic webhook
