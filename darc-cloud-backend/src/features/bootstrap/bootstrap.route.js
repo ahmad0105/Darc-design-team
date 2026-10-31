@@ -323,9 +323,23 @@ export async function generateBootstrapPayloadForUser(env, userId, roleId) {
     }
     const computedUpdatedAt = maxUpdatedAt ? new Date(maxUpdatedAt).toISOString() : new Date().toISOString();
 
+    // Sensitive Information Disclosure Prevention (CWE-200 / CWE-319):
+    // Mask sensitive integration secrets (like WhatsApp API keys) for non-administrative roles
+    const canManageSettings = isGlobalAdmin || userRole?.permissions?.includes('manage_settings') || userRole?.permissions?.includes('*');
+    let exposedCompany = company || { name: 'DARC Design Team', nameAr: 'فريق دارك للتصميم', nameEn: 'DARC Design Team' };
+    if (!canManageSettings && exposedCompany) {
+      exposedCompany = JSON.parse(JSON.stringify(exposedCompany));
+      if (exposedCompany.settings?.whatsapp?.apiKey) {
+        exposedCompany.settings.whatsapp.apiKey = '••••••••';
+      }
+      if (exposedCompany.custom_fields?.whatsapp?.apiKey) {
+        exposedCompany.custom_fields.whatsapp.apiKey = '••••••••';
+      }
+    }
+
     const responsePayload = {
       updatedAt: computedUpdatedAt,
-      company: toCamelCase(company || { name: 'DARC Design Team', nameAr: 'فريق دارك للتصميم', nameEn: 'DARC Design Team' }),
+      company: toCamelCase(exposedCompany),
       user: toCamelCase(currentUser),
       role: toCamelCase(userRole || {}),
       projects: toCamelCase(projects),

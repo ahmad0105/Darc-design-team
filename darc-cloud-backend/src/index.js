@@ -278,7 +278,17 @@ app.get('/api/health', (c) => c.json({ ok: true, status: 'healthy', env: 'produc
 
 // JWT Guard with Token Revocation Protection
 app.use('/api/*', async (c, next) => {
-  if (c.req.path.startsWith('/api/auth') || c.req.path === '/api/health' || c.req.path === '/api/telemetry/heartbeat' || c.req.path === '/api/telemetry/report-error') return next();
+  const publicApiPaths = [
+    '/api/auth/login',
+    '/api/auth/logout',
+    '/api/auth/forgot-password',
+    '/api/auth/reset-password',
+    '/api/auth/activate',
+    '/api/health',
+    '/api/telemetry/heartbeat',
+    '/api/telemetry/report-error'
+  ];
+  if (publicApiPaths.includes(c.req.path)) return next();
   const token = getSessionToken(c);
   if (!token) return c.json({ error: 'غير مصرح لك بالدخول' }, 401);
   let payload;
@@ -447,6 +457,13 @@ app.use('/api/templates/*', async (c, next) => {
 app.use('/api/company/*', async (c, next) => {
   if (c.req.method !== 'GET' && c.get('roleId') !== 'admin') {
     return c.json({ error: 'غير مصرح لك بتعديل إعدادات الشركة (تحتاج صلاحية مدير)' }, 403);
+  }
+  await next();
+});
+
+app.use('/api/whatsapp/*', async (c, next) => {
+  if (c.req.method !== 'GET' && c.get('roleId') !== 'admin' && c.get('roleId') !== 'account_permissions_manager') {
+    return c.json({ error: 'غير مصرح لك بتعديل إعدادات التنبيهات (تحتاج صلاحية مدير أو مسؤول صلاحيات)' }, 403);
   }
   await next();
 });

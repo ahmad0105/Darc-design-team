@@ -279,6 +279,114 @@ export function csrfGuardMiddleware() {
 }
 
 /**
+ * Strict Server-Side Request Forgery (SSRF) Guard.
+ * Validates that a user-provided or config-provided outbound URL points strictly to a public HTTPS/HTTP server
+ * and NEVER to internal infrastructure, link-local addresses, loopback, AWS/GCP/Cloud metadata services, or private RFC1918 subnets.
+ */
+export function validateSafeExternalUrl(urlStr) {
+  if (!urlStr || typeof urlStr !== 'string') {
+    return { ok: false, error: 'الرابط غير صالح أو فارغ.' };
+  }
+  const trimmed = urlStr.trim();
+  let parsed;
+  try {
+    parsed = new URL(trimmed);
+  } catch {
+    return { ok: false, error: 'صيغة الرابط غير صالحة.' };
+  }
+
+  // 1. Only allow HTTP and HTTPS protocols
+  if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') {
+    return { ok: false, error: 'بروتوكول الرابط غير مدعوم، يجب أن يكون http أو https.' };
+  }
+
+  const hostname = parsed.hostname.toLowerCase();
+
+  // 2. Reject empty or invalid hostname
+  if (!hostname || hostname.includes(' ') || hostname.includes('\t') || hostname.includes('\r') || hostname.includes('\n')) {
+    return { ok: false, error: 'اسم المضيف غير صالح.' };
+  }
+
+  // 3. Reject Localhost & local domains
+  if (
+    hostname === 'localhost' ||
+    hostname.endsWith('.localhost') ||
+    hostname.endsWith('.local') ||
+    hostname.endsWith('.internal') ||
+    hostname.endsWith('.arpa') ||
+    hostname.endsWith('.corp') ||
+    hostname.endsWith('.home') ||
+    hostname.endsWith('.lan')
+  ) {
+    return { ok: false, error: 'لا يمكن استخدام نطاقات شبكة محلية أو داخلية (SSRF Protection).' };
+  }
+
+  // 4. Reject IPv6 loopback / unique local / link local
+  if (
+    hostname === '::1' ||
+    hostname === '[::1]' ||
+    hostname === '0:0:0:0:0:0:0:1' ||
+    hostname.startsWith('fc00:') ||
+    hostname.startsWith('fd00:') ||
+    hostname.startsWith('fe80:') ||
+    hostname.startsWith('[fc') ||
+    hostname.startsWith('[fd') ||
+    hostname.startsWith('[fe')
+  ) {
+    return { ok: false, error: 'عناوين IPv6 المحلية والداخلية محظورة (SSRF Protection).' };
+  }
+
+  // 5. Reject IPv4 Private / Loopback / Link-Local / Metadata ranges:
+  // - 127.0.0.0/8 (Loopback)
+  // - 10.0.0.0/8 (Private)
+  // - 172.16.0.0/12 (Private 172.16 - 172.31)
+  // - 192.168.0.0/16 (Private)
+  // - 169.254.0.0/16 (Link-Local & Cloud Metadata e.g. 169.254.169.254)
+  // - 0.0.0.0/8 & 255.255.255.255
+  // - 100.64.0.0/10 (Carrier-Grade NAT)
+  const ipv4Regex = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/;
+  const match = hostname.match(ipv4Regex);
+  if (match) {
+    const o1 = Number(match[1]);
+    const o2 = Number(match[2]);
+    const o3 = Number(match[3]);
+    const o4 = Number(match[4]);
+    if ([o1, o2, o3, o4].some(octet => octet < 0 || octet > 255)) {
+      return { ok: false, error: 'عنوان IP غير صالح.' };
+    }
+    // Loopback
+    if (o1 === 127 || o1 === 0) {
+      return { ok: false, error: 'عناوين IP المحلية محظورة (SSRF Protection).' };
+    }
+    // Link-local / Cloud Metadata (169.254.x.x)
+    if (o1 === 169 && o2 === 254) {
+      return { ok: false, error: 'عناوين الربط المحلي والبيانات الوصفية للسحابة محظورة (SSRF Protection).' };
+    }
+    // RFC 1918 Private ranges
+    if (o1 === 10) {
+      return { ok: false, error: 'عناوين الشبكات الخاصة (10.0.0.0/8) محظورة (SSRF Protection).' };
+    }
+    if (o1 === 172 && (o2 >= 16 && o2 <= 31)) {
+      return { ok: false, error: 'عناوين الشبكات الخاصة (172.16.0.0/12) محظورة (SSRF Protection).' };
+    }
+    if (o1 === 192 && o2 === 168) {
+      return { ok: false, error: 'عناوين الشبكات الخاصة (192.168.0.0/16) محظورة (SSRF Protection).' };
+    }
+    // Broadcast / CGNAT
+    if (o1 === 255 || (o1 === 100 && (o2 >= 64 && o2 <= 127))) {
+      return { ok: false, error: 'عناوين الشبكات غير المسموح بها محظورة (SSRF Protection).' };
+    }
+  }
+
+  // 6. Reject numeric / hex / octal bypass notations (e.g. 2130706433, 0177.0.0.1, 0x7f.0.0.1)
+  if (/^(0x[0-9a-f]+|\d+)$/i.test(hostname)) {
+    return { ok: false, error: 'صيغ عناوين IP الرقمية الأحادية محظورة (SSRF Protection).' };
+  }
+
+  return { ok: true, cleanUrl: parsed.origin + parsed.pathname.replace(/\/+$/, '') };
+}
+
+/**
  * Cryptographically secure identifier generator using Web Crypto API.
  * Works uniformly in Cloudflare Workers and Node.js with 96-bit collision resistance.
  */

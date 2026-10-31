@@ -168,7 +168,15 @@ app.post('/test-email', async (c) => {
   }
   try {
     const body = await c.req.json().catch(() => ({}));
-    const recipient = body.to || c.env?.ALERT_EMAIL || 'admin@darc-design.bond';
+    let recipient = c.env?.ALERT_EMAIL || 'admin@darc-design.bond';
+    if (body.to) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      const cleanEmail = String(body.to).trim().toLowerCase();
+      if (!emailRegex.test(cleanEmail)) {
+        return c.json({ error: 'صيغة البريد الإلكتروني المدخلة غير صالحة.' }, 400);
+      }
+      recipient = cleanEmail;
+    }
     const subject = '🔔 [تجربة البريد] اختبار نظام تنبيهات الأخطاء والحماية لمنصة DARC';
     const html = `
       <div style="font-family:sans-serif;direction:rtl;text-align:right;padding:20px;background:#0f172a;color:#f8fafc;border-radius:10px;">

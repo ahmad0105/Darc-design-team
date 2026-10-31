@@ -25,10 +25,25 @@ const requireManageRoles = async (c, next) => {
 app.post('/', requireManageRoles, async (c) => {
   const body = await c.req.json();
   const supabase = c.get('supabase');
-  const isSuperAdmin = c.get('roleId') === 'admin';
+  const currentRoleId = c.get('roleId');
+  const isSuperAdmin = currentRoleId === 'admin';
 
   if (!isSuperAdmin && body.permissions && body.permissions.includes('*')) {
     return c.json({ error: 'لا يمكن منح الصلاحية الكاملة (*) إلا من قِبل مدير النظام.' }, 403);
+  }
+
+  // Privilege Escalation Prevention (CWE-269):
+  // Non-admins cannot grant permissions that they themselves do not possess
+  if (!isSuperAdmin && Array.isArray(body.permissions)) {
+    const { data: callerRole } = await supabase.from('roles').select('permissions').eq('id', currentRoleId).maybeSingle();
+    const callerPerms = new Set(callerRole?.permissions || []);
+    if (!callerPerms.has('*')) {
+      for (const perm of body.permissions) {
+        if (!callerPerms.has(perm)) {
+          return c.json({ error: `لا يمكنك منح صلاحية (${perm}) لا تمتلكها في رتبتك الحالية.` }, 403);
+        }
+      }
+    }
   }
 
   const id = generateSecureId('rol_');
@@ -56,13 +71,33 @@ app.patch('/:id', requireManageRoles, async (c) => {
   if (!/^[a-zA-Z0-9_-]{3,64}$/.test(roleId)) {
     return c.json({ error: 'معرف الدور غير صالح' }, 400);
   }
-  const isSuperAdmin = c.get('roleId') === 'admin';
+  const currentRoleId = c.get('roleId');
+  const isSuperAdmin = currentRoleId === 'admin';
   if (roleId === 'admin' && !isSuperAdmin) {
     return c.json({ error: 'لا يمكن لغير مدير النظام تعديل دور المشرف العام.' }, 403);
   }
 
+  // Privilege Escalation Prevention (CWE-269):
+  // Non-admins cannot modify their own active role to elevate their permissions
+  if (!isSuperAdmin && roleId === currentRoleId) {
+    return c.json({ error: 'لا يمكنك تعديل صلاحيات رتبتك الحالية بنفسك لمنع تصعيد الصلاحيات (Privilege Escalation).' }, 403);
+  }
+
   const body = await c.req.json();
   const supabase = c.get('supabase');
+
+  // Non-admins cannot grant permissions that they themselves do not possess
+  if (!isSuperAdmin && Array.isArray(body.permissions)) {
+    const { data: callerRole } = await supabase.from('roles').select('permissions').eq('id', currentRoleId).maybeSingle();
+    const callerPerms = new Set(callerRole?.permissions || []);
+    if (!callerPerms.has('*')) {
+      for (const perm of body.permissions) {
+        if (!callerPerms.has(perm)) {
+          return c.json({ error: `لا يمكنك منح صلاحية (${perm}) لا تمتلكها في رتبتك الحالية.` }, 403);
+        }
+      }
+    }
+  }
   
   const updates = {};
   if (body.nameAr !== undefined) updates.name_ar = body.nameAr;

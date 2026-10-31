@@ -1,5 +1,6 @@
 // DARC Design Team — Low-Risk WhatsApp Notification Gateway Service
 // Built on Evolution API / Baileys Multi-Device Protocol with Anti-Ban Hygiene
+import { validateSafeExternalUrl } from '../../core/security.js';
 
 export async function getWhatsAppConfig(supabase) {
   try {
@@ -129,8 +130,14 @@ export async function sendWhatsAppAlert(config, type, payload) {
     return { ok: false, skipped: true, reason: 'WhatsApp alerts not configured or disabled' };
   }
 
+  // SSRF Protection (CWE-918): Strictly ensure outbound serverUrl is public and safe
+  const urlCheck = validateSafeExternalUrl(config.serverUrl);
+  if (!urlCheck.ok) {
+    return { ok: false, error: urlCheck.error, skipped: true };
+  }
+
   const messageText = formatWhatsAppMessage(type, payload);
-  const cleanServerUrl = config.serverUrl.replace(/\/+$/, '');
+  const cleanServerUrl = urlCheck.cleanUrl || config.serverUrl.replace(/\/+$/, '');
   const instance = config.instanceName || 'darc-workspace';
   const recipient = normalizeWhatsAppNumber(config.recipient);
   if (!recipient) {
