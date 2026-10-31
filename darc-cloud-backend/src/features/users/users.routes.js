@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { getDB } from '../../core/db.js';
-import { invalidateUsersCache, setUserTokenVersion, getUserTokenVersion, setUserStatus } from '../../core/cache.js';
+import { invalidateUsersCache, invalidateBootstrapCache, setUserTokenVersion, getUserTokenVersion, setUserStatus } from '../../core/cache.js';
 import { logAudit } from '../../core/audit.js';
 import { toCamelCase } from '../../utils/transformers.js';
 import { hasPermission } from '../../utils/permissions.js';
@@ -164,6 +164,7 @@ app.patch('/me', async (c) => {
   }
 
   invalidateUsersCache();
+  invalidateBootstrapCache();
   if (data) {
     delete data.password_hash;
     delete data.invite_token;
@@ -227,6 +228,7 @@ app.post('/', requireManageUsers, async (c) => {
   if (error) throw error;
   
   invalidateUsersCache();
+  invalidateBootstrapCache();
 
   if (data) {
     delete data.password_hash;
@@ -330,6 +332,7 @@ app.patch('/:id', async (c) => {
 
   if (updates.status) setUserStatus(userId, updates.status);
   invalidateUsersCache();
+  invalidateBootstrapCache();
 
   if (data) {
     delete data.password_hash;
@@ -361,6 +364,7 @@ app.post('/:id/deactivate', requireManageUsers, async (c) => {
   setUserTokenVersion(targetId, nextVer);
   setUserStatus(targetId, 'inactive');
   invalidateUsersCache();
+  invalidateBootstrapCache();
   return c.json({ ok: true });
 });
 
@@ -386,6 +390,7 @@ app.delete('/:id', requireManageUsers, async (c) => {
   setUserTokenVersion(targetId, nextVer);
   setUserStatus(targetId, 'inactive');
   invalidateUsersCache();
+  invalidateBootstrapCache();
   return c.json({ ok: true });
 });
 
@@ -409,7 +414,7 @@ app.post('/:id/force-password', requireManageUsers, async (c) => {
     return c.json({ error: 'محظور: لا يمكن تعديل كلمة مرور حساب مدير ومطور النظام.' }, 403);
   }
   const supabase = c.get('supabase');
-  const body = await c.req.json();
+  const body = await c.req.json().catch(() => ({}));
   const newPassword = String(body.newPassword || body.password || '');
   if (newPassword.length < 10) return c.json({ error: 'كلمة المرور قصيرة جداً (10 أحرف كحد أدنى).' }, 400);
 
@@ -427,6 +432,7 @@ app.post('/:id/force-password', requireManageUsers, async (c) => {
   if (error) throw error;
   setUserTokenVersion(targetId, nextVer);
   invalidateUsersCache();
+  invalidateBootstrapCache();
   return c.json({ ok: true });
 });
 

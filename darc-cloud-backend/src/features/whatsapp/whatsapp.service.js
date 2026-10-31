@@ -31,13 +31,21 @@ export async function getWhatsAppConfig(supabase) {
 
 export function normalizeWhatsAppNumber(raw) {
   if (!raw) return '';
-  let str = String(raw).trim().replace(/[\s\-\(\)]/g, '');
-  if (str.includes('@g.us')) return str;
+  let str = String(raw).trim();
+  // Reject invite links which are not direct recipient phone numbers or group IDs
+  if (str.toLowerCase().includes('chat.whatsapp.com')) return '';
+
+  str = str.replace(/[\s\-\(\)]/g, '');
+  if (str.includes('@g.us')) {
+    return /^[0-9\-]+@g\.us$/.test(str) ? str : '';
+  }
   if (str.startsWith('+')) str = str.slice(1);
   if (/^05[0-9]{8}$/.test(str)) {
     str = '966' + str.slice(1);
   }
-  return str.replace(/[^0-9@.-]/g, '');
+  const digitsOnly = str.replace(/[^0-9]/g, '');
+  if (digitsOnly.length < 7 || digitsOnly.length > 16) return '';
+  return digitsOnly;
 }
 
 export function formatWhatsAppMessage(type, data) {

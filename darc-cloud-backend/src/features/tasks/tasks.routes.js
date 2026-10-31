@@ -699,6 +699,8 @@ app.post('/:id/comments', async (c) => {
     c.executionCtx.waitUntil(bgTask);
   }
 
+  invalidateBootstrapCache();
+
   return c.json({ comment: toCamelCase(comment) }, 201);
 });
 
@@ -751,6 +753,8 @@ app.patch('/:id/comments/:commentId', async (c) => {
 
   if (updateErr) throw updateErr;
 
+  invalidateBootstrapCache();
+
   return c.json({ comment: toCamelCase(updatedComment) });
 });
 
@@ -797,6 +801,8 @@ app.delete('/:id/comments/:commentId', async (c) => {
     .eq('task_id', taskId);
 
   if (delErr) throw delErr;
+
+  invalidateBootstrapCache();
 
   return c.json({ ok: true });
 });

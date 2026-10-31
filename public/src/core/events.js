@@ -323,6 +323,9 @@ export async function handleSubmit(event) {
         if (!state.data.company) state.data.company = {};
         if (!state.data.company.customFields) state.data.company.customFields = {};
         state.data.company.customFields.whatsapp = res.config;
+        if (state.data.company.custom_fields) {
+          state.data.company.custom_fields.whatsapp = res.config;
+        }
       }
       showToast(choose('تم حفظ إعدادات تنبيهات واتساب بنجاح ✅', 'WhatsApp alert settings saved successfully ✅'));
       renderView();
@@ -1854,7 +1857,8 @@ async function queryGDriveStatus(sessionUrl, fileSize) {
       return 0;
     }
     if (res.ok) {
-      return { completed: true, data: res.json() };
+      const data = typeof res.json === 'function' ? await Promise.resolve(res.json()) : {};
+      return { completed: true, data };
     }
   } catch (e) {
     // Ignore query failure
@@ -2301,7 +2305,7 @@ export async function uploadDirectFiles({ files, projectId = null, taskId = null
               updateProgressUI(0);
               chunkSuccess = true;
             } else if (res.ok) {
-              const driveData = res.json();
+              const driveData = typeof res.json === 'function' ? await Promise.resolve(res.json()) : {};
               driveFileId = driveData.id || driveData.document?.id;
               uploadedSoFar = file.size;
               updateProgressUI(0);

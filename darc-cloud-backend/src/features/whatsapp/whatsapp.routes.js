@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { getDB } from '../../core/db.js';
 import { sendWhatsAppAlert, getWhatsAppConfig } from './whatsapp.service.js';
 import { validateSafeExternalUrl } from '../../core/security.js';
+import { invalidateCompanyCache, invalidateBootstrapCache } from '../../core/cache.js';
 
 const app = new Hono();
 
@@ -85,6 +86,9 @@ app.post('/config', async (c) => {
       updated_at: new Date().toISOString()
     }]);
   }
+
+  invalidateCompanyCache();
+  invalidateBootstrapCache();
 
   return c.json({ ok: true, config: updatedWhatsApp });
 });

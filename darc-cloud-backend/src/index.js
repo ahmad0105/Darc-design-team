@@ -24,6 +24,7 @@ import auditApp         from './features/audit/audit.routes.js';
 import telemetryApp     from './features/telemetry/telemetry.routes.js';
 import whatsappApp      from './features/whatsapp/whatsapp.routes.js';
 import { processWhatsAppQueue } from './features/whatsapp/whatsapp.service.js';
+import { processDueReminders } from './features/reminders/reminders.service.js';
 
 // Core Security, Error Resilience & Performance
 import { createErrorHandler } from './core/errors.js';
@@ -533,6 +534,7 @@ app.use('*', async (c, next) => {
       try {
         const supabase = getDB(c.env);
         c.executionCtx.waitUntil(processWhatsAppQueue(supabase));
+        c.executionCtx.waitUntil(processDueReminders(supabase));
       } catch (_) {}
     }
   }
@@ -566,7 +568,10 @@ export default {
       // 1. Drain queued WhatsApp messages for safe hours
       tasks.push(processWhatsAppQueue(supabase));
 
-      // 2. Daily automated maintenance: purge soft-deleted trash older than 30 days (runs at 7:00 AM AST / 04:00 UTC)
+      // 2. Dispatch due reminders
+      tasks.push(processDueReminders(supabase));
+
+      // 3. Daily automated maintenance: purge soft-deleted trash older than 30 days (runs at 7:00 AM AST / 04:00 UTC)
       const nowUtcHours = new Date().getUTCHours();
       const nowUtcMinutes = new Date().getUTCMinutes();
       if (nowUtcHours === 4 && nowUtcMinutes < 16) {

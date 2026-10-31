@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { getDB } from '../../core/db.js';
-import { invalidateTemplatesCache } from '../../core/cache.js';
+import { invalidateTemplatesCache, invalidateBootstrapCache } from '../../core/cache.js';
 import { toCamelCase } from '../../utils/transformers.js';
 import { hasPermission } from '../../utils/permissions.js';
 import { generateSecureId } from '../../core/security.js';
@@ -60,6 +60,7 @@ app.post('/', async (c) => {
   }]).select().single();
   if (error) throw error;
   invalidateTemplatesCache();
+  invalidateBootstrapCache();
   return c.json({ ok: true, template: toCamelCase(data) }, 201);
 });
 
@@ -103,6 +104,7 @@ app.patch('/:id', async (c) => {
   const { data, error } = await supabase.from('templates').update(updates).eq('id', templateId).select().single();
   if (error) throw error;
   invalidateTemplatesCache();
+  invalidateBootstrapCache();
   return c.json({ ok: true, template: toCamelCase(data) });
 });
 
@@ -122,6 +124,7 @@ app.delete('/:id', async (c) => {
   const { error } = await supabase.from('templates').update({ deleted_at: new Date().toISOString() }).eq('id', templateId);
   if (error) throw error;
   invalidateTemplatesCache();
+  invalidateBootstrapCache();
   return c.json({ ok: true });
 });
 

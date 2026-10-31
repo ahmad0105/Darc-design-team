@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { getDB } from '../../core/db.js';
-import { invalidateCompanyCache, setCompanyCacheDirect, getCachedCompany } from '../../core/cache.js';
+import { invalidateCompanyCache, invalidateBootstrapCache, setCompanyCacheDirect, getCachedCompany } from '../../core/cache.js';
 import { toCamelCase } from '../../utils/transformers.js';
 import { hasPermission } from '../../utils/permissions.js';
 
@@ -83,10 +83,12 @@ app.patch('/', async (c) => {
     const { data, error } = await supabase.from('company').upsert([{ id: 'default', ...updates }]).select().single();
     if (error) throw error;
     invalidateCompanyCache();
+    invalidateBootstrapCache();
     return c.json({ ok: true, company: toCamelCase(data) });
   } catch(e) {
     console.warn('[Company] DB upsert fallback:', e.message);
     setCompanyCacheDirect(updates);
+    invalidateBootstrapCache();
     return c.json({ ok: true, company: toCamelCase(updates), fallback: true });
   }
 });

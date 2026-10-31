@@ -3,6 +3,7 @@ import { getDB } from '../../core/db.js';
 import { isProjectVisible, hasPermission } from '../../utils/permissions.js';
 import { toCamelCase } from '../../utils/transformers.js';
 import { generateSecureId } from '../../core/security.js';
+import { invalidateBootstrapCache } from '../../core/cache.js';
 
 const app = new Hono();
 
@@ -83,6 +84,7 @@ app.post('/', async (c) => {
         const updatedList = [...existingReminders.filter(r => r.id !== id), newEntry];
         const fields = { ...(task.custom_fields || {}), reminders: updatedList };
         await supabase.from('tasks').update({ custom_fields: fields }).eq('id', body.taskId);
+        invalidateBootstrapCache();
       }
     } catch (e) {
       console.warn('[Reminders] Custom fields sync note:', e.message);
@@ -155,6 +157,7 @@ app.delete('/:id', async (c) => {
       if (task && Array.isArray(task.custom_fields?.reminders)) {
         const filtered = task.custom_fields.reminders.filter(r => r.id !== id);
         await supabase.from('tasks').update({ custom_fields: { ...task.custom_fields, reminders: filtered } }).eq('id', reminder.task_id);
+        invalidateBootstrapCache();
       }
     }
   }

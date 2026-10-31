@@ -152,7 +152,7 @@ export async function api(path, options = {}) {
     } catch (e) {}
   }
   
-  const result = await response.json();
+  const result = await response.json().catch(() => ({ ok: true }));
 
   // On successful mutations, invalidate local ETag and broadcast to other open tabs to trigger immediate sync
   if (['POST', 'PATCH', 'PUT', 'DELETE'].includes(options.method)) {

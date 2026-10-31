@@ -423,6 +423,7 @@ app.post('/finalize', async (c) => {
       }
     }]).then().catch(() => {});
 
+    invalidateBootstrapCache();
     return c.json({ ok: true, document: toCamelCase(data) });
   } catch (err) {
     console.error('[Documents] Finalize Error:', err);
@@ -569,6 +570,7 @@ app.put('/chunk', async (c) => {
         }
       }]).then().catch(() => {});
 
+      invalidateBootstrapCache();
       return c.json({ ok: true, document: toCamelCase(data) });
     } catch (err) {
       console.error("[Documents] Finalize Error:", err);
@@ -679,6 +681,7 @@ app.post('/', uploadRateLimiter(), async (c) => {
       details: { name: compiledName, link: driveResult.webViewLink, status: finalStatus }
     }]).then().catch(() => {});
 
+    invalidateBootstrapCache();
     return c.json({ ok: true, document: toCamelCase(data) }, 201);
   } catch (error) {
     console.error("[Documents] Upload Error:", error);
@@ -774,6 +777,7 @@ app.patch('/:id', async (c) => {
     }).catch(() => {});
   }
   
+  invalidateBootstrapCache();
   return c.json({ ok: true, document: toCamelCase(data) });
 });
 
