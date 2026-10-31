@@ -299,7 +299,7 @@ auditApp.post('/', async (c) => {
     return c.json({ ok: true, isDemo: true });
   }
 
-  const body = await c.req.json();
+  const body = await c.req.json().catch(() => ({}));
   const supabase = getDB(c.env);
   const nowIso = new Date().toISOString();
 

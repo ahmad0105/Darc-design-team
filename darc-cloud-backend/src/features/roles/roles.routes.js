@@ -23,7 +23,7 @@ const requireManageRoles = async (c, next) => {
 };
 
 app.post('/', requireManageRoles, async (c) => {
-  const body = await c.req.json();
+  const body = await c.req.json().catch(() => ({}));
   const supabase = c.get('supabase');
   const currentRoleId = c.get('roleId');
   const isSuperAdmin = currentRoleId === 'admin';
@@ -83,7 +83,7 @@ app.patch('/:id', requireManageRoles, async (c) => {
     return c.json({ error: 'لا يمكنك تعديل صلاحيات رتبتك الحالية بنفسك لمنع تصعيد الصلاحيات (Privilege Escalation).' }, 403);
   }
 
-  const body = await c.req.json();
+  const body = await c.req.json().catch(() => ({}));
   const supabase = c.get('supabase');
 
   // Non-admins cannot grant permissions that they themselves do not possess

@@ -71,7 +71,7 @@ app.get('/', async (c) => {
 app.patch('/me', async (c) => {
   const currentUserId = c.get('userId');
   if (!currentUserId) return c.json({ error: 'غير مصرح.' }, 401);
-  const body = await c.req.json();
+  const body = await c.req.json().catch(() => ({}));
   const supabase = c.get('supabase');
 
   const { data: userRec } = await supabase.from('users').select('custom_fields').eq('id', currentUserId).maybeSingle();
@@ -175,7 +175,7 @@ app.patch('/me', async (c) => {
 
 app.post('/', requireManageUsers, async (c) => {
   // Creating a new user
-  const body = await c.req.json();
+  const body = await c.req.json().catch(() => ({}));
   const supabase = c.get('supabase');
   const currentRoleId = c.get('roleId');
 
@@ -263,7 +263,7 @@ app.patch('/:id', async (c) => {
     return c.json({ error: 'المستخدم غير موجود' }, 404);
   }
 
-  const body = await c.req.json();
+  const body = await c.req.json().catch(() => ({}));
 
   // If not full admin, enforce strict privilege escalation & account hijacking guards
   if (currentRoleId !== 'admin') {

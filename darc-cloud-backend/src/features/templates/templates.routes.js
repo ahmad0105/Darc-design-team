@@ -30,7 +30,7 @@ app.post('/', async (c) => {
     return c.json({ error: 'لا تملك الصلاحية المطلوبة لإدارة القوالب' }, 403);
   }
 
-  const body = await c.req.json();
+  const body = await c.req.json().catch(() => ({}));
   const rawNameAr = typeof body.nameAr === 'string' ? body.nameAr.replace(/<[^>]*>/g, '').trim() : '';
   if (!rawNameAr) {
     return c.json({ error: 'اسم القالب بالعربية مطلوب' }, 400);
@@ -76,7 +76,7 @@ app.patch('/:id', async (c) => {
     return c.json({ error: 'لا تملك الصلاحية المطلوبة لإدارة القوالب' }, 403);
   }
 
-  const body = await c.req.json();
+  const body = await c.req.json().catch(() => ({}));
   const updates = {};
   if (body.nameAr !== undefined) {
     if (typeof body.nameAr !== 'string' || !body.nameAr.trim()) {

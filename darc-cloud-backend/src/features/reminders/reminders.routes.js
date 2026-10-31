@@ -13,7 +13,7 @@ app.use('*', async (c, next) => {
 
 // POST /api/reminders — Create a reminder
 app.post('/', async (c) => {
-  const body = await c.req.json();
+  const body = await c.req.json().catch(() => ({}));
   const userId = c.get('userId');
   const roleId = c.get('roleId');
   const supabase = c.get('supabase');

@@ -30,7 +30,7 @@ app.post('/config', async (c) => {
     return c.json({ error: 'صلاحية غير كافية لتعديل إعدادات التنبيهات' }, 403);
   }
 
-  const body = await c.req.json();
+  const body = await c.req.json().catch(() => ({}));
   const incoming = body.config || {};
 
   // SSRF Protection (CWE-918): Strictly validate outbound serverUrl
@@ -51,10 +51,16 @@ app.post('/config', async (c) => {
   }
 
   const existingSettings = comp?.settings || comp?.custom_fields || {};
+  let resolvedApiKey = String(incoming.apiKey || '').trim();
+  // Preserve existing secret API key if submitted as masked bullets or left untouched
+  if (!resolvedApiKey || resolvedApiKey === '••••••••' || resolvedApiKey === '••••••••••••••••') {
+    resolvedApiKey = existingSettings.whatsapp?.apiKey || '';
+  }
+
   const updatedWhatsApp = {
     enabled: Boolean(incoming.enabled),
     serverUrl: rawServerUrl,
-    apiKey: String(incoming.apiKey || '').trim(),
+    apiKey: resolvedApiKey,
     instanceName: String(incoming.instanceName || 'darc-workspace').trim(),
     recipient: String(incoming.recipient || '').trim(),
     notifyOnBlocked: incoming.notifyOnBlocked !== false,

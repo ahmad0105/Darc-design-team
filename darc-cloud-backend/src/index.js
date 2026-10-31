@@ -143,7 +143,7 @@ app.use('/api/auth/change-password', authRateLimiter());
 
 app.post('/api/auth/login', async (c) => {
   const ip = getClientIp(c);
-  const body = await c.req.json();
+  const body = await c.req.json().catch(() => ({}));
   const { email, password, turnstileToken } = body;
   const cleanEmail = (email || '').trim().toLowerCase();
 

@@ -91,7 +91,7 @@ app.get('/', async (c) => {
 app.post('/', async (c) => {
   const userId = c.get('userId');
   const roleId = c.get('roleId');
-  const body = await c.req.json();
+  const body = await c.req.json().catch(() => ({}));
 
   if (c.get('isDemo')) {
     const created = createDemoTask(body);
@@ -202,7 +202,7 @@ app.post('/', async (c) => {
 
 // PATCH /api/tasks/reorder - Batch update task sort orders & statuses (Anti-N+1 Optimized)
 app.patch('/reorder', async (c) => {
-  const body = await c.req.json();
+  const body = await c.req.json().catch(() => ({}));
   const items = Array.isArray(body.items) ? body.items : [];
 
   if (c.get('isDemo')) {
@@ -338,7 +338,7 @@ app.patch('/:id', async (c) => {
   if (!isValidEntityId(taskId)) {
     return c.json({ error: 'معرف المهمة غير صالح' }, 400);
   }
-  const body = await c.req.json();
+  const body = await c.req.json().catch(() => ({}));
 
   if (c.get('isDemo')) {
     const updated = applyDemoTaskUpdate(taskId, body);
@@ -498,7 +498,13 @@ app.patch('/:id', async (c) => {
     }
   })().catch(() => {});
 
-  supabase.from('audit_logs').insert([{ user_id: userId, action: 'update', entity_type: 'task', entity_id: taskId, details: body }]).then().catch(() => {});
+  // Sanitize audit details to prevent any sensitive fields from leaking into logs
+  const safeAuditDetails = { ...body };
+  delete safeAuditDetails.password;
+  delete safeAuditDetails.password_hash;
+  delete safeAuditDetails.token;
+  delete safeAuditDetails.apiKey;
+  supabase.from('audit_logs').insert([{ user_id: userId, action: 'update', entity_type: 'task', entity_id: taskId, details: safeAuditDetails }]).then().catch(() => {});
 
   return c.json({ task: toCamelCase(updatedTask) });
 });
@@ -581,9 +587,9 @@ app.post('/:id/comments', async (c) => {
   }
   const userId = c.get('userId');
   const roleId = c.get('roleId');
+  const body = await c.req.json().catch(() => ({}));
 
   if (c.get('isDemo')) {
-    const body = await c.req.json();
     const content = String(body.content || '').trim();
     if (!content) return c.json({ error: 'التعليق فارغ' }, 400);
     const newComment = addDemoComment(taskId, content, userId);
@@ -597,7 +603,6 @@ app.post('/:id/comments', async (c) => {
     return c.json({ error: 'غير مصرح' }, 403);
   }
 
-  const body = await c.req.json();
   const content = String(body.content || '').trim();
   if (!content) return c.json({ error: 'التعليق فارغ' }, 400);
 
@@ -706,9 +711,9 @@ app.patch('/:id/comments/:commentId', async (c) => {
   }
   const userId = c.get('userId');
   const roleId = c.get('roleId');
+  const body = await c.req.json().catch(() => ({}));
 
   if (c.get('isDemo')) {
-    const body = await c.req.json();
     return c.json({ ok: true, comment: { id: commentId, content: body.content, updatedAt: new Date().toISOString() } });
   }
 
@@ -734,7 +739,6 @@ app.patch('/:id/comments/:commentId', async (c) => {
     return c.json({ error: 'غير مصرح لك بتعديل هذا التعليق' }, 403);
   }
 
-  const body = await c.req.json();
   const content = String(body.content || '').trim();
   if (!content) return c.json({ error: 'محتوى التعليق لا يمكن أن يكون فارغاً' }, 400);
 

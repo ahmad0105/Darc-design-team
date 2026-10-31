@@ -273,7 +273,7 @@ app.get('/:id', async (c) => {
 // POST /api/documents/session -> Create Direct Resumable Upload Session for Google Drive
 app.post('/session', uploadRateLimiter(), async (c) => {
   const isDemo = c.get('isDemo');
-  const body = await c.req.json();
+  const body = await c.req.json().catch(() => ({}));
   const { compiledName, mimeType, projectId, taskId, size } = body;
   const userId = c.get('userId');
   const roleId = c.get('roleId');
@@ -338,7 +338,7 @@ app.post('/session', uploadRateLimiter(), async (c) => {
 // POST /api/documents/finalize -> Finalize Google Drive permissions and save metadata
 app.post('/finalize', async (c) => {
   const isDemo = c.get('isDemo');
-  const body = await c.req.json();
+  const body = await c.req.json().catch(() => ({}));
   const { driveFileId, projectId, taskId, compiledName, mimeType, size } = body;
   const userId = c.get('userId');
   const roleId = c.get('roleId');
@@ -433,7 +433,15 @@ app.post('/finalize', async (c) => {
 // PUT /api/documents/chunk -> Upload a Chunk and on finish save to DB
 app.put('/chunk', async (c) => {
   const sessionUrl = c.req.header('x-session-url');
-  const contentRange = c.req.header('content-range');
+  const rawContentRange = c.req.header('content-range');
+  let contentRange = null;
+  if (rawContentRange) {
+    const cleanRange = String(rawContentRange).trim();
+    if (!/^bytes\s+([0-9]+-[0-9]+|\*)\/([0-9]+|\*)$/i.test(cleanRange)) {
+      return c.json({ error: 'صيغة Content-Range غير صالحة' }, 400);
+    }
+    contentRange = cleanRange;
+  }
   if (!sessionUrl) return c.json({ error: 'Missing x-session-url' }, 400);
 
   // Security check: Prevent Server-Side Request Forgery (SSRF - CWE-918)

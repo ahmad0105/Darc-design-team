@@ -19,15 +19,21 @@ export class AppError extends Error {
 export function createErrorHandler() {
   return (err, c) => {
     const requestId = c.get('requestId') || c.req.header('x-request-id') || ('req_' + Math.random().toString(36).substr(2, 9));
-    const status = err.status || err.statusCode || (err.name === 'ValidationError' ? 400 : 500);
+    const isSyntax = err instanceof SyntaxError || err.name === 'SyntaxError';
+    const isValidation = err.name === 'ValidationError' || isSyntax;
+    const status = err.status || err.statusCode || (isValidation ? 400 : 500);
     const isOperational = err.isOperational || (status < 500);
 
     // Operational logging with correlation ID for full traceability
     console.error('[DARC Error]', requestId, status, err.message || err);
 
-    const message = isOperational
+    let message = isOperational
       ? (err.message || 'حدث خطأ أثناء معالجة الطلب.')
       : 'حدث خطأ داخلي في الخادم.';
+
+    if (isSyntax) {
+      message = 'تنسيق البيانات المُرسلة غير صالح (Invalid JSON body).';
+    }
 
     const errorCode = err.errorCode || (
       status === 400 ? 'VALIDATION_ERROR' :

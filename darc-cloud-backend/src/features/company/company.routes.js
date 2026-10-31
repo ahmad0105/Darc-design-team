@@ -23,7 +23,7 @@ app.patch('/', async (c) => {
   if (!canManage) {
     return c.json({ error: 'غير مصرح لك بتعديل بيانات الشركة، هذه الصلاحية للمشرف فقط' }, 403);
   }
-  const body = await c.req.json();
+  const body = await c.req.json().catch(() => ({}));
   
   const sanitizeText = (val, max = 100) => {
     if (val === null || val === undefined) return undefined;

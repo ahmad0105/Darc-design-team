@@ -159,12 +159,16 @@ function isDuplicateAlert(recipient, type, text) {
 export async function enqueueWhatsAppAlert(supabase, item) {
   if (!supabase) return false;
   try {
+    let tableName = 'company';
     let comp = null;
     const { data } = await supabase.from('company').select('id, settings, custom_fields').eq('id', 'default').maybeSingle();
     comp = data;
     if (!comp) {
       const fallback = await supabase.from('companies').select('id, settings, custom_fields').limit(1).maybeSingle();
-      comp = fallback.data;
+      if (fallback?.data) {
+        comp = fallback.data;
+        tableName = 'companies';
+      }
     }
     if (!comp) return false;
 
@@ -184,7 +188,7 @@ export async function enqueueWhatsAppAlert(supabase, item) {
     const updatedSettings = { ...existingSettings, whatsapp_queue: newQueue };
     const targetCol = comp.settings !== undefined ? 'settings' : 'custom_fields';
 
-    await supabase.from('company').update({
+    await supabase.from(tableName).update({
       [targetCol]: updatedSettings,
       updated_at: new Date().toISOString()
     }).eq('id', comp.id);
@@ -206,12 +210,16 @@ export async function processWhatsAppQueue(supabase) {
 
   _isDrainingQueue = true;
   try {
+    let tableName = 'company';
     let comp = null;
     const { data } = await supabase.from('company').select('id, settings, custom_fields').eq('id', 'default').maybeSingle();
     comp = data;
     if (!comp) {
       const fallback = await supabase.from('companies').select('id, settings, custom_fields').limit(1).maybeSingle();
-      comp = fallback.data;
+      if (fallback?.data) {
+        comp = fallback.data;
+        tableName = 'companies';
+      }
     }
     if (!comp) return { processed: 0 };
 
@@ -225,30 +233,37 @@ export async function processWhatsAppQueue(supabase) {
     const remaining = queue.slice(batchSize);
 
     let processedCount = 0;
+    const failedToKeep = [];
+
     for (const item of toProcess) {
       if (item.config && item.recipient && item.type) {
-        await sendWhatsAppAlert(
+        const sendRes = await sendWhatsAppAlert(
           { ...item.config, recipient: item.recipient },
           item.type,
           item.payload,
           supabase,
           { isQueueDrain: true }
         );
-        processedCount++;
+        if (sendRes.ok && sendRes.sent) {
+          processedCount++;
+        } else if (sendRes.reason === 'Daily send limit reached') {
+          failedToKeep.push(item);
+        }
         // Polite delay between queued dispatches
         await new Promise(r => setTimeout(r, 2500));
       }
     }
 
     // Update remaining queue in DB
-    const updatedSettings = { ...settings, whatsapp_queue: remaining };
+    const finalQueue = [...failedToKeep, ...remaining];
+    const updatedSettings = { ...settings, whatsapp_queue: finalQueue };
     const targetCol = comp.settings !== undefined ? 'settings' : 'custom_fields';
-    await supabase.from('company').update({
+    await supabase.from(tableName).update({
       [targetCol]: updatedSettings,
       updated_at: new Date().toISOString()
     }).eq('id', comp.id);
 
-    return { processed: processedCount, remaining: remaining.length };
+    return { processed: processedCount, remaining: finalQueue.length };
   } catch (err) {
     console.warn('[WhatsApp Queue] process error:', err.message);
     return { processed: 0, error: err.message };
@@ -341,8 +356,9 @@ export async function sendWhatsAppAlert(config, type, payload, supabase = null, 
         'Content-Type': 'application/json'
       };
       if (config.apiKey) {
-        headers['apikey'] = config.apiKey;
-        headers['Authorization'] = `Bearer ${config.apiKey}`;
+        const cleanApiKey = String(config.apiKey).trim();
+        headers['apikey'] = cleanApiKey;
+        headers['Authorization'] = `Bearer ${cleanApiKey}`;
       }
 
       const res = await fetch(targetEndpoint, {

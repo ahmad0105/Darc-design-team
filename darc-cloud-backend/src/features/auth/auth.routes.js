@@ -58,7 +58,7 @@ async function getUserIdFromCookie(c) {
 }
 
 app.post('/forgot-password', authRateLimiter(), async (c) => {
-  const body = await c.req.json();
+  const body = await c.req.json().catch(() => ({}));
   const supabase = c.get('supabase');
   const email = String(body.email || '').trim().toLowerCase();
   if (!email) return c.json({ error: 'البريد الإلكتروني مطلوب' }, 400);
@@ -75,7 +75,7 @@ app.post('/forgot-password', authRateLimiter(), async (c) => {
 });
 
 app.post('/reset-password', authRateLimiter(), async (c) => {
-  const body = await c.req.json();
+  const body = await c.req.json().catch(() => ({}));
   const supabase = c.get('supabase');
   const token = String(body.token || '').trim();
   const newPassword = String(body.newPassword || '');
@@ -131,7 +131,7 @@ app.post('/change-password', async (c) => {
   if (!userId) return c.json({ error: 'غير مصرح.' }, 401);
 
   const supabase = c.get('supabase');
-  const body = await c.req.json();
+  const body = await c.req.json().catch(() => ({}));
   const oldPassword = String(body.oldPassword || '');
   const newPassword = String(body.newPassword || '');
   if (newPassword.length < 10) return c.json({ error: 'كلمة المرور يجب أن تكون 10 أحرف على الأقل.' }, 400);
@@ -167,7 +167,7 @@ app.post('/change-password', async (c) => {
 });
 
 app.post('/activate', authRateLimiter(), async (c) => {
-  const body = await c.req.json();
+  const body = await c.req.json().catch(() => ({}));
   const token = String(body.token || '').trim();
   const password = String(body.password || '');
   const supabase = c.get('supabase');

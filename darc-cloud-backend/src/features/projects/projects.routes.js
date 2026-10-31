@@ -38,7 +38,7 @@ app.post('/', async (c) => {
     return c.json({ error: 'لا تملك الصلاحية المطلوبة لهذه العملية' }, 403);
   }
 
-  const body = await c.req.json();
+  const body = await c.req.json().catch(() => ({}));
   const cleanFk = (val) => (val && typeof val === 'string' && val.trim().length > 0) ? val.trim() : null;
   const rawManagerId = cleanFk(body.managerId || body.manager_id);
   const managerId = rawManagerId || userId;
@@ -116,7 +116,7 @@ app.patch('/:id', async (c) => {
     return c.json({ error: 'لا تملك الصلاحية المطلوبة لهذه العملية' }, 403);
   }
 
-  const body = await c.req.json();
+  const body = await c.req.json().catch(() => ({}));
   const updates = {};
   
   const fieldMap = { code: 'code', nameAr: 'name_ar', nameEn: 'name_en', clientAr: 'client_ar', clientEn: 'client_en', descriptionAr: 'description_ar', descriptionEn: 'description_en', startDate: 'start_date', dueDate: 'due_date', managerId: 'manager_id', lifecycle: 'lifecycle', health: 'health' };
@@ -221,7 +221,7 @@ app.post('/:id/clone', async (c) => {
     return c.json({ error: 'غير مصرح لك بالوصول إلى هذا المشروع أو نسخه' }, 403);
   }
 
-  const body = await c.req.json();
+  const body = await c.req.json().catch(() => ({}));
   
   // 1. Fetch original project and generate next code
   const [origRes, code] = await Promise.all([
