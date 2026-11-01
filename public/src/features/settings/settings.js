@@ -625,7 +625,7 @@ export function renderSettings() {
   // Granular settings tabs strictly gated by permissions
   const sections = [
     ['profile', choose('الملف الشخصي', 'Profile')],
-    ['notifications', choose('الإشعارات والتنبيهات 🔔', 'Notifications & Alerts 🔔')],
+    ['notifications', choose('الإشعارات والتنبيهات', 'Notifications & Alerts')],
     ...(canAccessCompany ? [['company', t('company')]] : []),
     ...(canAccessWhatsApp ? [['whatsapp', choose('تنبيهات واتساب', 'WhatsApp Alerts')]] : []),
     ...(canAccessRoles ? [['roles', t('roles')]] : []),
@@ -634,7 +634,7 @@ export function renderSettings() {
     ...(canAccessTrash ? [['trash', choose('سلة المهملات', 'Trash')]] : []),
     ...(canAccessAudit ? [['audit', t('audit')]] : []),
     ...(canAccessAnalytics ? [['analytics', choose('المراقبة والزيارات والأداء', 'Observability & Analytics')]] : []),
-    ...(canAccessDiagnostics ? [['diagnostics', choose('تشخيص الأعطال والمستخدمين 🛠️', 'Error Logs & User Diagnostics 🛠️')]] : [])
+    ...(canAccessDiagnostics ? [['diagnostics', choose('تشخيص الأعطال والمستخدمين', 'Error Logs & User Diagnostics')]] : [])
   ];
 
   if (!sections.some(([k]) => k === state.settingsSection)) {
