@@ -26,7 +26,7 @@ let isPointerDragging = false;
 let activePointerId = null;
 let touchHoldTimer = null;
 
-// Accessible Keyboard Drag State (WCAG 2.2 AAA Standard)
+// Accessible Keyboard Drag State
 let keyboardDraggedTaskId = null;
 let keyboardDraggedCard = null;
 let keyboardOriginalStatus = null;
@@ -798,7 +798,7 @@ document.addEventListener('click', (e) => {
   }
 }, true);
 
-// ── ACCESSIBLE KEYBOARD DRAG & DROP ENGINE (WCAG 2.2 AAA Standard) ─────────
+// ── ACCESSIBLE KEYBOARD DRAG & DROP ENGINE ─────────
 
 document.addEventListener('keydown', async (e) => {
   // Ignore keyboard DnD if user is typing inside an input, textarea, or if a modal is open

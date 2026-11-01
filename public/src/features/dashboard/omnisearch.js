@@ -352,14 +352,13 @@ export function openShortcutsCheatsheet() {
         </div>
       </div>
 
-      <!-- القسم الثاني: لوحة المهام وإعادة الترتيب بالكيبورد (WCAG 2.2 AAA) -->
+      <!-- القسم الثاني: لوحة المهام وإعادة الترتيب بالكيبورد -->
       <div class="cheatsheet-section">
         <div class="cheatsheet-section-title" style="display:flex;align-items:center;justify-content:space-between;">
           <div style="display:flex;align-items:center;gap:6px;">
             <span style="display:flex;color:var(--teal);">${icon('grid', 14)}</span>
             <span>${choose('لوحة المهام والسحب والإفلات بالكيبورد', 'Kanban Board & Keyboard Drag-and-Drop')}</span>
           </div>
-          <span class="mini-badge" style="font-size:10px;background:var(--mint);color:var(--teal);padding:2px 6px;border-radius:4px;font-weight:700;">WCAG 2.2 AAA</span>
         </div>
         <p style="font-size:11px;color:var(--muted);margin:0 0 10px 0;">
           ${choose('حدد أي كرت مهمة عبر مفتاح Tab، ثم تحكم به بالكامل فوراً بدون فأرة:', 'Focus any task card using Tab, then move and drop it without a mouse:')}
