@@ -2679,14 +2679,50 @@ kbd.shortcut-kbd {
 }
 
 /* --- Shortcuts Cheatsheet Modal --- */
+.modal.modal-cheatsheet {
+  width: min(720px, calc(100vw - 32px)) !important;
+  max-height: min(850px, calc(100dvh - 48px)) !important;
+}
+.cheatsheet-section {
+  margin-top: 20px;
+}
+.cheatsheet-section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--teal);
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--line);
+}
 .cheatsheet-grid {
-  display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 12px; margin-top: 16px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 10px;
 }
 .cheatsheet-row {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 8px 12px; border-radius: 8px; background: var(--surface-soft);
-  border: 1px solid var(--line); font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--surface-soft);
+  border: 1px solid var(--line);
+  font-size: 12px;
+  gap: 8px;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.cheatsheet-row:hover {
+  border-color: rgba(56, 189, 248, 0.35);
+  background: var(--surface);
+}
+.cheatsheet-keys {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
 }
 
 /* --- Task Modal Responsive Layout & Ergonomics --- */

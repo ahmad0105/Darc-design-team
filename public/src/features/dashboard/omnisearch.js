@@ -3,7 +3,7 @@ import { choose, esc, icon, t, dateLabel, roleName, can, isAdmin } from '../../c
 import { openTaskModal } from '../tasks/tasks.js';
 import { openProjectModal } from '../projects/projects.js';
 import { switchView, canAccessView } from '../../core/router.js';
-import { modalShell } from '../../shared/ui.js';
+import { modalShell, closeModal } from '../../shared/ui.js';
 import { showNotifications } from '../notifications/notifications.js';
 
 const isMac = typeof navigator !== 'undefined' && /Mac|iPod|iPhone|iPad/.test(navigator.platform);
@@ -304,41 +304,97 @@ window.__selectOmniItem = (idx) => {
 export function openShortcutsCheatsheet() {
   closeOmnisearch();
   const formHtml = `
-    <div style="padding:10px 0;">
-      <p style="color:var(--ink-soft);font-size:13px;margin-top:0;">${choose('استخدم هذه الاختصارات لزيادة سرعة عملك داخل النظام بدون لمس الفأرة:', 'Use these shortcuts to navigate the workspace at full speed without a mouse:')}</p>
+    <div style="padding:4px 0;">
+      <p style="color:var(--ink-soft);font-size:13px;margin:0 0 16px 0;">${choose('استخدم هذه الاختصارات لزيادة سرعة عملك وإدارة المهام باحترافية كاملة بدون لمس الفأرة:', 'Use these shortcuts to navigate the workspace and manage tasks at full speed without a mouse:')}</p>
       
-      <div class="cheatsheet-grid">
-        <div class="cheatsheet-row">
-          <span>${choose('البحث الشامل والأوامر السريعة', 'Omnisearch & Quick Commands')}</span>
-          <kbd class="shortcut-kbd">${SHORTCUT_KEY}</kbd>
+      <!-- القسم الأول: التنقل العام والإجراءات السريعة -->
+      <div class="cheatsheet-section" style="margin-top:0;">
+        <div class="cheatsheet-section-title">
+          <span style="display:flex;color:var(--teal);">${icon('search', 14)}</span>
+          <span>${choose('التنقل العام والإجراءات السريعة', 'General & Navigation')}</span>
         </div>
-        <div class="cheatsheet-row">
-          <span>${choose('إضافة مهمة سريعة في المشروع', 'Add new task in project')}</span>
-          <kbd class="shortcut-kbd">N</kbd>
+        <div class="cheatsheet-grid">
+          <div class="cheatsheet-row">
+            <span>${choose('البحث الشامل والأوامر السريعة', 'Omnisearch & Quick Commands')}</span>
+            <kbd class="shortcut-kbd">${SHORTCUT_KEY}</kbd>
+          </div>
+          <div class="cheatsheet-row">
+            <span>${choose('مركز الإشعارات (فتح / إغلاق)', 'Notifications (Toggle Open/Close)')}</span>
+            <kbd class="shortcut-kbd">B</kbd>
+          </div>
+          <div class="cheatsheet-row">
+            <span>${choose('إضافة مهمة سريعة في المشروع', 'Add new task in project')}</span>
+            <kbd class="shortcut-kbd">N</kbd>
+          </div>
+          <div class="cheatsheet-row">
+            <span>${choose('إنشاء مشروع جديد', 'Create new project')}</span>
+            <kbd class="shortcut-kbd">P</kbd>
+          </div>
+          <div class="cheatsheet-row">
+            <span>${choose('دليل الاختصارات (فتح / إغلاق)', 'Shortcuts Guide (Toggle)')}</span>
+            <kbd class="shortcut-kbd">? / ؟</kbd>
+          </div>
+          <div class="cheatsheet-row">
+            <span>${choose('إغلاق أي نافذة منبثقة أو بحث', 'Close modal or search')}</span>
+            <kbd class="shortcut-kbd">ESC</kbd>
+          </div>
+          <div class="cheatsheet-row">
+            <span>${choose('التنقل بين نتائج البحث والقوائم', 'Navigate search & lists')}</span>
+            <div class="cheatsheet-keys">
+              <kbd class="shortcut-kbd">↑</kbd>
+              <kbd class="shortcut-kbd">↓</kbd>
+            </div>
+          </div>
+          <div class="cheatsheet-row">
+            <span>${choose('تأكيد واختيار العنصر', 'Confirm & select item')}</span>
+            <kbd class="shortcut-kbd">↵ Enter</kbd>
+          </div>
         </div>
-        <div class="cheatsheet-row">
-          <span>${choose('إنشاء مشروع جديد', 'Create new project')}</span>
-          <kbd class="shortcut-kbd">P</kbd>
+      </div>
+
+      <!-- القسم الثاني: لوحة المهام وإعادة الترتيب بالكيبورد (WCAG 2.2 AAA) -->
+      <div class="cheatsheet-section">
+        <div class="cheatsheet-section-title" style="display:flex;align-items:center;justify-content:space-between;">
+          <div style="display:flex;align-items:center;gap:6px;">
+            <span style="display:flex;color:var(--teal);">${icon('grid', 14)}</span>
+            <span>${choose('لوحة المهام والسحب والإفلات بالكيبورد', 'Kanban Board & Keyboard Drag-and-Drop')}</span>
+          </div>
+          <span class="mini-badge" style="font-size:10px;background:var(--mint);color:var(--teal);padding:2px 6px;border-radius:4px;font-weight:700;">WCAG 2.2 AAA</span>
         </div>
-        <div class="cheatsheet-row">
-          <span>${choose('مركز التنبيهات والإشعارات', 'Notifications Center')}</span>
-          <kbd class="shortcut-kbd">B</kbd>
-        </div>
-        <div class="cheatsheet-row">
-          <span>${choose('فتح دليل الاختصارات هذا', 'Open this shortcuts guide')}</span>
-          <kbd class="shortcut-kbd">? / ؟</kbd>
-        </div>
-        <div class="cheatsheet-row">
-          <span>${choose('إغلاق أي نافذة منبثقة أو بحث', 'Close modal or search')}</span>
-          <kbd class="shortcut-kbd">ESC</kbd>
-        </div>
-        <div class="cheatsheet-row">
-          <span>${choose('التنقل بين نتائج البحث', 'Navigate search results')}</span>
-          <span><kbd class="shortcut-kbd">↑</kbd> <kbd class="shortcut-kbd">↓</kbd></span>
-        </div>
-        <div class="cheatsheet-row">
-          <span>${choose('تأكيد واختيار النتيجة', 'Select search result')}</span>
-          <kbd class="shortcut-kbd">↵ Enter</kbd>
+        <p style="font-size:11px;color:var(--muted);margin:0 0 10px 0;">
+          ${choose('حدد أي كرت مهمة عبر مفتاح Tab، ثم تحكم به بالكامل فوراً بدون فأرة:', 'Focus any task card using Tab, then move and drop it without a mouse:')}
+        </p>
+        <div class="cheatsheet-grid">
+          <div class="cheatsheet-row">
+            <span>${choose('إمساك الكرت / تحريره في مكانه', 'Grab card / Release in place')}</span>
+            <div class="cheatsheet-keys">
+              <kbd class="shortcut-kbd">Space</kbd>
+              <span style="font-size:10px;color:var(--muted);">${choose('أو', 'or')}</span>
+              <kbd class="shortcut-kbd">Alt + M</kbd>
+            </div>
+          </div>
+          <div class="cheatsheet-row">
+            <span>${choose('تحريك لأعلى / لأسفل بالعمود', 'Move up / down in column')}</span>
+            <div class="cheatsheet-keys">
+              <kbd class="shortcut-kbd">↑</kbd>
+              <kbd class="shortcut-kbd">↓</kbd>
+            </div>
+          </div>
+          <div class="cheatsheet-row">
+            <span>${choose('نقل بين الأعمدة (يمين / يسار)', 'Move between columns')}</span>
+            <div class="cheatsheet-keys">
+              <kbd class="shortcut-kbd">←</kbd>
+              <kbd class="shortcut-kbd">→</kbd>
+            </div>
+          </div>
+          <div class="cheatsheet-row">
+            <span>${choose('تأكيد الإفلات وحفظ الترتيب', 'Confirm drop & save order')}</span>
+            <kbd class="shortcut-kbd">↵ Enter</kbd>
+          </div>
+          <div class="cheatsheet-row">
+            <span>${choose('إلغاء النقل وإرجاع المهمة', 'Cancel move & revert')}</span>
+            <kbd class="shortcut-kbd">ESC</kbd>
+          </div>
         </div>
       </div>
 
@@ -350,9 +406,10 @@ export function openShortcutsCheatsheet() {
 
   document.getElementById('modal-root').innerHTML = modalShell(
     choose('دليل اختصارات لوحة المفاتيح', 'Keyboard Shortcuts Guide'),
-    choose('طرق سريعة للتنقل وإنجاز العمل بكفاءة عالية', 'Work faster with productivity hotkeys'),
+    choose('طرق سريعة للتنقل وإنجاز العمل وسحب وإفلات المهام بكفاءة عالية', 'Work faster with productivity hotkeys & accessible task reordering'),
     formHtml,
-    'cheatsheet'
+    'cheatsheet',
+    'modal-cheatsheet'
   );
 }
 
@@ -371,11 +428,17 @@ export function setupGlobalShortcuts() {
       return;
     }
 
-    // 2. Open Cheatsheet on '?' or '؟' or Shift+/
+    // 2. Open / Toggle Cheatsheet on '?' or '؟' or Shift+/
     const isQuestion = e.key === '?' || e.key === '؟' || (e.code === 'Slash' && e.shiftKey);
     if (isQuestion && !isInput) {
       e.preventDefault();
-      openShortcutsCheatsheet();
+      if (document.querySelector('.modal.is-closing')) return;
+      const cheatsheetModal = document.querySelector('.modal[data-modal="cheatsheet"], .modal-cheatsheet');
+      if (cheatsheetModal) {
+        closeModal();
+      } else {
+        openShortcutsCheatsheet();
+      }
       return;
     }
 
@@ -396,15 +459,24 @@ export function setupGlobalShortcuts() {
       return;
     }
 
-    // 5. Open Notifications on 'B' when not typing
+    // 5. Open / Toggle Notifications on 'B' when not typing
     const isKeyB = e.code === 'KeyB' || e.key?.toLowerCase() === 'b' || e.key === 'لا';
     if (isKeyB && !isInput && !e.metaKey && !e.ctrlKey && !e.altKey) {
       e.preventDefault();
-      showNotifications();
+      if (document.querySelector('.modal.is-closing')) return;
+      const notifModal = document.querySelector('.modal[data-modal="notifications"], .modal-notifications');
+      if (notifModal) {
+        closeModal();
+      } else {
+        const otherModal = document.querySelector('.modal:not(.modal-notifications):not([data-modal="notifications"])');
+        if (!otherModal) {
+          showNotifications();
+        }
+      }
       return;
     }
 
-    // 5. ESC to close Omnisearch or modal
+    // 6. ESC to close Omnisearch
     if (e.key === 'Escape') {
       const omni = document.getElementById('omnisearch-modal');
       if (omni) {

@@ -586,9 +586,19 @@ export async function handleClick(event) {
   }
   if (action === 'open-omnisearch') { openOmnisearch(); return; }
   if (action === 'close-omnisearch') { closeOmnisearch(); return; }
-  if (action === 'open-cheatsheet') { openShortcutsCheatsheet(); return; }
+  if (action === 'open-cheatsheet') {
+    const existing = document.querySelector('.modal[data-modal="cheatsheet"], .modal-cheatsheet');
+    if (existing) closeModal();
+    else openShortcutsCheatsheet();
+    return;
+  }
   if (action === 'close-modal') { closeModal(); return; }
-  if (action === 'show-notifications') { showNotifications(); return; }
+  if (action === 'show-notifications') {
+    const existing = document.querySelector('.modal[data-modal="notifications"], .modal-notifications');
+    if (existing) closeModal();
+    else showNotifications();
+    return;
+  }
   if (action === 'delete-notification') {
     event.stopPropagation();
     const notifId = target.dataset.notificationId || target.closest('[data-notification-id]')?.dataset.notificationId;
