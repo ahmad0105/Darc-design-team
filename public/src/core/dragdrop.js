@@ -2,7 +2,7 @@ import { state } from './state.js';
 import { api } from './api.js';
 import { renderView } from './router.js';
 import { showToast } from '../shared/ui.js';
-import { choose } from '../core/utils.js';
+import { choose, t } from '../core/utils.js';
 import { setSavedTaskSort, canUserMoveTask } from '../features/tasks/tasks.js';
 
 let placeholder = null;
@@ -11,6 +11,8 @@ let draggedCardHeight = 64;
 let autoScrollRaf = null;
 let currentMouseX = -1;
 let currentMouseY = -1;
+let prevMouseX = -1;
+let currentTilt = 0;
 let isDraggingActive = false;
 
 // Active Unified Pointer Drag State (Mouse + Touch + Stylus)
@@ -23,6 +25,27 @@ let dragOffsetY = 0;
 let isPointerDragging = false;
 let activePointerId = null;
 let touchHoldTimer = null;
+
+// Accessible Keyboard Drag State (WCAG 2.2 AAA Standard)
+let keyboardDraggedTaskId = null;
+let keyboardDraggedCard = null;
+let keyboardOriginalStatus = null;
+let keyboardOriginalSortOrder = null;
+
+// Screen Reader Live Region Announcer
+function announceDnd(message) {
+  let announcer = document.getElementById('dnd-live-announcer');
+  if (!announcer) {
+    announcer = document.createElement('div');
+    announcer.id = 'dnd-live-announcer';
+    announcer.className = 'sr-only';
+    announcer.setAttribute('aria-live', 'assertive');
+    announcer.setAttribute('aria-atomic', 'true');
+    document.body.appendChild(announcer);
+  }
+  announcer.textContent = '';
+  setTimeout(() => { announcer.textContent = message; }, 40);
+}
 
 // Dynamic High-Fidelity Placeholder with Adaptive Height & Smooth Snapping
 function getOrCreatePlaceholder(height) {
@@ -37,7 +60,7 @@ function getOrCreatePlaceholder(height) {
     border-radius: 12px;
     height: ${h}px;
     margin: 8px 0;
-    transition: height 0.15s cubic-bezier(0.2, 0, 0, 1);
+    transition: height 0.15s cubic-bezier(0.16, 1, 0.3, 1);
     pointer-events: none;
     box-shadow: inset 0 0 16px rgba(13, 98, 105, 0.12);
     display: flex;
@@ -61,7 +84,7 @@ function removePlaceholder() {
 // Gold-Standard Nearest Element Algorithm (Linear / Atlassian Pragmatic DND Standard)
 // Calculates exact distance offset from cursor center to each card center to eliminate jitter & jumping
 function getDragAfterElement(cardsContainer, clientY) {
-  const cards = Array.from(cardsContainer.querySelectorAll('.task-card:not(.is-dragging)'));
+  const cards = Array.from(cardsContainer.querySelectorAll('.task-card:not(.is-dragging):not(#active-drag-ghost)'));
   if (cards.length === 0) return null;
 
   return cards.reduce((closest, card) => {
@@ -76,7 +99,7 @@ function getDragAfterElement(cardsContainer, clientY) {
   }, { offset: Number.NEGATIVE_INFINITY }).element;
 }
 
-// Continuous Velocity-Based Auto-Scroller via requestAnimationFrame
+// Continuous Velocity-Based Proportional Auto-Scroller via requestAnimationFrame (RTL & LTR Aware)
 function startContinuousAutoScroll() {
   if (autoScrollRaf) return;
 
@@ -88,17 +111,20 @@ function startContinuousAutoScroll() {
 
     if (currentMouseX >= 0 && currentMouseY >= 0) {
       const boardEl = document.querySelector('.board, .board-columns, .tasks-board, [data-board]');
-      const edgeMargin = 75;
-      const maxScrollSpeed = 24;
+      const edgeMargin = 85;
+      const maxScrollSpeed = 26;
 
       if (boardEl) {
-        // Horizontal Board Auto-Scroll
+        // Universal Cross-Browser RTL/LTR Proportional Scroll
+        const isRtl = document.documentElement.dir === 'rtl' || state.lang === 'ar';
         if (currentMouseX < edgeMargin) {
           const factor = (edgeMargin - currentMouseX) / edgeMargin;
-          boardEl.scrollLeft -= Math.max(3, Math.round(factor * maxScrollSpeed));
+          const delta = -Math.max(4, Math.round(factor * maxScrollSpeed));
+          boardEl.scrollBy({ left: isRtl ? -delta : delta, behavior: 'instant' });
         } else if (currentMouseX > window.innerWidth - edgeMargin) {
           const factor = (currentMouseX - (window.innerWidth - edgeMargin)) / edgeMargin;
-          boardEl.scrollLeft += Math.max(3, Math.round(factor * maxScrollSpeed));
+          const delta = Math.max(4, Math.round(factor * maxScrollSpeed));
+          boardEl.scrollBy({ left: isRtl ? -delta : delta, behavior: 'instant' });
         }
 
         // Vertical Column Auto-Scroll (for long lists inside active column)
@@ -218,14 +244,31 @@ async function handleTaskDrop(column, clientY, explicitTaskId = null) {
     insertIdx = 0;
   }
 
+  // 4. Atlassian Self-Drop Guard: If dropped in the EXACT same spot, cancel mutation with 0 state churn
+  const currentCardIdx = Array.from(cardsContainer.querySelectorAll('.task-card')).findIndex(c => c.dataset.taskId === taskId);
+  if (isStatusSame && currentCardIdx !== -1 && (insertIdx === currentCardIdx || insertIdx === currentCardIdx + 1)) {
+    cleanDragState();
+    return;
+  }
+
+  // Snapshot previous state for local rollback in case of network or server failure
+  const oldStatus = task.status;
+  const snapshotTasks = (state.data.tasks || []).map(t => ({
+    id: t.id,
+    status: t.status,
+    sortOrder: t.sortOrder || t.sort_order,
+    progress: t.progress,
+    customFields: JSON.parse(JSON.stringify(t.customFields || t.custom_fields || {}))
+  }));
+
   // Clean up drag visuals immediately
   cleanDragState();
 
-  // 4. Build the final ordered list of task IDs for this column
+  // 5. Build the final ordered list of task IDs for this column
   const newColumnTaskIds = [...existingTaskIds];
   newColumnTaskIds.splice(insertIdx, 0, taskId);
 
-  // 5. Update dragged task status & optimistic progress
+  // 6. Update dragged task status & optimistic progress
   if (newStatus === 'review' && ['review', 'approval', 'blocked'].includes(task.status)) {
     // Keep existing sub-status within review/approval/blocked grouping
   } else {
@@ -243,7 +286,7 @@ async function handleTaskDrop(column, clientY, explicitTaskId = null) {
     task.progress = 80;
   }
 
-  // 6. Assign clean, contiguous sortOrder (100, 200, 300, ...) to every task in this column
+  // 7. Assign clean, contiguous sortOrder (100, 200, 300, ...) to every task in this column
   // And register ALL affected tasks in recently moved tasks cache to protect against stale background polls
   if (!window._recentlyMovedTasks) {
     window._recentlyMovedTasks = new Map();
@@ -294,28 +337,44 @@ async function handleTaskDrop(column, clientY, explicitTaskId = null) {
     }
   });
 
-  // 7. Enforce Custom Sort mode across state and storage so board renders the exact drop order
+  // 8. Enforce Custom Sort mode across state and storage so board renders the exact drop order
   setSavedTaskSort('custom');
   state.taskSortPref = 'custom';
   state.projectTaskSort = 'custom';
   state.myTaskSort = 'custom';
 
-  // 8. Re-render board immediately (instant 0ms response)
-  renderView();
+  // 9. Re-render board immediately (instant 0ms optimistic response)
+  renderView(true);
 
-  // 9. Tactile haptic feedback on touch devices
+  // 10. Tactile haptic feedback on touch devices
   if (typeof navigator !== 'undefined' && navigator.vibrate) {
     try { navigator.vibrate(20); } catch(e) {}
   }
 
-  // 10. Landing visual pulse
+  // 11. Column Counter Micro-Pulse Animation (Linear Standard)
+  if (oldStatus !== newStatus) {
+    const badges = document.querySelectorAll(`.board-column[data-status="${newStatus}"] .board-count, .board-column[data-status="${oldStatus}"] .board-count`);
+    badges.forEach(b => {
+      b.classList.remove('count-updated');
+      void b.offsetWidth;
+      b.classList.add('count-updated');
+      setTimeout(() => b.classList.remove('count-updated'), 350);
+    });
+  }
+
+  // 12. Landing visual pulse
   const droppedCardEl = document.querySelector(`.task-card[data-task-id="${taskId}"]`);
   if (droppedCardEl) {
     droppedCardEl.classList.add('just-dropped');
     setTimeout(() => droppedCardEl?.classList.remove('just-dropped'), 450);
   }
 
-  // 11. Debounce & Queue batch reorder API sync to consolidate rapid consecutive drops
+  // 13. Screen reader announcement
+  const colTitleEl = column.querySelector('.board-column-title');
+  const colName = colTitleEl ? colTitleEl.innerText.trim() : newStatus;
+  announceDnd(choose(`تم إفلات المهمة في عمود: ${colName}، الموضع ${insertIdx + 1}.`, `Dropped task into column: ${colName}, position ${insertIdx + 1}.`));
+
+  // 14. Debounce & Queue batch reorder API sync to consolidate rapid consecutive drops
   if (window._reorderSyncTimer) clearTimeout(window._reorderSyncTimer);
   window._pendingReorderBatch = window._pendingReorderBatch || new Map();
   newColumnTaskIds.forEach(id => {
@@ -338,8 +397,20 @@ async function handleTaskDrop(column, clientY, explicitTaskId = null) {
       method: 'PATCH',
       body: JSON.stringify({ items: batchItems })
     }).catch(e => {
-      console.warn('Reorder sync error:', e);
-      showToast(choose('فشل حفظ الترتيب الجديد في الخادم.', 'Failed to save task order to server.'), true);
+      console.warn('Reorder sync error, performing local rollback:', e);
+      // Automatic Enterprise Rollback
+      snapshotTasks.forEach(snap => {
+        const item = (state.data?.tasks || []).find(x => x.id === snap.id);
+        if (item) {
+          item.status = snap.status;
+          item.sortOrder = snap.sortOrder;
+          item.sort_order = snap.sortOrder;
+          item.progress = snap.progress;
+          item.customFields = snap.customFields;
+        }
+      });
+      renderView(true);
+      showToast(choose('فشل حفظ الترتيب الجديد في الخادم. تم التراجع عن التعديل تلقائياً.', 'Failed to save task order to server. Reverted automatically.'), true);
     });
   }, 150);
 }
@@ -369,6 +440,8 @@ function cleanDragState() {
   activeDraggedTaskId = null;
   currentMouseX = -1;
   currentMouseY = -1;
+  prevMouseX = -1;
+  currentTilt = 0;
 
   stopContinuousAutoScroll();
   document.querySelectorAll('.board-column').forEach(col => col.classList.remove('drag-over'));
@@ -377,6 +450,12 @@ function cleanDragState() {
   document.body.style.userSelect = '';
   document.body.style.webkitUserSelect = '';
   document.body.style.cursor = '';
+
+  // Concurrency Shield Flush: if a background render was queued during drag, flush it now
+  if (window._pendingRenderAfterDrag) {
+    window._pendingRenderAfterDrag = false;
+    requestAnimationFrame(() => renderView(true));
+  }
 }
 
 // Initiate Active Dragging (creates floating ghost, highlights column, starts auto-scroll)
@@ -393,6 +472,8 @@ function initiateDrag(clientX, clientY) {
   isDraggingActive = true;
   window._isDraggingTask = true;
   activeDraggedTaskId = dragCard.dataset.taskId;
+  prevMouseX = clientX;
+  currentTilt = 0;
 
   // Haptic feedback tick
   if (typeof navigator !== 'undefined' && navigator.vibrate) {
@@ -404,7 +485,7 @@ function initiateDrag(clientX, clientY) {
   dragOffsetX = clientX - rect.left;
   dragOffsetY = clientY - rect.top;
 
-  // High-performance hardware-accelerated floating clone that smoothly follows cursor/finger
+  // Linear-standard hardware-accelerated floating clone that smoothly follows cursor/finger
   dragGhost = dragCard.cloneNode(true);
   dragGhost.id = 'active-drag-ghost';
   dragGhost.style.cssText = `
@@ -414,13 +495,13 @@ function initiateDrag(clientX, clientY) {
     width: ${rect.width}px;
     pointer-events: none;
     z-index: 10000;
-    opacity: 0.95;
-    transform: translate3d(${rect.left}px, ${rect.top}px, 0) scale(1.03) rotate(1.2deg);
-    box-shadow: 0 16px 36px rgba(0,0,0,0.22);
+    opacity: 0.96;
+    transform: translate3d(${rect.left}px, ${rect.top}px, 0) scale(1.025);
+    box-shadow: 0 20px 42px -8px rgba(13, 98, 105, 0.24), 0 8px 18px rgba(0, 0, 0, 0.1);
     border: 1.5px solid var(--brand-teal, #0d6269);
     background: var(--surface, #ffffff);
     border-radius: 12px;
-    will-change: transform;
+    will-change: transform, box-shadow;
     cursor: grabbing !important;
   `;
   document.body.appendChild(dragGhost);
@@ -470,6 +551,7 @@ document.addEventListener('pointerdown', (e) => {
   activePointerId = e.pointerId;
   dragStartX = e.clientX;
   dragStartY = e.clientY;
+  prevMouseX = e.clientX;
   isPointerDragging = false;
 
   const rect = card.getBoundingClientRect();
@@ -483,7 +565,7 @@ document.addEventListener('pointerdown', (e) => {
       initiateDrag(e.clientX, e.clientY);
     }, 110);
   }
-  // On mouse, no timer is needed: drag initiates when mouse moves > 4px
+  // On mouse, no timer is needed: drag initiates when mouse moves >= 4px
 }, { passive: true });
 
 document.addEventListener('pointermove', (e) => {
@@ -521,11 +603,17 @@ document.addEventListener('pointermove', (e) => {
   currentMouseX = e.clientX;
   currentMouseY = e.clientY;
 
+  // Linear Physics: Dynamic Velocity-Responsive Tilt (-2.5deg to +2.5deg)
+  const velX = (prevMouseX >= 0) ? (e.clientX - prevMouseX) : 0;
+  prevMouseX = e.clientX;
+  const targetTilt = Math.max(-2.5, Math.min(2.5, velX * 0.16));
+  currentTilt += (targetTilt - currentTilt) * 0.28;
+
   // Move floating ghost smoothly with cursor via GPU hardware acceleration
   if (dragGhost) {
     const gx = e.clientX - dragOffsetX;
     const gy = e.clientY - dragOffsetY;
-    dragGhost.style.transform = `translate3d(${gx}px, ${gy}px, 0) scale(1.03) rotate(1.2deg)`;
+    dragGhost.style.transform = `translate3d(${gx}px, ${gy}px, 0) scale(1.025) rotate(${currentTilt.toFixed(2)}deg)`;
   }
 
   // Find target element underneath cursor
@@ -572,19 +660,13 @@ document.addEventListener('pointerup', async (e) => {
   if (isPointerDragging) {
     const moveDist = Math.hypot(e.clientX - dragStartX, e.clientY - dragStartY);
 
-    // Remove ghost immediately for crisp release
-    if (dragGhost && dragGhost.parentNode) {
-      dragGhost.parentNode.removeChild(dragGhost);
-    }
-    dragGhost = null;
-
     // Suppress clicks on drop release
     window._justDroppedTaskId = activeDraggedTaskId;
     window._justDroppedAt = Date.now();
     window._isDraggingTask = false;
 
     // Only process drop if cursor genuinely moved (> 4px); ignore stationary tap & hold
-    if (moveDist > 4) {
+    if (moveDist > 4 && activeDraggedTaskId) {
       const elUnder = document.elementFromPoint(e.clientX, e.clientY);
       let column = elUnder?.closest('.board-column') || (placeholder && placeholder.closest('.board-column'));
       if (!column) {
@@ -597,8 +679,31 @@ document.addEventListener('pointerup', async (e) => {
           }, { col: null, dist: Infinity }).col;
         }
       }
+
       const draggedId = activeDraggedTaskId;
+      const targetRect = placeholder && placeholder.parentNode ? placeholder.getBoundingClientRect() : null;
+
+      // Linear Magnetic Snap Animation: Smoothly glide into placeholder slot before finalizing DOM
+      if (dragGhost && targetRect && targetRect.width > 0 && targetRect.height > 0) {
+        dragGhost.style.transition = 'transform 0.14s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.14s ease, opacity 0.14s ease';
+        dragGhost.style.transform = `translate3d(${targetRect.left}px, ${targetRect.top}px, 0) scale(1) rotate(0deg)`;
+        dragGhost.style.boxShadow = '0 4px 14px rgba(13, 98, 105, 0.12)';
+
+        setTimeout(async () => {
+          if (dragGhost && dragGhost.parentNode) dragGhost.parentNode.removeChild(dragGhost);
+          dragGhost = null;
+          if (column && draggedId) {
+            await handleTaskDrop(column, e.clientY, draggedId);
+          } else {
+            cleanDragState();
+          }
+        }, 130);
+        return;
+      }
+
       if (column && draggedId) {
+        if (dragGhost && dragGhost.parentNode) dragGhost.parentNode.removeChild(dragGhost);
+        dragGhost = null;
         await handleTaskDrop(column, e.clientY, draggedId);
       }
     }
@@ -628,3 +733,142 @@ document.addEventListener('click', (e) => {
     e.stopImmediatePropagation();
   }
 }, true);
+
+// ── ACCESSIBLE KEYBOARD DRAG & DROP ENGINE (WCAG 2.2 AAA Standard) ─────────
+
+document.addEventListener('keydown', async (e) => {
+  // Ignore keyboard DnD if user is typing inside an input, textarea, or if a modal is open
+  if (e.target.closest('input, textarea, select, [contenteditable="true"]')) return;
+  if (document.querySelector('.modal-overlay, #taskModal, .modal-backdrop')) return;
+
+  const focusedCard = document.activeElement?.closest?.('.task-card');
+
+  // Grab or Release card with Space or Alt+M
+  if ((e.key === ' ' || (e.altKey && (e.key === 'm' || e.key === 'M'))) && focusedCard) {
+    const task = (state.data?.tasks || []).find(t => t.id === focusedCard.dataset.taskId);
+    if (!canUserMoveTask(task)) return;
+
+    e.preventDefault();
+
+    if (!keyboardDraggedTaskId) {
+      // Pick up / Lift Card
+      keyboardDraggedTaskId = task.id;
+      keyboardDraggedCard = focusedCard;
+      keyboardOriginalStatus = task.status;
+      keyboardOriginalSortOrder = task.sortOrder || task.sort_order;
+      window._isKeyboardDraggingTask = true;
+
+      focusedCard.classList.add('is-keyboard-grabbed');
+      focusedCard.setAttribute('aria-grabbed', 'true');
+
+      const colTitle = focusedCard.closest('.board-column')?.querySelector('.board-column-title')?.innerText?.trim() || '';
+      const taskTitle = choose(task.titleAr, task.titleEn);
+      announceDnd(choose(
+        `تم الإمساك بالمهمة "${taskTitle}". العمود الحالي: ${colTitle}. استخدم الأسهم للتحريك، Enter للإفلات، Escape للإلغاء.`,
+        `Grabbed task "${taskTitle}". Current column: ${colTitle}. Use arrow keys to move, Enter to drop, Escape to cancel.`
+      ));
+    } else if (keyboardDraggedTaskId === task.id) {
+      // Release in place
+      keyboardDraggedCard?.classList.remove('is-keyboard-grabbed');
+      keyboardDraggedCard?.setAttribute('aria-grabbed', 'false');
+      keyboardDraggedTaskId = null;
+      keyboardDraggedCard = null;
+      window._isKeyboardDraggingTask = false;
+      announceDnd(choose('تم إلغاء الإمساك بالمهمة.', 'Task released.'));
+    }
+    return;
+  }
+
+  // Active Keyboard Dragging Navigation
+  if (keyboardDraggedTaskId && keyboardDraggedCard) {
+    const task = (state.data?.tasks || []).find(t => t.id === keyboardDraggedTaskId);
+    if (!task) return;
+
+    const currentColumn = keyboardDraggedCard.closest('.board-column');
+    if (!currentColumn) return;
+
+    const allColumns = Array.from(document.querySelectorAll('.board-column'));
+    const currentColIdx = allColumns.indexOf(currentColumn);
+    const isRtl = document.documentElement.dir === 'rtl' || state.lang === 'ar';
+
+    // Move Within Column (Up / Down)
+    if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      const prevCard = keyboardDraggedCard.previousElementSibling;
+      if (prevCard && prevCard.classList.contains('task-card')) {
+        currentColumn.querySelector('.board-cards').insertBefore(keyboardDraggedCard, prevCard);
+        keyboardDraggedCard.focus();
+        announceDnd(choose('تم التحريك للأعلى.', 'Moved up.'));
+      }
+      return;
+    }
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      const nextCard = keyboardDraggedCard.nextElementSibling;
+      if (nextCard && nextCard.classList.contains('task-card')) {
+        currentColumn.querySelector('.board-cards').insertBefore(nextCard, keyboardDraggedCard);
+        keyboardDraggedCard.focus();
+        announceDnd(choose('تم التحريك للأسفل.', 'Moved down.'));
+      }
+      return;
+    }
+
+    // Move Across Columns (Left / Right with RTL Awareness)
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+      e.preventDefault();
+      const forwardKey = isRtl ? 'ArrowLeft' : 'ArrowRight';
+      const targetColIdx = (e.key === forwardKey) ? currentColIdx + 1 : currentColIdx - 1;
+
+      if (targetColIdx >= 0 && targetColIdx < allColumns.length) {
+        const targetCol = allColumns[targetColIdx];
+        const targetCards = targetCol.querySelector('.board-cards');
+        if (targetCards) {
+          targetCards.appendChild(keyboardDraggedCard);
+          keyboardDraggedCard.focus();
+          const targetColTitle = targetCol.querySelector('.board-column-title')?.innerText?.trim() || '';
+          announceDnd(choose(`تم النقل إلى عمود: ${targetColTitle}.`, `Moved to column: ${targetColTitle}.`));
+        }
+      }
+      return;
+    }
+
+    // Confirm Drop with Enter
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const finalColumn = keyboardDraggedCard.closest('.board-column');
+      const draggedId = keyboardDraggedTaskId;
+
+      keyboardDraggedCard.classList.remove('is-keyboard-grabbed');
+      keyboardDraggedCard.setAttribute('aria-grabbed', 'false');
+      keyboardDraggedTaskId = null;
+      keyboardDraggedCard = null;
+      window._isKeyboardDraggingTask = false;
+
+      if (finalColumn && draggedId) {
+        const rect = keyboardDraggedCard ? keyboardDraggedCard.getBoundingClientRect() : null;
+        await handleTaskDrop(finalColumn, rect ? rect.top + 10 : 0, draggedId);
+      }
+      return;
+    }
+
+    // Cancel with Escape
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      keyboardDraggedCard.classList.remove('is-keyboard-grabbed');
+      keyboardDraggedCard.setAttribute('aria-grabbed', 'false');
+      keyboardDraggedTaskId = null;
+      keyboardDraggedCard = null;
+      window._isKeyboardDraggingTask = false;
+
+      // Restore original state
+      task.status = keyboardOriginalStatus;
+      if (keyboardOriginalSortOrder !== null) {
+        task.sortOrder = keyboardOriginalSortOrder;
+      }
+      renderView(true);
+      announceDnd(choose('تم إلغاء النقل وإعادة المهمة لمكانها الأصلي.', 'Move cancelled. Task returned to original position.'));
+      return;
+    }
+  }
+});

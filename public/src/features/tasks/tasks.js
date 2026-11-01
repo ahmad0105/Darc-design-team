@@ -92,8 +92,9 @@ export function taskCard(task) {
         : 'var(--line)';
 
   const canEditTask = canUserMoveTask(task);
+  const taskTitle = choose(task.titleAr, task.titleEn);
 
-  return `<article class="task-card ${overdue ? 'is-overdue' : ''} ${!canEditTask ? 'not-draggable' : ''}" draggable="false" data-action="open-task" data-task-id="${esc(task.id)}">
+  return `<article class="task-card ${overdue ? 'is-overdue' : ''} ${!canEditTask ? 'not-draggable' : ''}" draggable="false" tabindex="0" role="button" aria-roledescription="sortable task card" aria-label="${esc(taskTitle)}" data-action="open-task" data-task-id="${esc(task.id)}">
     <div class="task-card-top">
       <span class="task-code">${esc(task.templateId ? task.templateId.replace('tpl-', '#') : '#CUSTOM')}</span>
       <div style="display:flex;align-items:center;gap:6px;">

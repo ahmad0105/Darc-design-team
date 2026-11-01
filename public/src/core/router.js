@@ -169,7 +169,11 @@ export function renderApp() {
   renderView();
 }
 
-export function renderView() {
+export function renderView(force = false) {
+  if (!force && (window._isDraggingTask || window._isKeyboardDraggingTask)) {
+    window._pendingRenderAfterDrag = true;
+    return;
+  }
   const main = document.getElementById('main-content');
   if (!main) return;
   if (!canAccessView(state.view)) {
