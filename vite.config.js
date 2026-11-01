@@ -16,6 +16,10 @@ export default defineConfig({
       }
     }
   },
+  esbuild: {
+    legalComments: 'none',
+    treeShaking: true
+  },
   build: {
     outDir: resolve(__dirname, 'dist'),
     emptyOutDir: true,
@@ -23,7 +27,8 @@ export default defineConfig({
     sourcemap: false,
     cssMinify: true,
     minify: 'esbuild',
-    reportCompressedSize: false,
+    reportCompressedSize: true,
+    cssCodeSplit: true,
     chunkSizeWarningLimit: 1200,
     rollupOptions: {
       input: {

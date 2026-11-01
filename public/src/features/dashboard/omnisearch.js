@@ -65,10 +65,15 @@ export function openOmnisearch() {
   const input = document.getElementById('omnisearch-input');
   if (input) {
     input.focus();
+    let searchRaf = null;
     input.addEventListener('input', (e) => {
       selectedIndex = 0;
-      const container = document.getElementById('omnisearch-results-container');
-      if (container) container.innerHTML = renderOmnisearchResults(e.target.value);
+      if (searchRaf) cancelAnimationFrame(searchRaf);
+      const val = e.target.value;
+      searchRaf = requestAnimationFrame(() => {
+        const container = document.getElementById('omnisearch-results-container');
+        if (container) container.innerHTML = renderOmnisearchResults(val);
+      });
     });
     input.addEventListener('keydown', handleOmnisearchKeydown);
   }
@@ -184,17 +189,18 @@ export function renderOmnisearchResults(rawQuery) {
     keywords: 'notifications alerts إشعارات تنبيهات رنين تنبيه' 
   });
 
-  actions.forEach(act => {
+  for (const act of actions) {
     if (!q || act.keywords.includes(q) || act.title.toLowerCase().includes(q)) {
       results.push(act);
     }
-  });
+  }
 
   // 2. Projects (Only if permitted)
-  if (can('view_projects') || isAdmin()) {
+  if (results.length < 20 && (can('view_projects') || isAdmin())) {
     const projects = state.data?.projects || [];
-    projects.forEach(p => {
-      const match = !q || `${p.nameAr} ${p.nameEn} ${p.code} ${p.clientAr} ${p.clientEn}`.toLowerCase().includes(q);
+    for (const p of projects) {
+      if (results.length >= 20) break;
+      const match = !q || `${p.nameAr || ''} ${p.nameEn || ''} ${p.code || ''} ${p.clientAr || ''} ${p.clientEn || ''}`.toLowerCase().includes(q);
       if (match) {
         results.push({
           type: 'project',
@@ -204,15 +210,17 @@ export function renderOmnisearchResults(rawQuery) {
           badge: `${p.progress}%`,
           icon: 'building'
         });
+        if (!q && results.length >= 5) break; // In empty query state, limit top suggestions
       }
-    });
+    }
   }
 
   // 3. Tasks (Only if permitted)
-  if (canAccessView('tasks')) {
+  if (results.length < 20 && canAccessView('tasks')) {
     const tasks = state.data?.tasks || [];
-    tasks.forEach(t => {
-      const match = !q || `${t.titleAr} ${t.titleEn} ${t.categoryAr} ${t.categoryEn}`.toLowerCase().includes(q);
+    for (const t of tasks) {
+      if (results.length >= 20) break;
+      const match = !q || `${t.titleAr || ''} ${t.titleEn || ''} ${t.categoryAr || ''} ${t.categoryEn || ''}`.toLowerCase().includes(q);
       if (match) {
         results.push({
           type: 'task',
@@ -222,15 +230,17 @@ export function renderOmnisearchResults(rawQuery) {
           badge: `${t.progress}%`,
           icon: 'checklist'
         });
+        if (!q && results.length >= 10) break;
       }
-    });
+    }
   }
 
   // 4. Team Members (Only if permitted)
-  if (isAdmin() || can('manage_users')) {
+  if (results.length < 20 && (isAdmin() || can('manage_users'))) {
     const users = state.data?.users || [];
-    users.forEach(u => {
-      const match = !q || `${u.name} ${u.nameEn} ${u.email} ${u.jobTitleAr}`.toLowerCase().includes(q);
+    for (const u of users) {
+      if (results.length >= 20) break;
+      const match = !q || `${u.name || ''} ${u.nameEn || ''} ${u.email || ''} ${u.jobTitleAr || ''}`.toLowerCase().includes(q);
       if (match) {
         results.push({
           type: 'user',
@@ -240,8 +250,9 @@ export function renderOmnisearchResults(rawQuery) {
           badge: roleName(u),
           icon: 'user'
         });
+        if (!q && results.length >= 15) break;
       }
-    });
+    }
   }
 
   // Cap results at 15 for top performance

@@ -99,7 +99,44 @@ function getDragAfterElement(cardsContainer, clientY) {
   }, { offset: Number.NEGATIVE_INFINITY }).element;
 }
 
-// Continuous Velocity-Based Proportional Auto-Scroller via requestAnimationFrame (RTL & LTR Aware)
+// Dynamic Placeholder & Dropzone Hit-Testing
+function updatePlaceholderPosition(clientX, clientY) {
+  if (!isDraggingActive || clientX < 0 || clientY < 0) return;
+
+  const elUnder = document.elementFromPoint(clientX, clientY);
+  let column = elUnder?.closest('.board-column');
+  if (!column) {
+    const columns = Array.from(document.querySelectorAll('.board-column'));
+    if (columns.length > 0) {
+      column = columns.reduce((closest, col) => {
+        const rect = col.getBoundingClientRect();
+        const dist = Math.abs(clientX - (rect.left + rect.width / 2));
+        return dist < closest.dist ? { col, dist } : closest;
+      }, { col: null, dist: Infinity }).col;
+    }
+  }
+
+  document.querySelectorAll('.board-column').forEach(col => col.classList.toggle('drag-over', col === column));
+
+  if (column) {
+    const cardsContainer = column.querySelector('.board-cards');
+    if (cardsContainer) {
+      const ph = getOrCreatePlaceholder(draggedCardHeight);
+      const afterCard = getDragAfterElement(cardsContainer, clientY);
+      if (afterCard == null) {
+        if (!cardsContainer.contains(ph) || cardsContainer.lastElementChild !== ph) {
+          cardsContainer.appendChild(ph);
+        }
+      } else {
+        if (ph.nextElementSibling !== afterCard) {
+          cardsContainer.insertBefore(ph, afterCard);
+        }
+      }
+    }
+  }
+}
+
+// Continuous Velocity-Based Proportional Auto-Scroller via requestAnimationFrame (Dual-Axis & Viewport Aware)
 function startContinuousAutoScroll() {
   if (autoScrollRaf) return;
 
@@ -110,37 +147,92 @@ function startContinuousAutoScroll() {
     }
 
     if (currentMouseX >= 0 && currentMouseY >= 0) {
+      let didScroll = false;
+
+      // ── 1. HORIZONTAL BOARD AUTO-SCROLL (RTL & LTR Aware) ──
       const boardEl = document.querySelector('.board, .board-columns, .tasks-board, [data-board]');
-      const edgeMargin = 85;
-      const maxScrollSpeed = 26;
+      const hEdgeMargin = 85;
+      const maxHScrollSpeed = 26;
 
       if (boardEl) {
-        // Universal Cross-Browser RTL/LTR Proportional Scroll
         const isRtl = document.documentElement.dir === 'rtl' || state.lang === 'ar';
-        if (currentMouseX < edgeMargin) {
-          const factor = (edgeMargin - currentMouseX) / edgeMargin;
-          const delta = -Math.max(4, Math.round(factor * maxScrollSpeed));
+        if (currentMouseX < hEdgeMargin) {
+          const factor = (hEdgeMargin - currentMouseX) / hEdgeMargin;
+          const delta = -Math.max(4, Math.round(factor * maxHScrollSpeed));
           boardEl.scrollBy({ left: isRtl ? -delta : delta, behavior: 'instant' });
-        } else if (currentMouseX > window.innerWidth - edgeMargin) {
-          const factor = (currentMouseX - (window.innerWidth - edgeMargin)) / edgeMargin;
-          const delta = Math.max(4, Math.round(factor * maxScrollSpeed));
+          didScroll = true;
+        } else if (currentMouseX > window.innerWidth - hEdgeMargin) {
+          const factor = (currentMouseX - (window.innerWidth - hEdgeMargin)) / hEdgeMargin;
+          const delta = Math.max(4, Math.round(factor * maxHScrollSpeed));
           boardEl.scrollBy({ left: isRtl ? -delta : delta, behavior: 'instant' });
+          didScroll = true;
         }
+      }
 
-        // Vertical Column Auto-Scroll (for long lists inside active column)
-        const elUnder = document.elementFromPoint(currentMouseX, currentMouseY);
-        const cardsCol = elUnder?.closest('.board-cards') || elUnder?.closest('.board-column')?.querySelector('.board-cards');
-        if (cardsCol && cardsCol.scrollHeight > cardsCol.clientHeight) {
-          const cRect = cardsCol.getBoundingClientRect();
-          const vMargin = 60;
-          if (currentMouseY > cRect.top && currentMouseY < cRect.top + vMargin) {
-            const vFactor = (vMargin - (currentMouseY - cRect.top)) / vMargin;
-            cardsCol.scrollTop -= Math.max(3, Math.round(vFactor * 18));
-          } else if (currentMouseY < cRect.bottom && currentMouseY > cRect.bottom - vMargin) {
-            const vFactor = (currentMouseY - (cRect.bottom - vMargin)) / vMargin;
-            cardsCol.scrollTop += Math.max(3, Math.round(vFactor * 18));
-          }
+      // ── 2. VERTICAL PAGE & WORKSPACE AUTO-SCROLL (Downwards & Upwards) ──
+      const vEdgeMargin = 95;
+      const maxVScrollSpeed = 26;
+
+      const mainContent = document.getElementById('main-content') || document.querySelector('.workspace-content');
+      const mainRect = mainContent ? mainContent.getBoundingClientRect() : null;
+
+      // Top Boundary: Near top of viewport or top of workspace container
+      const topBoundary = mainRect ? Math.max(60, mainRect.top + 60) : 80;
+      // Bottom Boundary: Near bottom of viewport or bottom edge of workspace container
+      const bottomBoundary = mainRect ? Math.min(window.innerHeight - 30, mainRect.bottom - 60) : (window.innerHeight - 80);
+
+      if (currentMouseY > bottomBoundary) {
+        // Dragging downwards near bottom edge -> Scroll page DOWN
+        const factor = Math.min(1.5, Math.max(0.2, (currentMouseY - bottomBoundary) / vEdgeMargin));
+        const speed = Math.max(4, Math.round(factor * maxVScrollSpeed));
+
+        if (mainContent && mainContent.scrollHeight > mainContent.clientHeight) {
+          const prev = mainContent.scrollTop;
+          mainContent.scrollTop += speed;
+          if (mainContent.scrollTop !== prev) didScroll = true;
         }
+        if (document.documentElement.scrollHeight > window.innerHeight) {
+          const prev = window.scrollY;
+          window.scrollBy({ top: speed, behavior: 'instant' });
+          if (window.scrollY !== prev) didScroll = true;
+        }
+      } else if (currentMouseY < topBoundary) {
+        // Dragging upwards near top edge -> Scroll page UP
+        const factor = Math.min(1.5, Math.max(0.2, (topBoundary - currentMouseY) / vEdgeMargin));
+        const speed = -Math.max(4, Math.round(factor * maxVScrollSpeed));
+
+        if (mainContent && mainContent.scrollHeight > mainContent.clientHeight) {
+          const prev = mainContent.scrollTop;
+          mainContent.scrollTop += speed;
+          if (mainContent.scrollTop !== prev) didScroll = true;
+        }
+        if (document.documentElement.scrollHeight > window.innerHeight) {
+          const prev = window.scrollY;
+          window.scrollBy({ top: speed, behavior: 'instant' });
+          if (window.scrollY !== prev) didScroll = true;
+        }
+      }
+
+      // ── 3. NESTED COLUMN AUTO-SCROLL (For long task lists inside individual column) ──
+      const elUnder = document.elementFromPoint(currentMouseX, currentMouseY);
+      const cardsCol = elUnder?.closest('.board-cards') || elUnder?.closest('.board-column')?.querySelector('.board-cards');
+      if (cardsCol && cardsCol.scrollHeight > cardsCol.clientHeight) {
+        const cRect = cardsCol.getBoundingClientRect();
+        const vMargin = 60;
+        if (currentMouseY > cRect.top && currentMouseY < cRect.top + vMargin) {
+          const vFactor = (vMargin - (currentMouseY - cRect.top)) / vMargin;
+          cardsCol.scrollTop -= Math.max(3, Math.round(vFactor * 18));
+          didScroll = true;
+        } else if (currentMouseY < cRect.bottom && currentMouseY > cRect.bottom - vMargin) {
+          const vFactor = (currentMouseY - (cRect.bottom - vMargin)) / vMargin;
+          cardsCol.scrollTop += Math.max(3, Math.round(vFactor * 18));
+          didScroll = true;
+        }
+      }
+
+      // If page or column scrolled, re-evaluate placeholder position under current cursor
+      if (didScroll) {
+        updatePlaceholderPosition(currentMouseX, currentMouseY);
       }
     }
 
@@ -472,6 +564,8 @@ function initiateDrag(clientX, clientY) {
   isDraggingActive = true;
   window._isDraggingTask = true;
   activeDraggedTaskId = dragCard.dataset.taskId;
+  currentMouseX = clientX;
+  currentMouseY = clientY;
   prevMouseX = clientX;
   currentTilt = 0;
 
@@ -616,38 +710,8 @@ document.addEventListener('pointermove', (e) => {
     dragGhost.style.transform = `translate3d(${gx}px, ${gy}px, 0) scale(1.025) rotate(${currentTilt.toFixed(2)}deg)`;
   }
 
-  // Find target element underneath cursor
-  const elUnder = document.elementFromPoint(e.clientX, e.clientY);
-  let column = elUnder?.closest('.board-column');
-  if (!column) {
-    const columns = Array.from(document.querySelectorAll('.board-column'));
-    if (columns.length > 0) {
-      column = columns.reduce((closest, col) => {
-        const rect = col.getBoundingClientRect();
-        const dist = Math.abs(e.clientX - (rect.left + rect.width / 2));
-        return dist < closest.dist ? { col, dist } : closest;
-      }, { col: null, dist: Infinity }).col;
-    }
-  }
-
-  document.querySelectorAll('.board-column').forEach(col => col.classList.toggle('drag-over', col === column));
-
-  if (column) {
-    const cardsContainer = column.querySelector('.board-cards');
-    if (cardsContainer) {
-      const ph = getOrCreatePlaceholder(draggedCardHeight);
-      const afterCard = getDragAfterElement(cardsContainer, e.clientY);
-      if (afterCard == null) {
-        if (!cardsContainer.contains(ph) || cardsContainer.lastElementChild !== ph) {
-          cardsContainer.appendChild(ph);
-        }
-      } else {
-        if (ph.nextElementSibling !== afterCard) {
-          cardsContainer.insertBefore(ph, afterCard);
-        }
-      }
-    }
-  }
+  // Update target column and placeholder position
+  updatePlaceholderPosition(e.clientX, e.clientY);
 }, { passive: false });
 
 document.addEventListener('pointerup', async (e) => {

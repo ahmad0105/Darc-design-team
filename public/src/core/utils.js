@@ -152,20 +152,6 @@ export function avatar(user, extra = '') {
   }
   return `<span class="avatar ${extra}" style="background:${color}" title="${title}">${esc(initials(safe))}</span>`;
 }
-  const words = source.replace(/^(م\.|م\s|ح\.|ع\.|Eng\.\s)/i, '').split(/\s+/).filter(Boolean);
-  return (words.slice(0, 2).map((word) => word[0]).join('') || source.slice(0, 2)).toUpperCase();
-}
-
-export function avatar(user, extra = '') {
-  const safe = user || { name: 'DARC', avatarColor: '#0d6269' };
-  const color = /^#[0-9a-f]{6}$/i.test(safe.avatarColor || '') ? safe.avatarColor : '#0d6269';
-  const title = esc(choose(safe.name, safe.nameEn || safe.name));
-  if (safe.avatarUrl) {
-    const safeInitials = esc(initials(safe)).replace(/['"\\]/g, '');
-    return `<span class="avatar ${extra}" style="background:transparent;padding:0;overflow:hidden;border:1px solid rgba(255,255,255,0.15);display:inline-flex;align-items:center;justify-content:center;" title="${title}"><img src="${esc(safe.avatarUrl)}" alt="${title}" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;" onerror="this.parentElement.style.background='${color}';this.parentElement.textContent='${safeInitials}';" /></span>`;
-  }
-  return `<span class="avatar ${extra}" style="background:${color}" title="${title}">${esc(initials(safe))}</span>`;
-}
 
 export function getTimeBasedGreeting() {
   const hour = new Date().getHours();
@@ -269,6 +255,18 @@ export function getActiveCalendarSystem() {
   return state.calendarSystem || state.data?.user?.customFields?.calendarSystem || stored || 'gregorian';
 }
 
+// High-Performance Cached DateTimeFormatter pool (Eliminates ICU instantiation overhead)
+const _dtFormatterCache = new Map();
+function getDTFormatter(locale, options = {}) {
+  const key = locale + '|' + JSON.stringify(options);
+  let fmt = _dtFormatterCache.get(key);
+  if (!fmt) {
+    fmt = new Intl.DateTimeFormat(locale, options);
+    _dtFormatterCache.set(key, fmt);
+  }
+  return fmt;
+}
+
 export function dateLabel(value, includeYear = true) {
   if (!value) return '—';
   const date = new Date(String(value).length === 10 ? `${value}T12:00:00` : value);
@@ -277,7 +275,7 @@ export function dateLabel(value, includeYear = true) {
   const calSystem = getActiveCalendarSystem();
   if (calSystem === 'hijri') {
     const locale = state.lang === 'ar' ? 'ar-SA-u-ca-islamic-umalqura' : 'en-u-ca-islamic-umalqura';
-    return new Intl.DateTimeFormat(locale, {
+    return getDTFormatter(locale, {
       day: 'numeric',
       month: 'short',
       ...(includeYear ? { year: 'numeric' } : {})
@@ -286,7 +284,7 @@ export function dateLabel(value, includeYear = true) {
 
   // Unified Gregorian: Day / Month / Year
   const locale = state.lang === 'ar' ? 'ar-u-ca-gregory' : 'en-GB-u-ca-gregory';
-  return new Intl.DateTimeFormat(locale, {
+  return getDTFormatter(locale, {
     day: 'numeric',
     month: 'short',
     ...(includeYear ? { year: 'numeric' } : {})
@@ -300,7 +298,7 @@ export function formatUnifiedDateNumeric(value) {
   const calSystem = getActiveCalendarSystem();
   if (calSystem === 'hijri') {
     const locale = state.lang === 'ar' ? 'ar-SA-u-ca-islamic-umalqura' : 'en-u-ca-islamic-umalqura';
-    return new Intl.DateTimeFormat(locale, {
+    return getDTFormatter(locale, {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric'
@@ -325,14 +323,14 @@ export function formatDateTime(value, options = {}) {
       ? (isAr ? 'ar-SA-u-ca-islamic-umalqura' : 'en-u-ca-islamic-umalqura')
       : (isAr ? 'ar-u-ca-gregory' : 'en-GB-u-ca-gregory');
 
-    const date = new Intl.DateTimeFormat(dateLocale, {
+    const date = getDTFormatter(dateLocale, {
       year: 'numeric',
       month: options.monthStyle || 'short',
       day: 'numeric'
     }).format(d);
 
     const timeLocale = isAr ? 'ar-SA' : 'en-US';
-    const time = new Intl.DateTimeFormat(timeLocale, {
+    const time = getDTFormatter(timeLocale, {
       hour: '2-digit',
       minute: '2-digit',
       ...(options.includeSeconds !== false ? { second: '2-digit' } : {}),
@@ -354,7 +352,7 @@ export function formatReportDate(value = new Date()) {
     ? (isAr ? 'ar-SA-u-ca-islamic-umalqura' : 'en-u-ca-islamic-umalqura')
     : (isAr ? 'ar-u-ca-gregory' : 'en-GB-u-ca-gregory');
 
-  return new Intl.DateTimeFormat(locale, {
+  return getDTFormatter(locale, {
     dateStyle: 'full'
   }).format(d);
 }
@@ -363,7 +361,7 @@ export function formatReportTime(value = new Date()) {
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return '—';
   const isAr = state.lang === 'ar';
-  return new Intl.DateTimeFormat(isAr ? 'ar-SA' : 'en-US', {
+  return getDTFormatter(isAr ? 'ar-SA' : 'en-US', {
     hour: '2-digit',
     minute: '2-digit',
     hour12: true
@@ -374,7 +372,7 @@ export function getHijriDateEquivalent(value) {
   if (!value) return '';
   const date = new Date(String(value).length === 10 ? `${value}T12:00:00` : value);
   if (Number.isNaN(date.getTime())) return '';
-  return new Intl.DateTimeFormat('ar-SA-u-ca-islamic-umalqura', {
+  return getDTFormatter('ar-SA-u-ca-islamic-umalqura', {
     day: 'numeric',
     month: 'long',
     year: 'numeric'
@@ -395,7 +393,24 @@ export function isOverdue(task) {
 }
 
 export function statusText(key) {
-  return { not_started: t('notStarted'), in_progress: t('inProgress'), review: t('review'), approval: t('approval'), done: t('done'), blocked: t('blocked'), canceled: t('canceled'), planning: t('planning'), active: t('active'), on_hold: t('onHold'), completed: t('completed'), archived: t('archived'), on_track: t('onTrack'), at_risk: t('atRisk'), off_track: t('offTrack') }[key] || key;
+  switch (key) {
+    case 'not_started': return t('notStarted');
+    case 'in_progress': return t('inProgress');
+    case 'review': return t('review');
+    case 'approval': return t('approval');
+    case 'done': return t('done');
+    case 'blocked': return t('blocked');
+    case 'canceled': return t('canceled');
+    case 'planning': return t('planning');
+    case 'active': return t('active');
+    case 'on_hold': return t('onHold');
+    case 'completed': return t('completed');
+    case 'archived': return t('archived');
+    case 'on_track': return t('onTrack');
+    case 'at_risk': return t('atRisk');
+    case 'off_track': return t('offTrack');
+    default: return key || '';
+  }
 }
 
 export function statusBadge(status) {
@@ -403,7 +418,15 @@ export function statusBadge(status) {
   return `<span class="status-badge ${esc(status)}">${esc(statusText(status))}</span>`;
 }
 
-export function priorityText(key) { return { low: t('low'), medium: t('medium'), high: t('high'), urgent: t('urgent') }[key] || key; }
+export function priorityText(key) {
+  switch (key) {
+    case 'low': return t('low');
+    case 'medium': return t('medium');
+    case 'high': return t('high');
+    case 'urgent': return t('urgent');
+    default: return key || '';
+  }
+}
 
 export function roleFor(userOrId) {
   const user = typeof userOrId === 'string' ? state.data?.users?.find((item) => item.id === userOrId) : userOrId;
@@ -441,7 +464,9 @@ export const PERMISSION_ALIASES = {
 };
 
 export function can(permission) {
-  const permissions = state.data?.role?.permissions || [];
+  if (isAdmin()) return true;
+  const permissions = state.data?.role?.permissions;
+  if (!permissions || !permissions.length) return false;
   if (permissions.includes('*') || permissions.includes(permission)) return true;
   const alias = PERMISSION_ALIASES[permission];
   return Boolean(alias && permissions.includes(alias));

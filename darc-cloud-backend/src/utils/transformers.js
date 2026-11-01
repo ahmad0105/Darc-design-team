@@ -1,4 +1,25 @@
 const JSONB_PASSTHROUGH_KEYS = new Set(['custom_fields', 'permissions', 'details', 'settings']);
+const KEY_CAMEL_CACHE = new Map();
+const KEY_SNAKE_CACHE = new Map();
+
+function getCamelKey(key) {
+  if (key.indexOf('_') === -1) return key;
+  let cached = KEY_CAMEL_CACHE.get(key);
+  if (!cached) {
+    cached = key.replace(/_([a-z0-9])/g, (_, c) => c.toUpperCase());
+    KEY_CAMEL_CACHE.set(key, cached);
+  }
+  return cached;
+}
+
+function getSnakeKey(key) {
+  let cached = KEY_SNAKE_CACHE.get(key);
+  if (!cached) {
+    cached = key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
+    KEY_SNAKE_CACHE.set(key, cached);
+  }
+  return cached;
+}
 
 export function toCamelCase(obj) {
   if (obj === null || typeof obj !== 'object') return obj;
@@ -12,7 +33,7 @@ export function toCamelCase(obj) {
   const result = {};
   for (const key of Object.keys(obj)) {
     if (key === '__proto__' || key === 'constructor' || key === 'prototype') continue;
-    const camelKey = key.indexOf('_') === -1 ? key : key.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
+    const camelKey = getCamelKey(key);
     const val = obj[key];
     if (JSONB_PASSTHROUGH_KEYS.has(key)) {
       result[camelKey] = val;
@@ -26,12 +47,15 @@ export function toCamelCase(obj) {
 export function toSnakeCase(obj) {
   if (Array.isArray(obj)) return obj.map(v => toSnakeCase(v));
   if (obj !== null && typeof obj === 'object') {
-    return Object.keys(obj).reduce((result, key) => {
-      if (key === '__proto__' || key === 'constructor' || key === 'prototype') return result;
-      const snakeKey = key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
+    const keys = Object.keys(obj);
+    const result = {};
+    for (let i = 0; i < keys.length; i++) {
+      const key = keys[i];
+      if (key === '__proto__' || key === 'constructor' || key === 'prototype') continue;
+      const snakeKey = getSnakeKey(key);
       result[snakeKey] = toSnakeCase(obj[key]);
-      return result;
-    }, {});
+    }
+    return result;
   }
   return obj;
 }

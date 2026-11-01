@@ -39,33 +39,9 @@ import { Hono } from 'hono';
 import { getDB } from '../../core/db.js';
 import { getBootstrapCache, setBootstrapCache, fetchBootstrapWithCoalescing, getCachedRoles, getCachedTemplates, getCachedUsers, getCachedCompany, getCacheVersion } from '../../core/cache.js';
 import { getDemoPayload } from '../demo/demo.service.js';
-import { sanitizeUserCustomFields } from '../../utils/transformers.js';
+import { toCamelCase, sanitizeUserCustomFields } from '../../utils/transformers.js';
 
 const app = new Hono();
-
-const JSONB_PASSTHROUGH_KEYS = new Set(['custom_fields', 'permissions', 'details', 'settings']);
-
-function toCamelCase(obj) {
-  if (obj === null || typeof obj !== 'object') return obj;
-  if (Array.isArray(obj)) {
-    const len = obj.length;
-    const res = new Array(len);
-    for (let i = 0; i < len; i++) res[i] = toCamelCase(obj[i]);
-    return res;
-  }
-  const result = {};
-  for (const key of Object.keys(obj)) {
-    if (key === '__proto__' || key === 'constructor' || key === 'prototype') continue;
-    const camelKey = key.indexOf('_') === -1 ? key : key.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
-    const val = obj[key];
-    if (JSONB_PASSTHROUGH_KEYS.has(key)) {
-      result[camelKey] = val;
-    } else {
-      result[camelKey] = (val !== null && typeof val === 'object') ? toCamelCase(val) : val;
-    }
-  }
-  return result;
-}
 
 export async function generateBootstrapPayloadForUser(env, userId, roleId) {
   // Isolated Showcase Demo Sandbox (100% Shielded from Production DB)
@@ -240,8 +216,9 @@ export async function generateBootstrapPayloadForUser(env, userId, roleId) {
       };
     });
 
-    // Single-pass stats calculation
-    const now = new Date();
+    // High-performance single-pass stats calculation without Date object allocations
+    const nowMs = Date.now();
+    const in7DaysMs = nowMs + 7 * 86400000;
     let activeProjects = 0, delayedProjects = 0, completedProjects = 0;
     for (const p of projects) {
       if (p.lifecycle === 'active') activeProjects++;
@@ -249,15 +226,17 @@ export async function generateBootstrapPayloadForUser(env, userId, roleId) {
       if (p.lifecycle === 'completed') completedProjects++;
     }
 
-    const in7Days = new Date(Date.now() + 7 * 86400000);
     let tasksInProgress = 0, overdueTasks = 0, unassignedTasks = 0, completedTasks = 0, activeTasks = 0, pendingApprovals = 0;
     let dueSoon = 0, myTasks = 0;
     for (const t of tasks) {
       const isDone = t.status === 'done';
       const isCanceled = t.status === 'canceled';
       if (t.status === 'in_progress') tasksInProgress++;
-      if (!isDone && t.due_date && new Date(t.due_date) < now) overdueTasks++;
-      if (!isDone && t.due_date && new Date(t.due_date) >= now && new Date(t.due_date) <= in7Days) dueSoon++;
+      if (!isDone && t.due_date) {
+        const dueMs = Date.parse(t.due_date);
+        if (dueMs < nowMs) overdueTasks++;
+        else if (dueMs <= in7DaysMs) dueSoon++;
+      }
       if (!isDone && !isCanceled && t.assignee_id === userId) myTasks++;
       if (!isDone && !t.assignee_id) unassignedTasks++;
       if (isDone) completedTasks++;
@@ -314,19 +293,19 @@ export async function generateBootstrapPayloadForUser(env, userId, roleId) {
     let maxUpdatedAt = 0;
     for (const t of tasks) {
       if (t.updated_at) {
-        const time = new Date(t.updated_at).getTime();
+        const time = Date.parse(t.updated_at);
         if (time > maxUpdatedAt) maxUpdatedAt = time;
       }
     }
     for (const p of projects) {
       if (p.updated_at) {
-        const time = new Date(p.updated_at).getTime();
+        const time = Date.parse(p.updated_at);
         if (time > maxUpdatedAt) maxUpdatedAt = time;
       }
     }
     for (const d of documents) {
       if (d.updated_at) {
-        const time = new Date(d.updated_at).getTime();
+        const time = Date.parse(d.updated_at);
         if (time > maxUpdatedAt) maxUpdatedAt = time;
       }
     }
@@ -337,13 +316,17 @@ export async function generateBootstrapPayloadForUser(env, userId, roleId) {
     const canManageSettings = isGlobalAdmin || userRole?.permissions?.includes('manage_settings') || userRole?.permissions?.includes('*');
     let exposedCompany = company || { name: 'DARC Design Team', nameAr: 'فريق دارك للتصميم', nameEn: 'DARC Design Team' };
     if (!canManageSettings && exposedCompany) {
-      exposedCompany = JSON.parse(JSON.stringify(exposedCompany));
-      if (exposedCompany.settings?.whatsapp?.apiKey) {
-        exposedCompany.settings.whatsapp.apiKey = '••••••••';
-      }
-      if (exposedCompany.custom_fields?.whatsapp?.apiKey) {
-        exposedCompany.custom_fields.whatsapp.apiKey = '••••••••';
-      }
+      exposedCompany = {
+        ...exposedCompany,
+        settings: exposedCompany.settings ? {
+          ...exposedCompany.settings,
+          whatsapp: exposedCompany.settings.whatsapp ? { ...exposedCompany.settings.whatsapp, apiKey: '••••••••' } : undefined
+        } : undefined,
+        custom_fields: exposedCompany.custom_fields ? {
+          ...exposedCompany.custom_fields,
+          whatsapp: exposedCompany.custom_fields.whatsapp ? { ...exposedCompany.custom_fields.whatsapp, apiKey: '••••••••' } : undefined
+        } : undefined
+      };
     }
 
     const responsePayload = {
