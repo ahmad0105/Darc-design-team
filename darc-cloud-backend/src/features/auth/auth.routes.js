@@ -6,8 +6,8 @@ import crypto from 'node:crypto';
 import { Buffer } from 'node:buffer';
 import { toCamelCase } from '../../utils/transformers.js';
 import { invalidateUsersCache, setUserTokenVersion } from '../../core/cache.js';
-import { authRateLimiter } from '../../core/rate-limit.js';
 import { computeClientFingerprint } from '../../core/security.js';
+import { sendEmail } from '../email/email.service.js';
 
 const app = new Hono();
 
@@ -57,24 +57,57 @@ async function getUserIdFromCookie(c) {
   }
 }
 
-app.post('/forgot-password', authRateLimiter(), async (c) => {
+app.post('/forgot-password', async (c) => {
   const body = await c.req.json().catch(() => ({}));
   const supabase = c.get('supabase');
   const email = String(body.email || '').trim().toLowerCase();
   if (!email) return c.json({ error: 'البريد الإلكتروني مطلوب' }, 400);
 
-  const { data: user } = await supabase.from('users').select('id, custom_fields').eq('email', email).eq('status', 'active').single();
+  const { data: user } = await supabase
+    .from('users')
+    .select('id, name, name_en, email, custom_fields')
+    .eq('email', email)
+    .eq('status', 'active')
+    .maybeSingle();
   
   if (user) {
     const resetToken = crypto.randomBytes(24).toString('hex');
     const resetExpiresAt = new Date(Date.now() + 3600000).toISOString();
     const newFields = { ...(user.custom_fields || {}), resetToken, resetExpiresAt };
     await supabase.from('users').update({ custom_fields: newFields }).eq('id', user.id);
+
+    const userName = user.name || user.name_en || 'عضو فريق دارك';
+    const resetUrl = `https://panel.darc-design.bond/#reset-password?token=${resetToken}`;
+    const subject = '🔐 إعادة تعيين كلمة المرور — DARC Design Team';
+    const html = `
+      <div style="font-family:sans-serif;direction:rtl;text-align:right;padding:24px;background:#0f172a;color:#f8fafc;border-radius:12px;max-width:560px;margin:auto;">
+        <h2 style="color:#38bdf8;margin:0 0 14px;">طلب إعادة تعيين كلمة المرور</h2>
+        <p style="color:#cbd5e1;font-size:14px;line-height:1.7;">مرحباً ${userName}،<br>تلقينا طلباً لإعادة تعيين كلمة المرور الخاصة بحسابك في منصة DARC Design Team. اضغط على الزر أدناه لاختيار كلمة مرور جديدة:</p>
+        <div style="text-align:center;margin:28px 0;">
+          <a href="${resetUrl}" style="background:#0284c7;color:#ffffff;text-decoration:none;padding:12px 28px;border-radius:8px;font-size:14px;font-weight:700;display:inline-block;box-shadow:0 4px 6px -1px rgba(0,0,0,0.3);">إعادة تعيين كلمة المرور</a>
+        </div>
+        <p style="color:#94a3b8;font-size:12px;line-height:1.6;border-top:1px solid #1e293b;padding-top:14px;margin-top:20px;">
+          هذا الرابط صالح لمدة ساعة واحدة فقط.<br>
+          إذا لم تكن أنت من طلب إعادة التعيين، يمكنك تجاهل هذا البريد بأمان.
+        </p>
+      </div>
+    `;
+
+    const emailTask = sendEmail(c.env, {
+      to: user.email,
+      subject,
+      html,
+      text: `مرحباً ${userName}،\n\nلإعادة تعيين كلمة المرور الخاصة بحسابك، يرجى فتح الرابط التالي:\n${resetUrl}\n\nهذا الرابط صالح لمدة ساعة واحدة.`
+    }).catch(err => console.warn('[ForgotPassword Email Error]', err.message));
+
+    if (c.executionCtx && typeof c.executionCtx.waitUntil === 'function') {
+      c.executionCtx.waitUntil(emailTask);
+    }
   }
   return c.json({ ok: true, message: 'إذا كان البريد مسجلاً لدينا، ستصلك رسالة قريباً.' });
 });
 
-app.post('/reset-password', authRateLimiter(), async (c) => {
+app.post('/reset-password', async (c) => {
   const body = await c.req.json().catch(() => ({}));
   const supabase = c.get('supabase');
   const token = String(body.token || '').trim();
@@ -84,8 +117,8 @@ app.post('/reset-password', authRateLimiter(), async (c) => {
   }
   if (newPassword.length < 10) return c.json({ error: 'كلمة المرور يجب أن تكون 10 أحرف على الأقل.' }, 400);
 
-  const { data: user } = await supabase.from('users').select('id, role_id, custom_fields').eq('custom_fields->>resetToken', token).single();
-  if (!user || new Date(user.custom_fields.resetExpiresAt) < new Date()) {
+  const { data: user } = await supabase.from('users').select('id, role_id, custom_fields').eq('custom_fields->>resetToken', token).maybeSingle();
+  if (!user || new Date(user.custom_fields?.resetExpiresAt || 0) < new Date()) {
     return c.json({ error: 'الرابط منتهي الصلاحية أو غير صحيح.' }, 400);
   }
 
@@ -135,8 +168,9 @@ app.post('/change-password', async (c) => {
   const oldPassword = String(body.oldPassword || '');
   const newPassword = String(body.newPassword || '');
   if (newPassword.length < 10) return c.json({ error: 'كلمة المرور يجب أن تكون 10 أحرف على الأقل.' }, 400);
+  if (newPassword === oldPassword) return c.json({ error: 'كلمة المرور الجديدة يجب أن تكون مختلفة عن كلمة المرور الحالية.' }, 400);
 
-  const { data: user } = await supabase.from('users').select('id, role_id, password_hash, custom_fields').eq('id', userId).single();
+  const { data: user } = await supabase.from('users').select('id, role_id, password_hash, custom_fields').eq('id', userId).maybeSingle();
   if (!user) return c.json({ error: 'المستخدم غير موجود.' }, 404);
 
   const isValid = await verifyPassword(oldPassword, user.password_hash);
@@ -166,7 +200,7 @@ app.post('/change-password', async (c) => {
   return c.json({ ok: true, token: sessionToken });
 });
 
-app.post('/activate', authRateLimiter(), async (c) => {
+app.post('/activate', async (c) => {
   const body = await c.req.json().catch(() => ({}));
   const token = String(body.token || '').trim();
   const password = String(body.password || '');

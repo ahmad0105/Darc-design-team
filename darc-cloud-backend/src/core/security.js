@@ -92,7 +92,7 @@ export function edgeSentryMiddleware() {
     // 2. High-Severity Probes & Exploit Scanners (Instant Jail: 1 hour)
     const isExploitProbe = 
       /\.(env|git|svn|htaccess|aws|ssh)($|\/|\?)/i.test(path) ||
-      /\/(wp-admin|wp-login|xmlrpc|phpinfo|eval-stdin|cgi-bin|setup\.php|console|actuator|swagger-ui|shell\.php)/i.test(path) ||
+      /\/(wp-admin|wp-login|xmlrpc|phpinfo|eval-stdin|cgi-bin|setup\.php|console|actuator|swagger-ui|shell\.php|invokefunction|phpunit|thinkphp|solr|struts)/i.test(path) ||
       /(\.\.\/|\.\.%2f|%2e%2e)/i.test(rawUrl) ||
       /(union\s+select|select\s+.*\s+from|benchmark\(|sleep\(|waitfor\s+delay)/i.test(rawUrl) ||
       /(<script|javascript:|data:text\/html)/i.test(rawUrl) ||
@@ -205,8 +205,9 @@ function isAllowedOrigin(originStr) {
       parsed.startsWith('http://127.0.0.1:') ||
       parsed === 'https://darc-design-team.netlify.app' ||
       parsed.endsWith('.darc-design-team.netlify.app') ||
-      parsed.endsWith('.workers.dev') ||
-      parsed.endsWith('.pages.dev') ||
+      parsed === 'https://darc-design-team.workers.dev' ||
+      parsed === 'https://darc-design-team.ahmad-hashmi-c.workers.dev' ||
+      parsed === 'https://darc-cloud-backend.ahmad-hashmi-c.workers.dev' ||
       parsed.endsWith('.darc-design.bond') ||
       parsed === 'https://darc-design.bond' ||
       parsed === 'https://panel.darc-design.bond' ||

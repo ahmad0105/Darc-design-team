@@ -2,8 +2,8 @@ import { state } from './state.js';
 import { api } from './api.js';
 import { renderView } from './router.js';
 import { showToast } from '../shared/ui.js';
-import { choose, can, isAdmin } from '../core/utils.js';
-import { getTaskSortOrder, setSavedTaskSort, canUserMoveTask } from '../features/tasks/tasks.js';
+import { choose } from '../core/utils.js';
+import { setSavedTaskSort, canUserMoveTask } from '../features/tasks/tasks.js';
 
 let placeholder = null;
 let activeDraggedTaskId = null;
@@ -12,6 +12,17 @@ let autoScrollRaf = null;
 let currentMouseX = -1;
 let currentMouseY = -1;
 let isDraggingActive = false;
+
+// Active Unified Pointer Drag State (Mouse + Touch + Stylus)
+let dragCard = null;
+let dragGhost = null;
+let dragStartX = 0;
+let dragStartY = 0;
+let dragOffsetX = 0;
+let dragOffsetY = 0;
+let isPointerDragging = false;
+let activePointerId = null;
+let touchHoldTimer = null;
 
 // Dynamic High-Fidelity Placeholder with Adaptive Height & Smooth Snapping
 function getOrCreatePlaceholder(height) {
@@ -120,141 +131,10 @@ function stopContinuousAutoScroll() {
   }
 }
 
-document.addEventListener('dragstart', (event) => {
-  const card = event.target.closest('.task-card');
-  if (card) {
-    const task = (state.data?.tasks || []).find(t => t.id === card.dataset.taskId);
-    if (!canUserMoveTask(task)) {
-      event.preventDefault();
-      return;
-    }
-    window._isDraggingTask = true;
-    isDraggingActive = true;
-    activeDraggedTaskId = card.dataset.taskId;
-
-    // Capture precise card height to eliminate layout shift
-    const rect = card.getBoundingClientRect();
-    draggedCardHeight = rect.height;
-
-    if (event.dataTransfer) {
-      try { event.dataTransfer.effectAllowed = 'move'; } catch(e) {}
-      try { event.dataTransfer.setData('text/plain', activeDraggedTaskId); } catch(e) {}
-    }
-
-    try {
-      if (event.dataTransfer && typeof event.dataTransfer.setDragImage === 'function') {
-        const dragGhost = card.cloneNode(true);
-        dragGhost.style.width = `${rect.width}px`;
-        dragGhost.style.position = 'absolute';
-        dragGhost.style.top = '-9999px';
-        dragGhost.style.left = '-9999px';
-        dragGhost.style.opacity = '0.94';
-        dragGhost.style.boxShadow = '0 16px 36px rgba(0,0,0,0.25)';
-        dragGhost.style.transform = 'scale(1.02) rotate(1deg)';
-        document.body.appendChild(dragGhost);
-        event.dataTransfer.setDragImage(dragGhost, event.clientX - rect.left, event.clientY - rect.top);
-        setTimeout(() => dragGhost.remove(), 0);
-      }
-    } catch(e) {}
-
-    card.classList.add('is-dragging');
-    startContinuousAutoScroll();
-  }
-});
-
-document.addEventListener('dragend', (event) => {
-  const card = event.target.closest('.task-card');
-  if (card) {
-    card.classList.remove('is-dragging');
-  }
-  window._isDraggingTask = false;
-  isDraggingActive = false;
-  window._justDroppedTaskId = activeDraggedTaskId;
-  window._justDroppedAt = Date.now();
-  activeDraggedTaskId = null;
-  currentMouseX = -1;
-  currentMouseY = -1;
-  stopContinuousAutoScroll();
-  document.querySelectorAll('.board-column').forEach(col => col.classList.remove('drag-over'));
-  removePlaceholder();
-});
-
-document.addEventListener('dragover', (event) => {
-  if (!isDraggingActive && !window._isDraggingTask) return;
-  event.preventDefault();
-  if (event.dataTransfer) {
-    event.dataTransfer.dropEffect = 'move';
-  }
-
-  currentMouseX = event.clientX;
-  currentMouseY = event.clientY;
-
-  let column = event.target.closest('.board-column');
-  if (!column) {
-    const columns = Array.from(document.querySelectorAll('.board-column'));
-    if (columns.length > 0) {
-      column = columns.reduce((closest, col) => {
-        const rect = col.getBoundingClientRect();
-        const dist = Math.abs(event.clientX - (rect.left + rect.width / 2));
-        return dist < closest.dist ? { col, dist } : closest;
-      }, { col: null, dist: Infinity }).col;
-    }
-  }
-
-  if (column) {
-    document.querySelectorAll('.board-column').forEach(col => {
-      col.classList.toggle('drag-over', col === column);
-    });
-
-    const cardsContainer = column.querySelector('.board-cards');
-    if (cardsContainer) {
-      const ph = getOrCreatePlaceholder(draggedCardHeight);
-      const afterCard = getDragAfterElement(cardsContainer, event.clientY);
-
-      if (afterCard == null) {
-        if (!cardsContainer.contains(ph) || cardsContainer.lastElementChild !== ph) {
-          cardsContainer.appendChild(ph);
-        }
-      } else {
-        if (ph.nextElementSibling !== afterCard) {
-          cardsContainer.insertBefore(ph, afterCard);
-        }
-      }
-    }
-  }
-});
-
-document.addEventListener('dragenter', (event) => {
-  const column = event.target.closest('.board-column');
-  if (column) event.preventDefault();
-});
-
-document.addEventListener('dragleave', (event) => {
-  const column = event.target.closest('.board-column');
-  if (column) {
-    if (event.relatedTarget && column.contains(event.relatedTarget)) {
-      return; // Still inside column
-    }
-    // Ignore synthetic 0,0 dragleave events frequently dispatched by WebKit/Safari
-    if (event.clientX === 0 && event.clientY === 0) return;
-    const rect = column.getBoundingClientRect();
-    const x = event.clientX;
-    const y = event.clientY;
-    // Only remove placeholder if cursor is genuinely outside the entire board area
-    if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
-      column.classList.remove('drag-over');
-      if (!isDraggingActive) {
-        removePlaceholder();
-      }
-    }
-  }
-});
-
+// Unified Drop Handler (shared by Mouse, Touch & Keyboard/API)
 async function handleTaskDrop(column, clientY, explicitTaskId = null) {
   if (!column) {
-    removePlaceholder();
-    stopContinuousAutoScroll();
-    isDraggingActive = false;
+    cleanDragState();
     return;
   }
   column.classList.remove('drag-over');
@@ -264,25 +144,19 @@ async function handleTaskDrop(column, clientY, explicitTaskId = null) {
   const newStatus = column.dataset.status;
 
   if (!taskId || !newStatus) {
-    removePlaceholder();
-    stopContinuousAutoScroll();
-    isDraggingActive = false;
+    cleanDragState();
     return;
   }
 
   const task = (state.data?.tasks || []).find(t => t.id === taskId);
   if (!task) {
-    removePlaceholder();
-    stopContinuousAutoScroll();
-    isDraggingActive = false;
+    cleanDragState();
     return;
   }
 
   const cardsContainer = column.querySelector('.board-cards');
   if (!cardsContainer) {
-    removePlaceholder();
-    stopContinuousAutoScroll();
-    isDraggingActive = false;
+    cleanDragState();
     return;
   }
 
@@ -294,9 +168,7 @@ async function handleTaskDrop(column, clientY, explicitTaskId = null) {
       return dep && dep.status !== 'done';
     });
     if (incomplete.length) {
-      removePlaceholder();
-      stopContinuousAutoScroll();
-      isDraggingActive = false;
+      cleanDragState();
       return showToast(choose('لا يمكن إكمال المهمة قبل إنجاز المهام المعتمدة عليها.', 'Cannot complete task before its dependencies.'), true);
     }
   }
@@ -347,9 +219,7 @@ async function handleTaskDrop(column, clientY, explicitTaskId = null) {
   }
 
   // Clean up drag visuals immediately
-  removePlaceholder();
-  stopContinuousAutoScroll();
-  isDraggingActive = false;
+  cleanDragState();
 
   // 4. Build the final ordered list of task IDs for this column
   const newColumnTaskIds = [...existingTaskIds];
@@ -474,185 +344,199 @@ async function handleTaskDrop(column, clientY, explicitTaskId = null) {
   }, 150);
 }
 
-document.addEventListener('drop', async (event) => {
-  if (!isDraggingActive && !window._isDraggingTask) return;
-  event.preventDefault();
-
-  let column = event.target.closest('.board-column');
-  if (!column && placeholder && placeholder.parentNode) {
-    column = placeholder.closest('.board-column');
-  }
-  if (!column) {
-    const el = document.elementFromPoint(event.clientX, event.clientY);
-    column = el?.closest('.board-column');
-  }
-  if (!column) {
-    const columns = Array.from(document.querySelectorAll('.board-column'));
-    if (columns.length > 0) {
-      column = columns.reduce((closest, col) => {
-        const rect = col.getBoundingClientRect();
-        const dist = Math.abs(event.clientX - (rect.left + rect.width / 2));
-        return dist < closest.dist ? { col, dist } : closest;
-      }, { col: null, dist: Infinity }).col;
-    }
-  }
-
-  const taskId = activeDraggedTaskId || (event.dataTransfer ? event.dataTransfer.getData('text/plain') : null);
-  await handleTaskDrop(column, event.clientY, taskId);
-});
-
-// Touch Drag & Drop Support for Mobile / iPad
-let touchCard = null;
-let touchGhost = null;
-let touchStartX = 0;
-let touchStartY = 0;
-let touchOffsetX = 0;
-let touchOffsetY = 0;
-let touchHoldTimer = null;
-let isTouchDragging = false;
-
-function cleanTouchDrag() {
+// Clean all active drag states, ghosts, and placeholders
+function cleanDragState() {
   if (touchHoldTimer) {
     clearTimeout(touchHoldTimer);
     touchHoldTimer = null;
   }
-  if (touchGhost && touchGhost.parentNode) {
-    touchGhost.parentNode.removeChild(touchGhost);
+  if (dragGhost && dragGhost.parentNode) {
+    dragGhost.parentNode.removeChild(dragGhost);
   }
-  touchGhost = null;
-  if (touchCard) {
-    touchCard.style.opacity = '';
-    touchCard.style.pointerEvents = '';
-    touchCard.classList.remove('is-dragging');
+  dragGhost = null;
+
+  if (dragCard) {
+    dragCard.style.opacity = '';
+    dragCard.style.pointerEvents = '';
+    dragCard.classList.remove('is-dragging');
   }
-  stopContinuousAutoScroll();
+  dragCard = null;
+
+  activePointerId = null;
+  isPointerDragging = false;
   isDraggingActive = false;
-  document.querySelectorAll('.board-column').forEach(col => col.classList.remove('drag-over'));
-  removePlaceholder();
-  touchCard = null;
-  isTouchDragging = false;
+  window._isDraggingTask = false;
   activeDraggedTaskId = null;
   currentMouseX = -1;
   currentMouseY = -1;
+
+  stopContinuousAutoScroll();
+  document.querySelectorAll('.board-column').forEach(col => col.classList.remove('drag-over'));
+  removePlaceholder();
+
+  document.body.style.userSelect = '';
+  document.body.style.webkitUserSelect = '';
+  document.body.style.cursor = '';
 }
 
-document.addEventListener('touchstart', (e) => {
-  // Only handle single touch on a task card
-  if (e.touches.length !== 1) return;
+// Initiate Active Dragging (creates floating ghost, highlights column, starts auto-scroll)
+function initiateDrag(clientX, clientY) {
+  if (!dragCard || isPointerDragging) return;
+
+  const task = (state.data?.tasks || []).find(t => t.id === dragCard.dataset.taskId);
+  if (!canUserMoveTask(task)) {
+    cleanDragState();
+    return;
+  }
+
+  isPointerDragging = true;
+  isDraggingActive = true;
+  window._isDraggingTask = true;
+  activeDraggedTaskId = dragCard.dataset.taskId;
+
+  // Haptic feedback tick
+  if (typeof navigator !== 'undefined' && navigator.vibrate) {
+    try { navigator.vibrate(30); } catch (e) {}
+  }
+
+  const rect = dragCard.getBoundingClientRect();
+  draggedCardHeight = rect.height;
+  dragOffsetX = clientX - rect.left;
+  dragOffsetY = clientY - rect.top;
+
+  // High-performance hardware-accelerated floating clone that smoothly follows cursor/finger
+  dragGhost = dragCard.cloneNode(true);
+  dragGhost.id = 'active-drag-ghost';
+  dragGhost.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: ${rect.width}px;
+    pointer-events: none;
+    z-index: 10000;
+    opacity: 0.95;
+    transform: translate3d(${rect.left}px, ${rect.top}px, 0) scale(1.03) rotate(1.2deg);
+    box-shadow: 0 16px 36px rgba(0,0,0,0.22);
+    border: 1.5px solid var(--brand-teal, #0d6269);
+    background: var(--surface, #ffffff);
+    border-radius: 12px;
+    will-change: transform;
+    cursor: grabbing !important;
+  `;
+  document.body.appendChild(dragGhost);
+
+  // Dim source card & make it transparent to elementFromPoint hit-testing
+  dragCard.classList.add('is-dragging');
+  dragCard.style.opacity = '0.22';
+  dragCard.style.pointerEvents = 'none';
+
+  document.body.style.userSelect = 'none';
+  document.body.style.webkitUserSelect = 'none';
+  document.body.style.cursor = 'grabbing';
+
+  // Highlight initial column
+  const column = dragCard.closest('.board-column');
+  if (column) {
+    column.classList.add('drag-over');
+    const cardsContainer = column.querySelector('.board-cards');
+    if (cardsContainer) {
+      const ph = getOrCreatePlaceholder(draggedCardHeight);
+      const afterCard = getDragAfterElement(cardsContainer, clientY);
+      if (afterCard == null) {
+        cardsContainer.appendChild(ph);
+      } else {
+        cardsContainer.insertBefore(ph, afterCard);
+      }
+    }
+  }
+
+  startContinuousAutoScroll();
+}
+
+// ── UNIFIED POINTER ENGINE (Mouse, Touch, Stylus) ──────────────────────────
+
+document.addEventListener('pointerdown', (e) => {
+  // Only handle primary button (left mouse click or touch contact)
+  if (e.button !== 0 && e.pointerType === 'mouse') return;
+
   const card = e.target.closest('.task-card');
-  // Avoid dragging if touch started on an interactive control inside the card
-  if (!card || e.target.closest('button, a, input, select, textarea, .btn')) return;
+  // Avoid dragging if interaction started on a button, link, input, etc.
+  if (!card || e.target.closest('button, a, input, select, textarea, .btn, .tag, [data-prevent-drag]')) return;
 
   const task = (state.data?.tasks || []).find(t => t.id === card.dataset.taskId);
   if (!canUserMoveTask(task)) return;
 
-  touchCard = card;
-  const touch = e.touches[0];
-  touchStartX = touch.clientX;
-  touchStartY = touch.clientY;
-  isTouchDragging = false;
+  dragCard = card;
+  activePointerId = e.pointerId;
+  dragStartX = e.clientX;
+  dragStartY = e.clientY;
+  isPointerDragging = false;
 
-  // 120ms Optimized Tactile Pickup: Instant feedback without hindering normal fast swipe
-  touchHoldTimer = setTimeout(() => {
-    if (!touchCard) return;
-    isTouchDragging = true;
-    isDraggingActive = true;
-    activeDraggedTaskId = touchCard.dataset.taskId;
+  const rect = card.getBoundingClientRect();
+  draggedCardHeight = rect.height;
+  dragOffsetX = e.clientX - rect.left;
+  dragOffsetY = e.clientY - rect.top;
 
-    // Haptic feedback tick
-    if (typeof navigator !== 'undefined' && navigator.vibrate) {
-      try { navigator.vibrate(30); } catch (e) {}
-    }
-
-    const rect = touchCard.getBoundingClientRect();
-    draggedCardHeight = rect.height;
-    touchOffsetX = touch.clientX - rect.left;
-    touchOffsetY = touch.clientY - rect.top;
-
-    // Create floating clone that visibly follows the finger with zero lag
-    touchGhost = touchCard.cloneNode(true);
-    touchGhost.id = 'touch-drag-ghost';
-    touchGhost.style.cssText = `
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: ${rect.width}px;
-      pointer-events: none;
-      z-index: 10000;
-      opacity: 0.95;
-      transform: translate3d(${rect.left}px, ${rect.top}px, 0) scale(1.03) rotate(1.2deg);
-      box-shadow: 0 16px 36px rgba(0,0,0,0.25);
-      border: 1px solid var(--brand-teal, #0d6269);
-      background: var(--surface, #ffffff);
-      border-radius: 12px;
-      will-change: transform;
-    `;
-    document.body.appendChild(touchGhost);
-
-    // Make original card transparent to elementFromPoint
-    touchCard.classList.add('is-dragging');
-    touchCard.style.opacity = '0.22';
-    touchCard.style.pointerEvents = 'none';
-
-    // Highlight initial column
-    const column = touchCard.closest('.board-column');
-    if (column) {
-      column.classList.add('drag-over');
-      const cardsContainer = column.querySelector('.board-cards');
-      if (cardsContainer) {
-        const ph = getOrCreatePlaceholder(draggedCardHeight);
-        const afterCard = getDragAfterElement(cardsContainer, touch.clientY);
-        if (afterCard == null) {
-          cardsContainer.appendChild(ph);
-        } else {
-          cardsContainer.insertBefore(ph, afterCard);
-        }
-      }
-    }
-    startContinuousAutoScroll();
-  }, 120);
+  if (e.pointerType === 'touch') {
+    // 110ms Tactile Pickup on Touch: Allows natural vertical scrolling without lag
+    touchHoldTimer = setTimeout(() => {
+      initiateDrag(e.clientX, e.clientY);
+    }, 110);
+  }
+  // On mouse, no timer is needed: drag initiates when mouse moves > 4px
 }, { passive: true });
 
-document.addEventListener('touchmove', (e) => {
-  if (!touchCard) return;
-  const touch = e.touches[0];
-  const deltaX = Math.abs(touch.clientX - touchStartX);
-  const deltaY = Math.abs(touch.clientY - touchStartY);
+document.addEventListener('pointermove', (e) => {
+  if (!dragCard) return;
 
-  // If user moves finger before hold timer fires, check natural finger wobble threshold (14px)
-  if (!isTouchDragging) {
-    if (deltaX > 14 || deltaY > 14) {
-      if (touchHoldTimer) {
-        clearTimeout(touchHoldTimer);
-        touchHoldTimer = null;
+  // If drag hasn't started yet, check movement thresholds
+  if (!isPointerDragging) {
+    const deltaX = Math.abs(e.clientX - dragStartX);
+    const deltaY = Math.abs(e.clientY - dragStartY);
+    const dist = Math.hypot(deltaX, deltaY);
+
+    if (e.pointerType === 'touch') {
+      // Natural finger wobble threshold: if finger moves > 12px before hold timer fires, cancel drag and allow scroll
+      if (dist > 12) {
+        if (touchHoldTimer) {
+          clearTimeout(touchHoldTimer);
+          touchHoldTimer = null;
+        }
+        dragCard = null;
       }
-      touchCard = null;
+      return;
+    } else {
+      // Mouse / Pen: 4px drag threshold starts dragging immediately
+      if (dist >= 4) {
+        initiateDrag(e.clientX, e.clientY);
+      } else {
+        return;
+      }
     }
-    return;
   }
 
   // Active Dragging Mode
   if (e.cancelable) e.preventDefault();
 
-  currentMouseX = touch.clientX;
-  currentMouseY = touch.clientY;
+  currentMouseX = e.clientX;
+  currentMouseY = e.clientY;
 
-  // Move floating ghost smoothly with finger via hardware acceleration
-  if (touchGhost) {
-    const gx = touch.clientX - touchOffsetX;
-    const gy = touch.clientY - touchOffsetY;
-    touchGhost.style.transform = `translate3d(${gx}px, ${gy}px, 0) scale(1.03) rotate(1.2deg)`;
+  // Move floating ghost smoothly with cursor via GPU hardware acceleration
+  if (dragGhost) {
+    const gx = e.clientX - dragOffsetX;
+    const gy = e.clientY - dragOffsetY;
+    dragGhost.style.transform = `translate3d(${gx}px, ${gy}px, 0) scale(1.03) rotate(1.2deg)`;
   }
 
-  // Find target element underneath finger
-  const elUnder = document.elementFromPoint(touch.clientX, touch.clientY);
+  // Find target element underneath cursor
+  const elUnder = document.elementFromPoint(e.clientX, e.clientY);
   let column = elUnder?.closest('.board-column');
   if (!column) {
     const columns = Array.from(document.querySelectorAll('.board-column'));
     if (columns.length > 0) {
       column = columns.reduce((closest, col) => {
         const rect = col.getBoundingClientRect();
-        const dist = Math.abs(touch.clientX - (rect.left + rect.width / 2));
+        const dist = Math.abs(e.clientX - (rect.left + rect.width / 2));
         return dist < closest.dist ? { col, dist } : closest;
       }, { col: null, dist: Infinity }).col;
     }
@@ -664,7 +548,7 @@ document.addEventListener('touchmove', (e) => {
     const cardsContainer = column.querySelector('.board-cards');
     if (cardsContainer) {
       const ph = getOrCreatePlaceholder(draggedCardHeight);
-      const afterCard = getDragAfterElement(cardsContainer, touch.clientY);
+      const afterCard = getDragAfterElement(cardsContainer, e.clientY);
       if (afterCard == null) {
         if (!cardsContainer.contains(ph) || cardsContainer.lastElementChild !== ph) {
           cardsContainer.appendChild(ph);
@@ -678,48 +562,69 @@ document.addEventListener('touchmove', (e) => {
   }
 }, { passive: false });
 
-document.addEventListener('touchend', async (e) => {
+document.addEventListener('pointerup', async (e) => {
   if (touchHoldTimer) {
     clearTimeout(touchHoldTimer);
     touchHoldTimer = null;
   }
-  if (!touchCard) return;
+  if (!dragCard) return;
 
-  if (isTouchDragging) {
-    const touch = e.changedTouches[0];
-    const moveDist = Math.hypot(touch.clientX - touchStartX, touch.clientY - touchStartY);
+  if (isPointerDragging) {
+    const moveDist = Math.hypot(e.clientX - dragStartX, e.clientY - dragStartY);
 
-    // Immediately remove ghost clone from DOM for crisp release
-    if (touchGhost && touchGhost.parentNode) {
-      touchGhost.parentNode.removeChild(touchGhost);
+    // Remove ghost immediately for crisp release
+    if (dragGhost && dragGhost.parentNode) {
+      dragGhost.parentNode.removeChild(dragGhost);
     }
-    touchGhost = null;
+    dragGhost = null;
 
-    // Only process drop if finger genuinely moved (> 6px); ignore stationary tap & hold
-    if (moveDist > 6) {
-      const elUnder = document.elementFromPoint(touch.clientX, touch.clientY);
+    // Suppress clicks on drop release
+    window._justDroppedTaskId = activeDraggedTaskId;
+    window._justDroppedAt = Date.now();
+    window._isDraggingTask = false;
+
+    // Only process drop if cursor genuinely moved (> 4px); ignore stationary tap & hold
+    if (moveDist > 4) {
+      const elUnder = document.elementFromPoint(e.clientX, e.clientY);
       let column = elUnder?.closest('.board-column') || (placeholder && placeholder.closest('.board-column'));
       if (!column) {
         const columns = Array.from(document.querySelectorAll('.board-column'));
         if (columns.length > 0) {
           column = columns.reduce((closest, col) => {
             const rect = col.getBoundingClientRect();
-            const dist = Math.abs(touch.clientX - (rect.left + rect.width / 2));
+            const dist = Math.abs(e.clientX - (rect.left + rect.width / 2));
             return dist < closest.dist ? { col, dist } : closest;
           }, { col: null, dist: Infinity }).col;
         }
       }
       const draggedId = activeDraggedTaskId;
       if (column && draggedId) {
-        await handleTaskDrop(column, touch.clientY, draggedId);
+        await handleTaskDrop(column, e.clientY, draggedId);
       }
     }
-    cleanTouchDrag();
+    cleanDragState();
   } else {
-    cleanTouchDrag();
+    // Regular click (no drag)
+    cleanDragState();
   }
 });
 
-document.addEventListener('touchcancel', () => {
-  cleanTouchDrag();
+document.addEventListener('pointercancel', () => {
+  cleanDragState();
 });
+
+// Suppress browser native HTML5 drag on task cards to give 100% control to the smooth unified pointer engine
+document.addEventListener('dragstart', (e) => {
+  if (e.target.closest('.task-card')) {
+    e.preventDefault();
+  }
+});
+
+// Capture-phase click interceptor to guarantee task modals NEVER open upon dropping a card
+document.addEventListener('click', (e) => {
+  if (window._justDroppedAt && (Date.now() - window._justDroppedAt < 400)) {
+    e.preventDefault();
+    e.stopPropagation();
+    e.stopImmediatePropagation();
+  }
+}, true);

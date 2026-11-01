@@ -59,7 +59,7 @@ export function renderDashboard() {
 }
 
 export function renderReports() {
-  const { projects, tasks, users } = state.data;
+  const { projects = [], tasks = [], users = [] } = state.data || {};
   const canExport = can('export_reports') || isAdmin();
   const totalWeight = tasks.reduce((sum, task) => sum + Number(task.weight || 1), 0);
   const totalProgress = totalWeight ? Math.round(tasks.reduce((sum, task) => sum + task.progress * Number(task.weight || 1), 0) / totalWeight) : 0;

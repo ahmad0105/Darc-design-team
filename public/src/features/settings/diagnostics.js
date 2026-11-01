@@ -80,9 +80,9 @@ export function renderDiagnosticsSection() {
       <div class="panel-head" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:14px;margin-bottom:20px;">
         <div>
           <div style="display:flex;align-items:center;gap:8px;">
-            <span style="font-size:22px;">🛠️</span>
+            <span style="font-size:22px;"></span>
             <h2 style="margin:0;font-size:18px;font-weight:700;">
-              ${choose('سجل الأخطاء الفنية وتشخيص أداء المستخدمين 🛠️', 'Error Diagnostics & User Incident Center 🛠️')}
+              ${choose('سجل الأخطاء الفنية وتشخيص أداء المستخدمين', 'Error Diagnostics & User Incident Center')}
             </h2>
           </div>
           <p style="margin:6px 0 0;font-size:13px;color:var(--muted);max-width:720px;line-height:1.5;">
@@ -92,10 +92,10 @@ export function renderDiagnosticsSection() {
 
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
           <button type="button" class="btn btn-sm btn-soft" data-action="test-diagnostic-email" style="color:var(--teal);display:flex;align-items:center;gap:6px;font-size:11px;font-weight:600;" title="${choose('اختبار وصول رسائل التنبيه إلى بريد الإدارة', 'Send test alert email to admin recipient')}">
-            ${icon('mail', 13)} ${choose('اختبار إرسال بريد التنبيه ✉️', 'Test Email Alert ✉️')}
+            ${icon('mail', 13)} ${choose('اختبار إرسال بريد التنبيه', 'Test Email Alert')}
           </button>
           <button type="button" class="btn btn-sm btn-soft" data-action="test-incident-simulate" style="color:var(--amber);display:flex;align-items:center;gap:6px;font-size:11px;font-weight:600;" title="${choose('محاكاة رصد خطأ تشغيلي كامل مع خطوات المستخدم وإرسال إيميل تنبيه فوري', 'Simulate complete runtime error with breadcrumbs and trigger admin email alert')}">
-            ${icon('alert', 13)} ${choose('محاكاة خطأ مع إيميل تنبيه 🚨', 'Simulate Error & Email 🚨')}
+            ${icon('alert', 13)} ${choose('محاكاة خطأ مع إيميل تنبيه', 'Simulate Error & Email')}
           </button>
           <button type="button" class="btn btn-sm btn-primary" data-action="refresh-diagnostics" style="display:flex;align-items:center;gap:6px;font-size:11px;">
             ${icon('clock', 13)} ${choose('تحديث السجل', 'Refresh')}
@@ -126,7 +126,7 @@ export function renderDiagnosticsSection() {
         <div style="background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px;">
           <div style="font-size:11px;color:var(--muted);font-weight:600;">${choose('نظام التنبيهات البريدية (Email Alerts)', 'Email Alert System')}</div>
           <div style="font-size:13px;font-weight:700;color:var(--mint-strong);margin:6px 0;display:flex;align-items:center;gap:6px;">
-            <span>📧</span> ${choose('مفعّل ويرسل تلقائياً', 'Active & Auto-Dispatched')}
+            <span></span> ${choose('مفعّل ويرسل تلقائياً', 'Active & Auto-Dispatched')}
           </div>
           <div style="font-size:11px;color:var(--muted);font-family:monospace;">${stats.alertEmailRecipient || 'admin@darc-design.bond'}</div>
         </div>
@@ -162,9 +162,9 @@ export function renderDiagnosticsSection() {
           </div>
 
           ${users.map(u => {
-            const isSelected = _selectedUserId === u.userId;
-            const hasActive = u.activeIncidents > 0;
-            return `
+    const isSelected = _selectedUserId === u.userId;
+    const hasActive = u.activeIncidents > 0;
+    return `
               <div 
                 class="user-diag-card ${isSelected ? 'is-active' : ''}" 
                 data-action="filter-diagnostics-user" 
@@ -188,7 +188,7 @@ export function renderDiagnosticsSection() {
                 </div>
               </div>
             `;
-          }).join('')}
+  }).join('')}
         </div>
       </div>
 
@@ -220,19 +220,19 @@ export function renderDiagnosticsSection() {
       <!-- 5. Detailed Incident Cards (مع كل التفاصيل التي تساعد في الحل الدقيق) -->
       <div style="display:flex;flex-direction:column;gap:16px;">
         ${incidents.length ? incidents.map(inc => {
-          const isCritical = inc.severity === 'critical';
-          const isResolved = inc.status === 'resolved';
-          const debugBundleJson = JSON.stringify({
-            incidentId: inc.id,
-            timestamp: inc.timestamp,
-            user: { id: inc.userId, name: inc.userName, email: inc.userEmail, role: inc.userRole },
-            client: { device: inc.deviceType, browser: inc.browser, os: inc.os, resolution: inc.screenResolution, memoryMb: inc.memoryMb, ip: inc.ip, location: `${inc.city}, ${inc.country}` },
-            error: { type: inc.errorType, message: inc.errorMessage, stack: inc.stackTrace },
-            breadcrumbs: inc.breadcrumbs,
-            suggestedFix: inc.suggestedSolution
-          }, null, 2);
+    const isCritical = inc.severity === 'critical';
+    const isResolved = inc.status === 'resolved';
+    const debugBundleJson = JSON.stringify({
+      incidentId: inc.id,
+      timestamp: inc.timestamp,
+      user: { id: inc.userId, name: inc.userName, email: inc.userEmail, role: inc.userRole },
+      client: { device: inc.deviceType, browser: inc.browser, os: inc.os, resolution: inc.screenResolution, memoryMb: inc.memoryMb, ip: inc.ip, location: `${inc.city}, ${inc.country}` },
+      error: { type: inc.errorType, message: inc.errorMessage, stack: inc.stackTrace },
+      breadcrumbs: inc.breadcrumbs,
+      suggestedFix: inc.suggestedSolution
+    }, null, 2);
 
-          return `
+    return `
             <article class="incident-card" style="background:var(--surface);border:1px solid ${isResolved ? 'var(--line)' : (isCritical ? 'rgba(239,68,68,0.4)' : 'rgba(245,158,11,0.35)')};border-radius:12px;padding:20px;box-shadow:var(--shadow-sm);transition:all 0.2s ease;">
               
               <!-- Incident Head -->
@@ -349,7 +349,7 @@ export function renderDiagnosticsSection() {
 
             </article>
           `;
-        }).join('') : `
+  }).join('') : `
           <div style="text-align:center;padding:40px 20px;background:var(--surface);border:1px dashed var(--line);border-radius:12px;">
             <span style="font-size:32px;">🎉</span>
             <h4 style="margin:8px 0 4px;font-size:15px;font-weight:700;color:var(--ink);">${choose('لا توجد أي مشاكل مسجلة تطابق التصفية الحالية', 'No Incidents Found')}</h4>

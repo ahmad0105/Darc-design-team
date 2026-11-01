@@ -124,7 +124,7 @@ app.get('/', async (c) => {
   if (error) {
     if (taskId) {
       // Fallback: check task custom_fields
-      const { data: task } = await supabase.from('tasks').select('custom_fields').eq('id', taskId).single();
+      const { data: task } = await supabase.from('tasks').select('custom_fields').eq('id', taskId).maybeSingle();
       const list = task?.custom_fields?.reminders || [];
       return c.json({ reminders: list });
     }
@@ -144,7 +144,7 @@ app.delete('/:id', async (c) => {
   const roleId = c.get('roleId');
   const supabase = c.get('supabase');
 
-  const { data: reminder } = await supabase.from('reminders').select('*').eq('id', id).single();
+  const { data: reminder } = await supabase.from('reminders').select('*').eq('id', id).maybeSingle();
   if (reminder) {
     if (reminder.user_id !== userId && reminder.created_by !== userId && roleId !== 'admin') {
       return c.json({ error: 'غير مصرح بحذف هذا التذكير' }, 403);
@@ -153,7 +153,7 @@ app.delete('/:id', async (c) => {
 
     // Also remove from task custom_fields if applicable
     if (reminder.task_id) {
-      const { data: task } = await supabase.from('tasks').select('custom_fields').eq('id', reminder.task_id).single();
+      const { data: task } = await supabase.from('tasks').select('custom_fields').eq('id', reminder.task_id).maybeSingle();
       if (task && Array.isArray(task.custom_fields?.reminders)) {
         const filtered = task.custom_fields.reminders.filter(r => r.id !== id);
         await supabase.from('tasks').update({ custom_fields: { ...task.custom_fields, reminders: filtered } }).eq('id', reminder.task_id);

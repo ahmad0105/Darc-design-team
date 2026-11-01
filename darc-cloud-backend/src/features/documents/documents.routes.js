@@ -14,7 +14,7 @@ import { invalidateBootstrapCache } from '../../core/cache.js';
 import { inspectFileBuffer } from '../../core/antivirus.js';
 import { addDemoDocument } from '../demo/demo.service.js';
 import { uploadRateLimiter } from '../../core/rate-limit.js';
-import { createNotification } from '../notifications/notifications.service.js';
+import { createNotification, createBatchNotifications } from '../notifications/notifications.service.js';
 
 const DANGEROUS_EXTENSIONS = new Set([
   'exe', 'bat', 'cmd', 'sh', 'bash', 'ps1', 'vbs', 'js', 'mjs', 'cjs',
@@ -186,48 +186,20 @@ async function notifyReviewersOfDocument(supabase, { docId, docName, projectId, 
       }
     }
 
-    const titleAr = 'مخطط جديد بانتظار مراجعتك واعتمادك 📐';
-    const titleEn = 'New Drawing Pending Review & Approval 📐';
-    const messageAr = `قام ${uploaderName} برفع المخطط "${docName}" في مشروع "${projTitle}" وهو الآن بانتظار مراجعتك الفنية واعتمادك.`;
-    const messageEn = `${uploaderName} uploaded drawing "${docName}" in project "${projTitle}". It is awaiting your technical review & approval.`;
+    // 4. Batch insert notifications via Centralized Catalog (includes automated WhatsApp sync)
+    const notifEntries = Array.from(recipientIds).map(userId => ({
+      userId,
+      type: 'document_review',
+      params: {
+        docName,
+        projectName: projTitle,
+        senderName: uploaderName
+      },
+      projectId,
+      taskId: taskId || null
+    }));
 
-    // 4. Batch insert notifications
-    const notifications = Array.from(recipientIds).map(userId => {
-      const notifId = generateSecureId('notif_');
-      return {
-        id: notifId,
-        user_id: userId,
-        type: 'document_review',
-        title_ar: titleAr,
-        title_en: titleEn,
-        message_ar: messageAr,
-        message_en: messageEn,
-        body_ar: messageAr,
-        body_en: messageEn,
-        content: messageAr,
-        project_id: projectId,
-        task_id: taskId || null,
-        read: false,
-        read_at: null,
-        created_at: new Date().toISOString()
-      };
-    });
-
-    await supabase.from('notifications').insert(notifications);
-
-    // Also dispatch direct WhatsApp alerts to any reviewer with a registered phone
-    import('../whatsapp/whatsapp.service.js').then(({ dispatchDirectNotificationAlert }) => {
-      for (const uid of recipientIds) {
-        dispatchDirectNotificationAlert(supabase, uid, {
-          title: titleAr,
-          content: messageAr,
-          type: 'document_review',
-          taskId,
-          projectId
-        }).catch(() => {});
-      }
-    }).catch(() => {});
-
+    await createBatchNotifications(supabase, notifEntries);
     invalidateBootstrapCache();
   } catch (err) {
     console.warn('[Documents] Failed to notify reviewers:', err.message);
@@ -278,6 +250,13 @@ app.post('/session', uploadRateLimiter(), async (c) => {
   const userId = c.get('userId');
   const roleId = c.get('roleId');
   const supabase = c.get('supabase');
+
+  if (projectId && !/^[a-zA-Z0-9_-]{4,50}$/.test(projectId)) {
+    return c.json({ error: 'معرف المشروع غير صالح' }, 400);
+  }
+  if (taskId && !/^[a-zA-Z0-9_-]{4,50}$/.test(taskId)) {
+    return c.json({ error: 'معرف المهمة غير صالح' }, 400);
+  }
 
   const MAX_PROD_UPLOAD_SIZE = 10 * 1024 * 1024 * 1024; // 10GB for production (CAD, BIM models, 3D point-clouds)
   const MAX_DEMO_UPLOAD_SIZE = 10 * 1024 * 1024;  // 10MB strictly for demo account
@@ -359,7 +338,16 @@ app.post('/finalize', async (c) => {
     });
   }
 
-  if (!driveFileId) return c.json({ error: 'معرف الملف مفقود' }, 400);
+  if (!driveFileId || typeof driveFileId !== 'string' || !/^[a-zA-Z0-9_-]{10,128}$/.test(driveFileId)) {
+    return c.json({ error: 'معرف ملف Google Drive غير صالح' }, 400);
+  }
+
+  if (projectId && !/^[a-zA-Z0-9_-]{4,50}$/.test(projectId)) {
+    return c.json({ error: 'معرف المشروع غير صالح' }, 400);
+  }
+  if (taskId && !/^[a-zA-Z0-9_-]{4,50}$/.test(taskId)) {
+    return c.json({ error: 'معرف المهمة غير صالح' }, 400);
+  }
 
   if (!(await canUserUpload(supabase, userId, roleId, projectId))) {
     return c.json({ error: 'غير مصرح لك برفع مستندات لهذا المشروع' }, 403);
@@ -433,6 +421,10 @@ app.post('/finalize', async (c) => {
 
 // PUT /api/documents/chunk -> Upload a Chunk and on finish save to DB
 app.put('/chunk', async (c) => {
+  if (c.get('isDemo')) {
+    return c.json({ ok: true, isDemo: true });
+  }
+
   const sessionUrl = c.req.header('x-session-url');
   const rawContentRange = c.req.header('content-range');
   let contentRange = null;
@@ -696,6 +688,11 @@ app.patch('/:id', async (c) => {
     return c.json({ error: 'معرف المستند غير صالح' }, 400);
   }
   const body = await c.req.json().catch(() => ({}));
+
+  if (c.get('isDemo')) {
+    return c.json({ ok: true, isDemo: true, document: { id: docId, ...body } });
+  }
+
   const supabase = c.get('supabase');
   const userId = c.get('userId');
   const roleId = c.get('roleId');
@@ -743,11 +740,9 @@ app.patch('/:id', async (c) => {
       createNotification(supabase, {
         userId: doc.uploader_id,
         type: 'document_approved',
-        titleAr: 'تم اعتماد المخطط الهندسي بنجاح ✅',
-        titleEn: 'Engineering Drawing Approved Successfully ✅',
-        messageAr: `تم اعتماد المخطط "${updates.original_name || doc.original_name}".`,
-        messageEn: `The drawing "${updates.original_name || doc.original_name}" has been approved.`,
-        content: `تم اعتماد المخطط "${updates.original_name || doc.original_name}".`,
+        params: {
+          docName: updates.original_name || doc.original_name
+        },
         projectId: doc.project_id,
         taskId: doc.task_id
       }).catch(() => {});
@@ -787,6 +782,11 @@ app.delete('/:id', async (c) => {
   if (!/^[a-zA-Z0-9_-]{4,50}$/.test(docId)) {
     return c.json({ error: 'معرف المستند غير صالح' }, 400);
   }
+
+  if (c.get('isDemo')) {
+    return c.json({ ok: true, isDemo: true, message: 'تم نقل المستند إلى سلة المهملات بنجاح.' });
+  }
+
   const supabase = c.get('supabase');
   const userId = c.get('userId');
   const roleId = c.get('roleId');

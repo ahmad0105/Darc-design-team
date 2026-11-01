@@ -1,9 +1,10 @@
 
 import { state } from '../../core/state.js';
 import { api } from '../../core/api.js';
-import { choose, esc, icon, avatar, statusText, t, can, isAdmin, roleName, sanitizeForSpreadsheet, formatReportDate, formatReportTime } from '../../core/utils.js';
+import { choose, esc, icon, avatar, statusText, t, can, isAdmin, roleName, sanitizeForSpreadsheet, formatReportDate, formatReportTime, dateLabel, isOverdue } from '../../core/utils.js';
 import { showToast, modalShell, closeModal } from '../../shared/ui.js';
-import { renderTaskSortSelect, getSavedTaskSort } from '../tasks/tasks.js';
+import { renderTaskSortSelect, getSavedTaskSort, renderTimeline } from '../tasks/tasks.js';
+import { renderAuditForProject } from '../settings/settings.js';
 
 export function projectRow(project) {
   return `<div class="project-row"><div class="project-main"><span class="project-symbol">${icon('building', 17)}</span><div class="project-name"><strong>${esc(choose(project.nameAr, project.nameEn))}</strong><span>${esc(project.code)} · ${esc(choose(project.clientAr, project.clientEn))}</span></div></div>${projectProgress(project)}<div class="project-owner">${avatar(project.manager)}<span>${esc(project.manager ? choose(project.manager.name, project.manager.nameEn || project.manager.name) : '—')}</span></div><button class="project-arrow" data-action="open-project" data-project-id="${esc(project.id)}" aria-label="${t('viewDetails')}">${icon(state.lang === 'ar' ? 'arrowLeft' : 'arrow', 14)}</button></div>`;
@@ -444,7 +445,7 @@ export function renderProjectOverviewTab(project, tasks, members, externalMember
 
 export function renderProjects() {
   const query = state.searches.projects.trim().toLowerCase();
-  let projects = state.data.projects.filter((project) => `${project.nameAr} ${project.nameEn} ${project.code} ${project.clientAr}`.toLowerCase().includes(query));
+  let projects = (state.data?.projects || []).filter((project) => `${project.nameAr} ${project.nameEn} ${project.code} ${project.clientAr}`.toLowerCase().includes(query));
 
   // User-defined sorting
   const sort = state.projectSort || 'default';
@@ -462,10 +463,10 @@ export function renderProjects() {
 }
 
 export function renderProjectDetail() {
-  const project = state.data.projects.find((item) => item.id === state.activeProjectId);
+  const project = state.data?.projects?.find((item) => item.id === state.activeProjectId);
   if (!project) { state.view = 'projects'; return renderProjects(); }
 
-  const allTasks = state.data.tasks.filter((task) => task.projectId === project.id);
+  const allTasks = (state.data?.tasks || []).filter((task) => task.projectId === project.id);
   const { internalMembers, externalMembers } = getProjectTeamData(project);
 
   // Default tab is 'tasks' as requested by user
@@ -477,7 +478,7 @@ export function renderProjectDetail() {
     ? allTasks.filter(t => t.assigneeId === activeMemberFilter || (t.customFields?.additionalAssignees || t.customFields?.additional_assignees || []).includes(activeMemberFilter))
     : allTasks;
 
-  const filteredUser = activeMemberFilter ? state.data.users.find(u => u.id === activeMemberFilter) : null;
+  const filteredUser = activeMemberFilter ? state.data?.users?.find(u => u.id === activeMemberFilter) : null;
 
   let body = '';
   if (tab === 'overview') {
@@ -504,7 +505,7 @@ export function renderProjectDetail() {
     const { renderTimelinePanel } = window.__timelineExports || {};
     body = renderTimelinePanel ? renderTimelinePanel(tasks, project) : `<div class="panel"><div class="panel-head"><div><h2 class="panel-title">${choose('المخطط الزمني والتقويم', 'Timeline & Calendar')}</h2></div></div>${renderTimeline(tasks)}</div>`;
   } else if (tab === 'drawings') {
-    const projectDocs = (state.data.documents || []).filter(d => d.projectId === project.id && !d.deletedAt);
+    const projectDocs = (state.data?.documents || []).filter(d => d.projectId === project.id && !d.deletedAt);
     const drawingTasks = allTasks.filter((task) => task.typeAr === 'مخطط' || task.typeEn === 'Drawing' || task.templateId);
     const docTaskFilter = state.docTaskFilter || 'all';
 
@@ -658,7 +659,7 @@ export function renderProjectDetail() {
     body = `<div class="panel"><div class="panel-head"><div><h2 class="panel-title">${t('activity')}</h2><p class="panel-subtitle">${choose('كل تغيير مهم يبقى قابلًا للمراجعة.', 'Every important change remains reviewable.')}</p></div></div>${renderAuditForProject(project.id)}</div>`;
   }
 
-  const manager = project.manager || (state.data.users || []).find(u => u.id === project.managerId);
+  const manager = project.manager || (state.data?.users || []).find(u => u.id === project.managerId);
   const daysLeftBadge = getDaysLeftBadge(project.dueDate);
 
   return `
@@ -785,7 +786,7 @@ export function openProjectModal(project = null) {
           <label>${t('manager')}</label>
           <select name="managerId" id="project-manager-select">
             <option value="">${choose('— بدون تحديد —', '— Unassigned —')}</option>
-            ${state.data.users.map((user) => `<option value="${esc(user.id)}" ${(project ? project.managerId === user.id : state.data.user.id === user.id) ? 'selected' : ''}>${esc(choose(user.name, user.nameEn || user.name))}</option>`).join('')}
+            ${(state.data?.users || []).map((user) => `<option value="${esc(user.id)}" ${(project ? project.managerId === user.id : state.data?.user?.id === user.id) ? 'selected' : ''}>${esc(choose(user.name, user.nameEn || user.name))}</option>`).join('')}
           </select>
         </div>
         <div class="field">

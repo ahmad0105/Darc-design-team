@@ -439,6 +439,10 @@ export function createDemoDataset() {
       id: 'notif_demo_01',
       userId: 'usr_demo',
       type: 'mention',
+      titleAr: 'تم ذكرك في تعليق 📢',
+      titleEn: 'Mentioned in Comment 📢',
+      messageAr: 'تمت الإشارة إليك في مخططات الأسقف المعلقة لمشروع فيلا نخلة جميرا.',
+      messageEn: 'You were mentioned in the false ceiling drawings for Palm Jumeirah Villa.',
       content: 'تمت الإشارة إليك في مخططات الأسقف المعلقة لمشروع فيلا نخلة جميرا.',
       taskId: 'tsk_demo_02',
       projectId: 'prj_demo_villa',
@@ -448,7 +452,11 @@ export function createDemoDataset() {
     {
       id: 'notif_demo_02',
       userId: 'usr_demo',
-      type: 'approval',
+      type: 'document_approved',
+      titleAr: 'تم اعتماد المخطط الهندسي بنجاح ✅',
+      titleEn: 'Engineering Drawing Approved Successfully ✅',
+      messageAr: 'تم اعتماد المخططات المعمارية التنفيذية الكاملة بنجاح.',
+      messageEn: 'The full architectural construction drawings have been approved successfully.',
       content: 'تم اعتماد المخططات المعمارية التنفيذية الكاملة بنجاح.',
       taskId: 'tsk_demo_01',
       projectId: 'prj_demo_villa',
@@ -558,6 +566,7 @@ export function createDemoDataset() {
       { id: 'team_member', nameAr: 'عضو فريق التنفيذ', nameEn: 'Team Member', permissions: ['edit_tasks', 'upload_documents'], builtIn: true }
     ],
     notifications: demoNotifications,
+    reminders: [],
     emailConfigured: false,
     stats: {
       activeProjects: 3,

@@ -77,7 +77,7 @@
           // B. Theme: Cookie -> LocalStorage -> Device Theme
           var effectiveTheme = getCookieVal('darc_theme') || localStorage.getItem('darc-theme');
           if (!effectiveTheme) {
-            var prefsCookie = getCookieVal('darc_prefs');
+            prefsCookie = prefsCookie || getCookieVal('darc_prefs');
             if (prefsCookie) {
               try { effectiveTheme = JSON.parse(prefsCookie).theme; } catch (e) {}
             }
@@ -124,7 +124,7 @@
             } catch (e) {}
 
             Promise.all(purgePromises).finally(function() {
-              window.location.reload(true);
+              window.location.reload();
             });
             return true;
           }
@@ -154,8 +154,8 @@
         });
       })();
     </script>
-    <script type="module" crossorigin src="/assets/main-BV3DlIl4.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/main-vaKsrIlj.css">
+    <script type="module" crossorigin src="/assets/main-CV9u4Upg.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/main-CKb1e-lh.css">
   </head>
   <body>
     <!-- Fallback Screen when JavaScript is Blocked / Disabled -->

@@ -4,6 +4,7 @@ import { openTaskModal } from '../tasks/tasks.js';
 import { openProjectModal } from '../projects/projects.js';
 import { switchView, canAccessView } from '../../core/router.js';
 import { modalShell } from '../../shared/ui.js';
+import { showNotifications } from '../notifications/notifications.js';
 
 const isMac = typeof navigator !== 'undefined' && /Mac|iPod|iPhone|iPad/.test(navigator.platform);
 export const SHORTCUT_KEY = isMac ? '⌘K' : 'Ctrl+K';
@@ -122,6 +123,7 @@ function executeResult(item) {
     }
     else if (item.id === 'new-project') openProjectModal();
     else if (item.id === 'cheatsheet') openShortcutsCheatsheet();
+    else if (item.id === 'show-notifications') showNotifications();
   } else if (item.type === 'project') {
     state.projectTab = 'tasks';
     state.lastActiveProjectId = item.id;
@@ -172,6 +174,14 @@ export function renderOmnisearchResults(rawQuery) {
     sub: choose('مساعدة', 'Help'), 
     icon: 'sparkles', 
     keywords: 'shortcuts اختصارات كيبورد مساعدة' 
+  });
+  actions.push({ 
+    type: 'action', 
+    id: 'show-notifications', 
+    title: choose('مركز التنبيهات والإشعارات', 'Notifications Center'), 
+    sub: choose('عرض الإشعارات والتنبيهات الحديثة', 'View recent notifications & alerts'), 
+    icon: 'bell', 
+    keywords: 'notifications alerts إشعارات تنبيهات رنين تنبيه' 
   });
 
   actions.forEach(act => {
@@ -300,6 +310,10 @@ export function openShortcutsCheatsheet() {
           <kbd class="shortcut-kbd">P</kbd>
         </div>
         <div class="cheatsheet-row">
+          <span>${choose('مركز التنبيهات والإشعارات', 'Notifications Center')}</span>
+          <kbd class="shortcut-kbd">B</kbd>
+        </div>
+        <div class="cheatsheet-row">
           <span>${choose('فتح دليل الاختصارات هذا', 'Open this shortcuts guide')}</span>
           <kbd class="shortcut-kbd">? / ؟</kbd>
         </div>
@@ -368,6 +382,14 @@ export function setupGlobalShortcuts() {
     if (isKeyP && !isInput && !e.metaKey && !e.ctrlKey && !e.altKey) {
       e.preventDefault();
       openProjectModal();
+      return;
+    }
+
+    // 5. Open Notifications on 'B' when not typing
+    const isKeyB = e.code === 'KeyB' || e.key?.toLowerCase() === 'b' || e.key === 'لا';
+    if (isKeyB && !isInput && !e.metaKey && !e.ctrlKey && !e.altKey) {
+      e.preventDefault();
+      showNotifications();
       return;
     }
 

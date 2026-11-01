@@ -134,3 +134,24 @@ export function addDemoComment(taskId, content, userId = 'usr_demo') {
   _demoStore.comments.push(newComment);
   return newComment;
 }
+
+export function addDemoNotification(entry = {}) {
+  checkAndAutoReset();
+  if (!_demoStore.notifications) _demoStore.notifications = [];
+  const newNotif = {
+    id: 'notif_demo_' + Math.random().toString(36).substr(2, 6),
+    userId: entry.userId || 'usr_demo',
+    type: entry.type || 'general',
+    titleAr: entry.titleAr || 'إشعار فحص النظام المباشر 🔔',
+    titleEn: entry.titleEn || 'Live System Test Notification 🔔',
+    messageAr: entry.messageAr || entry.content || 'هذا إشعار تجريبي مباشر للتأكد من اتصال السيرفر والربط اللحظي بنجاح!',
+    messageEn: entry.messageEn || entry.content || 'This live test notification verifies backend dispatch and real-time connectivity!',
+    content: entry.messageAr || entry.content || '',
+    taskId: entry.taskId || null,
+    projectId: entry.projectId || null,
+    read: false,
+    createdAt: new Date().toISOString()
+  };
+  _demoStore.notifications.unshift(newNotif);
+  return newNotif;
+}

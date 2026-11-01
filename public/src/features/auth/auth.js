@@ -1,7 +1,7 @@
 import { state } from '../../core/state.js';
 import { api, invalidateBootstrapEtag } from '../../core/api.js';
 import { choose, esc, icon, t, savePreferencesCookies } from '../../core/utils.js';
-import { modalShell, renderLoading } from '../../shared/ui.js';
+import { modalShell, renderLoading, showToast } from '../../shared/ui.js';
 import { loadData, renderApp } from '../../core/router.js';
 import { getOfflineBootstrap, saveOfflineBootstrap } from '../../core/offline.js';
 
@@ -456,16 +456,20 @@ export function renderLogin(errorMessage = '', mode = 'login', isSuccess = false
 
   bindUniversalPasswordToggles();
 
-  const showLoginError = (msg) => {
+  const showLoginError = (msg, isSuccess = false) => {
     const errBox = document.getElementById('login-error-container');
     if (errBox) {
+      const color = isSuccess ? 'var(--mint-strong)' : 'var(--red)';
+      const bg = isSuccess ? 'var(--mint)' : 'rgba(239,68,68,0.08)';
+      const border = isSuccess ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.3)';
+      const iconName = isSuccess ? 'check' : 'alert';
       errBox.innerHTML = msg ? `
-        <div class="login-demo" style="border-color:rgba(239,68,68,0.3);background:rgba(239,68,68,0.08);color:var(--red);margin-top:0;margin-bottom:15px;padding:10px 14px;border-radius:8px;font-size:12.5px;display:flex;align-items:center;gap:8px;line-height:1.5;">
-          ${icon('alert', 16)}
+        <div class="login-demo" style="border-color:${border};background:${bg};color:${color};margin-top:0;margin-bottom:15px;padding:10px 14px;border-radius:8px;font-size:12.5px;display:flex;align-items:center;gap:8px;line-height:1.5;">
+          ${icon(iconName, 16)}
           <span>${esc(msg)}</span>
         </div>` : '';
-    } else {
-      renderLogin(msg, 'login');
+    } else if (msg) {
+      showToast(msg, !isSuccess);
     }
   };
 
@@ -601,13 +605,17 @@ export function renderLogin(errorMessage = '', mode = 'login', isSuccess = false
     }
     try {
       await api('/api/auth/forgot-password', { method: 'POST', body: JSON.stringify({ email }) });
-      renderLogin(choose('تم إرسال رابط استعادة كلمة المرور إلى بريدك الإلكتروني بنجاح ✨', 'Password reset link sent to your email successfully ✨'), 'forgot', true);
+      if (button) {
+        button.disabled = false;
+        button.innerHTML = originalText;
+      }
+      showLoginError(choose('تم إرسال رابط استعادة كلمة المرور إلى بريدك الإلكتروني بنجاح ✨', 'Password reset link sent to your email successfully ✨'), true);
     } catch (error) {
       if (button) {
         button.disabled = false;
         button.innerHTML = originalText;
       }
-      renderLogin(error.message, 'forgot');
+      showLoginError(error.message);
     }
   });
 
@@ -753,7 +761,9 @@ export function renderResetPassword(token, errorMessage = '') {
     try {
       await api('/api/auth/reset-password', { method: 'POST', body: JSON.stringify({ token, newPassword: p1 }) });
       window.history.replaceState({}, '', window.location.pathname);
+      renderLoading();
       await loadData();
+      renderApp();
     } catch (error) {
       renderResetPassword(token, error.message);
     }

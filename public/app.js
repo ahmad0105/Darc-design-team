@@ -13,6 +13,7 @@ if (state.lang === 'en') {
 }
 
 import * as UI from './src/shared/ui.js';
+import { showToast, closeModal } from './src/shared/ui.js';
 Object.assign(window, UI);
 import * as Auth from './src/features/auth/auth.js';
 Object.assign(window, Auth);
@@ -21,6 +22,7 @@ Object.assign(window, Dashboard);
 import * as Projects from './src/features/projects/projects.js';
 Object.assign(window, Projects);
 import * as Tasks from './src/features/tasks/tasks.js';
+import { drawTimelineArrows } from './src/features/tasks/tasks.js';
 Object.assign(window, Tasks);
 import * as Templates from './src/features/templates/templates.js';
 Object.assign(window, Templates);
@@ -33,6 +35,7 @@ Object.assign(window, Notifications);
 import * as Router from './src/core/router.js';
 Object.assign(window, Router);
 import * as Events from './src/core/events.js';
+import { handleClick, handleSubmit, handleInput, handleChange, init } from './src/core/events.js';
 Object.assign(window, Events);
 import * as Utils from './src/core/utils.js';
 Object.assign(window, Utils);
@@ -43,6 +46,7 @@ import './src/core/dragdrop.js';
 import { initRealtimeConnection } from './src/core/realtime.js';
 import { initTelemetryEngine, recordBreadcrumb, reportClientError } from './src/core/telemetry.js';
 
+window._recentlyMovedTasks = window._recentlyMovedTasks || new Map();
 setupGlobalShortcuts();
 
 document.addEventListener('click', (event) => {
@@ -51,31 +55,41 @@ document.addEventListener('click', (event) => {
     const desc = target.dataset.action || target.dataset.view || target.innerText?.trim()?.slice(0, 40) || target.tagName;
     recordBreadcrumb('ui.click', `النقر على: ${desc}`);
   }
-  handleClick(event).catch((error) => {
-    reportClientError(error, { source: 'handleClick' });
-    showToast(error.message, true);
-  });
+  if (typeof handleClick === 'function') {
+    handleClick(event).catch((error) => {
+      reportClientError(error, { source: 'handleClick' });
+      if (typeof showToast === 'function') showToast(error.message, true);
+    });
+  }
 });
 
 document.addEventListener('submit', (event) => {
   const formId = event.target.id || event.target.dataset.action || 'form';
   recordBreadcrumb('form.submit', `إرسال نموذج: ${formId}`);
-  handleSubmit(event).catch((error) => {
-    reportClientError(error, { source: 'handleSubmit' });
-    showToast(error.message, true);
-  });
+  if (typeof handleSubmit === 'function') {
+    handleSubmit(event).catch((error) => {
+      reportClientError(error, { source: 'handleSubmit' });
+      if (typeof showToast === 'function') showToast(error.message, true);
+    });
+  }
 });
 
-document.addEventListener('input', handleInput);
-document.addEventListener('change', handleChange);
-document.addEventListener('keydown', (event) => { if (event.key === 'Escape') closeModal(); });
+document.addEventListener('input', (e) => {
+  if (typeof handleInput === 'function') handleInput(e);
+});
+document.addEventListener('change', (e) => {
+  if (typeof handleChange === 'function') handleChange(e);
+});
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && typeof closeModal === 'function') closeModal();
+});
 let _resizeRaf = null;
 window.addEventListener('resize', () => {
   if (state.view === 'project-detail' && state.projectTab === 'timeline') {
     if (!_resizeRaf) {
       _resizeRaf = requestAnimationFrame(() => {
         _resizeRaf = null;
-        drawTimelineArrows();
+        if (typeof drawTimelineArrows === 'function') drawTimelineArrows();
       });
     }
   }

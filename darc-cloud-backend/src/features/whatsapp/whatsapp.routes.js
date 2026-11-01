@@ -104,9 +104,24 @@ app.post('/test', async (c) => {
 
   const supabase = getDB(c.env);
   const body = await c.req.json().catch(() => ({}));
+  const savedConfig = await getWhatsAppConfig(supabase);
   let config = body.config;
+
   if (!config || !config.serverUrl) {
-    config = await getWhatsAppConfig(supabase);
+    config = { ...savedConfig };
+  } else {
+    config = { ...config };
+    // Password Preservation: If apiKey is masked bullets or omitted in form, resolve from savedConfig
+    const rawKey = String(config.apiKey || '').trim();
+    if (!rawKey || rawKey === '••••••••' || rawKey === '••••••••••••••••') {
+      config.apiKey = savedConfig.apiKey || '';
+    }
+    if (!config.instanceName) {
+      config.instanceName = savedConfig.instanceName || 'darc-workspace';
+    }
+    if (!config.recipient && savedConfig.recipient) {
+      config.recipient = savedConfig.recipient;
+    }
   }
 
   // If no group or recipient is entered in form, check admin's own profile phone
@@ -138,7 +153,7 @@ app.post('/test', async (c) => {
   );
 
   if (!res.ok) {
-    return c.json({ error: res.error || 'فشل إرسال رسالة الاختبار، تحقق من صحة الرابط ومفتاح الـ API.' }, 400);
+    return c.json({ error: res.error || res.reason || 'فشل إرسال رسالة الاختبار، تحقق من صحة الرابط ومفتاح الـ API.' }, 400);
   }
 
   return c.json({ ok: true, message: 'تم إرسال رسالة الاختبار بنجاح إلى الواتساب! 🚀' });

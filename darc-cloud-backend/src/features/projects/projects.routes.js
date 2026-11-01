@@ -86,8 +86,9 @@ app.post('/', async (c) => {
   if (managerId !== userId) {
     members.push({ project_id: project.id, user_id: managerId, role_id: 'project_manager' });
   }
-  for (const mid of incomingMemberIds) {
-    if (mid && typeof mid === 'string' && !members.some(m => m.user_id === mid)) {
+  for (const rawMid of incomingMemberIds) {
+    const mid = typeof rawMid === 'string' ? rawMid.trim() : '';
+    if (mid && (/^[a-zA-Z0-9_-]{3,64}$/.test(mid) || /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(mid)) && !members.some(m => m.user_id === mid)) {
       members.push({ project_id: project.id, user_id: mid, role_id: 'member' });
     }
   }
@@ -144,7 +145,13 @@ app.patch('/:id', async (c) => {
   if (error) throw error;
 
   if (Array.isArray(body.memberIds)) {
-    const newMemberIds = body.memberIds.filter(mid => typeof mid === 'string' && /^usr_[a-zA-Z0-9_-]{3,64}$/.test(mid.trim()));
+    const newMemberIds = body.memberIds
+      .map(mid => typeof mid === 'string' ? mid.trim() : '')
+      .filter(mid =>
+        /^usr_[a-zA-Z0-9_-]{3,64}$/.test(mid) ||
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(mid) ||
+        /^[a-zA-Z0-9_-]{3,64}$/.test(mid)
+      );
     const effectiveMgr = updates.manager_id || project.manager_id;
     const memberRows = [];
     if (effectiveMgr) {

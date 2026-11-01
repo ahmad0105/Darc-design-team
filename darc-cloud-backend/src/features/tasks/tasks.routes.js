@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import { getDB } from '../../core/db.js';
 import { hasPermission, isProjectVisible } from '../../utils/permissions.js';
 import { toCamelCase } from '../../utils/transformers.js';
-import { createNotification } from '../notifications/notifications.service.js';
+import { createNotification, createBatchNotifications } from '../notifications/notifications.service.js';
 import { invalidateBootstrapCache } from '../../core/cache.js';
 import { applyDemoTaskUpdate, createDemoTask, getDemoPayload, addDemoComment } from '../demo/demo.service.js';
 
@@ -185,11 +185,7 @@ app.post('/', async (c) => {
     createNotification(supabase, {
       userId: task.assignee_id,
       type: 'assignment',
-      titleAr: 'مهمة جديدة مسندة إليك 📋',
-      titleEn: 'New Task Assigned to You 📋',
-      messageAr: `تم إسناد المهمة "${task.title_ar}" إليك.`,
-      messageEn: `You have been assigned to task "${task.title_en || task.title_ar}".`,
-      content: `تم إسناد المهمة "${task.title_ar}" إليك.`,
+      params: { taskTitle: task.title_ar },
       taskId: task.id,
       projectId: task.project_id
     }).catch(() => {});
@@ -281,7 +277,7 @@ app.patch('/reorder', async (c) => {
     if (!existing) continue;
 
     const existingCF = (existing.custom_fields && typeof existing.custom_fields === 'object') ? existing.custom_fields : {};
-    const additional = existingCF.additionalAssignees || [];
+    const additional = existingCF.additional_assignees || existingCF.additionalAssignees || [];
     const isAdditional = Array.isArray(additional) && additional.includes(userId);
 
     // Check project-level permission, assignee, or additionalAssignee update
@@ -450,11 +446,7 @@ app.patch('/:id', async (c) => {
         await createNotification(supabase, {
           userId: updates.assignee_id,
           type: 'assignment',
-          titleAr: 'مهمة جديدة مسندة إليك 📋',
-          titleEn: 'New Task Assigned to You 📋',
-          messageAr: `تم إسناد المهمة "${updatedTask.title_ar || task.title_ar}" إليك.`,
-          messageEn: `You have been assigned to task "${updatedTask.title_en || task.title_en || task.title_ar}".`,
-          content: `تم إسناد المهمة "${updatedTask.title_ar || task.title_ar}" إليك.`,
+          params: { taskTitle: updatedTask.title_ar || task.title_ar },
           taskId,
           projectId: task.project_id
         });
@@ -467,10 +459,7 @@ app.patch('/:id', async (c) => {
           await createNotification(supabase, {
             userId: notifyTarget,
             type: 'task_blocked',
-            titleAr: 'تنبيه: مهمة معلقة (Blocked) ⚠️',
-            titleEn: 'Alert: Task Blocked ⚠️',
-            messageAr: `تم تعليق المهمة "${task.title_ar}". يرجى مراجعة التحديثات.`,
-            content: `تم تعليق المهمة "${task.title_ar}". يرجى مراجعة التحديثات.`,
+            params: { taskTitle: task.title_ar },
             taskId,
             projectId: task.project_id
           });
@@ -481,13 +470,11 @@ app.patch('/:id', async (c) => {
       if ((updates.status === 'review' || updates.status === 'approval') && task.status !== updates.status) {
         const target = updates.status === 'approval' ? (task.approver_id || task.reviewer_id) : (task.reviewer_id || task.approver_id);
         if (target && target !== userId) {
+          const isApproval = updates.status === 'approval';
           await createNotification(supabase, {
             userId: target,
-            type: 'task_status',
-            titleAr: updates.status === 'approval' ? 'مهمة بانتظار الاعتماد النهائي ✍️' : 'مهمة بانتظار المراجعة الفنية 🔍',
-            titleEn: updates.status === 'approval' ? 'Task Pending Final Approval ✍️' : 'Task Pending Technical Review 🔍',
-            messageAr: `المهمة "${task.title_ar}" بانتظار المراجعة والاعتماد الهندسي.`,
-            content: `المهمة "${task.title_ar}" بانتظار المراجعة والاعتماد الهندسي.`,
+            type: isApproval ? 'task_approval' : 'task_review',
+            params: { taskTitle: task.title_ar },
             taskId,
             projectId: task.project_id
           });
@@ -515,6 +502,11 @@ app.delete('/:id', async (c) => {
   if (!isValidEntityId(taskId)) {
     return c.json({ error: 'معرف المهمة غير صالح' }, 400);
   }
+
+  if (c.get('isDemo')) {
+    return c.json({ ok: true, isDemo: true, message: 'تم حذف المهمة في بيئة العرض التجريبية' });
+  }
+
   const userId = c.get('userId');
   const roleId = c.get('roleId');
   const supabase = c.get('supabase');
@@ -585,6 +577,7 @@ app.post('/:id/comments', async (c) => {
   if (!isValidEntityId(taskId)) {
     return c.json({ error: 'معرف المهمة غير صالح' }, 400);
   }
+
   const userId = c.get('userId');
   const roleId = c.get('roleId');
   const body = await c.req.json().catch(() => ({}));
@@ -636,11 +629,13 @@ app.post('/:id/comments', async (c) => {
   const bgTask = (async () => {
     try {
       if (task.assignee_id && task.assignee_id !== userId) {
+        const senderName = comment?.user?.name || comment?.user?.name_en || comment?.user?.email || 'عضو بالفريق';
         await createNotification(supabase, {
           userId: task.assignee_id,
           type: 'comment',
-          content: `تعليق جديد على: ${task.title_ar || 'مهمة'}`,
-          taskId
+          params: { taskTitle: task.title_ar || 'مهمة', senderName },
+          taskId,
+          projectId: task.project_id
         });
       }
 
@@ -705,53 +700,30 @@ app.post('/:id/comments', async (c) => {
             const { data: proj } = await supabase.from('projects').select('name_ar, name_en').eq('id', task.project_id).maybeSingle();
             const projectName = proj?.name_ar || proj?.name_en || 'مشروع هندسي';
 
-            const notifications = [];
+            const notifEntries = [];
             for (const [targetId] of targetUsersMap.entries()) {
-              notifications.push({
-                user_id: targetId,
+              notifEntries.push({
+                userId: targetId,
                 type: 'mention',
-                title_ar: isCollectiveMention ? '📢 إشارة جماعية في مهمة' : 'إشارة جديدة في مهمة',
-                title_en: isCollectiveMention ? '📢 Collective Mention in Task' : 'New Mention in Task',
-                body_ar: isCollectiveMention
-                  ? `أشار ${senderName} إلى كافة أعضاء المشروع والإدارة في: ${task.title_ar}`
-                  : `أشار إليك ${senderName} في المهمة: ${task.title_ar}`,
-                body_en: isCollectiveMention
-                  ? `${senderName} mentioned everyone in: ${task.title_ar}`
-                  : `${senderName} mentioned you in: ${task.title_ar}`,
-                link: `/project/${task.project_id}?task=${taskId}`,
-                task_id: taskId,
-                project_id: task.project_id
+                params: {
+                  taskTitle: task.title_ar,
+                  senderName,
+                  isCollective: isCollectiveMention
+                },
+                taskId,
+                projectId: task.project_id
               });
             }
 
-            if (notifications.length > 0) {
-              await supabase.from('notifications').insert(notifications);
+            if (notifEntries.length > 0) {
+              await createBatchNotifications(supabase, notifEntries);
+            }
 
-              // Dispatch WhatsApp direct alerts for mentions
-              import('../whatsapp/whatsapp.service.js').then(async ({ dispatchDirectNotificationAlert, getWhatsAppConfig, sendWhatsAppAlert }) => {
+            // Group Broadcast (Optional): If a group recipient is configured in settings
+            if (isCollectiveMention) {
+              import('../whatsapp/whatsapp.service.js').then(async ({ getWhatsAppConfig, sendWhatsAppAlert }) => {
                 const waConfig = await getWhatsAppConfig(supabase);
-                if (!waConfig || !waConfig.enabled) return;
-
-                if (isCollectiveMention && waConfig.notifyOnCollectiveMention === false) {
-                  return;
-                }
-
-                // 1. Direct Alerts: Send personal WhatsApp alert to each member and manager
-                for (const n of notifications) {
-                  await dispatchDirectNotificationAlert(supabase, n.user_id, {
-                    title: n.title_ar,
-                    content: content,
-                    type: isCollectiveMention ? 'collective_mention' : 'mention',
-                    taskTitle: task.title_ar,
-                    projectName: projectName,
-                    senderName: senderName,
-                    taskId: taskId,
-                    projectId: task.project_id
-                  }).catch(err => console.warn('[WhatsApp Mention Direct Alert]', err.message));
-                }
-
-                // 2. Group Broadcast (Optional): If a group recipient is configured in settings
-                if (isCollectiveMention && waConfig.recipient && (waConfig.recipient.includes('@g.us') || waConfig.sendGroupBroadcast)) {
+                if (waConfig && waConfig.enabled && waConfig.recipient && (waConfig.recipient.includes('@g.us') || waConfig.sendGroupBroadcast)) {
                   await sendWhatsAppAlert(waConfig, 'collective_mention', {
                     title: '📢 منشن جماعي لفريق العمل والإدارة',
                     content: content,

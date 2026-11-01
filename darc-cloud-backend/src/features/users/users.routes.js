@@ -2,9 +2,10 @@ import { Hono } from 'hono';
 import { getDB } from '../../core/db.js';
 import { invalidateUsersCache, invalidateBootstrapCache, setUserTokenVersion, getUserTokenVersion, setUserStatus } from '../../core/cache.js';
 import { logAudit } from '../../core/audit.js';
-import { toCamelCase } from '../../utils/transformers.js';
+import { toCamelCase, sanitizeUserCustomFields } from '../../utils/transformers.js';
 import { hasPermission } from '../../utils/permissions.js';
 import { computeClientFingerprint } from '../../core/security.js';
+import { sendEmail } from '../email/email.service.js';
 
 const isValidEntityId = (id) => typeof id === 'string' && /^[a-zA-Z0-9_-]{3,64}$/.test(id);
 
@@ -53,7 +54,7 @@ app.get('/', async (c) => {
     avatar_url: u.avatar_url || u.custom_fields?.avatarUrl || null,
     specialty: u.specialty || u.custom_fields?.specialty || '',
     phone: u.custom_fields?.phone || null,
-    custom_fields: u.custom_fields || null,
+    custom_fields: sanitizeUserCustomFields(u.custom_fields),
     ...(canViewActivity ? {
       last_login_at: u.last_login_at || u.custom_fields?.lastLoginAt || null,
       last_active_at: u.last_active_at || u.custom_fields?.lastActiveAt || null
@@ -76,6 +77,12 @@ app.patch('/me', async (c) => {
 
   const { data: userRec } = await supabase.from('users').select('custom_fields').eq('id', currentUserId).maybeSingle();
   const customFields = { ...(userRec?.custom_fields || {}) };
+  delete customFields.__proto__;
+  delete customFields.constructor;
+  delete customFields.prototype;
+  delete customFields.tokenVersion;
+  delete customFields.resetToken;
+  delete customFields.resetExpiresAt;
 
   const updates = {
     updated_at: new Date().toISOString()
@@ -445,19 +452,57 @@ app.post('/:id/invite', requireManageUsers, async (c) => {
     return c.json({ error: 'محظور: لا يمكن دعوة حساب مدير ومطور النظام.' }, 403);
   }
   const supabase = c.get('supabase');
-  const { data: user, error } = await supabase.from('users').select('id, role_id, email, name').eq('id', targetId).single();
+  const { data: user, error } = await supabase.from('users').select('id, role_id, email, name, name_en').eq('id', targetId).maybeSingle();
   if (error || !user) return c.json({ error: 'المستخدم غير موجود.' }, 404);
   if (user.role_id === 'admin' && currentRoleId !== 'admin') {
     return c.json({ error: 'لا يمكن لغير مدير النظام دعوة حسابات برتبة مدير النظام.' }, 403);
   }
   if (!user.email) return c.json({ error: 'لا يوجد بريد إلكتروني لهذا المستخدم.' }, 400);
+
   // Generate invite token and store it
   const { default: cryptoMod } = await import('node:crypto');
   const token = cryptoMod.randomBytes(24).toString('hex');
   const expires = new Date(Date.now() + 7 * 24 * 3600 * 1000).toISOString();
   await supabase.from('users').update({ invite_token: token, invite_expires_at: expires }).eq('id', targetId);
-  // In real app send email. For now just return token for manual use.
-  return c.json({ ok: true, emailConfigured: false, inviteToken: token, message: 'تم إنشاء رابط الدعوة.' });
+
+  const activateUrl = `https://panel.darc-design.bond/#activate?token=${token}`;
+  const userName = user.name || user.name_en || 'المهندس الكريم';
+  const subject = '🎉 دعوة للانضمام إلى منصة DARC Design Team';
+  const html = `
+    <div style="font-family:sans-serif;direction:rtl;text-align:right;padding:24px;background:#0f172a;color:#f8fafc;border-radius:12px;max-width:560px;margin:auto;">
+      <h2 style="color:#38bdf8;margin:0 0 14px;">دعوة للانضمام إلى فريق DARC</h2>
+      <p style="color:#cbd5e1;font-size:14px;line-height:1.7;">مرحباً ${userName}،<br>تمت دعوتك للانضمام إلى مساحة العمل الهندسية في منصة DARC Design Team. اضغط على الزر أدناه لتفعيل حسابك وتعيين كلمة المرور:</p>
+      <div style="text-align:center;margin:28px 0;">
+        <a href="${activateUrl}" style="background:#0284c7;color:#ffffff;text-decoration:none;padding:12px 28px;border-radius:8px;font-size:14px;font-weight:700;display:inline-block;box-shadow:0 4px 6px -1px rgba(0,0,0,0.3);">تفعيل الحساب الآن</a>
+      </div>
+      <p style="color:#94a3b8;font-size:12px;line-height:1.6;border-top:1px solid #1e293b;padding-top:14px;margin-top:20px;">
+        هذا الرابط صالح لمدة 7 أيام.<br>
+        رابط التفعيل المباشر: <span style="font-family:monospace;color:#38bdf8;">${activateUrl}</span>
+      </p>
+    </div>
+  `;
+
+  let emailSent = false;
+  try {
+    const emailRes = await sendEmail(c.env, {
+      to: user.email,
+      subject,
+      html,
+      text: `مرحباً ${userName}،\n\nتمت دعوتك للانضمام إلى منصة DARC Design Team. يرجى تفعيل حسابك من خلال الرابط التالي:\n${activateUrl}`
+    });
+    emailSent = emailRes.success;
+  } catch (err) {
+    console.warn('[Invite Email Error]', err.message);
+  }
+
+  return c.json({
+    ok: true,
+    emailSent,
+    emailConfigured: Boolean(c.env?.RESEND_API_KEY),
+    inviteToken: token,
+    inviteUrl: activateUrl,
+    message: emailSent ? 'تم إرسال رابط التفعيل إلى بريد المستخدم بنجاح.' : 'تم إنشاء رابط الدعوة والتفعيل بنجاح.'
+  });
 });
 
 app.post('/:id/impersonate', requireAdmin, async (c) => {

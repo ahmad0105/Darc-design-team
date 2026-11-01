@@ -64,7 +64,7 @@ export function canUserMoveTask(task) {
 
   const projectId = task.projectId || task.project_id;
   if (projectId && state.data?.projects) {
-    const proj = state.data.projects.find(p => p.id === projectId);
+    const proj = state.data?.projects?.find(p => p.id === projectId);
     if (proj) {
       const pm = proj.managerId || proj.manager_id;
       const owner = proj.ownerId || proj.owner_id || proj.leadId || proj.lead_id || proj.createdById || proj.created_by;
@@ -93,7 +93,7 @@ export function taskCard(task) {
 
   const canEditTask = canUserMoveTask(task);
 
-  return `<article class="task-card ${overdue ? 'is-overdue' : ''} ${!canEditTask ? 'not-draggable' : ''}" draggable="${canEditTask ? 'true' : 'false'}" data-action="open-task" data-task-id="${esc(task.id)}">
+  return `<article class="task-card ${overdue ? 'is-overdue' : ''} ${!canEditTask ? 'not-draggable' : ''}" draggable="false" data-action="open-task" data-task-id="${esc(task.id)}">
     <div class="task-card-top">
       <span class="task-code">${esc(task.templateId ? task.templateId.replace('tpl-', '#') : '#CUSTOM')}</span>
       <div style="display:flex;align-items:center;gap:6px;">
@@ -188,11 +188,17 @@ export function sortTasksByImportance(tasks = []) {
 }
 
 export function getSavedTaskSort() {
-  return localStorage.getItem('darc_task_sort_pref') || 'custom';
+  try {
+    return localStorage.getItem('darc_task_sort_pref') || 'custom';
+  } catch (e) {
+    return 'custom';
+  }
 }
 
 export function setSavedTaskSort(mode) {
-  localStorage.setItem('darc_task_sort_pref', mode);
+  try {
+    localStorage.setItem('darc_task_sort_pref', mode);
+  } catch (e) {}
   state.taskSortPref = mode;
   state.projectTaskSort = mode;
   state.myTaskSort = mode;
@@ -420,7 +426,7 @@ export function filterTasks(tasks) {
   const query = state.searches.tasks.trim().toLowerCase();
   return tasks.filter((task) => {
     const matchesQuery = `${task.titleAr} ${task.titleEn} ${task.categoryAr} ${task.categoryEn}`.toLowerCase().includes(query);
-    const matchesFilter = state.taskFilter === 'all' || (state.taskFilter === 'mine' && task.assigneeId === state.data.user.id) || (state.taskFilter === 'overdue' && isOverdue(task)) || (state.taskFilter === 'blocked' && task.status === 'blocked');
+    const matchesFilter = state.taskFilter === 'all' || (state.taskFilter === 'mine' && task.assigneeId === state.data?.user?.id) || (state.taskFilter === 'overdue' && isOverdue(task)) || (state.taskFilter === 'blocked' && task.status === 'blocked');
     const matchesProject = state.taskProjectFilter === 'all' || task.projectId === state.taskProjectFilter;
     const matchesPriority = !state.taskPriorityFilter || state.taskPriorityFilter === 'all' || task.priority === state.taskPriorityFilter;
     return matchesQuery && matchesFilter && matchesProject && matchesPriority;
@@ -428,7 +434,7 @@ export function filterTasks(tasks) {
 }
 
 export function renderTasks() {
-  const tasks = filterTasks(state.data.tasks);
+  const tasks = filterTasks(state.data?.tasks || []);
   const tabs = [['all', t('all')], ['mine', choose('مسندة لي', 'Assigned to me')], ['overdue', t('overdue')], ['blocked', t('blocked')]];
   const currentSort = state.myTaskSort || getSavedTaskSort();
   return `
@@ -461,7 +467,7 @@ export function renderTasks() {
         <div class="tasks-toolbar-filters">
           <select class="filter-select select-compact" data-action="task-project-filter" style="min-width:180px;">
             <option value="all">${choose('📁 كل المشاريع', '📁 All Projects')}</option>
-            ${state.data.projects.map((project) => `<option value="${esc(project.id)}" ${state.taskProjectFilter === project.id ? 'selected' : ''}>${esc(choose(project.nameAr, project.nameEn))}</option>`).join('')}
+            ${(state.data?.projects || []).map((project) => `<option value="${esc(project.id)}" ${state.taskProjectFilter === project.id ? 'selected' : ''}>${esc(choose(project.nameAr, project.nameEn))}</option>`).join('')}
           </select>
           <select class="filter-select select-compact" data-action="task-priority-filter" style="min-width:140px;">
             <option value="all">${choose('⚡ كل الأولويات', '⚡ All Priorities')}</option>
@@ -533,8 +539,8 @@ export function buildRemindersListHtml(activeReminders = []) {
 }
 
 export function openTaskModal(task = null, presetTemplateId = null, presetProjectId = null) {
-  const template = state.data.templates.find((item) => item.id === (presetTemplateId || task?.templateId));
-  const projectId = task?.projectId || presetProjectId || state.activeProjectId || state.data.projects[0]?.id || '';
+  const template = state.data?.templates?.find((item) => item.id === (presetTemplateId || task?.templateId));
+  const projectId = task?.projectId || presetProjectId || state.activeProjectId || state.data?.projects?.[0]?.id || '';
 
   const additionalAssigneeIds = Array.isArray(task?.customFields?.additionalAssignees)
     ? task.customFields.additionalAssignees
@@ -548,9 +554,9 @@ export function openTaskModal(task = null, presetTemplateId = null, presetProjec
   if (Array.isArray(task?.customFields?.reminders)) {
     taskReminders = task.customFields.reminders;
   } else if (task?.remindAt) {
-    taskReminders = [{ id: 'rem_' + Math.random().toString(36).substr(2, 9), remindAt: task.remindAt, noteAr: '' }];
+    taskReminders = [{ id: 'rem_' + Math.random().toString(36).substring(2, 11), remindAt: task.remindAt, noteAr: '' }];
   } else if (Array.isArray(state.data?.reminders) && task?.id) {
-    taskReminders = state.data.reminders.filter(r => r.taskId === task.id);
+    taskReminders = (state.data?.reminders || []).filter(r => r.taskId === task.id);
   }
 
   const currentProgress = task?.progress !== undefined ? task.progress : (task?.status === 'done' ? 100 : (task?.status === 'review' || task?.status === 'approval' ? 80 : (task?.status === 'in_progress' ? 50 : 0)));
@@ -575,7 +581,7 @@ export function openTaskModal(task = null, presetTemplateId = null, presetProjec
       <div class="field full">
         <label>${choose('المشروع التابع له', 'Project')} *</label>
         <select name="projectId" id="task-project-select" required>
-          ${state.data.projects.map((p) => `<option value="${esc(p.id)}" ${(p.id === projectId) ? 'selected' : ''}>${esc(choose(p.nameAr, p.nameEn))} (${esc(p.code)})</option>`).join('')}
+          ${(state.data?.projects || []).map((p) => `<option value="${esc(p.id)}" ${(p.id === projectId) ? 'selected' : ''}>${esc(choose(p.nameAr, p.nameEn))} (${esc(p.code)})</option>`).join('')}
         </select>
       </div>
 
@@ -591,7 +597,7 @@ export function openTaskModal(task = null, presetTemplateId = null, presetProjec
         <label>${t('addFromLibrary')}</label>
         <select name="templateId" id="task-template-select">
           <option value="">${choose('مهمة مخصصة', 'Custom task')}</option>
-          ${state.data.templates.map((item) => `<option value="${esc(item.id)}" ${(task?.templateId || presetTemplateId) === item.id ? 'selected' : ''}>${esc(item.code)} — ${esc(choose(item.nameAr, item.nameEn))}</option>`).join('')}
+          ${(state.data?.templates || []).map((item) => `<option value="${esc(item.id)}" ${(task?.templateId || presetTemplateId) === item.id ? 'selected' : ''}>${esc(item.code)} — ${esc(choose(item.nameAr, item.nameEn))}</option>`).join('')}
         </select>
       </div>
 
@@ -604,7 +610,7 @@ export function openTaskModal(task = null, presetTemplateId = null, presetProjec
         <label>${choose('المسؤول الرئيسي', 'Primary Assignee')}</label>
         <select name="assigneeId" id="task-primary-assignee">
           <option value="">${choose('— بدون تحديد —', '— Unassigned —')}</option>
-          ${state.data.users.map((user) => `<option value="${esc(user.id)}" ${(task ? task.assigneeId === user.id : state.data.user.id === user.id) ? 'selected' : ''}>${esc(choose(user.name, user.nameEn || user.name))}</option>`).join('')}
+          ${(state.data?.users || []).map((user) => `<option value="${esc(user.id)}" ${(task ? task.assigneeId === user.id : state.data?.user?.id === user.id) ? 'selected' : ''}>${esc(choose(user.name, user.nameEn || user.name))}</option>`).join('')}
         </select>
       </div>
 
@@ -1019,7 +1025,7 @@ export function initTaskModalWidgets(task) {
       }
       const noteVal = newReminderNote?.value.trim() || '';
       const newRem = {
-        id: 'rem_temp_' + Math.random().toString(36).substr(2, 9),
+        id: 'rem_temp_' + Math.random().toString(36).substring(2, 11),
         remindAt: new Date(dtVal).toISOString(),
         noteAr: noteVal
       };
@@ -1063,13 +1069,13 @@ export function initTaskModalWidgets(task) {
   if (task && task.id && !task.id.startsWith('demo_')) {
     api(`/api/tasks/${encodeURIComponent(task.id)}/comments`, { silent: true }).then((res) => {
       if (res && Array.isArray(res.comments)) {
-        if (!state.data.comments) state.data.comments = [];
+        if (state.data && !state.data.comments) state.data.comments = [];
         // Non-destructive idempotent merge: preserve any local optimistic or concurrent comments
-        const commentMap = new Map(state.data.comments.map(c => [c.id, c]));
+        const commentMap = new Map((state.data?.comments || []).map(c => [c.id, c]));
         for (const c of res.comments) {
           commentMap.set(c.id, c);
         }
-        state.data.comments = Array.from(commentMap.values());
+        if (state.data) state.data.comments = Array.from(commentMap.values());
         const commentsListEl = document.getElementById('task-comments-list');
         if (commentsListEl && document.getElementById('task-comment-form')?.dataset?.taskId === task.id) {
           commentsListEl.innerHTML = renderTaskComments(task);
@@ -1080,11 +1086,11 @@ export function initTaskModalWidgets(task) {
 }
 
 export function renderTaskComments(task) {
-  const comments = (state.data.comments || []).filter(c => c.taskId === task.id).sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+  const comments = (state.data?.comments || []).filter(c => c.taskId === task.id).sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
   if (!comments.length) return `<div class="empty" style="padding:40px 10px;min-height:auto;">${icon('message', 18)}<span style="font-size:12px;">${choose('لا توجد تعليقات', 'No comments yet')}</span></div>`;
   return `<div style="display:flex;flex-direction:column;gap:12px;">${comments.map(c => {
     const user = c.user || (state.data?.users || []).find(u => u.id === c.userId) || state.data?.user || { name: 'DARC Member', id: '' };
-    const isMe = Boolean(user.id && state.data?.user?.id && user.id === state.data.user.id);
+    const isMe = Boolean(user.id && state.data?.user?.id && user.id === state.data?.user?.id);
     const canManage = isMe || (typeof isAdmin === 'function' && isAdmin());
     const content = esc(c.content).replace(/@([\p{L}\p{N}_.\-]+)/gu, '<strong style="color:var(--blue)">@$1</strong>');
     return `
@@ -1113,7 +1119,7 @@ export function renderTaskComments(task) {
 }
 
 export function renderTaskDocuments(task) {
-  const docs = state.data.documents.filter(d => d.taskId === task.id).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  const docs = (state.data?.documents || []).filter(d => d.taskId === task.id).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   if (!docs.length) return `<div class="empty" style="padding:20px 10px;min-height:auto;">${icon('document', 18)}<span style="font-size:12px;">${choose('لا توجد ملفات مرفوعة', 'No documents uploaded')}</span></div>`;
   return `<div class="doc-list" style="display:flex;flex-direction:column;gap:8px;">${docs.map(doc => `
     <div class="doc-item" style="display:flex;align-items:center;justify-content:space-between;padding:10px;background:var(--surface-soft);border:1px solid var(--line);border-radius:8px;transition:background 0.15s ease;">
@@ -1150,8 +1156,8 @@ export async function openDocumentPreviewModal(docId) {
       const fetched = await api(`/api/documents/${docId}`);
       if (fetched && fetched.id) {
         doc = fetched;
-        if (!state.data.documents) state.data.documents = [];
-        state.data.documents.push(doc);
+        if (state.data && !state.data.documents) state.data.documents = [];
+        if (state.data?.documents) state.data.documents.push(doc);
       }
     } catch (err) {
       console.warn('[Documents] Failed to fetch doc preview on demand:', err);

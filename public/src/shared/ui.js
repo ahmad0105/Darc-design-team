@@ -63,7 +63,7 @@ export function modalShell(title, subtitle, body, id = '', extraClass = '') {
   }
   isClosingModal = false;
   document.body.style.overflow = 'hidden';
-  return `<div class="modal-backdrop"><div class="modal ${extraClass}" data-modal="${id}"><div class="modal-head"><div><h2>${esc(title)}</h2><p>${esc(subtitle || '')}</p></div><button class="modal-close" type="button" data-action="close-modal" aria-label="${choose('إغلاق', 'Close')}">${icon('close', 15)}</button></div>${body}</div></div>`;
+  return `<div class="modal-backdrop ${id ? `backdrop-${id}` : ''}"><div class="modal ${extraClass}" data-modal="${id}"><div class="modal-head"><div><h2>${esc(title)}</h2><p>${esc(subtitle || '')}</p></div><button class="modal-close" type="button" data-action="close-modal" aria-label="${choose('إغلاق', 'Close')}">${icon('close', 15)}</button></div>${body}</div></div>`;
 }
 
 export function showToast(message, isError = false) {

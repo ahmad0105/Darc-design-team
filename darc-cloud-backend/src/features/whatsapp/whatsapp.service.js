@@ -37,11 +37,18 @@ export function normalizeWhatsAppNumber(raw) {
   // Reject invite links which are not direct recipient phone numbers or group IDs
   if (str.toLowerCase().includes('chat.whatsapp.com')) return '';
 
+  // Normalize Eastern Arabic / Persian numerals (٠-٩) to standard (0-9)
+  const arabicNumerals = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
+  arabicNumerals.forEach((char, idx) => {
+    str = str.replaceAll(char, String(idx));
+  });
+
   str = str.replace(/[\s\-\(\)]/g, '');
   if (str.includes('@g.us')) {
     return /^[0-9\-]+@g\.us$/.test(str) ? str : '';
   }
   if (str.startsWith('+')) str = str.slice(1);
+  if (str.startsWith('00')) str = str.slice(2);
   if (/^05[0-9]{8}$/.test(str)) {
     str = '966' + str.slice(1);
   }
@@ -361,9 +368,11 @@ export async function sendWhatsAppAlert(config, type, payload, supabase = null, 
   // Anti-Ban Serial Queue: Chain onto promise queue to enforce strict serial transmission
   const task = _whatsappQueuePromise.then(async () => {
     try {
-      // Anti-Ban Hygiene: Random Human-like Delay (2000ms - 5000ms)
-      const jitterMs = Math.floor(Math.random() * 3000) + 2000;
-      await new Promise(r => setTimeout(r, jitterMs));
+      // Anti-Ban Hygiene: Random Human-like Delay (2000ms - 5000ms) only for normal alerts (bypass for instant manual test)
+      if (!options.isTest) {
+        const jitterMs = Math.floor(Math.random() * 3000) + 2000;
+        await new Promise(r => setTimeout(r, jitterMs));
+      }
 
       // Support both Evolution API standard endpoint and generic webhook
       let targetEndpoint = `${cleanServerUrl}/message/sendText/${encodeURIComponent(instance)}`;
@@ -401,12 +410,18 @@ export async function sendWhatsAppAlert(config, type, payload, supabase = null, 
         method: 'POST',
         headers,
         body: JSON.stringify(requestBody),
-        signal: AbortSignal.timeout(6000)
+        signal: AbortSignal.timeout(12000)
       });
 
       if (!res.ok) {
         const errText = await res.text();
-        return { ok: false, status: res.status, error: errText };
+        let humanError = errText;
+        try {
+          const parsed = JSON.parse(errText);
+          humanError = parsed.response?.message || parsed.message || parsed.error || errText;
+          if (Array.isArray(humanError)) humanError = humanError.join(', ');
+        } catch {}
+        return { ok: false, status: res.status, error: humanError };
       }
 
       return { ok: true, sent: true };

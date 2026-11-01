@@ -93,7 +93,7 @@ export function renderApp() {
   document.documentElement.lang = state.lang;
   document.documentElement.dir = state.lang === 'ar' ? 'rtl' : 'ltr';
   const notifications = state.data?.notifications || [];
-  const unread = notifications.filter((notification) => !notification.read).length;
+  const unread = notifications.filter((notification) => !notification.read && !notification.readAt).length;
   const user = state.data?.user || {};
   const hasAdminRights = isAdmin() || can('manage_settings') || can('manage_roles') || can('manage_users') || can('manage_trash') || can('view_audit_logs');
 
@@ -102,7 +102,7 @@ export function renderApp() {
       <aside class="sidebar ${state.sidebarOpen ? 'open' : ''}">
         <div class="sidebar-brand">
           ${state.data?.company?.logoUrl 
-            ? `<img src="${esc(state.data.company.logoUrl)}" alt="Logo" style="width:32px;height:32px;object-fit:contain;border-radius:8px;background:var(--surface);flex-shrink:0;" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" /><span class="brand-mark" style="display:none;">${icon('building', 20)}</span>`
+            ? `<img src="${esc(state.data?.company?.logoUrl)}" alt="Logo" style="width:32px;height:32px;object-fit:contain;border-radius:8px;background:var(--surface);flex-shrink:0;" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" /><span class="brand-mark" style="display:none;">${icon('building', 20)}</span>`
             : `<span class="brand-mark">${icon('building', 20)}</span>`
           }
           <div>

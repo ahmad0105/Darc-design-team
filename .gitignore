@@ -42,3 +42,6 @@ darc-cloud-backend/test-*.js
 
 # Local uploads & DB
 data/
+
+# Context mode
+.github/context-mode/

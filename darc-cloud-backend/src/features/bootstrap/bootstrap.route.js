@@ -39,6 +39,7 @@ import { Hono } from 'hono';
 import { getDB } from '../../core/db.js';
 import { getBootstrapCache, setBootstrapCache, fetchBootstrapWithCoalescing, getCachedRoles, getCachedTemplates, getCachedUsers, getCachedCompany, getCacheVersion } from '../../core/cache.js';
 import { getDemoPayload } from '../demo/demo.service.js';
+import { sanitizeUserCustomFields } from '../../utils/transformers.js';
 
 const app = new Hono();
 
@@ -87,7 +88,7 @@ export async function generateBootstrapPayloadForUser(env, userId, roleId) {
   return await fetchBootstrapWithCoalescing(cacheKey, async () => {
     const isGlobalAdmin = roleId === 'admin';
 
-    let roles, templates, activeUsers, company, projectsRes, tasksRes, docsRes, membersRes, commentsRes, auditRes, notifRes;
+    let roles, templates, activeUsers, company, projectsRes, tasksRes, docsRes, membersRes, commentsRes, auditRes, notifRes, remindersRes;
 
     const PROJECT_COLUMNS = 'id, code, name_ar, name_en, client_ar, client_en, description_ar, description_en, lifecycle, health, start_date, due_date, manager_id, progress, progress_mode, demo, custom_fields, created_at, updated_at';
     const TASK_COLUMNS = 'id, project_id, title_ar, title_en, description_ar, description_en, status, priority, category_ar, category_en, type_ar, type_en, weight, progress, assignee_id, reviewer_id, approver_id, parent_task_id, start_date, due_date, template_id, custom_fields, created_at, updated_at';
@@ -98,7 +99,7 @@ export async function generateBootstrapPayloadForUser(env, userId, roleId) {
 
     // Single-batch parallel execution (eliminates sequential round-trips & lean projections)
     if (isGlobalAdmin) {
-      [roles, templates, activeUsers, company, projectsRes, tasksRes, docsRes, membersRes, commentsRes, auditRes, notifRes] = await Promise.all([
+      [roles, templates, activeUsers, company, projectsRes, tasksRes, docsRes, membersRes, commentsRes, auditRes, notifRes, remindersRes] = await Promise.all([
         getCachedRoles(supabase),
         getCachedTemplates(supabase),
         getCachedUsers(supabase),
@@ -109,21 +110,24 @@ export async function generateBootstrapPayloadForUser(env, userId, roleId) {
         supabase.from('project_members').select(MEMBER_COLUMNS),
         supabase.from('comments').select(COMMENT_COLUMNS).is('deleted_at', null).order('created_at', { ascending: false }).limit(35),
         supabase.from('audit_logs').select('id, user_id, action, entity_type, entity_id, details, created_at').order('created_at', { ascending: false }).limit(35),
-        supabase.from('notifications').select(NOTIFICATION_COLUMNS).eq('user_id', userId).order('created_at', { ascending: false }).limit(20)
+        supabase.from('notifications').select(NOTIFICATION_COLUMNS).eq('user_id', userId).order('created_at', { ascending: false }).limit(20),
+        supabase.from('reminders').select('*').eq('user_id', userId).is('sent_at', null).order('remind_at', { ascending: true }).limit(50)
       ]);
     } else {
       const initialProjReq = supabase.from('active_projects').select(`${PROJECT_COLUMNS}, project_members!inner(user_id)`).eq('project_members.user_id', userId);
       const auditLogsReq = supabase.from('audit_logs').select('id, user_id, action, entity_type, entity_id, details, created_at').eq('user_id', userId).order('created_at', { ascending: false }).limit(35);
       const notifReq = supabase.from('notifications').select(NOTIFICATION_COLUMNS).eq('user_id', userId).order('created_at', { ascending: false }).limit(20);
+      const remindersReq = supabase.from('reminders').select('*').eq('user_id', userId).is('sent_at', null).order('remind_at', { ascending: true }).limit(50);
 
-      const [r, t, u, comp, userProjRes, auditLogsRes, nr] = await Promise.all([
+      const [r, t, u, comp, userProjRes, auditLogsRes, nr, remRes] = await Promise.all([
         getCachedRoles(supabase),
         getCachedTemplates(supabase),
         getCachedUsers(supabase),
         getCachedCompany(supabase),
         initialProjReq,
         auditLogsReq,
-        notifReq
+        notifReq,
+        remindersReq
       ]);
 
       roles = r;
@@ -132,6 +136,7 @@ export async function generateBootstrapPayloadForUser(env, userId, roleId) {
       company = comp;
       auditRes = auditLogsRes;
       notifRes = nr;
+      remindersRes = remRes;
 
       const userRole = roles.find(role => role.id === roleId);
       const canViewAll = userRole?.permissions?.includes('view_all_projects');
@@ -170,6 +175,7 @@ export async function generateBootstrapPayloadForUser(env, userId, roleId) {
     const comments = commentsRes?.data || [];
     const auditLogs = auditRes?.data || [];
     const notifications = notifRes?.data || [];
+    const reminders = remindersRes?.data || [];
 
     const userRole = roles.find(r => r.id === roleId);
 
@@ -261,6 +267,7 @@ export async function generateBootstrapPayloadForUser(env, userId, roleId) {
 
     const currentUser = { ...(userMap.get(userId) || {}) };
     currentUser.phone = currentUser.phone || currentUser.custom_fields?.phone || null;
+    currentUser.custom_fields = sanitizeUserCustomFields(currentUser.custom_fields);
 
     // Activity Permission Guard: only users with view_user_activity or admin can see login/active times
     const canViewActivity = isGlobalAdmin || userRole?.permissions?.includes('view_user_activity') || userRole?.permissions?.includes('*');
@@ -269,6 +276,7 @@ export async function generateBootstrapPayloadForUser(env, userId, roleId) {
     const exposedUsers = (isAhmad ? activeUsers : activeUsers.filter(u => u.id !== 'usr_ahmad')).map(u => {
       const copy = { ...u };
       copy.phone = copy.phone || copy.custom_fields?.phone || null;
+      copy.custom_fields = sanitizeUserCustomFields(copy.custom_fields);
       if (!canViewActivity) {
         delete copy.last_login_at;
         delete copy.last_active_at;
@@ -352,7 +360,8 @@ export async function generateBootstrapPayloadForUser(env, userId, roleId) {
       roles: toCamelCase(roles),
       permissionsCatalog: DEFAULT_PERMISSIONS_CATALOG,
       notifications: toCamelCase(notifications),
-      emailConfigured: Boolean(env?.RESEND_API_KEY && env?.EMAIL_FROM),
+      reminders: toCamelCase(reminders),
+      emailConfigured: Boolean(env?.RESEND_API_KEY),
       stats: {
         activeProjects,
         delayedProjects,

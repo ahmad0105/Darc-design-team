@@ -31,8 +31,10 @@ import { createErrorHandler } from './core/errors.js';
 import { securityHeadersMiddleware, csrfGuardMiddleware, correlationIdMiddleware, payloadLimitMiddleware, edgeSentryMiddleware, computeClientFingerprint } from './core/security.js';
 import { authRateLimiter, recordAuthFailure, clearAuthFailure, getClientIp, mutationRateLimiter } from './core/rate-limit.js';
 import { getDB } from './core/db.js';
-import { getUserTokenRecord } from './core/cache.js';
+import { getUserTokenRecord, invalidateBootstrapCache } from './core/cache.js';
 import { getDemoPayload, resetDemoPayload } from './features/demo/demo.service.js';
+import { toCamelCase } from './utils/transformers.js';
+export { toCamelCase };
 
 const app = new Hono();
 const _lastActiveThrottles = new Map();
@@ -54,27 +56,27 @@ const ALLOWED_ORIGINS = [
   'http://127.0.0.1:8787',
   'https://darc-design-team.netlify.app',
   'https://darc-design-team.workers.dev',
+  'https://darc-design-team.ahmad-hashmi-c.workers.dev',
+  'https://darc-cloud-backend.ahmad-hashmi-c.workers.dev',
   'https://darc-design.bond',
   'https://panel.darc-design.bond',
-  'https://api.darc-design.bond'
+  'https://api.darc-design.bond',
+  'https://wa.darc-design.bond'
 ];
+const ALLOWED_ORIGIN_SET = new Set(ALLOWED_ORIGINS);
+
+function isAllowedOrigin(origin) {
+  if (!origin) return false;
+  if (ALLOWED_ORIGIN_SET.has(origin)) return true;
+  if (origin.endsWith('.darc.local') || origin.endsWith('.darc-design.bond') || origin.endsWith('.darc-design-team.netlify.app')) return true;
+  if (origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:')) return true;
+  return false;
+}
+
 app.use('*', cors({
   origin: (origin) => {
     if (!origin) return 'https://panel.darc-design.bond';
-    if (
-      ALLOWED_ORIGINS.includes(origin) || 
-      origin.endsWith('.darc.local') || 
-      origin.endsWith('.darc-design.bond') ||
-      origin === 'https://darc-design.bond' ||
-      origin === 'https://panel.darc-design.bond' ||
-      origin === 'https://darc-design-team.netlify.app' ||
-      origin.endsWith('.darc-design-team.netlify.app') ||
-      origin.endsWith('.workers.dev') ||
-      origin.endsWith('.pages.dev') ||
-      origin.startsWith('http://localhost:') ||
-      origin.startsWith('http://127.0.0.1:')
-    ) return origin;
-    return null; // Explicitly reject unauthorized third-party origins
+    return isAllowedOrigin(origin) ? origin : null;
   },
   credentials: true,
   allowMethods: ['GET', 'HEAD', 'PUT', 'POST', 'DELETE', 'PATCH', 'OPTIONS'],
@@ -94,21 +96,6 @@ app.use('/api/*', mutationRateLimiter());
 
 // Centralized Operational Error Handler (OWASP Error Shield)
 app.onError(createErrorHandler());
-
-// Shared utilities
-const JSONB_PASSTHROUGH_KEYS = ['custom_fields', 'permissions', 'details'];
-
-export function toCamelCase(obj) {
-  if (Array.isArray(obj)) return obj.map(toCamelCase);
-  if (obj === null || typeof obj !== 'object') return obj;
-  return Object.fromEntries(
-    Object.entries(obj).map(([key, value]) => {
-      const camelKey = key.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
-      if (JSONB_PASSTHROUGH_KEYS.includes(key)) return [camelKey, value];
-      return [camelKey, toCamelCase(value)];
-    })
-  );
-}
 
 function toSafeUser(row) {
   const { password_hash, invite_token, ...safe } = row;
@@ -150,7 +137,15 @@ app.post('/api/auth/login', async (c) => {
 
   // 1. Cloudflare Turnstile Anti-Bot Security Verification
   const turnstileSecret = c.env.TURNSTILE_SECRET_KEY;
-  if (turnstileSecret && turnstileToken && turnstileToken !== 'bypass_dev' && turnstileToken !== 'fallback_client') {
+  const isProd = c.env.ENVIRONMENT === 'production' || (!ip.startsWith('127.0.0.1') && !ip.startsWith('localhost') && c.req.url.startsWith('https://'));
+  const isDemoUser = (cleanEmail === 'demo@darc-design.bond' || cleanEmail === 'demo@darc.local');
+
+  if (turnstileSecret && isProd && !isDemoUser) {
+    if (!turnstileToken || turnstileToken === 'bypass_dev' || turnstileToken === 'fallback_client') {
+      recordAuthFailure(ip);
+      return c.json({ error: 'رمز التحقق الأمني (Turnstile) مطلوب. يرجى إتمام التحقق والمحاولة مجدداً.' }, 403);
+    }
+
     try {
       const verifyFormData = new FormData();
       verifyFormData.append('secret', turnstileSecret);
@@ -160,7 +155,7 @@ app.post('/api/auth/login', async (c) => {
       const verifyRes = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
         method: 'POST',
         body: verifyFormData,
-        signal: AbortSignal.timeout(2000)
+        signal: AbortSignal.timeout(3000)
       });
       const verifyData = await verifyRes.json();
       if (!verifyData.success) {
@@ -469,8 +464,6 @@ app.use('/api/whatsapp/*', async (c, next) => {
   }
   await next();
 });
-
-import { invalidateBootstrapCache } from './core/cache.js';
 
 // Global Cache Invalidator for Mutations
 app.use('/api/*', async (c, next) => {

@@ -35,3 +35,20 @@ export function toSnakeCase(obj) {
   }
   return obj;
 }
+
+/**
+ * Sanitizes user custom_fields by completely removing sensitive authentication secrets
+ * (resetToken, resetExpiresAt, tokenVersion) before sending to any client.
+ */
+export function sanitizeUserCustomFields(cf) {
+  if (!cf || typeof cf !== 'object') return null;
+  const safe = { ...cf };
+  delete safe.resetToken;
+  delete safe.resetExpiresAt;
+  delete safe.tokenVersion;
+  delete safe.__proto__;
+  delete safe.constructor;
+  delete safe.prototype;
+  return safe;
+}
+

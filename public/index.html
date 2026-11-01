@@ -110,7 +110,7 @@
           // B. Theme: Cookie -> LocalStorage -> Device Theme
           var effectiveTheme = getCookieVal('darc_theme') || localStorage.getItem('darc-theme');
           if (!effectiveTheme) {
-            var prefsCookie = getCookieVal('darc_prefs');
+            prefsCookie = prefsCookie || getCookieVal('darc_prefs');
             if (prefsCookie) {
               try { effectiveTheme = JSON.parse(prefsCookie).theme; } catch (e) {}
             }
@@ -157,7 +157,7 @@
             } catch (e) {}
 
             Promise.all(purgePromises).finally(function() {
-              window.location.reload(true);
+              window.location.reload();
             });
             return true;
           }

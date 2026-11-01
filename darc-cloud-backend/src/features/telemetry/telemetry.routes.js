@@ -99,16 +99,64 @@ app.post('/heartbeat', async (c) => {
   }
 });
 
+// Anti-Abuse & Rate Limiting for Public Error Reporting
+const _errorReportLimits = new Map(); // ip -> { count: number, resetAt: number }
+const _errorDeduplication = new Map(); // hash -> timestamp
+
+function isErrorReportRateLimited(ip) {
+  const now = Date.now();
+  let item = _errorReportLimits.get(ip);
+  if (!item || now > item.resetAt) {
+    item = { count: 1, resetAt: now + 10 * 60 * 1000 }; // 10 minutes window
+    _errorReportLimits.set(ip, item);
+    return false;
+  }
+  item.count += 1;
+  return item.count > 6; // Max 6 incident reports per 10 minutes per IP
+}
+
+function isDuplicateErrorReport(ip, errorKey) {
+  const now = Date.now();
+  const hash = `${ip}:${errorKey}`;
+  const lastTime = _errorDeduplication.get(hash);
+  if (lastTime && now - lastTime < 5 * 60 * 1000) {
+    return true; // Duplicate report within 5 minutes
+  }
+  _errorDeduplication.set(hash, now);
+  // Auto-prune old entries
+  if (_errorDeduplication.size > 200) {
+    for (const [k, v] of _errorDeduplication.entries()) {
+      if (now - v > 10 * 60 * 1000) _errorDeduplication.delete(k);
+    }
+  }
+  return false;
+}
+
 // 3. Report Client Error / Incident (Captures rich details and triggers email & in-app alerts)
 app.post('/report-error', async (c) => {
   try {
+    const ip = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || '127.0.0.1';
+
+    // Anti-Abuse Guard: Prevent Denial-of-Service / Email Flood
+    if (isErrorReportRateLimited(ip)) {
+      return c.json({ ok: false, error: 'تم إرسال عدد كبير من البلاغات في فترة قصيرة، يرجى الانتظار.' }, 429);
+    }
+
     const body = await c.req.json().catch(() => ({}));
-    const userId = c.get('userId') || body.userId || 'usr_demo';
+    const rawErrMsg = String(body.errorMessage || body.message || '').slice(0, 500);
+
+    // Deduplication: Suppress repeated email storm if identical error occurs repeatedly
+    if (isDuplicateErrorReport(ip, rawErrMsg)) {
+      return c.json({ ok: true, deduplicated: true, message: 'تم استلام وتوثيق هذا الخطأ مسبقاً.' });
+    }
+
+    // Anti-Spoofing: Unauthenticated clients cannot impersonate arbitrary registered users
+    const authenticatedUserId = c.get('userId');
+    const userId = authenticatedUserId || (body.userId === 'usr_demo' ? 'usr_demo' : 'anonymous');
 
     // Cloudflare Edge Geolocation detection
     const country = c.req.header('cf-ipcountry') || c.req.raw?.cf?.country || body.country || 'AE';
     const city = c.req.header('cf-ipcity') || c.req.raw?.cf?.city || body.city || (country === 'AE' ? 'Dubai' : 'Riyadh');
-    const ip = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || '127.0.0.1';
     const userAgent = c.req.header('user-agent') || '';
     const { deviceType, browser, os } = parseClientInfo(userAgent);
 

@@ -238,7 +238,11 @@ export function extractDrawingVersion(filename) {
 }
 
 export function getActiveCalendarSystem() {
-  return state.calendarSystem || state.data?.user?.customFields?.calendarSystem || localStorage.getItem('darc_calendar_system') || 'gregorian';
+  let stored = null;
+  try {
+    stored = localStorage.getItem('darc_calendar_system');
+  } catch (e) {}
+  return state.calendarSystem || state.data?.user?.customFields?.calendarSystem || stored || 'gregorian';
 }
 
 export function dateLabel(value, includeYear = true) {
@@ -378,9 +382,9 @@ export function statusBadge(status) {
 export function priorityText(key) { return { low: t('low'), medium: t('medium'), high: t('high'), urgent: t('urgent') }[key] || key; }
 
 export function roleFor(userOrId) {
-  const user = typeof userOrId === 'string' ? state.data?.users.find((item) => item.id === userOrId) : userOrId;
+  const user = typeof userOrId === 'string' ? state.data?.users?.find((item) => item.id === userOrId) : userOrId;
   if (!user) return null;
-  return state.data?.roles.find((role) => role.id === user.roleId) || { id: user.roleId, nameAr: user.roleNameAr || '', nameEn: user.roleNameEn || '', permissions: [] };
+  return state.data?.roles?.find((role) => role.id === user.roleId) || { id: user.roleId, nameAr: user.roleNameAr || '', nameEn: user.roleNameEn || '', permissions: [] };
 }
 
 export function roleName(userOrId) {

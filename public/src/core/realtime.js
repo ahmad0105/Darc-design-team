@@ -161,7 +161,7 @@ function updateNotificationDotInDom() {
 /**
  * Play subtle, elegant chime using native Web Audio API (0 KB audio files, Singleton AudioContext)
  */
-function playNotificationChime() {
+export function playNotificationChime() {
   if (typeof window === 'undefined') return;
   try {
     const AudioCtx = window.AudioContext || window.webkitAudioContext;
@@ -227,13 +227,14 @@ export function applyGranularDelta(tableName, actionType, rawRecord, rawOldRecor
   }
 
   // 1b. Authorization Guard: Prevent cross-project or cross-user data leakage for non-admins
-  const isGlobalAdmin = state.data?.user?.role_id === 'admin';
-  if (!isGlobalAdmin && record) {
-    if (tableName === 'notifications') {
-      if (record.userId && record.userId !== state.data?.user?.id) {
-        return false; // Drop notifications meant for other users
-      }
-    } else if (tableName === 'tasks' || tableName === 'documents' || tableName === 'comments') {
+  const isGlobalAdmin = (state.data?.user?.roleId === 'admin') || (state.data?.user?.role_id === 'admin');
+  if (record && tableName === 'notifications') {
+    const targetUserId = record.userId || record.user_id;
+    if (targetUserId && targetUserId !== state.data?.user?.id) {
+      return false; // Drop notifications meant for other users
+    }
+  } else if (!isGlobalAdmin && record) {
+    if (tableName === 'tasks' || tableName === 'documents' || tableName === 'comments') {
       const pId = record.projectId || (tableName === 'comments' ? (state.data?.tasks?.find(t => t.id === record.taskId)?.projectId) : null);
       if (pId && !state.data?.projects?.some(p => p.id === pId)) {
         return false; // Drop records belonging to projects not accessible to current user
@@ -273,6 +274,9 @@ export function applyGranularDelta(tableName, actionType, rawRecord, rawOldRecor
       }
     } else if (tableName === 'notifications') {
       updateNotificationDotInDom();
+      if (typeof showNotifications === 'function' && document.querySelector('.modal-shell.notifications')) {
+        showNotifications();
+      }
     }
   } else if (actionType === 'UPDATE' && record) {
     const idx = collection.findIndex((item) => item.id === targetId);
@@ -297,6 +301,9 @@ export function applyGranularDelta(tableName, actionType, rawRecord, rawOldRecor
       }
     } else if (tableName === 'notifications') {
       updateNotificationDotInDom();
+      if (typeof showNotifications === 'function' && document.querySelector('.modal-shell.notifications')) {
+        showNotifications();
+      }
     }
   } else if (actionType === 'INSERT' && record) {
     const exists = collection.some((item) => item.id === targetId);
@@ -310,13 +317,44 @@ export function applyGranularDelta(tableName, actionType, rawRecord, rawOldRecor
       recalculateProjectProgressInMemory(record.projectId);
     } else if (tableName === 'notifications') {
       const currentUserId = state.data?.user?.id;
-      if (currentUserId && record.userId === currentUserId && !record.read) {
+      const targetUserId = record.userId || record.user_id;
+      const isRead = Boolean(record.read || record.readAt || record.read_at);
+      if (currentUserId && targetUserId === currentUserId && !isRead) {
         updateNotificationDotInDom();
-        const title = record.content || (state.lang === 'ar' ? (record.titleAr || record.title) : (record.titleEn || record.title || record.titleAr)) || choose('إشعار جديد', 'New notification');
+        const title = state.lang === 'ar'
+          ? (record.titleAr || record.messageAr || record.bodyAr || record.content || record.titleEn || choose('إشعار جديد', 'New notification'))
+          : (record.titleEn || record.messageEn || record.bodyEn || (record.content !== record.titleAr && record.content !== record.messageAr ? record.content : '') || record.titleAr || choose('إشعار جديد', 'New notification'));
         if (title) {
           showToast(`🔔 ${title}`, false);
         }
         playNotificationChime();
+
+        // Native Browser Web Notification (Desktop & Mobile PWA)
+        if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+          try {
+            const bodyMsg = state.lang === 'ar'
+              ? (record.messageAr || record.bodyAr || record.content || '')
+              : (record.messageEn || record.bodyEn || record.content || '');
+            const desktopNotif = new Notification(title, {
+              body: bodyMsg,
+              icon: '/favicon.ico',
+              tag: record.id || 'darc-alert'
+            });
+            desktopNotif.onclick = () => {
+              window.focus();
+              if (typeof showNotifications === 'function') {
+                showNotifications();
+              }
+              desktopNotif.close();
+            };
+          } catch (e) {
+            console.warn('[WebNotification] Error:', e.message);
+          }
+        }
+
+        if (typeof showNotifications === 'function' && document.querySelector('.modal-notifications')) {
+          showNotifications();
+        }
       }
     }
   }

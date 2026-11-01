@@ -45,24 +45,55 @@ export async function hasPermission(supabase, userId, baseRoleId, permission, pr
   // Admin has full system permissions instantly (0ms, 0 DB queries)
   if (baseRoleId === 'admin') return true;
 
-  let activeRoleId = baseRoleId;
-  
-  if (projectId) {
-    const { data: member } = await supabase
-      .from('project_members')
-      .select('role_id')
-      .eq('project_id', projectId)
-      .eq('user_id', userId)
-      .single();
-      
-    if (member && member.role_id) {
-      activeRoleId = member.role_id;
-    } else {
-      return false;
+  // Check base role first
+  const baseRole = await getCachedRole(supabase, baseRoleId);
+  if (baseRole && baseRole.permissions) {
+    if (baseRole.permissions.includes('*')) return true;
+    const validPerms = PERMISSION_ALIASES[permission] || [permission];
+    // If base role already grants the permission globally
+    if (validPerms.some(p => baseRole.permissions.includes(p))) {
+      if (!projectId) return true;
+      if (baseRoleId === 'portfolio_manager' || baseRole.permissions.includes('manage_projects') || baseRole.permissions.includes('edit_projects')) {
+        return true;
+      }
     }
   }
 
-  const role = await getCachedRole(supabase, activeRoleId);
+  let activeRoleId = baseRoleId;
+  
+  if (projectId) {
+    // 1. Check if user is the project manager or creator in projects table
+    const { data: proj } = await supabase
+      .from('projects')
+      .select('manager_id, created_by')
+      .eq('id', projectId)
+      .maybeSingle();
+
+    if (proj && (proj.manager_id === userId || proj.created_by === userId)) {
+      activeRoleId = 'project_manager';
+    } else {
+      // 2. Check project_members table
+      const { data: member } = await supabase
+        .from('project_members')
+        .select('role_id')
+        .eq('project_id', projectId)
+        .eq('user_id', userId)
+        .maybeSingle();
+        
+      if (member && member.role_id) {
+        activeRoleId = member.role_id;
+      } else {
+        // If not a project member, fall back to checking if base role grants permission
+        if (baseRole && baseRole.permissions) {
+          const validPerms = PERMISSION_ALIASES[permission] || [permission];
+          return validPerms.some(p => baseRole.permissions.includes(p));
+        }
+        return false;
+      }
+    }
+  }
+
+  const role = (activeRoleId === baseRoleId && baseRole) ? baseRole : await getCachedRole(supabase, activeRoleId);
   if (!role || !role.permissions) return false;
   if (role.permissions.includes('*')) return true;
   
@@ -74,15 +105,24 @@ export async function isProjectVisible(supabase, userId, baseRoleId, projectId) 
   if (baseRoleId === 'admin' || baseRoleId === 'account_permissions_manager') return true;
   
   const role = await getCachedRole(supabase, baseRoleId);
-  if (role?.id === 'portfolio_manager' || role?.permissions?.includes('view_all_projects')) return true;
+  if (role?.id === 'portfolio_manager' || role?.permissions?.includes('*') || role?.permissions?.includes('view_all_projects')) return true;
   
+  // Check if project manager/creator
+  const { data: proj } = await supabase
+    .from('projects')
+    .select('manager_id, created_by')
+    .eq('id', projectId)
+    .maybeSingle();
+
+  if (proj && (proj.manager_id === userId || proj.created_by === userId)) return true;
+
   // Check membership
   const { data: member } = await supabase
     .from('project_members')
     .select('role_id')
     .eq('project_id', projectId)
     .eq('user_id', userId)
-    .single();
+    .maybeSingle();
     
   return !!member;
 }

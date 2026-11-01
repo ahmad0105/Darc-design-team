@@ -1,44 +1,92 @@
-export async function createNotification(supabase, { userId, type, titleAr, titleEn, messageAr, messageEn, content, taskId, projectId }) {
+import crypto from 'node:crypto';
+import { NOTIFICATION_CATALOG, buildStandardNotification } from './notifications.catalog.js';
+
+export { NOTIFICATION_CATALOG, buildStandardNotification };
+
+export async function createNotification(supabase, entry) {
   try {
-    const { default: crypto } = await import('node:crypto');
+    const std = buildStandardNotification(entry);
     const id = 'notif_' + (crypto.randomUUID ? crypto.randomUUID() : crypto.randomBytes(8).toString('hex'));
-    const finalTitleAr = titleAr || (content ? 'إشعار جديد' : 'تحديث جديد');
-    const finalTitleEn = titleEn || (content ? 'New Notification' : 'New Update');
-    const finalMsgAr = messageAr || content || '';
-    const finalMsgEn = messageEn || content || '';
 
     await supabase.from('notifications').insert([{
       id,
-      user_id: userId,
-      type: type || 'general',
-      title_ar: finalTitleAr,
-      title_en: finalTitleEn,
-      message_ar: finalMsgAr,
-      message_en: finalMsgEn,
-      body_ar: finalMsgAr,
-      body_en: finalMsgEn,
-      content: content || finalMsgAr,
-      task_id: taskId || null,
-      project_id: projectId || null,
+      user_id: entry.userId || entry.user_id,
+      type: std.type,
+      title_ar: std.titleAr,
+      title_en: std.titleEn,
+      message_ar: std.messageAr,
+      message_en: std.messageEn,
+      body_ar: std.messageAr,
+      body_en: std.messageEn,
+      content: std.content,
+      task_id: entry.taskId || entry.task_id || null,
+      project_id: entry.projectId || entry.project_id || null,
       read: false,
       read_at: null,
       created_at: new Date().toISOString()
     }]);
 
     // Dispatch WhatsApp alert to the individual user if they have a real phone number configured
-    if (userId) {
+    const targetUserId = entry.userId || entry.user_id;
+    if (targetUserId) {
       import('../whatsapp/whatsapp.service.js').then(({ dispatchDirectNotificationAlert }) => {
-        dispatchDirectNotificationAlert(supabase, userId, {
-          title: finalTitleAr,
-          content: finalMsgAr,
-          type: type || 'general',
-          taskId,
-          projectId
+        dispatchDirectNotificationAlert(supabase, targetUserId, {
+          title: std.titleAr,
+          content: std.messageAr,
+          type: std.type,
+          taskId: entry.taskId || entry.task_id,
+          projectId: entry.projectId || entry.project_id
         }).catch(err => console.warn('[WhatsApp Direct Alert]', err.message));
       }).catch(() => {});
     }
   } catch(e) {
     console.warn('[Notifications] Could not create:', e.message);
+  }
+}
+
+export async function createBatchNotifications(supabase, entries = []) {
+  if (!Array.isArray(entries) || entries.length === 0) return;
+  try {
+    const rows = entries.map(entry => {
+      const std = buildStandardNotification(entry);
+      const id = 'notif_' + (crypto.randomUUID ? crypto.randomUUID() : crypto.randomBytes(8).toString('hex'));
+      return {
+        id,
+        user_id: entry.userId || entry.user_id,
+        type: std.type,
+        title_ar: std.titleAr,
+        title_en: std.titleEn,
+        message_ar: std.messageAr,
+        message_en: std.messageEn,
+        body_ar: std.messageAr,
+        body_en: std.messageEn,
+        content: std.content,
+        task_id: entry.taskId || entry.task_id || null,
+        project_id: entry.projectId || entry.project_id || null,
+        read: false,
+        read_at: null,
+        created_at: new Date().toISOString()
+      };
+    });
+
+    await supabase.from('notifications').insert(rows);
+
+    // Dispatch WhatsApp direct alerts in parallel
+    import('../whatsapp/whatsapp.service.js').then(({ dispatchDirectNotificationAlert }) => {
+      for (const row of rows) {
+        if (row.user_id) {
+          dispatchDirectNotificationAlert(supabase, row.user_id, {
+            title: row.title_ar,
+            content: row.message_ar,
+            type: row.type,
+            taskId: row.task_id,
+            projectId: row.project_id
+          }).catch(err => console.warn('[WhatsApp Direct Alert]', err.message));
+        }
+      }
+    }).catch(() => {});
+  } catch (err) {
+    console.warn('[Notifications] createBatchNotifications error:', err.message);
   }
 }
 

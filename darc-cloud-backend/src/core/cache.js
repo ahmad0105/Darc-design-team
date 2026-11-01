@@ -1,5 +1,6 @@
 // Simple In-Memory Cache for Cloudflare Workers / Node.js
 // Variables persist across requests on the same isolate until the worker restarts.
+import { sanitizeUserCustomFields } from '../utils/transformers.js';
 
 let _bootstrapCache = new Map();
 let _rolesCache = null;
@@ -217,7 +218,7 @@ export async function getCachedUsers(supabase) {
           specialty: u.specialty || u.custom_fields?.specialty || '',
           avatar_url: u.avatar_url || u.custom_fields?.avatarUrl || null,
           phone: u.phone || u.custom_fields?.phone || null,
-          custom_fields: u.custom_fields || null,
+          custom_fields: sanitizeUserCustomFields(u.custom_fields),
           last_login_at: u.last_login_at || u.custom_fields?.lastLoginAt || null,
           last_active_at: u.last_active_at || u.custom_fields?.lastActiveAt || null
         }));

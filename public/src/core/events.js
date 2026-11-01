@@ -12,6 +12,7 @@ import { exportAuditLogsXLS, printAuditReport, fetchFullAuditHistory, canAccessS
 import { fetchAnalyticsData } from '../features/settings/analytics.js';
 import { fetchDiagnosticsData, setDiagnosticsUserFilter, setDiagnosticsSeverityFilter, setDiagnosticsStatusFilter } from '../features/settings/diagnostics.js';
 import { renderActivation, renderLogin, renderResetPassword } from '../features/auth/auth.js';
+import { playNotificationChime } from './realtime.js';
 
 export async function handleSubmit(event) {
   const form = event.target;
@@ -29,11 +30,13 @@ export async function handleSubmit(event) {
       delete values.passwordConfirm;
       await api('/api/auth/activate', { method: 'POST', body: JSON.stringify(values) });
       window.history.replaceState({}, '', window.location.pathname);
-      await loadData(); 
-    if (state.data?.user?.customFields?.calendarSystem) {
-      state.calendarSystem = state.data.user.customFields.calendarSystem;
-      try { localStorage.setItem('darc_calendar_system', state.calendarSystem); } catch (e) {}
-    }
+      renderLoading();
+      await loadData();
+      if (state.data?.user?.customFields?.calendarSystem) {
+        state.calendarSystem = state.data.user.customFields.calendarSystem;
+        try { localStorage.setItem('darc_calendar_system', state.calendarSystem); } catch (e) {}
+      }
+      renderApp();
       return;
     }
     if (form.id === 'project-form') {
@@ -586,7 +589,105 @@ export async function handleClick(event) {
   if (action === 'open-cheatsheet') { openShortcutsCheatsheet(); return; }
   if (action === 'close-modal') { closeModal(); return; }
   if (action === 'show-notifications') { showNotifications(); return; }
+  if (action === 'delete-notification') {
+    event.stopPropagation();
+    const notifId = target.dataset.notificationId || target.closest('[data-notification-id]')?.dataset.notificationId;
+    if (!notifId) return;
+    if (state.data?.notifications) {
+      state.data.notifications = state.data.notifications.filter(n => n.id !== notifId);
+    }
+    showNotifications();
+    renderApp();
+    api(`/api/notifications/${encodeURIComponent(notifId)}`, { method: 'DELETE' }).catch((err) => {
+      console.warn('[Notifications] Failed to delete notification:', err);
+    });
+    return;
+  }
+  if (action === 'clear-read-notifications') {
+    event.stopPropagation();
+    const readCount = (state.data?.notifications || []).filter(n => n.read || n.readAt).length;
+    if (!readCount) return;
+    if (state.data?.notifications) {
+      state.data.notifications = state.data.notifications.filter(n => !n.read && !n.readAt);
+    }
+    showNotifications();
+    renderApp();
+    showToast(choose('تم مسح التنبيهات المقروءة بنجاح.', 'Read notifications cleared successfully.'));
+    api('/api/notifications/clear-read', { method: 'POST' }).catch((err) => {
+      console.warn('[Notifications] Failed to clear read notifications:', err);
+    });
+    return;
+  }
+  if (action === 'enable-browser-notifications') {
+    event.stopPropagation();
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      Notification.requestPermission().then(permission => {
+        if (permission === 'granted') {
+          showToast(choose('تم تفعيل إشعارات المتصفح بنجاح! 🔔', 'Desktop browser notifications enabled! 🔔'));
+          try {
+            new Notification(choose('DARC Design Team', 'DARC Design Team'), {
+              body: choose('إشعارات المتصفح الفورية تعمل بنجاح الآن على هذا الجهاز.', 'Browser notifications are now working on this device.'),
+              icon: '/favicon.ico'
+            });
+          } catch (e) {}
+        } else if (permission === 'denied') {
+          showToast(choose('تم رفض الإشعارات من إعدادات المتصفح.', 'Notifications are blocked in browser settings.'), true);
+        }
+        showNotifications();
+      });
+    } else {
+      showToast(choose('متصفحك لا يدعم إشعارات الويب المباشرة.', 'Your browser does not support web notifications.'), true);
+    }
+    return;
+  }
+  if (action === 'send-test-notification') {
+    event.stopPropagation();
+    showToast(choose('جاري إرسال إشعار تجريبي من السيرفر...', 'Sending test notification from server...'));
+    api('/api/notifications/test', {
+      method: 'POST',
+      body: JSON.stringify({
+        messageAr: 'إشعار فحص النظام المباشر — السيرفر والربط اللحظي يعملان بكفاءة 🚀',
+        messageEn: 'Live System Test — Backend and Realtime are operating smoothly 🚀'
+      })
+    }).then((res) => {
+      showToast(choose('تم إرسال الإشعار من السيرفر بنجاح! 🔔', 'Test notification dispatched from server! 🔔'));
+      playNotificationChime();
+      if (res && res.notification) {
+        if (!state.data.notifications) state.data.notifications = [];
+        state.data.notifications.unshift(res.notification);
+        showNotifications();
+        renderApp();
+      }
+    }).catch(err => {
+      showToast(err.message || choose('فشل إرسال الإشعار التجريبي', 'Failed to send test notification'), true);
+    });
+    return;
+  }
+  if (action === 'play-test-chime') {
+    event.stopPropagation();
+    playNotificationChime();
+    showToast(choose('تم تشغيل النغمة التنبيهية 🔔', 'Notification chime played 🔔'));
+    return;
+  }
+  if (action === 'test-browser-notification') {
+    event.stopPropagation();
+    if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+      try {
+        new Notification(choose('DARC Design Team', 'DARC Design Team'), {
+          body: choose('هذا اختبار لإشعار سطح المكتب والمتصفح — يعمل بنجاح! 🚀', 'This is a test desktop notification — working perfectly! 🚀'),
+          icon: '/favicon.ico'
+        });
+        showToast(choose('تم إرسال إشعار المتصفح لسطح المكتب!', 'Desktop notification dispatched!'));
+      } catch (e) {
+        showToast(e.message, true);
+      }
+    } else {
+      showToast(choose('إشعارات المتصفح غير مفعلة بعد.', 'Browser notifications not yet enabled.'), true);
+    }
+    return;
+  }
   if (action === 'read-notification') {
+    if (target.dataset.action === 'delete-notification' || target.closest('[data-action="delete-notification"]')) return;
     const notifId = target.dataset.notificationId || target.closest('[data-notification-id]')?.dataset.notificationId;
     const notif = (state.data?.notifications || []).find(n => n.id === notifId);
 
@@ -646,7 +747,7 @@ export async function handleClick(event) {
     // C. إذا كان الإشعار مراجعة مخططات عامة داخل مشروع
     if (notifType === 'document_review' && projectId) {
       state.activeProjectId = projectId;
-      state.projectTab = 'documents';
+      state.projectTab = 'drawings';
       switchView('project-detail', projectId);
       return;
     }
@@ -1018,7 +1119,7 @@ export async function handleClick(event) {
     return;
   }
   if (action === 'open-task') {
-    if (window._justDroppedAt && (Date.now() - window._justDroppedAt < 250)) {
+    if (window._isDraggingTask || (window._justDroppedAt && (Date.now() - window._justDroppedAt < 400))) {
       return; // Ignore synthetic click caused by mouse release on drop
     }
     const taskId = target.dataset.taskId || target.closest('[data-task-id]')?.dataset.taskId;

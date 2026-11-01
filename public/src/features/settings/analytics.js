@@ -75,7 +75,7 @@ export function renderAnalyticsSection() {
     <section class="setting-section">
       <div class="panel-head" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;">
         <div>
-          <h2>${choose('مراقبة الأداء، الزيارات الجغرافية ورصد استهلاك الموارد 📈', 'Observability, Geo Traffic & Anomaly Monitoring 📈')}</h2>
+          <h2>${choose('مراقبة الأداء، الزيارات الجغرافية ورصد استهلاك الموارد', 'Observability, Geo Traffic & Anomaly Monitoring')}</h2>
           <p>${choose('إحصائيات دقيقة وفورية عن حركة الزوار، البلدان، متوسط الوقت المقضي، وتحسس آلي لأي استهلاك غير معتاد للموارد.', 'Live analytics on visitor traffic, geolocation, dwell time, and automated resource anomaly detection.')}</p>
         </div>
         <div style="display:flex;align-items:center;gap:8px;">
