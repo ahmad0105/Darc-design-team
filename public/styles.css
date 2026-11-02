@@ -891,7 +891,25 @@ select, .filter-select, .select-compact {
 .column-dot.green { background: var(--mint-strong); }
 .board-count { min-width: 21px; padding: 3px 6px; border-radius: 7px; color: var(--muted); background: #e9efed; text-align: center; font-size: 11px; font-weight: 800; }
 .board-cards { display: grid; gap: 8px; }
-.task-card { padding: 13px; border: 1px solid #e5ecea; border-radius: 13px; background: #fff; box-shadow: 0 3px 10px rgba(30, 65, 65, .035); cursor: grab; user-select: none; -webkit-user-select: none; -webkit-user-drag: none; touch-action: pan-y; transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease; contain: layout style; content-visibility: auto; contain-intrinsic-size: auto 115px; outline: none; }
+.task-card { padding: 13px; border: 1px solid #e5ecea; border-radius: 13px; background: #fff; box-shadow: 0 3px 10px rgba(30, 65, 65, .035); cursor: grab; user-select: none; -webkit-user-select: none; -webkit-user-drag: none; -webkit-touch-callout: none; touch-action: manipulation; transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease; contain: layout style; content-visibility: auto; contain-intrinsic-size: auto 115px; outline: none; }
+.task-card.is-touch-holding {
+  transform: scale(0.982) !important;
+  box-shadow: 0 0 0 2px var(--brand-teal, #0d6269), 0 8px 22px rgba(13, 98, 105, 0.16) !important;
+  border-color: var(--brand-teal, #0d6269) !important;
+  transition: transform 0.12s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.12s ease !important;
+}
+body.is-touch-dragging {
+  touch-action: none !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  -webkit-touch-callout: none !important;
+  overscroll-behavior-y: contain !important;
+}
+body.is-touch-dragging * {
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  -webkit-touch-callout: none !important;
+}
 .task-card.is-dragging,
 .task-card.is-keyboard-grabbed,
 .task-card.just-dropped,

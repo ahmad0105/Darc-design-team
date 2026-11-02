@@ -522,9 +522,11 @@ function cleanDragState() {
     dragCard.style.opacity = '';
     dragCard.style.pointerEvents = '';
     dragCard.classList.remove('is-dragging');
+    dragCard.classList.remove('is-touch-holding');
   }
   dragCard = null;
 
+  document.body.classList.remove('is-touch-dragging');
   activePointerId = null;
   isPointerDragging = false;
   isDraggingActive = false;
@@ -571,7 +573,7 @@ function initiateDrag(clientX, clientY) {
 
   // Haptic feedback tick
   if (typeof navigator !== 'undefined' && navigator.vibrate) {
-    try { navigator.vibrate(30); } catch (e) {}
+    try { navigator.vibrate(35); } catch (e) {}
   }
 
   const rect = dragCard.getBoundingClientRect();
@@ -591,7 +593,7 @@ function initiateDrag(clientX, clientY) {
     z-index: 10000;
     opacity: 0.96;
     transform: translate3d(${rect.left}px, ${rect.top}px, 0) scale(1.025);
-    box-shadow: 0 20px 42px -8px rgba(13, 98, 105, 0.24), 0 8px 18px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 20px 42px -8px rgba(13, 98, 105, 0.28), 0 8px 18px rgba(0, 0, 0, 0.12);
     border: 1.5px solid var(--brand-teal, #0d6269);
     background: var(--surface, #ffffff);
     border-radius: 12px;
@@ -601,10 +603,12 @@ function initiateDrag(clientX, clientY) {
   document.body.appendChild(dragGhost);
 
   // Dim source card & make it transparent to elementFromPoint hit-testing
+  dragCard.classList.remove('is-touch-holding');
   dragCard.classList.add('is-dragging');
   dragCard.style.opacity = '0.22';
   dragCard.style.pointerEvents = 'none';
 
+  document.body.classList.add('is-touch-dragging');
   document.body.style.userSelect = 'none';
   document.body.style.webkitUserSelect = 'none';
   document.body.style.cursor = 'grabbing';
@@ -628,7 +632,98 @@ function initiateDrag(clientX, clientY) {
   startContinuousAutoScroll();
 }
 
-// ── UNIFIED POINTER ENGINE (Mouse, Touch, Stylus) ──────────────────────────
+// Unified Velocity & Tilt Physics Movement Engine
+function updateDragMovement(clientX, clientY) {
+  if (!isDraggingActive || !dragGhost) return;
+
+  currentMouseX = clientX;
+  currentMouseY = clientY;
+
+  // Dynamic Velocity-Responsive Tilt (-2.5deg to +2.5deg)
+  const velX = (prevMouseX >= 0) ? (clientX - prevMouseX) : 0;
+  prevMouseX = clientX;
+  const targetTilt = Math.max(-2.5, Math.min(2.5, velX * 0.16));
+  currentTilt += (targetTilt - currentTilt) * 0.28;
+
+  // Move floating ghost smoothly with cursor/finger via GPU hardware acceleration
+  const gx = clientX - dragOffsetX;
+  const gy = clientY - dragOffsetY;
+  dragGhost.style.transform = `translate3d(${gx}px, ${gy}px, 0) scale(1.025) rotate(${currentTilt.toFixed(2)}deg)`;
+
+  // Update target column and placeholder position
+  updatePlaceholderPosition(clientX, clientY);
+}
+
+// Unified Drop Finalizer with Magnetic Glide Animation & Rollback Safety
+async function finalizeDragDrop(clientX, clientY) {
+  if (touchHoldTimer) {
+    clearTimeout(touchHoldTimer);
+    touchHoldTimer = null;
+  }
+  if (dragCard) {
+    dragCard.classList.remove('is-touch-holding');
+  }
+
+  if (!isPointerDragging && !activeDraggedTaskId) {
+    cleanDragState();
+    return;
+  }
+
+  const moveDist = Math.hypot(clientX - dragStartX, clientY - dragStartY);
+
+  // Suppress clicks on drop release
+  window._justDroppedTaskId = activeDraggedTaskId;
+  window._justDroppedAt = Date.now();
+  window._isDraggingTask = false;
+
+  // Only process drop if cursor/finger genuinely moved (> 4px); ignore stationary tap & hold
+  if (moveDist > 4 && activeDraggedTaskId) {
+    const elUnder = document.elementFromPoint(clientX, clientY);
+    let column = elUnder?.closest('.board-column') || (placeholder && placeholder.closest('.board-column'));
+    if (!column) {
+      const columns = Array.from(document.querySelectorAll('.board-column'));
+      if (columns.length > 0) {
+        column = columns.reduce((closest, col) => {
+          const rect = col.getBoundingClientRect();
+          const dist = Math.abs(clientX - (rect.left + rect.width / 2));
+          return dist < closest.dist ? { col, dist } : closest;
+        }, { col: null, dist: Infinity }).col;
+      }
+    }
+
+    const draggedId = activeDraggedTaskId;
+    const targetRect = placeholder && placeholder.parentNode ? placeholder.getBoundingClientRect() : null;
+
+    // Linear Magnetic Snap Animation: Smoothly glide into placeholder slot before finalizing DOM
+    if (dragGhost && targetRect && targetRect.width > 0 && targetRect.height > 0) {
+      dragGhost.style.transition = 'transform 0.14s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.14s ease, opacity 0.14s ease';
+      dragGhost.style.transform = `translate3d(${targetRect.left}px, ${targetRect.top}px, 0) scale(1) rotate(0deg)`;
+      dragGhost.style.boxShadow = '0 4px 14px rgba(13, 98, 105, 0.12)';
+
+      setTimeout(async () => {
+        if (dragGhost && dragGhost.parentNode) dragGhost.parentNode.removeChild(dragGhost);
+        dragGhost = null;
+        if (column && draggedId) {
+          await handleTaskDrop(column, clientY, draggedId);
+        } else {
+          cleanDragState();
+        }
+      }, 130);
+      return;
+    }
+
+    if (column && draggedId) {
+      if (dragGhost && dragGhost.parentNode) dragGhost.parentNode.removeChild(dragGhost);
+      dragGhost = null;
+      await handleTaskDrop(column, clientY, draggedId);
+      return;
+    }
+  }
+
+  cleanDragState();
+}
+
+// ── UNIFIED POINTER ENGINE (Mouse, Stylus & Touch) ──────────────────────────
 
 document.addEventListener('pointerdown', (e) => {
   // Only handle primary button (left mouse click or touch contact)
@@ -654,12 +749,14 @@ document.addEventListener('pointerdown', (e) => {
   dragOffsetY = e.clientY - rect.top;
 
   if (e.pointerType === 'touch') {
-    // 110ms Tactile Pickup on Touch: Allows natural vertical scrolling without lag
+    // Tactile pickup long-press (150ms): provides visual hint and avoids accidental drag when scrolling
+    card.classList.add('is-touch-holding');
     touchHoldTimer = setTimeout(() => {
+      touchHoldTimer = null;
       initiateDrag(e.clientX, e.clientY);
-    }, 110);
+    }, 150);
   }
-  // On mouse, no timer is needed: drag initiates when mouse moves >= 4px
+  // On mouse, no timer is needed: drag initiates instantly when mouse moves >= 4px
 }, { passive: true });
 
 document.addEventListener('pointermove', (e) => {
@@ -667,51 +764,24 @@ document.addEventListener('pointermove', (e) => {
 
   // If drag hasn't started yet, check movement thresholds
   if (!isPointerDragging) {
-    const deltaX = Math.abs(e.clientX - dragStartX);
-    const deltaY = Math.abs(e.clientY - dragStartY);
-    const dist = Math.hypot(deltaX, deltaY);
+    const dist = Math.hypot(e.clientX - dragStartX, e.clientY - dragStartY);
 
-    if (e.pointerType === 'touch') {
-      // Natural finger wobble threshold: if finger moves > 12px before hold timer fires, cancel drag and allow scroll
-      if (dist > 12) {
-        if (touchHoldTimer) {
-          clearTimeout(touchHoldTimer);
-          touchHoldTimer = null;
-        }
-        dragCard = null;
-      }
-      return;
-    } else {
-      // Mouse / Pen: 4px drag threshold starts dragging immediately
+    if (e.pointerType === 'mouse' || e.pointerType === 'pen') {
+      // Mouse / Pen: 4px threshold starts dragging immediately
       if (dist >= 4) {
         initiateDrag(e.clientX, e.clientY);
       } else {
         return;
       }
+    } else {
+      // Touch: movement threshold is supervised by touchmove
+      return;
     }
   }
 
   // Active Dragging Mode
   if (e.cancelable) e.preventDefault();
-
-  currentMouseX = e.clientX;
-  currentMouseY = e.clientY;
-
-  // Linear Physics: Dynamic Velocity-Responsive Tilt (-2.5deg to +2.5deg)
-  const velX = (prevMouseX >= 0) ? (e.clientX - prevMouseX) : 0;
-  prevMouseX = e.clientX;
-  const targetTilt = Math.max(-2.5, Math.min(2.5, velX * 0.16));
-  currentTilt += (targetTilt - currentTilt) * 0.28;
-
-  // Move floating ghost smoothly with cursor via GPU hardware acceleration
-  if (dragGhost) {
-    const gx = e.clientX - dragOffsetX;
-    const gy = e.clientY - dragOffsetY;
-    dragGhost.style.transform = `translate3d(${gx}px, ${gy}px, 0) scale(1.025) rotate(${currentTilt.toFixed(2)}deg)`;
-  }
-
-  // Update target column and placeholder position
-  updatePlaceholderPosition(e.clientX, e.clientY);
+  updateDragMovement(e.clientX, e.clientY);
 }, { passive: false });
 
 document.addEventListener('pointerup', async (e) => {
@@ -719,70 +789,75 @@ document.addEventListener('pointerup', async (e) => {
     clearTimeout(touchHoldTimer);
     touchHoldTimer = null;
   }
-  if (!dragCard) return;
-
-  if (isPointerDragging) {
-    const moveDist = Math.hypot(e.clientX - dragStartX, e.clientY - dragStartY);
-
-    // Suppress clicks on drop release
-    window._justDroppedTaskId = activeDraggedTaskId;
-    window._justDroppedAt = Date.now();
-    window._isDraggingTask = false;
-
-    // Only process drop if cursor genuinely moved (> 4px); ignore stationary tap & hold
-    if (moveDist > 4 && activeDraggedTaskId) {
-      const elUnder = document.elementFromPoint(e.clientX, e.clientY);
-      let column = elUnder?.closest('.board-column') || (placeholder && placeholder.closest('.board-column'));
-      if (!column) {
-        const columns = Array.from(document.querySelectorAll('.board-column'));
-        if (columns.length > 0) {
-          column = columns.reduce((closest, col) => {
-            const rect = col.getBoundingClientRect();
-            const dist = Math.abs(e.clientX - (rect.left + rect.width / 2));
-            return dist < closest.dist ? { col, dist } : closest;
-          }, { col: null, dist: Infinity }).col;
-        }
-      }
-
-      const draggedId = activeDraggedTaskId;
-      const targetRect = placeholder && placeholder.parentNode ? placeholder.getBoundingClientRect() : null;
-
-      // Linear Magnetic Snap Animation: Smoothly glide into placeholder slot before finalizing DOM
-      if (dragGhost && targetRect && targetRect.width > 0 && targetRect.height > 0) {
-        dragGhost.style.transition = 'transform 0.14s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.14s ease, opacity 0.14s ease';
-        dragGhost.style.transform = `translate3d(${targetRect.left}px, ${targetRect.top}px, 0) scale(1) rotate(0deg)`;
-        dragGhost.style.boxShadow = '0 4px 14px rgba(13, 98, 105, 0.12)';
-
-        setTimeout(async () => {
-          if (dragGhost && dragGhost.parentNode) dragGhost.parentNode.removeChild(dragGhost);
-          dragGhost = null;
-          if (column && draggedId) {
-            await handleTaskDrop(column, e.clientY, draggedId);
-          } else {
-            cleanDragState();
-          }
-        }, 130);
-        return;
-      }
-
-      if (column && draggedId) {
-        if (dragGhost && dragGhost.parentNode) dragGhost.parentNode.removeChild(dragGhost);
-        dragGhost = null;
-        await handleTaskDrop(column, e.clientY, draggedId);
-      }
-    }
-    cleanDragState();
-  } else {
-    // Regular click (no drag)
-    cleanDragState();
+  if (dragCard) {
+    dragCard.classList.remove('is-touch-holding');
   }
+  if (!isPointerDragging && (!e.pointerType || e.pointerType === 'mouse')) {
+    cleanDragState();
+    return;
+  }
+  await finalizeDragDrop(e.clientX, e.clientY);
 });
 
-document.addEventListener('pointercancel', () => {
+// Guard pointercancel: never abort active touch drag on mobile due to gesture ambiguities
+document.addEventListener('pointercancel', (e) => {
+  if (isPointerDragging && e.pointerType === 'touch') {
+    return;
+  }
   cleanDragState();
 });
 
-// Suppress browser native HTML5 drag on task cards to give 100% control to the smooth unified pointer engine
+// ── DEDICATED NATIVE TOUCH INTERCEPTORS (iOS Safari, Android Chrome, iPadOS) ──
+
+window.addEventListener('touchmove', (e) => {
+  if (touchHoldTimer) {
+    const touch = e.touches[0];
+    if (touch) {
+      const dist = Math.hypot(touch.clientX - dragStartX, touch.clientY - dragStartY);
+      // Finger scroll detection: if user moves > 10px before hold timer finishes, cancel drag to let native scroll take over
+      if (dist > 10) {
+        clearTimeout(touchHoldTimer);
+        touchHoldTimer = null;
+        if (dragCard) {
+          dragCard.classList.remove('is-touch-holding');
+          dragCard = null;
+        }
+      }
+    }
+    return;
+  }
+
+  if (isPointerDragging) {
+    // CRITICAL: Block viewport scroll & pull-to-refresh completely while dragging
+    if (e.cancelable) e.preventDefault();
+    const touch = e.touches[0];
+    if (touch) {
+      updateDragMovement(touch.clientX, touch.clientY);
+    }
+  }
+}, { passive: false });
+
+window.addEventListener('touchend', async (e) => {
+  if (touchHoldTimer) {
+    clearTimeout(touchHoldTimer);
+    touchHoldTimer = null;
+  }
+  if (dragCard) {
+    dragCard.classList.remove('is-touch-holding');
+  }
+  if (isPointerDragging) {
+    const touch = e.changedTouches ? e.changedTouches[0] : null;
+    const clientX = touch ? touch.clientX : currentMouseX;
+    const clientY = touch ? touch.clientY : currentMouseY;
+    await finalizeDragDrop(clientX, clientY);
+  }
+}, { passive: true });
+
+window.addEventListener('touchcancel', () => {
+  cleanDragState();
+});
+
+// Suppress browser native HTML5 drag on task cards to give 100% control to our engine
 document.addEventListener('dragstart', (e) => {
   if (e.target.closest('.task-card')) {
     e.preventDefault();
@@ -791,7 +866,7 @@ document.addEventListener('dragstart', (e) => {
 
 // Capture-phase click interceptor to guarantee task modals NEVER open upon dropping a card
 document.addEventListener('click', (e) => {
-  if (window._justDroppedAt && (Date.now() - window._justDroppedAt < 400)) {
+  if (window._justDroppedAt && (Date.now() - window._justDroppedAt < 500)) {
     e.preventDefault();
     e.stopPropagation();
     e.stopImmediatePropagation();
