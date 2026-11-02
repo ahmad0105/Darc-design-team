@@ -176,13 +176,14 @@ export function openTemplateModal(template = null) {
       </div>
       ${isEdit ? `
       <div class="field">
-        <label>${choose('الكود', 'Code')} <span style="font-size:11px;font-weight:normal;color:var(--ink-soft);">${choose('(فريد ولا يتكرر)', '(Unique, no duplicates)')}</span></label>
+        <label>${choose('الرمز / الكود', 'Code')} <span style="font-size:11px;font-weight:normal;color:var(--ink-soft);">${choose('(فريد ولا يتكرر)', '(Unique, no duplicates)')}</span></label>
         <input name="code" value="${esc(template?.code || '')}" placeholder="e.g. 01" required />
       </div>
       ` : `
       <div class="field" style="background:var(--surface-soft);padding:10px 14px;border-radius:8px;border:1px dashed var(--line);display:flex;align-items:center;justify-content:space-between;">
         <div>
-          <span style="font-size:12px;font-weight:600;color:var(--ink);display:block;">${t("الكود التقائي", "Auto-assigned Code")}</span>
+          <span style="font-size:12px;font-weight:600;color:var(--ink);display:block;">${choose('الرمز / الكود التلقائي', 'Auto-assigned Code')}</span>
+          <span style="font-size:11px;color:var(--ink-soft);">${choose('يتم تعيينه تلقائياً ابتداءً من 1', 'Assigned automatically starting from 1')}</span>
         </div>
         <span class="badge" style="font-size:14px;font-weight:700;background:rgba(20,184,166,0.12);color:var(--brand-teal);padding:4px 10px;border-radius:6px;">#${esc(nextCode)}</span>
       </div>

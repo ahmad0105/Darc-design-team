@@ -287,7 +287,7 @@ export async function handleSubmit(event) {
       } else {
         const cleanCode = (values.code || '').trim();
         if (!cleanCode) {
-          throw new Error(choose('الكود مطلوب', 'Template code is required'));
+          throw new Error(choose('الرمز / الكود مطلوب', 'Template code is required'));
         }
         if (isTemplateCodeReserved(cleanCode, templateId, state.data?.templates || [])) {
           const codeInput = form.querySelector('input[name="code"]');
@@ -295,7 +295,7 @@ export async function handleSubmit(event) {
             codeInput.focus();
             codeInput.classList.add('input-error');
           }
-          throw new Error(choose('الكود محجوز من قبل', 'This code is already reserved by another template'));
+          throw new Error(choose('الرمز / الكود محجوز من قبل', 'This code is already reserved by another template'));
         }
         values.code = cleanCode;
       }

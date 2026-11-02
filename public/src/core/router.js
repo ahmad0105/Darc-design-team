@@ -201,18 +201,6 @@ export async function refreshView(silent = false) { try { await loadData(silent)
 
 export async function loadData(silent = false) {
   try {
-    // SWR (Stale-While-Revalidate): If memory state is empty, hydrate immediately from verified cache in 0ms
-    if (!state.data) {
-      const cached = getOfflineBootstrap();
-      if (cached && cached.user) {
-        state.data = cached;
-        if (state.view === 'login' || !canAccessView(state.view)) {
-          state.view = getFirstAllowedView();
-        }
-        requestAnimationFrame(() => renderApp());
-      }
-    }
-
     const isTrashSection = state.view === 'settings' && state.settingsSection === 'trash';
     const trashPromise = isTrashSection && !state.trashLoaded
       ? api('/api/trash', { silent: true }).catch(() => null)
@@ -354,9 +342,6 @@ export async function loadData(silent = false) {
       }
       const hasOpenModal = Boolean(document.getElementById('modal-root')?.children?.length);
       const isDragging = Boolean(
-        window._isDraggingTask ||
-        window._isTouchHoldingTask ||
-        window._isKeyboardDraggingTask ||
         document.querySelector('.is-dragging') ||
         document.querySelector('.touch-dragging') ||
         document.querySelector('.drag-placeholder')

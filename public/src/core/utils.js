@@ -439,16 +439,6 @@ export function isOverdue(task) {
   return due ? due < new Date() : false;
 }
 
-export function isDueSoon(task, withinDays = 2) {
-  if (!task?.dueDate || ['done', 'completed', 'canceled'].includes(task.status)) return false;
-  const due = parseEndOfDay(task.dueDate);
-  if (!due) return false;
-  const now = new Date();
-  if (due < now) return false;
-  const diffDays = (due.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
-  return diffDays >= 0 && diffDays <= withinDays;
-}
-
 export function statusText(key) {
   switch (key) {
     case 'not_started': return t('notStarted');
