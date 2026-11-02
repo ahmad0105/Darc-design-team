@@ -188,7 +188,7 @@ export async function downloadDocument(docId) {
     try {
       const res = await api(`/api/documents/${docId}`);
       if (res && res.document) doc = res.document;
-    } catch (e) {}
+    } catch (e) { }
   }
 
   if (!doc) {
@@ -283,7 +283,7 @@ export function closeDocumentPreviewModal() {
       vid.pause();
       vid.removeAttribute('src');
       vid.load();
-    } catch (_) {}
+    } catch (_) { }
   }
 
   // 2. Remove keyboard listeners
@@ -329,8 +329,8 @@ export async function openDocumentPreviewModal(docId) {
   const ext = (doc.originalName || '').split('.').pop()?.toLowerCase() || '';
   const fmt = getFileFormatInfo(doc.originalName, doc.mimeType);
   const version = extractDrawingVersion(doc.originalName) || 'V1';
-  const sizeFormatted = doc.size > 1024 * 1024 
-    ? (doc.size / (1024 * 1024)).toFixed(1) + ' MB' 
+  const sizeFormatted = doc.size > 1024 * 1024
+    ? (doc.size / (1024 * 1024)).toFixed(1) + ' MB'
     : Math.round((doc.size || 0) / 1024) + ' KB';
 
   const isPdf = ext === 'pdf' || fmt.isPdf;
@@ -454,7 +454,7 @@ export async function openDocumentPreviewModal(docId) {
   // ── 1. RENDER PDF ARCHITECTURAL BLUEPRINTS ──────────────────────────────────
   if (isPdf) {
     const realPdfUrl = getRealAssetUrl(doc);
-    const drivePreviewUrl = (doc.driveFileId && doc.driveFileId.length >= 25 && !doc.driveFileId.startsWith('demo_') && doc.driveFileId !== GDRIVE_ROOT_FOLDER_ID) 
+    const drivePreviewUrl = (doc.driveFileId && doc.driveFileId.length >= 25 && !doc.driveFileId.startsWith('demo_') && doc.driveFileId !== GDRIVE_ROOT_FOLDER_ID)
       ? `https://drive.google.com/file/d/${encodeURIComponent(doc.driveFileId)}/preview`
       : GDRIVE_ROOT_FOLDER_URL;
 
@@ -631,7 +631,7 @@ export async function openDocumentPreviewModal(docId) {
         activePointerId = e.pointerId;
         try {
           viewportBox.setPointerCapture(e.pointerId);
-        } catch (_) {}
+        } catch (_) { }
         startX = e.clientX - panX;
         startY = e.clientY - panY;
         viewportBox.style.cursor = 'grabbing';
@@ -650,7 +650,7 @@ export async function openDocumentPreviewModal(docId) {
           activePointerId = null;
           try {
             viewportBox.releasePointerCapture(e.pointerId);
-          } catch (_) {}
+          } catch (_) { }
           viewportBox.style.cursor = 'grab';
         }
       };
@@ -664,36 +664,12 @@ export async function openDocumentPreviewModal(docId) {
   // ── 3. RENDER HIGH-DEFINITION ARCHITECTURAL VIDEOS ──────────────────────────
   if (isVideo) {
     const videoSrc = getRealAssetUrl(doc) || '/assets/DARC-VILLA-SITE-PROGRESS-WALKTHROUGH.mp4';
-    const drivePreviewUrl = (doc.driveFileId && doc.driveFileId.length >= 25 && !doc.driveFileId.startsWith('demo_') && doc.driveFileId !== GDRIVE_ROOT_FOLDER_ID) 
+    const drivePreviewUrl = (doc.driveFileId && doc.driveFileId.length >= 25 && !doc.driveFileId.startsWith('demo_') && doc.driveFileId !== GDRIVE_ROOT_FOLDER_ID)
       ? `https://drive.google.com/file/d/${encodeURIComponent(doc.driveFileId)}/preview`
       : GDRIVE_ROOT_FOLDER_URL;
 
     viewport.innerHTML = `
       <div style="width:100%;height:100%;display:flex;flex-direction:column;background:#06090e;color:#f8fafc;overflow:hidden;">
-        <!-- Video Studio Header Bar -->
-        <div style="background:rgba(15,23,42,0.95);border-bottom:1px solid #1e293b;padding:10px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;z-index:10;">
-          <div style="display:flex;align-items:center;gap:12px;">
-            <div style="display:flex;align-items:center;justify-content:center;background:#8b5cf6;color:#ffffff;width:30px;height:30px;border-radius:6px;font-weight:900;font-size:14px;">🎬</div>
-            <div>
-              <div style="font-weight:800;font-size:14px;color:#f8fafc;">${esc(doc.originalName)}</div>
-              <div style="font-size:11px;color:#94a3b8;">${choose('توثيق الموقع والجولة المعمارية بالفيديو (Site Walkthrough & Drone)', 'Architectural Site Walkthrough & Drone Inspection')} • ${sizeFormatted}</div>
-            </div>
-          </div>
-          <div style="display:flex;align-items:center;gap:8px;">
-            <span style="background:rgba(139,92,246,0.15);color:#a78bfa;border:1px solid rgba(139,92,246,0.3);font-size:11px;font-weight:800;padding:4px 8px;border-radius:6px;">1080p 60FPS</span>
-            <span style="background:rgba(34,197,94,0.15);color:#4ade80;border:1px solid rgba(34,197,94,0.3);font-size:11px;font-weight:800;padding:4px 8px;border-radius:6px;">H.264 High</span>
-            <button type="button" class="btn btn-sm" id="video-drive-btn" style="background:#1e293b;color:#94a3b8;border:1px solid #334155;padding:5px 12px;border-radius:6px;font-weight:700;font-size:12px;cursor:pointer;">
-              🌐 Google Drive
-            </button>
-            <button type="button" class="btn btn-sm" id="video-open-newtab" style="background:#1e293b;color:#cbd5e1;border:1px solid #334155;padding:5px 10px;border-radius:6px;font-size:12px;cursor:pointer;" title="${choose('فتح في نافذة جديدة', 'Open in New Tab')}">
-              ↗️
-            </button>
-            <button type="button" class="btn btn-sm" id="video-download-btn" style="background:#8b5cf6;color:#ffffff;border:none;padding:5px 14px;border-radius:6px;font-weight:800;font-size:12px;cursor:pointer;">
-              ⬇️ ${choose('تنزيل الفيديو الأصلي', 'Download Video')}
-            </button>
-          </div>
-        </div>
-
         <!-- Video Player Viewport -->
         <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;background:#000000;position:relative;overflow:hidden;">
           <video 
@@ -719,42 +695,6 @@ export async function openDocumentPreviewModal(docId) {
             </p>
             <button type="button" class="btn btn-primary" id="video-fallback-download-btn" style="padding:8px 20px;border-radius:8px;font-weight:800;">
               ⬇️ ${choose('تنزيل ملف الفيديو الأصلي', 'Download Video File')}
-            </button>
-          </div>
-        </div>
-
-        <!-- Timeline Keyframes / Architectural Camera Angles Strip -->
-        <div style="background:#0d1117;border-top:1px solid #1e293b;padding:10px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
-          <div style="display:flex;align-items:center;gap:8px;overflow-x:auto;">
-            <span style="font-size:11px;color:#94a3b8;font-weight:700;">📍 ${choose('محطات التوثيق المعماري:', 'Keyframes:')}</span>
-            <button type="button" class="video-jump-btn" data-sec="0" style="background:#161b22;border:1px solid #30363d;color:#f0f6fc;font-size:11px;font-weight:700;padding:4px 10px;border-radius:6px;cursor:pointer;">
-              00:00 🚁 ${choose('اللقطة الجوية العامة', 'Aerial Flyover')}
-            </button>
-            <button type="button" class="video-jump-btn" data-sec="3" style="background:#161b22;border:1px solid #30363d;color:#f0f6fc;font-size:11px;font-weight:700;padding:4px 10px;border-radius:6px;cursor:pointer;">
-              00:03 🏛️ ${choose('واجهات الترافنتينو والمدخل', 'Travertine Facade')}
-            </button>
-            <button type="button" class="video-jump-btn" data-sec="6" style="background:#161b22;border:1px solid #30363d;color:#f0f6fc;font-size:11px;font-weight:700;padding:4px 10px;border-radius:6px;cursor:pointer;">
-              00:06 🌿 ${choose('الفناء والحديقة الداخلية', 'Courtyard & Garden')}
-            </button>
-            <button type="button" class="video-jump-btn" data-sec="8" style="background:#161b22;border:1px solid #30363d;color:#f0f6fc;font-size:11px;font-weight:700;padding:4px 10px;border-radius:6px;cursor:pointer;">
-              00:08 🏊 ${choose('المسبح المعلق والتشطيبات', 'Infinity Pool')}
-            </button>
-          </div>
-
-          <!-- Video Playback Options -->
-          <div style="display:flex;align-items:center;gap:8px;">
-            <select id="video-playback-rate" style="background:#161b22;border:1px solid #30363d;color:#f0f6fc;font-size:11px;font-weight:700;padding:4px 8px;border-radius:6px;outline:none;cursor:pointer;">
-              <option value="0.75">0.75x</option>
-              <option value="1" selected>1.0x ${choose('(طبيعي)', '(Normal)')}</option>
-              <option value="1.25">1.25x</option>
-              <option value="1.5">1.5x</option>
-              <option value="2">2.0x</option>
-            </select>
-            <button type="button" class="btn btn-sm" id="video-pip-btn" style="background:#161b22;border:1px solid #30363d;color:#f0f6fc;padding:4px 8px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;" title="${choose('نافذة مصغرة (Picture-in-Picture)', 'Picture-in-Picture')}">
-              📺 PiP
-            </button>
-            <button type="button" class="btn btn-sm" id="video-fullscreen-btn" style="background:#161b22;border:1px solid #30363d;color:#f0f6fc;padding:4px 8px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;" title="${choose('ملء الشاشة', 'Fullscreen')}">
-              ⛶
             </button>
           </div>
         </div>
@@ -825,7 +765,7 @@ export async function openDocumentPreviewModal(docId) {
 
   // ── 4. RENDER AUTOCAD DWG / DXF & 3D BIM BLUEPRINTS ────────────────────────
   if (isCad || isBim) {
-    const drivePreviewUrl = (doc.driveFileId && doc.driveFileId.length >= 25 && !doc.driveFileId.startsWith('demo_') && doc.driveFileId !== GDRIVE_ROOT_FOLDER_ID) 
+    const drivePreviewUrl = (doc.driveFileId && doc.driveFileId.length >= 25 && !doc.driveFileId.startsWith('demo_') && doc.driveFileId !== GDRIVE_ROOT_FOLDER_ID)
       ? `https://drive.google.com/file/d/${encodeURIComponent(doc.driveFileId)}/preview`
       : GDRIVE_ROOT_FOLDER_URL;
 
@@ -898,10 +838,10 @@ export async function openDocumentPreviewModal(docId) {
   // ── 5. RENDER EXCEL SPREADSHEETS (BOQ & FINANCIAL SCHEDULES) ─────────────────
   if (isExcel) {
     const realExcelUrl = getRealAssetUrl(doc);
-    const fullAbsoluteUrl = realExcelUrl.startsWith('http') 
-      ? realExcelUrl 
+    const fullAbsoluteUrl = realExcelUrl.startsWith('http')
+      ? realExcelUrl
       : (typeof window !== 'undefined' ? `${window.location.origin}${realExcelUrl}` : realExcelUrl);
-    const drivePreviewUrl = (doc.driveFileId && doc.driveFileId.length >= 25 && !doc.driveFileId.startsWith('demo_') && doc.driveFileId !== GDRIVE_ROOT_FOLDER_ID) 
+    const drivePreviewUrl = (doc.driveFileId && doc.driveFileId.length >= 25 && !doc.driveFileId.startsWith('demo_') && doc.driveFileId !== GDRIVE_ROOT_FOLDER_ID)
       ? `https://drive.google.com/file/d/${encodeURIComponent(doc.driveFileId)}/preview`
       : GDRIVE_ROOT_FOLDER_URL;
     const googleDocsViewerUrl = (doc.driveFileId && doc.driveFileId.length >= 25 && !doc.driveFileId.startsWith('demo_') && doc.driveFileId !== GDRIVE_ROOT_FOLDER_ID)
@@ -1036,10 +976,10 @@ export async function openDocumentPreviewModal(docId) {
   // ── 6. RENDER WORD DOCUMENTS (SPECIFICATIONS & CONTRACTS) ───────────────────
   if (isWord) {
     const realWordUrl = getRealAssetUrl(doc);
-    const fullAbsoluteUrl = realWordUrl.startsWith('http') 
-      ? realWordUrl 
+    const fullAbsoluteUrl = realWordUrl.startsWith('http')
+      ? realWordUrl
       : (typeof window !== 'undefined' ? `${window.location.origin}${realWordUrl}` : realWordUrl);
-    const drivePreviewUrl = (doc.driveFileId && doc.driveFileId.length >= 25 && !doc.driveFileId.startsWith('demo_') && doc.driveFileId !== GDRIVE_ROOT_FOLDER_ID) 
+    const drivePreviewUrl = (doc.driveFileId && doc.driveFileId.length >= 25 && !doc.driveFileId.startsWith('demo_') && doc.driveFileId !== GDRIVE_ROOT_FOLDER_ID)
       ? `https://drive.google.com/file/d/${encodeURIComponent(doc.driveFileId)}/preview`
       : GDRIVE_ROOT_FOLDER_URL;
     const googleDocsViewerUrl = (doc.driveFileId && doc.driveFileId.length >= 25 && !doc.driveFileId.startsWith('demo_') && doc.driveFileId !== GDRIVE_ROOT_FOLDER_ID)
@@ -1174,10 +1114,10 @@ export async function openDocumentPreviewModal(docId) {
   // ── 7. RENDER PRESENTATIONS (POWERPOINT PPTX) ──────────────────────────────
   if (isPpt) {
     const realPptUrl = getRealAssetUrl(doc);
-    const fullAbsoluteUrl = realPptUrl.startsWith('http') 
-      ? realPptUrl 
+    const fullAbsoluteUrl = realPptUrl.startsWith('http')
+      ? realPptUrl
       : (typeof window !== 'undefined' ? `${window.location.origin}${realPptUrl}` : realPptUrl);
-    const drivePreviewUrl = (doc.driveFileId && doc.driveFileId.length >= 25 && !doc.driveFileId.startsWith('demo_') && doc.driveFileId !== GDRIVE_ROOT_FOLDER_ID) 
+    const drivePreviewUrl = (doc.driveFileId && doc.driveFileId.length >= 25 && !doc.driveFileId.startsWith('demo_') && doc.driveFileId !== GDRIVE_ROOT_FOLDER_ID)
       ? `https://drive.google.com/file/d/${encodeURIComponent(doc.driveFileId)}/preview`
       : GDRIVE_ROOT_FOLDER_URL;
     const googleDocsViewerUrl = (doc.driveFileId && doc.driveFileId.length >= 25 && !doc.driveFileId.startsWith('demo_') && doc.driveFileId !== GDRIVE_ROOT_FOLDER_ID)
