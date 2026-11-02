@@ -651,7 +651,14 @@ async function handleTaskDrop(column, clientY, explicitTaskId = null) {
   const colName = colTitleEl ? colTitleEl.innerText.trim() : newStatus;
   announceDnd(choose(`تم إفلات المهمة في عمود: ${colName}، الموضع ${insertIdx + 1}.`, `Dropped task into column: ${colName}, position ${insertIdx + 1}.`));
 
-  // 14. Debounce & Queue batch reorder API sync to consolidate rapid consecutive drops
+  // 14. Register local mutations immediately to eliminate Realtime echo re-render churn
+  syncItems.forEach(item => {
+    if (item?.id && typeof window !== 'undefined' && typeof window.recordRecentLocalMutation === 'function') {
+      window.recordRecentLocalMutation(item.id);
+    }
+  });
+
+  // Debounce & Queue batch reorder API sync to consolidate rapid consecutive drops
   if (window._reorderSyncTimer) clearTimeout(window._reorderSyncTimer);
   window._pendingReorderBatch = window._pendingReorderBatch || new Map();
   syncItems.forEach(item => {
@@ -681,7 +688,7 @@ async function handleTaskDrop(column, clientY, explicitTaskId = null) {
       renderView(true);
       showToast(choose('فشل حفظ الترتيب الجديد في الخادم. تم التراجع عن التعديل تلقائياً.', 'Failed to save task order to server. Reverted automatically.'), true);
     });
-  }, 150);
+  }, 220);
 }
 
 // Clean all active drag states, ghosts, and placeholders

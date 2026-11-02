@@ -89,7 +89,7 @@ app.post('/', async (c) => {
     finalCode = getLowestAvailableTemplateCode(existingTemplates || []);
   } else {
     if (isTemplateCodeReserved(existingTemplates || [], providedCode)) {
-      return c.json({ error: 'الرمز / الكود محجوز من قبل' }, 400);
+      return c.json({ error: 'الكود محجوز من قبل' }, 400);
     }
     finalCode = providedCode;
   }
@@ -142,7 +142,7 @@ app.patch('/:id', async (c) => {
   if (body.code !== undefined && typeof body.code === 'string') {
     const cleanCode = body.code.trim().slice(0, 50);
     if (!cleanCode) {
-      return c.json({ error: 'الرمز / الكود لا يمكن أن يكون فارغاً' }, 400);
+      return c.json({ error: 'الكود لا يمكن أن يكون فارغاً' }, 400);
     }
     const { data: existingTemplates } = await supabase
       .from('templates')
@@ -151,7 +151,7 @@ app.patch('/:id', async (c) => {
       .is('deleted_at', null);
 
     if (isTemplateCodeReserved(existingTemplates || [], cleanCode)) {
-      return c.json({ error: 'الرمز / الكود محجوز من قبل' }, 400);
+      return c.json({ error: 'الكود محجوز من قبل' }, 400);
     }
     updates.code = cleanCode;
   }

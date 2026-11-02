@@ -617,7 +617,9 @@ function connectSupabaseRealtime() {
       // Only attempt reconnection if online
       if (typeof navigator !== 'undefined' && navigator.onLine) {
         _reconnectAttempts++;
-        const delay = Math.min(30000, Math.pow(2, Math.min(_reconnectAttempts, 5)) * 1000);
+        const baseDelay = Math.min(30000, Math.pow(2, Math.min(_reconnectAttempts, 5)) * 1000);
+        const jitter = Math.floor(Math.random() * 800);
+        const delay = baseDelay + jitter;
         if (_wsReconnectTimer) clearTimeout(_wsReconnectTimer);
         _wsReconnectTimer = setTimeout(() => {
           connectSupabaseRealtime();
