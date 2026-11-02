@@ -6,8 +6,6 @@ import { showToast, modalShell, closeModal } from '../../shared/ui.js';
 import { renderTaskSortSelect, getSavedTaskSort, renderTimeline } from '../tasks/tasks.js';
 import { renderAuditForProject } from '../settings/settings.js';
 
-export { projectRow } from '../dashboard/dashboard.js';
-
 export function getDaysLeftBadge(dueDate) {
   if (!dueDate) return '';
   const due = parseEndOfDay(dueDate);
@@ -159,7 +157,7 @@ export function renderProjectTimelineBar(project) {
 
   return `
     <div class="project-timeline-indicator" style="background:var(--surface-soft);border:1px solid var(--line);border-radius:12px;padding:12px 16px;margin:14px 0;">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;font-size:11px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;font-size:11px;flex-wrap:wrap;gap:6px;">
         <span style="color:var(--ink-soft);display:flex;align-items:center;gap:4px;">
           ${icon('clock', 12)}
           <strong>${choose('المؤشر الزمني للمشروع', 'Project Schedule Elapsed')}</strong>: 
@@ -257,7 +255,7 @@ export function projectCard(project) {
 
   return `<article class="project-card">
     <div class="project-card-top">
-      <div style="display:flex;align-items:center;gap:10px;min-width:0;flex:1;">
+      <div style="display:flex;align-items:center;gap:10px;min-width:0;flex:1;cursor:pointer;" data-action="open-project" data-project-id="${esc(project.id)}">
         <span class="project-card-symbol">${icon('building', 19)}</span>
         <div style="min-width:0;flex:1;">
           <span class="eyebrow" style="font-size:10px;margin-bottom:2px;display:block;">${esc(project.code)}</span>
@@ -291,7 +289,7 @@ export function projectCard(project) {
     <div class="project-card-bottom">
       <div class="project-card-date">
         <span style="display:block;margin-bottom:3px;">${t('deadline')}</span>
-        <div style="display:flex;align-items:center;gap:6px;flex-wrap:nowrap;">
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
           <strong>${project.dueDate ? dateLabel(project.dueDate, true) : '—'}</strong>
           ${daysLeftBadge}
         </div>
@@ -317,7 +315,7 @@ export function renderProjectOverviewTab(project, tasks, members, externalMember
   return `
     <div class="project-overview-panel" style="display:flex;flex-direction:column;gap:20px;">
       <!-- Stats Row -->
-      <div class="metrics-grid" style="grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:12px;">
+      <div class="metrics-grid">
         <div class="metric-card teal" style="padding:14px 18px;">
           <span class="metric-label">${choose('إجمالي المهام', 'Total Tasks')}</span>
           <div class="metric-value">${tasks.length}</div>
@@ -344,7 +342,7 @@ export function renderProjectOverviewTab(project, tasks, members, externalMember
       ${renderProjectTimelineBar(project)}
 
       <!-- Details Grid -->
-      <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(300px, 1fr));gap:20px;">
+      <div class="project-details-grid" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(min(100%, 280px), 1fr));gap:16px;">
         <!-- Left: Project Scope & Client -->
         <div class="panel" style="padding:20px;">
           <h3 style="margin:0 0 14px;font-size:14px;display:flex;align-items:center;gap:8px;">
@@ -446,7 +444,7 @@ export function renderProjectOverviewTab(project, tasks, members, externalMember
 
 export function renderProjects() {
   const query = state.searches.projects.trim().toLowerCase();
-  let projects = (state.data?.projects || []).filter((project) => `${project.nameAr} ${project.nameEn} ${project.code} ${project.clientAr}`.toLowerCase().includes(query));
+  let projects = (state.data?.projects || []).filter((project) => `${project.nameAr || ''} ${project.nameEn || ''} ${project.code || ''} ${project.clientAr || ''} ${project.clientEn || ''}`.toLowerCase().includes(query));
 
   // User-defined sorting
   const sort = state.projectSort || 'default';
@@ -525,7 +523,7 @@ export function renderProjectDetail() {
             <!-- Filter by Task dropdown -->
             <div style="display:flex;align-items:center;gap:6px;">
               <span style="font-size:12px;color:var(--ink-soft);">${choose('المهمة:', 'Task:')}</span>
-              <select data-action="filter-project-docs-task" class="filter-select select-compact" style="max-width:200px;">
+              <select data-action="filter-project-docs-task" class="filter-select select-compact" style="max-width:100%;min-width:140px;">
                 <option value="all" ${docTaskFilter === 'all' ? 'selected' : ''}>${choose('— جميع المهام —', '— All Tasks —')}</option>
                 ${allTasks.map(t => `<option value="${esc(t.id)}" ${docTaskFilter === t.id ? 'selected' : ''}>${esc(choose(t.titleAr, t.titleEn))}</option>`).join('')}
               </select>
@@ -698,7 +696,7 @@ export function renderProjectDetail() {
         ${(can('edit_projects') || can('create_projects') || can('delete_projects') || can('view_reports') || isAdmin()) ? `
           <div style="position:relative;margin-top:11px;width:100%">
             <button class="btn btn-soft btn-sm" data-action="toggle-project-menu" style="width:100%">${icon('more', 15)} ${choose('خيارات', 'Options')}</button>
-            <div id="project-menu" class="dropdown-menu" style="display:none;position:absolute;top:100%;${state.lang === 'ar' ? 'left:0' : 'right:0'};background:var(--surface);border:1px solid var(--line);border-radius:8px;box-shadow:0 10px 30px rgba(0,0,0,0.1);z-index:100;min-width:220px;padding:5px;margin-top:5px;text-align:start">
+            <div id="project-menu" class="dropdown-menu" style="display:none;position:absolute;top:100%;${state.lang === 'ar' ? 'right:0;left:auto;' : 'left:0;right:auto;'};background:var(--surface);border:1px solid var(--line);border-radius:8px;box-shadow:0 10px 30px rgba(0,0,0,0.1);z-index:100;min-width:220px;max-width:min(280px,calc(100vw - 36px));padding:5px;margin-top:5px;text-align:start">
               ${(can('edit_projects') || isAdmin()) ? `<button class="menu-item" data-action="edit-project" data-project-id="${esc(project.id)}" style="display:flex;align-items:center;gap:8px;width:100%;padding:8px 12px;border:0;background:0;cursor:pointer;font-size:13px">${icon('edit', 14)} ${t('edit')}</button>` : ''}
               ${(can('create_projects') || isAdmin()) ? `<button class="menu-item" data-action="clone-project" data-project-id="${esc(project.id)}" style="display:flex;align-items:center;gap:8px;width:100%;padding:8px 12px;border:0;background:0;cursor:pointer;font-size:13px">${icon('document', 14)} ${choose('استنساخ المشروع', 'Clone Project')}</button>` : ''}
               ${(can('export_reports') || isAdmin()) ? `
@@ -1051,61 +1049,7 @@ export function openCloneModal(project) {
   });
 }
 
-export function getCompanyBranding() {
-  const comp = state.data?.company || {};
-  const nameAr = comp.nameAr || comp.name || 'فريق دارك للتصميم';
-  const nameEn = comp.nameEn || comp.name || 'DARC Design Team';
-  const displayName = choose(nameAr, nameEn);
-  
-  // Strict sanitization: Only allow safe image protocols (http, https, data:image, /)
-  const rawLogo = comp.logoUrl || '';
-  const isSafeLogo = /^(https?:\/\/|data:image\/|\/)/i.test(rawLogo) && !rawLogo.toLowerCase().includes('javascript:');
-  let logoUrl = isSafeLogo ? rawLogo : '';
-
-  // Resolve relative URLs to absolute so desktop Excel applications can fetch the logo correctly
-  if (logoUrl.startsWith('/') && typeof window !== 'undefined' && window.location?.origin) {
-    logoUrl = `${window.location.origin}${logoUrl}`;
-  }
-
-  return {
-    nameAr,
-    nameEn,
-    displayName,
-    logoUrl,
-    emailFrom: comp.emailFrom || '',
-    timezone: comp.timezone || 'Asia/Riyadh'
-  };
-}
-
-export function exportXLS(filename, htmlTable) {
-  const html = `
-    <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
-    <head>
-      <meta charset="utf-8" />
-      <style>
-        table { border-collapse: collapse; font-family: 'Segoe UI', Tahoma, Arial, sans-serif; }
-        td, th { border: 1px solid #333; padding: 7px 10px; text-align: right; vertical-align: middle; }
-        .title { font-size: 18px; font-weight: bold; background: #0d6269; color: #fff; text-align: center; }
-        .subtitle { font-size: 14px; font-weight: bold; background: #eef2f2; text-align: center; }
-        .meta { font-size: 12px; text-align: center; background: #f9fafa; color: #475569; }
-        .header { font-weight: bold; background: #d4e0e0; text-align: center; }
-      </style>
-    </head>
-    <body dir="${state.lang === 'ar' ? 'rtl' : 'ltr'}">
-      ${htmlTable}
-    </body>
-    </html>
-  `;
-  const blob = new Blob(['\uFEFF' + html], { type: 'application/vnd.ms-excel;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename + '.xls';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-}
+export { getCompanyBranding, exportXLS } from '../../core/utils.js';
 
 export function exportPortfolioXLS() {
   const projects = state.data?.projects || [];
@@ -2069,7 +2013,7 @@ export function renderInPagePrintModal(printHtml) {
 
   overlay.innerHTML = `
     <div style="background:#fff;width:95%;max-width:1150px;height:92vh;border-radius:12px;box-shadow:0 25px 50px rgba(0,0,0,0.3);overflow:hidden;display:flex;flex-direction:column;">
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 20px;border-bottom:1px solid #e2e8f0;background:#f8fafc;">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 20px;border-bottom:1px solid #e2e8f0;background:#f8fafc;flex-wrap:wrap;gap:8px;">
         <strong style="color:#0d6269;font-size:14px;">${choose('معاينة التقرير الرسمي المعتمد (PDF Preview)', 'Official Approved Report (PDF Preview)')}</strong>
         <div style="display:flex;gap:10px;">
           <button type="button" class="btn btn-primary btn-sm" id="btn-print-iframe" style="display:flex;align-items:center;gap:6px;">

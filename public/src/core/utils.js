@@ -617,3 +617,68 @@ export function runInWorker(taskFn, data) {
     }
   });
 }
+
+export function getDaysOverdue(dueDate) {
+  if (!dueDate) return 0;
+  const end = parseEndOfDay(dueDate);
+  if (!end || isNaN(end.getTime())) return 0;
+  const diff = Date.now() - end.getTime();
+  return diff > 0 ? Math.ceil(diff / 86400000) : 0;
+}
+
+export function getCompanyBranding() {
+  const comp = state.data?.company || {};
+  const nameAr = comp.nameAr || comp.name || 'فريق دارك للتصميم';
+  const nameEn = comp.nameEn || comp.name || 'DARC Design Team';
+  const displayName = choose(nameAr, nameEn);
+
+  const rawLogo = comp.logoUrl || '';
+  const isSafeLogo = /^(https?:\/\/|data:image\/|\/)/i.test(rawLogo) && !rawLogo.toLowerCase().includes('javascript:');
+  let logoUrl = isSafeLogo ? rawLogo : '';
+
+  if (logoUrl.startsWith('/') && typeof window !== 'undefined' && window.location?.origin) {
+    logoUrl = `${window.location.origin}${logoUrl}`;
+  }
+
+  return {
+    nameAr,
+    nameEn,
+    displayName,
+    logoUrl,
+    emailFrom: comp.emailFrom || '',
+    emailTo: comp.emailTo || '',
+    phone: comp.phone || '',
+    website: comp.website || '',
+    address: comp.address || ''
+  };
+}
+
+export function exportXLS(filename, htmlTable) {
+  const html = `
+    <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+    <head>
+      <meta charset="utf-8" />
+      <style>
+        table { border-collapse: collapse; font-family: 'Segoe UI', Tahoma, Arial, sans-serif; }
+        td, th { border: 1px solid #333; padding: 7px 10px; text-align: right; vertical-align: middle; }
+        .title { font-size: 18px; font-weight: bold; background: #0d6269; color: #fff; text-align: center; }
+        .subtitle { font-size: 14px; font-weight: bold; background: #eef2f2; text-align: center; }
+        .meta { font-size: 12px; text-align: center; background: #f9fafa; color: #475569; }
+        .header { font-weight: bold; background: #d4e0e0; text-align: center; }
+      </style>
+    </head>
+    <body dir="${state.lang === 'ar' ? 'rtl' : 'ltr'}">
+      ${htmlTable}
+    </body>
+    </html>
+  `;
+  const blob = new Blob(['\uFEFF' + html], { type: 'application/vnd.ms-excel;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = (filename.endsWith('.xls') ? filename : `${filename}.xls`);
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}

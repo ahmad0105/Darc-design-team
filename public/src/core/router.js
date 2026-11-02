@@ -8,9 +8,6 @@ import { renderNavbar, renderSyncIndicator, initSyncIndicatorListener, updateNav
 import { renderSidebar, renderSidebarBackdrop, navItem } from '../shared/sidebar.js';
 import { renderReports } from '../features/reports/reports.js';
 
-export { renderNavbar, renderSyncIndicator, updateNavbarTitle } from '../shared/navbar.js';
-export { renderSidebar, renderSidebarBackdrop, navItem } from '../shared/sidebar.js';
-
 export function canAccessView(view) {
   if (!state.data) return true;
   if (view === 'dashboard') return can('view_dashboard');
@@ -90,6 +87,8 @@ export function renderApp() {
   renderView();
 }
 
+let lastRenderedView = null;
+
 export function renderView(force = false) {
   if (!force && (window._isDraggingTask || window._isKeyboardDraggingTask || window._isTouchHoldingTask)) {
     window._pendingRenderAfterDrag = true;
@@ -100,6 +99,15 @@ export function renderView(force = false) {
   if (!canAccessView(state.view)) {
     state.view = getFirstAllowedView();
   }
+
+  // Preserve scroll states across re-renders of the same view (prevents board jump to first column)
+  const isSameView = lastRenderedView === state.view;
+  const prevMainScrollTop = isSameView ? main.scrollTop : 0;
+  const prevMainScrollLeft = isSameView ? main.scrollLeft : 0;
+  const prevBoard = isSameView ? main.querySelector('.board, .tasks-board, .board-columns') : null;
+  const prevBoardScrollLeft = prevBoard ? prevBoard.scrollLeft : null;
+  lastRenderedView = state.view;
+
   let html = '';
   if (state.view === 'dashboard') html = renderDashboard();
   if (state.view === 'projects') html = renderProjects();
@@ -111,6 +119,22 @@ export function renderView(force = false) {
   if (state.view === 'settings') html = renderSettings();
   if (state.view === 'project-detail') html = renderProjectDetail();
   main.innerHTML = html;
+
+  // Restore scroll positions so user stays exactly where they were
+  if (prevMainScrollTop) main.scrollTop = prevMainScrollTop;
+  if (prevMainScrollLeft) main.scrollLeft = prevMainScrollLeft;
+  if (prevBoardScrollLeft !== null) {
+    const newBoard = main.querySelector('.board, .tasks-board, .board-columns');
+    if (newBoard) {
+      newBoard.style.scrollSnapType = 'none';
+      newBoard.scrollLeft = prevBoardScrollLeft;
+      requestAnimationFrame(() => {
+        if (newBoard && !window._isDraggingTask) {
+          newBoard.style.scrollSnapType = '';
+        }
+      });
+    }
+  }
   
   if (state.view === 'project-detail' && state.projectTab === 'timeline') {
     setTimeout(drawTimelineArrows, 0);

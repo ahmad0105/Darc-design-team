@@ -462,7 +462,7 @@ a { color: inherit; text-decoration: none; }
 .content-grid { display: grid; grid-template-columns: minmax(0, 1.56fr) minmax(290px, .78fr); gap: 20px; align-items: start; }
 .stack { display: grid; gap: 20px; }
 .panel { min-width: 0; padding: 20px; border: 1px solid var(--line); border-radius: var(--radius-lg); background: #fff; box-shadow: var(--shadow-sm); }
-.panel-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 15px; margin-bottom: 18px; }
+.panel-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 15px; margin-bottom: 18px; flex-wrap: wrap; }
 .panel-title { margin: 0; font-size: 15px; font-weight: 900; letter-spacing: -.03em; }
 .panel-subtitle { margin: 5px 0 0; color: var(--muted); font-size: 11px; line-height: 1.6; }
 .text-link { color: var(--teal); border: 0; background: none; font-size: 11px; font-weight: 900; }
@@ -929,10 +929,15 @@ body.is-touch-dragging {
   -webkit-touch-callout: none !important;
   overscroll-behavior-y: contain !important;
 }
+body.is-touch-dragging {
+  touch-action: none !important;
+  overscroll-behavior: none !important;
+}
 body.is-touch-dragging * {
   user-select: none !important;
   -webkit-user-select: none !important;
   -webkit-touch-callout: none !important;
+  touch-action: none !important;
 }
 .task-card.is-dragging,
 .task-card.is-keyboard-grabbed,
@@ -988,18 +993,29 @@ body.is-touch-dragging .board {
   z-index: 9998;
   pointer-events: none;
   opacity: 0;
-  transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: opacity 0.22s cubic-bezier(0.16, 1, 0.3, 1), background 0.2s ease, box-shadow 0.2s ease;
 }
 body.is-touch-dragging .dnd-edge-hotzone {
-  opacity: 1;
+  opacity: 0.65;
+}
+body.is-touch-dragging .dnd-edge-hotzone.is-active {
+  opacity: 1 !important;
 }
 .dnd-edge-hotzone.left {
   left: 0;
   background: linear-gradient(to right, rgba(13, 98, 105, 0.14), transparent);
 }
+.dnd-edge-hotzone.left.is-active {
+  background: linear-gradient(to right, rgba(13, 98, 105, 0.36), rgba(13, 98, 105, 0.12), transparent) !important;
+  box-shadow: inset 6px 0 16px -2px rgba(13, 98, 105, 0.42) !important;
+}
 .dnd-edge-hotzone.right {
   right: 0;
   background: linear-gradient(to left, rgba(13, 98, 105, 0.14), transparent);
+}
+.dnd-edge-hotzone.right.is-active {
+  background: linear-gradient(to left, rgba(13, 98, 105, 0.36), rgba(13, 98, 105, 0.12), transparent) !important;
+  box-shadow: inset -6px 0 16px -2px rgba(13, 98, 105, 0.42) !important;
 }
 @keyframes countPop {
   0% { transform: scale(1); }

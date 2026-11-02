@@ -14,6 +14,8 @@ import { fetchAnalyticsData } from '../features/settings/analytics.js';
 import { fetchDiagnosticsData, setDiagnosticsUserFilter, setDiagnosticsSeverityFilter, setDiagnosticsStatusFilter } from '../features/settings/diagnostics.js';
 import { renderActivation, renderLogin, renderResetPassword } from '../features/auth/auth.js';
 import { playNotificationChime } from './realtime.js';
+import { openTemplateModal, getNextAvailableTemplateCode, isTemplateCodeReserved } from '../features/templates/templates.js';
+import { exportDisciplinesExcel, exportTeamWorkloadExcel, exportRisksExcel, exportDrawingsExcel } from '../features/reports/reports.js';
 
 export async function handleSubmit(event) {
   const form = event.target;
@@ -54,14 +56,29 @@ export async function handleSubmit(event) {
       values.memberIds = memberIds;
       const isEdit = !!form.dataset.projectId;
       const res = await api(isEdit ? `/api/projects/${form.dataset.projectId}` : '/api/projects', { method: isEdit ? 'PATCH' : 'POST', body: JSON.stringify(values) });
-      if (res.project) {
-        if (!state.data.projects) state.data.projects = [];
-        if (isEdit) {
-          const idx = state.data.projects.findIndex(p => p.id === res.project.id);
-          if (idx !== -1) state.data.projects[idx] = { ...state.data.projects[idx], ...res.project };
-        } else {
-          state.data.projects.unshift(res.project);
-        }
+      const savedProject = res.project || {
+        id: form.dataset.projectId || `prj_${Date.now()}`,
+        nameAr: values.nameAr,
+        nameEn: values.nameEn,
+        code: values.code,
+        clientAr: values.clientAr,
+        clientEn: values.clientEn || values.clientAr,
+        managerId: values.managerId,
+        priority: values.priority || 'medium',
+        lifecycle: values.lifecycle || 'active',
+        startDate: values.startDate,
+        dueDate: values.dueDate,
+        descriptionAr: values.descriptionAr,
+        health: 'on_track',
+        progress: 0,
+        memberIds: values.memberIds
+      };
+      if (!state.data.projects) state.data.projects = [];
+      if (isEdit) {
+        const idx = state.data.projects.findIndex(p => p.id === (res.project?.id || form.dataset.projectId));
+        if (idx !== -1) state.data.projects[idx] = { ...state.data.projects[idx], ...savedProject };
+      } else {
+        state.data.projects.unshift(savedProject);
       }
       closeModal();
       renderView();
@@ -264,15 +281,44 @@ export async function handleSubmit(event) {
     if (form.id === 'template-form') {
       const templateId = form.dataset.templateId;
       const isEdit = !!templateId;
-      const res = await api(isEdit ? `/api/templates/${templateId}` : '/api/templates', { method: isEdit ? 'PATCH' : 'POST', body: JSON.stringify(values) });
-      if (res.template) {
-        if (!state.data.templates) state.data.templates = [];
-        if (isEdit) {
-          const idx = state.data.templates.findIndex(t => t.id === res.template.id);
-          if (idx !== -1) state.data.templates[idx] = { ...state.data.templates[idx], ...res.template };
-        } else {
-          state.data.templates.push(res.template);
+
+      if (!isEdit) {
+        values.code = getNextAvailableTemplateCode(state.data?.templates || []);
+      } else {
+        const cleanCode = (values.code || '').trim();
+        if (!cleanCode) {
+          throw new Error(choose('الرمز / الكود مطلوب', 'Template code is required'));
         }
+        if (isTemplateCodeReserved(cleanCode, templateId, state.data?.templates || [])) {
+          const codeInput = form.querySelector('input[name="code"]');
+          if (codeInput) {
+            codeInput.focus();
+            codeInput.classList.add('input-error');
+          }
+          throw new Error(choose('الرمز / الكود محجوز من قبل', 'This code is already reserved by another template'));
+        }
+        values.code = cleanCode;
+      }
+
+      const res = await api(isEdit ? `/api/templates/${templateId}` : '/api/templates', { method: isEdit ? 'PATCH' : 'POST', body: JSON.stringify(values) });
+      const savedTemplate = res.template || {
+        id: templateId || `tpl_${Date.now()}`,
+        nameAr: values.nameAr,
+        nameEn: values.nameEn,
+        code: values.code,
+        categoryId: values.categoryId,
+        typeAr: values.typeAr,
+        typeEn: values.typeEn,
+        defaultWeight: Number(values.defaultWeight) || 1,
+        defaultDuration: Number(values.defaultDuration) || 5
+      };
+
+      if (!state.data.templates) state.data.templates = [];
+      if (isEdit) {
+        const idx = state.data.templates.findIndex(t => t.id === (res.template?.id || templateId));
+        if (idx !== -1) state.data.templates[idx] = { ...state.data.templates[idx], ...savedTemplate };
+      } else {
+        state.data.templates.push(savedTemplate);
       }
       closeModal();
       renderView();
@@ -1108,6 +1154,14 @@ export async function handleClick(event) {
     requestAnimationFrame(() => renderView());
     return;
   }
+  if (action === 'report-tab') {
+    state.reportsTab = target.dataset.tab;
+    target.closest('.detail-tabs')?.querySelectorAll('.detail-tab').forEach(b => b.classList.toggle('active', b === target));
+    const main = document.getElementById('main-content');
+    if (main) main.scrollTop = 0;
+    requestAnimationFrame(() => renderView());
+    return;
+  }
   if (action === 'toggle-timeline-view') {
     state.timelineView = target.dataset.viewMode || 'gantt';
     requestAnimationFrame(() => renderView());
@@ -1536,6 +1590,38 @@ export async function handleClick(event) {
     exportPortfolioPDF();
     return;
   }
+  if (action === 'export-disciplines-excel') {
+    if (!can('export_reports') && !isAdmin()) {
+      showToast(choose('ليس لديك صلاحية لتصدير التقارير.', 'You do not have permission to export reports.'), true);
+      return;
+    }
+    exportDisciplinesExcel();
+    return;
+  }
+  if (action === 'export-team-workload-excel') {
+    if (!can('export_reports') && !isAdmin()) {
+      showToast(choose('ليس لديك صلاحية لتصدير التقارير.', 'You do not have permission to export reports.'), true);
+      return;
+    }
+    exportTeamWorkloadExcel();
+    return;
+  }
+  if (action === 'export-risks-excel') {
+    if (!can('export_reports') && !isAdmin()) {
+      showToast(choose('ليس لديك صلاحية لتصدير التقارير.', 'You do not have permission to export reports.'), true);
+      return;
+    }
+    exportRisksExcel();
+    return;
+  }
+  if (action === 'export-drawings-excel') {
+    if (!can('export_reports') && !isAdmin()) {
+      showToast(choose('ليس لديك صلاحية لتصدير التقارير.', 'You do not have permission to export reports.'), true);
+      return;
+    }
+    exportDrawingsExcel();
+    return;
+  }
   if (action === 'export-project') {
     if (!can('export_reports') && !isAdmin()) {
       showToast(choose('ليس لديك صلاحية لتصدير التقارير.', 'You do not have permission to export reports.'), true);
@@ -1718,6 +1804,18 @@ export async function handleChange(event) {
     } catch (err) {
       showToast(err.message, true);
     }
+    return;
+  }
+
+  if (event.target.dataset.action === 'filter-report-project') {
+    state.reportProjectFilter = event.target.value;
+    renderView();
+    return;
+  }
+
+  if (event.target.dataset.action === 'filter-report-timeframe') {
+    state.reportTimeframe = event.target.value;
+    renderView();
     return;
   }
 

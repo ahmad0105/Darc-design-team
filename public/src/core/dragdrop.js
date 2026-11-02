@@ -25,6 +25,7 @@ let dragOffsetY = 0;
 let isPointerDragging = false;
 let activePointerId = null;
 let touchHoldTimer = null;
+let currentPointerType = 'mouse';
 
 // Accessible Keyboard Drag State
 let keyboardDraggedTaskId = null;
@@ -267,6 +268,21 @@ function startContinuousAutoScroll() {
             didScroll = true;
           }
 
+          // Dynamic Active Glow on Edge Hotzones
+          if (didScroll) {
+            if (hDelta < 0) {
+              leftEdgeHotzone?.classList.add('is-active');
+              rightEdgeHotzone?.classList.remove('is-active');
+            } else {
+              rightEdgeHotzone?.classList.add('is-active');
+              leftEdgeHotzone?.classList.remove('is-active');
+            }
+          } else {
+            // Hit boundary wall: remove active glow
+            leftEdgeHotzone?.classList.remove('is-active');
+            rightEdgeHotzone?.classList.remove('is-active');
+          }
+
           // Haptic tick when crossing columns on touch devices
           if (isMobile) {
             const centerEl = document.elementFromPoint(window.innerWidth / 2, window.innerHeight / 2);
@@ -282,6 +298,9 @@ function startContinuousAutoScroll() {
               }
             }
           }
+        } else {
+          leftEdgeHotzone?.classList.remove('is-active');
+          rightEdgeHotzone?.classList.remove('is-active');
         }
       }
 
@@ -594,12 +613,22 @@ async function handleTaskDrop(column, clientY, explicitTaskId = null) {
   // 9. Re-render board immediately (instant 0ms optimistic response)
   renderView(true);
 
-  // 10. Tactile haptic feedback on touch devices
+  // 10. Post-Drop Target Column Retention & Viewport Centering on Mobile
+  const newBoard = document.querySelector('.board, .tasks-board, .board-columns');
+  const targetColEl = newBoard?.querySelector(`.board-column[data-status="${newStatus}"]`);
+  const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
+  if (targetColEl && isMobile) {
+    try {
+      targetColEl.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+    } catch (e) {}
+  }
+
+  // 11. Tactile haptic feedback on touch devices
   if (typeof navigator !== 'undefined' && navigator.vibrate) {
     try { navigator.vibrate(20); } catch(e) {}
   }
 
-  // 11. Column Counter Micro-Pulse Animation (Linear Standard)
+  // 12. Column Counter Micro-Pulse Animation (Linear Standard)
   if (oldStatus !== newStatus) {
     const badges = document.querySelectorAll(`.board-column[data-status="${newStatus}"] .board-count, .board-column[data-status="${oldStatus}"] .board-count`);
     badges.forEach(b => {

@@ -111,10 +111,58 @@ export function renderTemplates() {
   </div>`;
 }
 
+export function getNextAvailableTemplateCode(templates = []) {
+  const usedNumbers = new Set();
+  for (const t of templates) {
+    if (t?.code !== undefined && t?.code !== null) {
+      const str = String(t.code).trim();
+      if (/^\d+$/.test(str)) {
+        const num = parseInt(str, 10);
+        if (num > 0) usedNumbers.add(num);
+      }
+    }
+  }
+  let candidate = 1;
+  while (usedNumbers.has(candidate)) {
+    candidate++;
+  }
+  return candidate < 10 ? `0${candidate}` : `${candidate}`;
+}
+
+export function isTemplateCodeReserved(code, excludeTemplateId = null, templates = []) {
+  if (!code || typeof code !== 'string') return false;
+  const clean = code.trim().toLowerCase();
+  if (!clean) return false;
+
+  const cleanNum = /^\d+$/.test(clean) ? parseInt(clean, 10) : null;
+
+  return templates.some(t => {
+    if (!t) return false;
+    if (excludeTemplateId && t.id === excludeTemplateId) return false;
+    if (t.code === undefined || t.code === null) return false;
+
+    const existing = String(t.code).trim().toLowerCase();
+    if (!existing) return false;
+
+    // Direct case-insensitive match
+    if (existing === clean) return true;
+
+    // Numeric equivalence (e.g. "1" matches "01")
+    if (cleanNum !== null && /^\d+$/.test(existing)) {
+      const existingNum = parseInt(existing, 10);
+      if (cleanNum === existingNum) return true;
+    }
+
+    return false;
+  });
+}
+
 export function openTemplateModal(template = null) {
   if (!can('manage_templates')) return showToast(t('permissionDenied'), true);
 
   const categoryOptions = TEMPLATE_CATEGORIES.map((c) => `<option value="${esc(c.id)}" ${template?.categoryId === c.id ? 'selected' : ''}>${esc(choose(c.ar, c.en))}</option>`).join('');
+  const isEdit = Boolean(template && template.id);
+  const nextCode = !isEdit ? getNextAvailableTemplateCode(state.data?.templates || []) : '';
   
   const form = `<form id="template-form" data-template-id="${esc(template?.id || '')}">
     <div class="form-grid">
@@ -126,10 +174,20 @@ export function openTemplateModal(template = null) {
         <label>${t('nameEn')}</label>
         <input name="nameEn" value="${esc(template?.nameEn || '')}" required />
       </div>
+      ${isEdit ? `
       <div class="field">
-        <label>${choose('الرمز / الكود', 'Code')}</label>
-        <input name="code" value="${esc(template?.code || '')}" placeholder="e.g. 01" />
+        <label>${choose('الرمز / الكود', 'Code')} <span style="font-size:11px;font-weight:normal;color:var(--ink-soft);">${choose('(فريد ولا يتكرر)', '(Unique, no duplicates)')}</span></label>
+        <input name="code" value="${esc(template?.code || '')}" placeholder="e.g. 01" required />
       </div>
+      ` : `
+      <div class="field" style="background:var(--surface-soft);padding:10px 14px;border-radius:8px;border:1px dashed var(--line);display:flex;align-items:center;justify-content:space-between;">
+        <div>
+          <span style="font-size:12px;font-weight:600;color:var(--ink);display:block;">${choose('الرمز / الكود التلقائي', 'Auto-assigned Code')}</span>
+          <span style="font-size:11px;color:var(--ink-soft);">${choose('يتم تعيينه تلقائياً ابتداءً من 1', 'Assigned automatically starting from 1')}</span>
+        </div>
+        <span class="badge" style="font-size:14px;font-weight:700;background:rgba(20,184,166,0.12);color:var(--brand-teal);padding:4px 10px;border-radius:6px;">#${esc(nextCode)}</span>
+      </div>
+      `}
       <div class="field">
         <label>${choose('التصنيف', 'Category')}</label>
         <select name="categoryId" required>${categoryOptions}</select>

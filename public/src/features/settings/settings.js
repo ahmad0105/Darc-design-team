@@ -1,6 +1,6 @@
 import { state } from '../../core/state.js';
 import { api } from '../../core/api.js';
-import { getActiveCalendarSystem, esc, sanitizeForSpreadsheet, choose, icon, t, can, isAdmin, avatar, roleName, initials, statusText, formatDateTime, formatReportDate, formatReportTime } from '../../core/utils.js';
+import { getActiveCalendarSystem, esc, sanitizeForSpreadsheet, choose, icon, t, can, isAdmin, avatar, roleName, initials, statusText, formatDateTime, formatReportDate, formatReportTime, getCompanyBranding, exportXLS } from '../../core/utils.js';
 import { showToast, modalShell, closeModal } from '../../shared/ui.js';
 import { renderAnalyticsSection, fetchAnalyticsData } from './analytics.js';
 import { renderDiagnosticsSection, fetchDiagnosticsData } from './diagnostics.js';
@@ -165,18 +165,19 @@ function renderAuditDetails(log) {
 }
 
 export function exportAuditLogsXLS(logs = null) {
+  if (!can('view_audit_logs') && !isAdmin()) {
+    showToast(choose('ليس لديك صلاحية لتصدير سجل الرقابة.', 'You do not have permission to export audit logs.'), true);
+    return;
+  }
   const currentLogs = logs || state._lastFilteredAuditLogs || state.data?.auditLogs || [];
   if (!currentLogs.length) {
     showToast(choose('لا توجد عمليات لتصديرها.', 'No logs to export.'), true);
     return;
   }
 
-  const company = state.data?.company || {};
-  const companyName = choose(company.nameAr || company.name, company.nameEn || company.name) || 'DARC Design Team';
-  let logoUrl = company.logoUrl || '';
-  if (logoUrl.startsWith('/') && typeof window !== 'undefined' && window.location?.origin) {
-    logoUrl = `${window.location.origin}${logoUrl}`;
-  }
+  const branding = getCompanyBranding();
+  const companyName = branding.displayName;
+  const logoUrl = branding.logoUrl;
   const currentUser = state.data?.user || {};
   const exporterName = choose(currentUser.name, currentUser.nameEn || currentUser.name) || 'Admin';
   const reportDate = formatReportDate();
@@ -247,32 +248,8 @@ export function exportAuditLogsXLS(logs = null) {
 
   tableHtml += '</table>';
 
-  const fullHtml = `
-    <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
-    <head>
-      <meta charset="utf-8" />
-      <style>
-        table { border-collapse: collapse; font-family: 'Segoe UI', Tahoma, Arial, sans-serif; }
-        th, td { border: 1px solid #cbd5e1; }
-      </style>
-    </head>
-    <body dir="${state.lang === 'ar' ? 'rtl' : 'ltr'}">
-      ${tableHtml}
-    </body>
-    </html>
-  `;
-
-  const blob = new Blob(['\uFEFF' + fullHtml], { type: 'application/vnd.ms-excel;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
   const dateStamp = new Date().toISOString().split('T')[0];
-  a.download = `DARC_Audit_Trail_${dateStamp}.xls`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-
+  exportXLS(`DARC_Audit_Trail_${dateStamp}`, tableHtml);
   showToast(choose('تم تصدير ملف سجل التدقيق بنجاح.', 'Audit trail exported successfully.'));
 
   // Log the export action silently in audit trail

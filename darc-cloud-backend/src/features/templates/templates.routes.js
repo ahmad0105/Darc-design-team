@@ -12,6 +12,39 @@ app.use('*', async (c, next) => {
   await next();
 });
 
+export function isTemplateCodeReserved(existingTemplates = [], codeToTest = '', excludeId = null) {
+  if (!codeToTest || typeof codeToTest !== 'string') return false;
+  const cleanLower = codeToTest.trim().toLowerCase();
+  if (!cleanLower) return false;
+  const cleanNum = /^\d+$/.test(codeToTest.trim()) ? parseInt(codeToTest.trim(), 10) : null;
+
+  return existingTemplates.some(t => {
+    if (!t || !t.code) return false;
+    if (excludeId && t.id === excludeId) return false;
+    const ex = String(t.code).trim().toLowerCase();
+    if (ex === cleanLower) return true;
+    if (cleanNum !== null && /^\d+$/.test(ex)) {
+      if (parseInt(ex, 10) === cleanNum) return true;
+    }
+    return false;
+  });
+}
+
+export function getLowestAvailableTemplateCode(existingTemplates = []) {
+  const usedNums = new Set();
+  for (const t of existingTemplates) {
+    if (t?.code && /^\d+$/.test(String(t.code).trim())) {
+      const n = parseInt(String(t.code).trim(), 10);
+      if (n > 0) usedNums.add(n);
+    }
+  }
+  let candidate = 1;
+  while (usedNums.has(candidate)) {
+    candidate++;
+  }
+  return candidate < 10 ? `0${candidate}` : `${candidate}`;
+}
+
 app.get('/', async (c) => {
   const supabase = c.get('supabase');
   const { data, error } = await supabase.from('templates').select('*').is('deleted_at', null).order('id', { ascending: true });
@@ -43,12 +76,30 @@ app.post('/', async (c) => {
   const rawDuration = Number(body.defaultDuration);
   const defaultDuration = (!isNaN(rawDuration) && rawDuration >= 1) ? Math.min(365, Math.round(rawDuration)) : 5;
 
+  // Retrieve existing active templates to enforce code uniqueness & lowest-available auto-numbering
+  const { data: existingTemplates } = await supabase
+    .from('templates')
+    .select('id, code')
+    .is('deleted_at', null);
+
+  let finalCode = '';
+  const providedCode = (typeof body.code === 'string') ? body.code.trim().slice(0, 50) : '';
+
+  if (!providedCode) {
+    finalCode = getLowestAvailableTemplateCode(existingTemplates || []);
+  } else {
+    if (isTemplateCodeReserved(existingTemplates || [], providedCode)) {
+      return c.json({ error: 'الرمز / الكود محجوز من قبل' }, 400);
+    }
+    finalCode = providedCode;
+  }
+
   const id = generateSecureId('tpl_');
   const { data, error } = await supabase.from('templates').insert([{
     id,
     name_ar: rawNameAr.slice(0, 100),
     name_en: rawNameEn.slice(0, 100),
-    code: (typeof body.code === 'string' && body.code.trim()) ? body.code.trim().slice(0, 50) : id,
+    code: finalCode,
     type_ar: (typeof body.typeAr === 'string' && body.typeAr.trim()) ? body.typeAr.trim().slice(0, 50) : 'مخطط',
     type_en: (typeof body.typeEn === 'string' && body.typeEn.trim()) ? body.typeEn.trim().slice(0, 50) : 'Drawing',
     category_id: (typeof body.categoryId === 'string' && body.categoryId.trim()) ? body.categoryId.trim().slice(0, 50) : 'architectural',
@@ -88,7 +139,22 @@ app.patch('/:id', async (c) => {
   if (body.nameEn !== undefined) {
     updates.name_en = typeof body.nameEn === 'string' ? body.nameEn.replace(/<[^>]*>/g, '').trim().slice(0, 100) : '';
   }
-  if (body.code !== undefined && typeof body.code === 'string') updates.code = body.code.trim().slice(0, 50);
+  if (body.code !== undefined && typeof body.code === 'string') {
+    const cleanCode = body.code.trim().slice(0, 50);
+    if (!cleanCode) {
+      return c.json({ error: 'الرمز / الكود لا يمكن أن يكون فارغاً' }, 400);
+    }
+    const { data: existingTemplates } = await supabase
+      .from('templates')
+      .select('id, code')
+      .neq('id', templateId)
+      .is('deleted_at', null);
+
+    if (isTemplateCodeReserved(existingTemplates || [], cleanCode)) {
+      return c.json({ error: 'الرمز / الكود محجوز من قبل' }, 400);
+    }
+    updates.code = cleanCode;
+  }
   if (body.typeAr !== undefined && typeof body.typeAr === 'string') updates.type_ar = body.typeAr.trim().slice(0, 50);
   if (body.typeEn !== undefined && typeof body.typeEn === 'string') updates.type_en = body.typeEn.trim().slice(0, 50);
   if (body.categoryId !== undefined && typeof body.categoryId === 'string') updates.category_id = body.categoryId.trim().slice(0, 50);
