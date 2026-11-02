@@ -432,26 +432,28 @@ app.use('/api/*', async (c, next) => {
     if (path === '/api/documents' || path === '/api/documents/') return c.json({ documents: demoData.documents });
     if (path.startsWith('/api/documents/')) {
       const id = path.split('/')[3];
-      const d = demoData.documents.find(x => x.id === id) || demoData.documents[0];
+      const d = demoData.documents.find(x => x.id === id) || demoData.documents.find(x => x.originalName === id) || demoData.documents[0];
       const isDownload = c.req.query('download') === '1' || c.req.query('export') === 'download';
-      if (isDownload) {
+      const isStream = c.req.query('stream') === '1';
+
+      if (isDownload || isStream) {
         const filename = d.originalName || `document_${id}.pdf`;
-        const ext = filename.split('.').pop()?.toLowerCase();
-        let payload = '%PDF-1.4\n1 0 obj\n<< /Title (DARC Architecture Deliverable) >>\nendobj\ntrailer\n<< >>\n%%EOF';
-        let mime = d.mimeType || 'application/pdf';
-        if (ext === 'dxf' || ext === 'dwg') {
-          payload = '0\nSECTION\n2\nHEADER\n9\n$ACADVER\n1\nAC1015\n0\nENDSEC\n0\nEOF';
-          mime = 'application/dxf';
+        
+        // 1. Direct Google Drive file ID redirect if available
+        if (d.driveFileId && !String(d.driveFileId).startsWith('demo_') && String(d.driveFileId).length >= 25) {
+          const driveUrl = isDownload 
+            ? `https://drive.google.com/uc?export=download&id=${encodeURIComponent(d.driveFileId)}`
+            : `https://drive.google.com/uc?export=view&id=${encodeURIComponent(d.driveFileId)}`;
+          return c.redirect(driveUrl, 302);
         }
-        return new Response(payload, {
-          status: 200,
-          headers: {
-            'Content-Type': mime,
-            'Content-Disposition': `attachment; filename="${encodeURIComponent(filename)}"; filename*=UTF-8''${encodeURIComponent(filename)}`,
-            'Cache-Control': 'private, no-cache',
-            'X-Content-Type-Options': 'nosniff'
-          }
-        });
+
+        // 2. Direct Cloud / External URL
+        if (d.diskFilename && d.diskFilename.startsWith('http') && !d.diskFilename.includes('/drive/folders/')) {
+          return c.redirect(d.diskFilename, 302);
+        }
+
+        // 3. Static Authentic Project Assets
+        return c.redirect(`/assets/${encodeURIComponent(filename)}`, 302);
       }
       return c.json({ ok: true, document: d });
     }

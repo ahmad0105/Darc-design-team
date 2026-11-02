@@ -519,8 +519,12 @@ function cleanDragState() {
   dragGhost = null;
 
   if (dragCard) {
+    try {
+      if (activePointerId != null) dragCard.releasePointerCapture(activePointerId);
+    } catch(e) {}
     dragCard.style.opacity = '';
     dragCard.style.pointerEvents = '';
+    dragCard.style.touchAction = '';
     dragCard.classList.remove('is-dragging');
     dragCard.classList.remove('is-touch-holding');
   }
@@ -581,6 +585,13 @@ function initiateDrag(clientX, clientY) {
   dragOffsetX = clientX - rect.left;
   dragOffsetY = clientY - rect.top;
 
+  // Safety fallback if offset is NaN
+  if (isNaN(dragOffsetX)) dragOffsetX = rect.width / 2;
+  if (isNaN(dragOffsetY)) dragOffsetY = rect.height / 2;
+
+  const startGx = clientX - dragOffsetX;
+  const startGy = clientY - dragOffsetY;
+
   // Linear-standard hardware-accelerated floating clone that smoothly follows cursor/finger
   dragGhost = dragCard.cloneNode(true);
   dragGhost.id = 'active-drag-ghost';
@@ -592,7 +603,7 @@ function initiateDrag(clientX, clientY) {
     pointer-events: none;
     z-index: 10000;
     opacity: 0.96;
-    transform: translate3d(${rect.left}px, ${rect.top}px, 0) scale(1.025);
+    transform: translate3d(${startGx}px, ${startGy}px, 0) scale(1.025);
     box-shadow: 0 20px 42px -8px rgba(13, 98, 105, 0.28), 0 8px 18px rgba(0, 0, 0, 0.12);
     border: 1.5px solid var(--brand-teal, #0d6269);
     background: var(--surface, #ffffff);
@@ -632,9 +643,10 @@ function initiateDrag(clientX, clientY) {
   startContinuousAutoScroll();
 }
 
-// Unified Velocity & Tilt Physics Movement Engine
+// Unified Velocity & Tilt Physics Movement Engine (Identical for Mouse and Touch)
 function updateDragMovement(clientX, clientY) {
   if (!isDraggingActive || !dragGhost) return;
+  if (clientX == null || clientY == null || isNaN(clientX) || isNaN(clientY)) return;
 
   currentMouseX = clientX;
   currentMouseY = clientY;
@@ -648,7 +660,9 @@ function updateDragMovement(clientX, clientY) {
   // Move floating ghost smoothly with cursor/finger via GPU hardware acceleration
   const gx = clientX - dragOffsetX;
   const gy = clientY - dragOffsetY;
-  dragGhost.style.transform = `translate3d(${gx}px, ${gy}px, 0) scale(1.025) rotate(${currentTilt.toFixed(2)}deg)`;
+  if (!isNaN(gx) && !isNaN(gy)) {
+    dragGhost.style.transform = `translate3d(${gx}px, ${gy}px, 0) scale(1.025) rotate(${currentTilt.toFixed(2)}deg)`;
+  }
 
   // Update target column and placeholder position
   updatePlaceholderPosition(clientX, clientY);
@@ -740,6 +754,8 @@ document.addEventListener('pointerdown', (e) => {
   activePointerId = e.pointerId;
   dragStartX = e.clientX;
   dragStartY = e.clientY;
+  currentMouseX = e.clientX;
+  currentMouseY = e.clientY;
   prevMouseX = e.clientX;
   isPointerDragging = false;
 
@@ -747,39 +763,50 @@ document.addEventListener('pointerdown', (e) => {
   draggedCardHeight = rect.height;
   dragOffsetX = e.clientX - rect.left;
   dragOffsetY = e.clientY - rect.top;
+  if (isNaN(dragOffsetX)) dragOffsetX = rect.width / 2;
+  if (isNaN(dragOffsetY)) dragOffsetY = rect.height / 2;
 
-  if (e.pointerType === 'touch') {
-    // Tactile pickup long-press (150ms): provides visual hint and avoids accidental drag when scrolling
+  // Capture pointer immediately so all subsequent touch/pointer moves stream directly to JS
+  try {
+    card.setPointerCapture(e.pointerId);
+  } catch (err) {}
+
+  card.style.touchAction = 'none';
+
+  // Tactile pickup long-press (110ms) as an alternative trigger for stationary finger touch
+  const isGripHandle = Boolean(e.target.closest('.task-drag-handle'));
+  if (e.pointerType === 'touch' && !isGripHandle) {
     card.classList.add('is-touch-holding');
     touchHoldTimer = setTimeout(() => {
       touchHoldTimer = null;
-      initiateDrag(e.clientX, e.clientY);
-    }, 150);
+      if (dragCard && !isPointerDragging) {
+        initiateDrag(currentMouseX, currentMouseY);
+      }
+    }, 110);
   }
-  // On mouse, no timer is needed: drag initiates instantly when mouse moves >= 4px
 }, { passive: true });
 
 document.addEventListener('pointermove', (e) => {
   if (!dragCard) return;
 
-  // If drag hasn't started yet, check movement thresholds
+  currentMouseX = e.clientX;
+  currentMouseY = e.clientY;
+
+  // Unified movement threshold (>= 4px) - works equally for mouse, pen, and touch!
   if (!isPointerDragging) {
     const dist = Math.hypot(e.clientX - dragStartX, e.clientY - dragStartY);
-
-    if (e.pointerType === 'mouse' || e.pointerType === 'pen') {
-      // Mouse / Pen: 4px threshold starts dragging immediately
-      if (dist >= 4) {
-        initiateDrag(e.clientX, e.clientY);
-      } else {
-        return;
+    if (dist >= 4) {
+      if (touchHoldTimer) {
+        clearTimeout(touchHoldTimer);
+        touchHoldTimer = null;
       }
+      initiateDrag(e.clientX, e.clientY);
     } else {
-      // Touch: movement threshold is supervised by touchmove
       return;
     }
   }
 
-  // Active Dragging Mode
+  // Active Dragging Mode: Cancel native gesture interference and update position
   if (e.cancelable) e.preventDefault();
   updateDragMovement(e.clientX, e.clientY);
 }, { passive: false });
@@ -789,10 +816,15 @@ document.addEventListener('pointerup', async (e) => {
     clearTimeout(touchHoldTimer);
     touchHoldTimer = null;
   }
+  if (activePointerId != null && dragCard) {
+    try {
+      dragCard.releasePointerCapture(activePointerId);
+    } catch (err) {}
+  }
   if (dragCard) {
     dragCard.classList.remove('is-touch-holding');
   }
-  if (!isPointerDragging && (!e.pointerType || e.pointerType === 'mouse')) {
+  if (!isPointerDragging) {
     cleanDragState();
     return;
   }
@@ -801,36 +833,16 @@ document.addEventListener('pointerup', async (e) => {
 
 // Guard pointercancel: never abort active touch drag on mobile due to gesture ambiguities
 document.addEventListener('pointercancel', (e) => {
-  if (isPointerDragging && e.pointerType === 'touch') {
-    return;
-  }
+  if (isPointerDragging) return;
   cleanDragState();
 });
 
 // ── DEDICATED NATIVE TOUCH INTERCEPTORS (iOS Safari, Android Chrome, iPadOS) ──
 
 window.addEventListener('touchmove', (e) => {
-  if (touchHoldTimer) {
-    const touch = e.touches[0];
-    if (touch) {
-      const dist = Math.hypot(touch.clientX - dragStartX, touch.clientY - dragStartY);
-      // Finger scroll detection: if user moves > 10px before hold timer finishes, cancel drag to let native scroll take over
-      if (dist > 10) {
-        clearTimeout(touchHoldTimer);
-        touchHoldTimer = null;
-        if (dragCard) {
-          dragCard.classList.remove('is-touch-holding');
-          dragCard = null;
-        }
-      }
-    }
-    return;
-  }
-
   if (isPointerDragging) {
-    // CRITICAL: Block viewport scroll & pull-to-refresh completely while dragging
     if (e.cancelable) e.preventDefault();
-    const touch = e.touches[0];
+    const touch = e.touches ? e.touches[0] : null;
     if (touch) {
       updateDragMovement(touch.clientX, touch.clientY);
     }

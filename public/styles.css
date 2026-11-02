@@ -898,6 +898,19 @@ select, .filter-select, .select-compact {
   border-color: var(--brand-teal, #0d6269) !important;
   transition: transform 0.12s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.12s ease !important;
 }
+.task-drag-handle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.task-card:hover .task-drag-handle {
+  opacity: 1 !important;
+  color: var(--brand-teal, #0d6269);
+}
 body.is-touch-dragging {
   touch-action: none !important;
   user-select: none !important;

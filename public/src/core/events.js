@@ -2297,6 +2297,16 @@ export async function uploadDirectFiles({ files, projectId = null, taskId = null
 
       const v = getNextVersion(ext);
       const compiledName = `${safeProj}_${safeTask}_${safeBase}_v${v}${ext}`;
+
+      // Enterprise Zero-Latency Memory Blob Cache: Keep authentic file bytes accessible immediately for preview
+      if (typeof window !== 'undefined') {
+        window.__docBlobCache = window.__docBlobCache || new Map();
+        try {
+          const localBlobUrl = URL.createObjectURL(file);
+          window.__docBlobCache.set(compiledName, localBlobUrl);
+          window.__docBlobCache.set(file.name, localBlobUrl);
+        } catch (e) {}
+      }
       const fileSizeMB = file.size >= 1024 * 1024 * 1024
         ? `${(file.size / (1024 * 1024 * 1024)).toFixed(2)} GB`
         : `${(file.size / (1024 * 1024)).toFixed(1)} MB`;
