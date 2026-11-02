@@ -1154,7 +1154,7 @@ export function renderTaskDocuments(task) {
 }
 
 // Re-export Universal Document & Blueprint Viewer modules
-export { openDocumentPreviewModal, downloadDocument, handleCopyDocLink, getDocumentShareableLink } from '../documents/doc-viewer.js';
+export { openDocumentPreviewModal, closeDocumentPreviewModal, downloadDocument, handleCopyDocLink, getDocumentShareableLink } from '../documents/doc-viewer.js';
 
 export function STATUS_OPTIONS() { return [['not_started', t('notStarted')], ['in_progress', t('inProgress')], ['review', t('review')], ['approval', t('approval')], ['done', t('done')], ['blocked', t('blocked')], ['canceled', t('canceled')]]; }
 

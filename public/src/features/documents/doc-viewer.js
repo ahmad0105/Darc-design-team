@@ -16,9 +16,9 @@ export const GDRIVE_ROOT_FOLDER_URL = `https://drive.google.com/drive/folders/${
 export function getDocumentShareableLink(doc) {
   if (!doc) return GDRIVE_ROOT_FOLDER_URL;
 
-  // 1. Direct Google Drive file ID if present and valid (alphanumeric 25+ chars, no demo mock)
+  // 1. Direct Google Drive file ID if present and valid (alphanumeric 25+ chars, no demo mock, non-folder)
   const driveId = doc.driveFileId || doc.drive_file_id;
-  if (driveId && !String(driveId).startsWith('demo_') && String(driveId).length >= 25) {
+  if (driveId && !String(driveId).startsWith('demo_') && String(driveId).length >= 25 && driveId !== GDRIVE_ROOT_FOLDER_ID) {
     return `https://drive.google.com/file/d/${encodeURIComponent(driveId)}/view?usp=sharing`;
   }
 
@@ -29,7 +29,7 @@ export function getDocumentShareableLink(doc) {
       return targetUrl;
     }
     const match = targetUrl.match(/(?:file\/d\/|id=)([a-zA-Z0-9_-]{20,50})/);
-    if (match && match[1] && !match[1].startsWith('demo_') && match[1].length >= 25) {
+    if (match && match[1] && !match[1].startsWith('demo_') && match[1].length >= 25 && match[1] !== GDRIVE_ROOT_FOLDER_ID) {
       return `https://drive.google.com/file/d/${match[1]}/view?usp=sharing`;
     }
   }
@@ -207,16 +207,18 @@ export async function downloadDocument(docId) {
   const isImg = ['jpg', 'jpeg', 'png', 'webp', 'svg'].includes(ext) || (doc.mimeType && doc.mimeType.startsWith('image/'));
   const isVideo = ['mp4', 'webm', 'mov'].includes(ext) || (doc.mimeType && doc.mimeType.startsWith('video/'));
 
-  // 1. Check if real Google Drive file ID exists
+  // 1. Check if real Google Drive file ID exists (excluding root folder)
   const targetUrl = doc.diskFilename || doc.disk_filename || '';
   if (targetUrl && targetUrl.includes('drive.google.com')) {
     const match = targetUrl.match(/(?:file\/d\/|id=)([a-zA-Z0-9_-]{20,50})/);
-    if (match && match[1] && !match[1].startsWith('demo_')) {
+    if (match && match[1] && !match[1].startsWith('demo_') && match[1] !== GDRIVE_ROOT_FOLDER_ID) {
       const directDownloadUrl = `https://drive.google.com/uc?export=download&id=${match[1]}`;
+      const safeDownloadName = (doc.originalName || 'document').replace(/[/\\:*?"<>|\x00-\x1f]/g, '_');
       const a = document.createElement('a');
       a.href = directDownloadUrl;
       a.target = '_blank';
-      a.download = doc.originalName;
+      a.rel = 'noopener noreferrer';
+      a.download = safeDownloadName;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -249,9 +251,10 @@ export async function downloadDocument(docId) {
 
     if (blob) {
       const blobUrl = URL.createObjectURL(blob);
+      const safeDownloadName = (doc.originalName || 'document').replace(/[/\\:*?"<>|\x00-\x1f]/g, '_');
       const a = document.createElement('a');
       a.href = blobUrl;
-      a.download = doc.originalName;
+      a.download = safeDownloadName;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -263,6 +266,38 @@ export async function downloadDocument(docId) {
     // Network fallback
     window.open(`/api/documents/${encodeURIComponent(doc.id)}?download=1`, '_blank');
   }
+}
+
+/**
+ * Enterprise Safe Modal Closer & Resource Deallocator
+ * Prevents memory leaks, releases media decoders, and cleans up global event listeners
+ */
+export function closeDocumentPreviewModal() {
+  const overlay = document.getElementById('preview-modal-overlay');
+  if (!overlay) return;
+
+  // 1. Release active media / video hardware decoders
+  const vid = overlay.querySelector('video');
+  if (vid) {
+    try {
+      vid.pause();
+      vid.removeAttribute('src');
+      vid.load();
+    } catch (_) {}
+  }
+
+  // 2. Remove keyboard listeners
+  if (window.__docPreviewKeyHandler) {
+    window.removeEventListener('keydown', window.__docPreviewKeyHandler);
+    window.__docPreviewKeyHandler = null;
+  }
+
+  // 3. Restore body scroll
+  document.body.style.overflow = '';
+
+  // 4. Hide overlay and wipe DOM
+  overlay.style.display = 'none';
+  overlay.innerHTML = '';
 }
 
 /**
@@ -378,6 +413,18 @@ export async function openDocumentPreviewModal(docId) {
   `;
 
   overlay.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+
+  // Wire Keyboard Escape Listener
+  if (window.__docPreviewKeyHandler) {
+    window.removeEventListener('keydown', window.__docPreviewKeyHandler);
+  }
+  window.__docPreviewKeyHandler = (e) => {
+    if (e.key === 'Escape') {
+      closeDocumentPreviewModal();
+    }
+  };
+  window.addEventListener('keydown', window.__docPreviewKeyHandler);
 
   // Wire Header Actions
   const copyBtn = document.getElementById('modal-copy-link-btn');
@@ -392,16 +439,12 @@ export async function openDocumentPreviewModal(docId) {
 
   const closeBtn = document.getElementById('close-doc-preview-btn');
   if (closeBtn) {
-    closeBtn.addEventListener('click', () => {
-      overlay.style.display = 'none';
-      overlay.innerHTML = '';
-    });
+    closeBtn.addEventListener('click', closeDocumentPreviewModal);
   }
 
   overlay.onclick = (e) => {
     if (e.target === overlay) {
-      overlay.style.display = 'none';
-      overlay.innerHTML = '';
+      closeDocumentPreviewModal();
     }
   };
 
@@ -411,9 +454,9 @@ export async function openDocumentPreviewModal(docId) {
   // ── 1. RENDER PDF ARCHITECTURAL BLUEPRINTS ──────────────────────────────────
   if (isPdf) {
     const realPdfUrl = getRealAssetUrl(doc);
-    const drivePreviewUrl = (doc.driveFileId && doc.driveFileId.length >= 25 && !doc.driveFileId.startsWith('demo_')) 
-      ? `https://drive.google.com/file/d/${doc.driveFileId}/preview`
-      : 'https://drive.google.com/drive/folders/1DsElwxs_mdPU16AsL4p5f2wB-a6V2LNH?usp=sharing';
+    const drivePreviewUrl = (doc.driveFileId && doc.driveFileId.length >= 25 && !doc.driveFileId.startsWith('demo_') && doc.driveFileId !== GDRIVE_ROOT_FOLDER_ID) 
+      ? `https://drive.google.com/file/d/${encodeURIComponent(doc.driveFileId)}/preview`
+      : GDRIVE_ROOT_FOLDER_URL;
 
     viewport.innerHTML = `
       <div style="width:100%;height:100%;display:flex;flex-direction:column;position:relative;background:#1e242c;">
@@ -444,16 +487,30 @@ export async function openDocumentPreviewModal(docId) {
           </div>
         </div>
 
-        <!-- Real Native PDF Viewport via IFrame -->
+        <!-- Real Native PDF Viewport via Object + IFrame Fallback -->
         <div id="pdf-frame-container" style="flex:1;width:100%;height:100%;background:#525659;position:relative;">
-          <iframe 
-            id="pdf-native-frame"
-            src="${realPdfUrl}#toolbar=1&navpanes=1&scrollbar=1" 
+          <object 
+            id="pdf-native-object"
+            data="${esc(realPdfUrl)}#toolbar=1&navpanes=1&scrollbar=1" 
             type="application/pdf"
             style="width:100%;height:100%;border:none;display:block;"
-            title="${doc.originalName}"
-            allow="fullscreen"
-          ></iframe>
+          >
+            <iframe 
+              id="pdf-native-frame"
+              src="${esc(realPdfUrl)}#toolbar=1&navpanes=1&scrollbar=1" 
+              type="application/pdf"
+              style="width:100%;height:100%;border:none;display:block;"
+              title="${esc(doc.originalName)}"
+              allow="fullscreen"
+            >
+              <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:#fff;text-align:center;padding:24px;">
+                <p style="margin-bottom:12px;font-size:14px;color:#cbd5e1;">${choose('متصفحك يحتاج لفتح مستند PDF في نافذة جديدة أو تنزيله مباشرة.', 'Your browser requires opening this PDF in a new window or downloading it.')}</p>
+                <a href="${esc(realPdfUrl)}" target="_blank" rel="noopener noreferrer" class="btn btn-primary" style="padding:8px 18px;font-weight:700;">
+                  ↗ ${choose('فتح مستند PDF الأصلي', 'Open PDF in New Window')}
+                </a>
+              </div>
+            </iframe>
+          </object>
         </div>
       </div>
     `;
@@ -461,7 +518,11 @@ export async function openDocumentPreviewModal(docId) {
     document.getElementById('pdf-view-native')?.addEventListener('click', () => {
       const container = document.getElementById('pdf-frame-container');
       if (container) {
-        container.innerHTML = `<iframe id="pdf-native-frame" src="${realPdfUrl}#toolbar=1&navpanes=1" type="application/pdf" style="width:100%;height:100%;border:none;display:block;" title="${doc.originalName}" allow="fullscreen"></iframe>`;
+        container.innerHTML = `
+          <object id="pdf-native-object" data="${esc(realPdfUrl)}#toolbar=1&navpanes=1" type="application/pdf" style="width:100%;height:100%;border:none;display:block;">
+            <iframe id="pdf-native-frame" src="${esc(realPdfUrl)}#toolbar=1&navpanes=1" type="application/pdf" style="width:100%;height:100%;border:none;display:block;" title="${esc(doc.originalName)}" allow="fullscreen"></iframe>
+          </object>
+        `;
       }
       document.getElementById('pdf-view-native').style.background = '#0284c7';
       document.getElementById('pdf-view-native').style.color = '#fff';
@@ -472,7 +533,7 @@ export async function openDocumentPreviewModal(docId) {
     document.getElementById('pdf-view-drive')?.addEventListener('click', () => {
       const container = document.getElementById('pdf-frame-container');
       if (container) {
-        container.innerHTML = `<iframe src="${drivePreviewUrl}" style="width:100%;height:100%;border:none;display:block;" allow="fullscreen"></iframe>`;
+        container.innerHTML = `<iframe src="${esc(drivePreviewUrl)}" style="width:100%;height:100%;border:none;display:block;" allow="fullscreen" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox" loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe>`;
       }
       document.getElementById('pdf-view-drive').style.background = '#0284c7';
       document.getElementById('pdf-view-drive').style.color = '#fff';
@@ -503,23 +564,24 @@ export async function openDocumentPreviewModal(docId) {
         </div>
 
         <!-- High-Res Image Viewport Canvas -->
-        <div id="img-pan-viewport" style="flex:1;width:100%;height:100%;overflow:hidden;display:flex;align-items:center;justify-content:center;cursor:grab;position:relative;">
+        <div id="img-pan-viewport" style="flex:1;width:100%;height:100%;overflow:hidden;display:flex;align-items:center;justify-content:center;cursor:grab;position:relative;touch-action:none;">
           <img 
             id="active-preview-img" 
             src="${realImgUrl}" 
             alt="${esc(doc.originalName)}" 
-            style="max-width:92%;max-height:88%;object-fit:contain;border-radius:8px;box-shadow:0 20px 50px rgba(0,0,0,0.7);transition:transform 0.1s ease;transform-origin:center center;" 
+            style="max-width:92%;max-height:88%;object-fit:contain;border-radius:8px;box-shadow:0 20px 50px rgba(0,0,0,0.7);transition:transform 0.1s ease;transform-origin:center center;pointer-events:none;" 
           />
         </div>
       </div>
     `;
 
-    // Interactive Pan & Zoom Engine for 4K Renders
+    // Interactive Pan & Zoom Engine for 4K Renders with Zero Memory Leaks & Full Touch Support
     let scale = 1;
     let rotation = 0;
     let panX = 0;
     let panY = 0;
     let isPanning = false;
+    let activePointerId = null;
     let startX = 0;
     let startY = 0;
 
@@ -537,7 +599,7 @@ export async function openDocumentPreviewModal(docId) {
     }
 
     document.getElementById('img-zoom-in')?.addEventListener('click', () => {
-      scale = Math.min(4.0, scale + 0.25);
+      scale = Math.min(5.0, scale + 0.25);
       updateTransform();
     });
     document.getElementById('img-zoom-out')?.addEventListener('click', () => {
@@ -560,30 +622,41 @@ export async function openDocumentPreviewModal(docId) {
       viewportBox.addEventListener('wheel', (e) => {
         e.preventDefault();
         const delta = e.deltaY < 0 ? 0.15 : -0.15;
-        scale = Math.max(0.4, Math.min(4.0, scale + delta));
+        scale = Math.max(0.4, Math.min(5.0, scale + delta));
         updateTransform();
       }, { passive: false });
 
-      viewportBox.addEventListener('mousedown', (e) => {
+      viewportBox.addEventListener('pointerdown', (e) => {
         isPanning = true;
+        activePointerId = e.pointerId;
+        try {
+          viewportBox.setPointerCapture(e.pointerId);
+        } catch (_) {}
         startX = e.clientX - panX;
         startY = e.clientY - panY;
         viewportBox.style.cursor = 'grabbing';
       });
 
-      window.addEventListener('mousemove', (e) => {
-        if (!isPanning) return;
+      viewportBox.addEventListener('pointermove', (e) => {
+        if (!isPanning || (activePointerId !== null && e.pointerId !== activePointerId)) return;
         panX = e.clientX - startX;
         panY = e.clientY - startY;
         updateTransform();
       });
 
-      window.addEventListener('mouseup', () => {
-        if (isPanning) {
+      const endPointer = (e) => {
+        if (isPanning && (activePointerId === null || e.pointerId === activePointerId)) {
           isPanning = false;
-          if (viewportBox) viewportBox.style.cursor = 'grab';
+          activePointerId = null;
+          try {
+            viewportBox.releasePointerCapture(e.pointerId);
+          } catch (_) {}
+          viewportBox.style.cursor = 'grab';
         }
-      });
+      };
+
+      viewportBox.addEventListener('pointerup', endPointer);
+      viewportBox.addEventListener('pointercancel', endPointer);
     }
     return;
   }
@@ -591,9 +664,9 @@ export async function openDocumentPreviewModal(docId) {
   // ── 3. RENDER HIGH-DEFINITION ARCHITECTURAL VIDEOS ──────────────────────────
   if (isVideo) {
     const videoSrc = getRealAssetUrl(doc) || '/assets/DARC-VILLA-SITE-PROGRESS-WALKTHROUGH.mp4';
-    const drivePreviewUrl = (doc.driveFileId && doc.driveFileId.length >= 25 && !doc.driveFileId.startsWith('demo_')) 
-      ? `https://drive.google.com/file/d/${doc.driveFileId}/preview`
-      : 'https://drive.google.com/drive/folders/1DsElwxs_mdPU16AsL4p5f2wB-a6V2LNH?usp=sharing';
+    const drivePreviewUrl = (doc.driveFileId && doc.driveFileId.length >= 25 && !doc.driveFileId.startsWith('demo_') && doc.driveFileId !== GDRIVE_ROOT_FOLDER_ID) 
+      ? `https://drive.google.com/file/d/${encodeURIComponent(doc.driveFileId)}/preview`
+      : GDRIVE_ROOT_FOLDER_URL;
 
     viewport.innerHTML = `
       <div style="width:100%;height:100%;display:flex;flex-direction:column;background:#06090e;color:#f8fafc;overflow:hidden;">
@@ -602,7 +675,7 @@ export async function openDocumentPreviewModal(docId) {
           <div style="display:flex;align-items:center;gap:12px;">
             <div style="display:flex;align-items:center;justify-content:center;background:#8b5cf6;color:#ffffff;width:30px;height:30px;border-radius:6px;font-weight:900;font-size:14px;">🎬</div>
             <div>
-              <div style="font-weight:800;font-size:14px;color:#f8fafc;">${doc.originalName}</div>
+              <div style="font-weight:800;font-size:14px;color:#f8fafc;">${esc(doc.originalName)}</div>
               <div style="font-size:11px;color:#94a3b8;">${choose('توثيق الموقع والجولة المعمارية بالفيديو (Site Walkthrough & Drone)', 'Architectural Site Walkthrough & Drone Inspection')} • ${sizeFormatted}</div>
             </div>
           </div>
@@ -629,10 +702,11 @@ export async function openDocumentPreviewModal(docId) {
             autoplay 
             muted 
             playsinline 
+            webkit-playsinline="true"
             preload="auto"
             style="width:100%;max-width:1080px;max-height:72vh;border-radius:12px;outline:none;box-shadow:0 25px 60px rgba(0,0,0,0.9);background:#0f172a;object-fit:contain;"
           >
-            <source src="${videoSrc}" type="video/mp4">
+            <source src="${esc(videoSrc)}" type="video/mp4">
             <p style="color:#ffffff;text-align:center;">${choose('متصفحك لا يدعم تشغيل هذا الفيديو مباشرة.', 'Your browser does not support HTML5 video playback.')}</p>
           </video>
 
@@ -751,9 +825,9 @@ export async function openDocumentPreviewModal(docId) {
 
   // ── 4. RENDER AUTOCAD DWG / DXF & 3D BIM BLUEPRINTS ────────────────────────
   if (isCad || isBim) {
-    const drivePreviewUrl = (doc.driveFileId && doc.driveFileId.length >= 25 && !doc.driveFileId.startsWith('demo_')) 
-      ? `https://drive.google.com/file/d/${doc.driveFileId}/preview`
-      : 'https://drive.google.com/drive/folders/1DsElwxs_mdPU16AsL4p5f2wB-a6V2LNH?usp=sharing';
+    const drivePreviewUrl = (doc.driveFileId && doc.driveFileId.length >= 25 && !doc.driveFileId.startsWith('demo_') && doc.driveFileId !== GDRIVE_ROOT_FOLDER_ID) 
+      ? `https://drive.google.com/file/d/${encodeURIComponent(doc.driveFileId)}/preview`
+      : GDRIVE_ROOT_FOLDER_URL;
 
     viewport.innerHTML = `
       <div style="width:100%;height:100%;position:relative;display:flex;flex-direction:column;background:#101418;user-select:none;">
@@ -824,9 +898,9 @@ export async function openDocumentPreviewModal(docId) {
   // ── 5. RENDER EXCEL SPREADSHEETS (BOQ & FINANCIAL SCHEDULES) ─────────────────
   if (isExcel) {
     const realExcelUrl = getRealAssetUrl(doc);
-    const drivePreviewUrl = (doc.driveFileId && doc.driveFileId.length >= 25 && !doc.driveFileId.startsWith('demo_')) 
-      ? `https://drive.google.com/file/d/${doc.driveFileId}/preview`
-      : 'https://drive.google.com/drive/folders/1DsElwxs_mdPU16AsL4p5f2wB-a6V2LNH?usp=sharing';
+    const drivePreviewUrl = (doc.driveFileId && doc.driveFileId.length >= 25 && !doc.driveFileId.startsWith('demo_') && doc.driveFileId !== GDRIVE_ROOT_FOLDER_ID) 
+      ? `https://drive.google.com/file/d/${encodeURIComponent(doc.driveFileId)}/preview`
+      : GDRIVE_ROOT_FOLDER_URL;
 
     viewport.innerHTML = `
       <div style="width:100%;height:100%;display:flex;flex-direction:column;background:var(--surface, #ffffff);color:var(--text, #0f172a);overflow:hidden;">
@@ -873,7 +947,7 @@ export async function openDocumentPreviewModal(docId) {
 
         <!-- Google Drive Preview Viewport (hidden by default) -->
         <div id="excel-drive-viewport" style="display:none;flex:1;width:100%;height:100%;background:#ffffff;">
-          <iframe id="excel-drive-iframe" src="" style="width:100%;height:100%;border:none;display:block;"></iframe>
+          <iframe id="excel-drive-iframe" src="" style="width:100%;height:100%;border:none;display:block;" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox" loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe>
         </div>
       </div>
     `;
@@ -954,7 +1028,7 @@ export async function openDocumentPreviewModal(docId) {
 
         <!-- Google Drive Preview Viewport (hidden by default) -->
         <div id="word-drive-viewport" style="display:none;flex:1;width:100%;height:100%;background:#ffffff;">
-          <iframe id="word-drive-iframe" src="" style="width:100%;height:100%;border:none;display:block;"></iframe>
+          <iframe id="word-drive-iframe" src="" style="width:100%;height:100%;border:none;display:block;" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox" loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe>
         </div>
       </div>
     `;
@@ -1035,7 +1109,7 @@ export async function openDocumentPreviewModal(docId) {
 
         <!-- Google Drive Preview Viewport (hidden by default) -->
         <div id="ppt-drive-viewport" style="display:none;flex:1;width:100%;height:100%;background:#ffffff;">
-          <iframe id="ppt-drive-iframe" src="" style="width:100%;height:100%;border:none;display:block;"></iframe>
+          <iframe id="ppt-drive-iframe" src="" style="width:100%;height:100%;border:none;display:block;" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox" loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe>
         </div>
       </div>
     `;
@@ -1110,7 +1184,7 @@ export async function openDocumentPreviewModal(docId) {
         <div style="width:80px;height:80px;border-radius:20px;background:${fmt.bg};color:${fmt.color};display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:900;margin-bottom:20px;border:2px solid ${fmt.border};">
           ${fmt.ext}
         </div>
-        <h2 style="font-size:22px;font-weight:900;margin:0 0 8px 0;color:var(--text, #0f172a);">${doc.originalName}</h2>
+        <h2 style="font-size:22px;font-weight:900;margin:0 0 8px 0;color:var(--text, #0f172a);">${esc(doc.originalName)}</h2>
         <p style="color:#64748b;font-size:14px;max-width:480px;line-height:1.6;margin:0 0 24px 0;">
           ${choose('هذا المستند المعماري جاهز للتنزيل المباشر أو الفتح عبر التطبيق الهندسي المختص.', 'This architectural document is ready for direct download or local desktop review.')}
         </p>
