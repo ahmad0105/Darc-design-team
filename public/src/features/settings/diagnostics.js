@@ -51,13 +51,31 @@ export function renderDiagnosticsSection() {
     });
   }
 
-  const users = data?.users || [];
+  // Merge real active users from workspace state with diagnostics data
+  let users = data?.users || [];
+  if (!users.length && state.data?.users && state.data.users.length) {
+    users = state.data.users.map(u => ({
+      userId: u.id,
+      name: u.name,
+      nameEn: u.nameEn || u.name,
+      email: u.email,
+      role: u.jobTitleAr || (u.roleId === 'admin' ? 'مدير النظام (كامل الصلاحيات)' : (u.roleId || 'عضو فريق')),
+      avatarColor: u.avatarColor || '#0d6269',
+      isRealAccount: true,
+      status: u.status || 'active',
+      totalIncidents: 0,
+      activeIncidents: 0,
+      resolvedIncidents: 0,
+      incidents: []
+    }));
+  }
+
   let incidents = data?.incidents || [];
   const stats = data?.stats || {
     totalIncidents: 3,
     activeIncidents: 0,
     resolvedIncidents: 3,
-    totalUsersMonitored: 6,
+    totalUsersMonitored: users.length || 6,
     alertEmailRecipient: 'admin@darc-design.bond'
   };
 
@@ -177,11 +195,20 @@ export function renderDiagnosticsSection() {
                     ${esc(u.name.slice(0, 2))}
                   </div>
                   <div style="flex:1;min-width:0;">
-                    <div style="font-size:12px;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(choose(u.name, u.nameEn || u.name))}</div>
+                    <div style="display:flex;align-items:center;gap:6px;justify-content:space-between;">
+                      <div style="font-size:12px;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                        ${esc(choose(u.name, u.nameEn || u.name))}
+                      </div>
+                      ${u.isRealAccount ? `
+                        <span style="background:rgba(16,185,129,0.12);color:#059669;border:1px solid rgba(16,185,129,0.25);font-size:9px;font-weight:700;padding:1px 5px;border-radius:4px;flex-shrink:0;">
+                          ${choose('حساب مفعل 🟢', 'Active 🟢')}
+                        </span>
+                      ` : ''}
+                    </div>
                     <div style="font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(u.email)}</div>
                     <div style="display:flex;align-items:center;gap:6px;margin-top:4px;">
                       <span class="status-badge ${hasActive ? 'urgent' : 'done'}" style="font-size:9px;padding:1px 6px;">
-                        ${hasActive ? choose(`${u.activeIncidents} خطأ نشط ⚠️`, `${u.activeIncidents} Active ⚠️`) : choose('مستقر ✓', 'Healthy ✓')}
+                        ${hasActive ? choose(`${u.activeIncidents} خطأ نشط ⚠️`, `${u.activeIncidents} Active ⚠️`) : choose('مستقر ✓ (0 أعطال)', 'Healthy ✓ (0 errors)')}
                       </span>
                     </div>
                   </div>

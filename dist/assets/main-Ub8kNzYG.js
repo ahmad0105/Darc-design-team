@@ -1012,7 +1012,7 @@ var xn=Object.defineProperty,ce=(e,a)=>{let n={};for(var o in e)xn(n,o,{get:e[o]
         </div>
       </div>
     </section>
-  `}var mt=null,ha=!1,Ae="all",Ne="all",Ze="all";async function Ot(e=!1){if(mt&&!e)return mt;ha=!0;try{const a=await D("/api/telemetry/incidents",{silent:!0});a&&a.users&&(mt=a)}catch(a){console.warn("[Diagnostics] Failed to fetch incidents:",a)}finally{ha=!1}return mt}function jn(e){Ae=e}function ks(e){Ne=e}function Ss(e){Ze=e}function ci(){const e=mt;Vn(),!e&&!ha&&Ot().then(()=>{if(s.view==="settings"&&(s.settingsSection==="diagnostics"||s.settingsSection==="analytics")){const i=document.querySelector(".settings-content");i&&(i.innerHTML=ci())}});const a=e?.users||[];let n=e?.incidents||[];const o=e?.stats||{totalIncidents:3,activeIncidents:0,resolvedIncidents:3,totalUsersMonitored:6,alertEmailRecipient:"admin@darc-design.bond"};Ae!=="all"&&(n=n.filter(i=>i.userId===Ae)),Ne!=="all"&&(n=n.filter(i=>i.severity===Ne)),Ze!=="all"&&(n=n.filter(i=>i.status===Ze));const r=a.find(i=>i.userId===Ae);return`
+  `}var mt=null,ha=!1,Ae="all",Ne="all",Ze="all";async function Ot(e=!1){if(mt&&!e)return mt;ha=!0;try{const a=await D("/api/telemetry/incidents",{silent:!0});a&&a.users&&(mt=a)}catch(a){console.warn("[Diagnostics] Failed to fetch incidents:",a)}finally{ha=!1}return mt}function jn(e){Ae=e}function ks(e){Ne=e}function Ss(e){Ze=e}function ci(){const e=mt;Vn(),!e&&!ha&&Ot().then(()=>{if(s.view==="settings"&&(s.settingsSection==="diagnostics"||s.settingsSection==="analytics")){const i=document.querySelector(".settings-content");i&&(i.innerHTML=ci())}});let a=e?.users||[];!a.length&&s.data?.users&&s.data.users.length&&(a=s.data.users.map(i=>({userId:i.id,name:i.name,nameEn:i.nameEn||i.name,email:i.email,role:i.jobTitleAr||(i.roleId==="admin"?"مدير النظام (كامل الصلاحيات)":i.roleId||"عضو فريق"),avatarColor:i.avatarColor||"#0d6269",isRealAccount:!0,status:i.status||"active",totalIncidents:0,activeIncidents:0,resolvedIncidents:0,incidents:[]})));let n=e?.incidents||[];const o=e?.stats||{totalIncidents:3,activeIncidents:0,resolvedIncidents:3,totalUsersMonitored:a.length||6,alertEmailRecipient:"admin@darc-design.bond"};Ae!=="all"&&(n=n.filter(i=>i.userId===Ae)),Ne!=="all"&&(n=n.filter(i=>i.severity===Ne)),Ze!=="all"&&(n=n.filter(i=>i.status===Ze));const r=a.find(i=>i.userId===Ae);return`
     <section class="setting-section" id="diagnostics-dashboard">
       <!-- 1. Header & Actions Bar -->
       <div class="panel-head" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:14px;margin-bottom:20px;">
@@ -1112,11 +1112,20 @@ var xn=Object.defineProperty,ce=(e,a)=>{let n={};for(var o in e)xn(n,o,{get:e[o]
                     ${c(i.name.slice(0,2))}
                   </div>
                   <div style="flex:1;min-width:0;">
-                    <div style="font-size:12px;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${c(t(i.name,i.nameEn||i.name))}</div>
+                    <div style="display:flex;align-items:center;gap:6px;justify-content:space-between;">
+                      <div style="font-size:12px;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                        ${c(t(i.name,i.nameEn||i.name))}
+                      </div>
+                      ${i.isRealAccount?`
+                        <span style="background:rgba(16,185,129,0.12);color:#059669;border:1px solid rgba(16,185,129,0.25);font-size:9px;font-weight:700;padding:1px 5px;border-radius:4px;flex-shrink:0;">
+                          ${t("حساب مفعل 🟢","Active 🟢")}
+                        </span>
+                      `:""}
+                    </div>
                     <div style="font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${c(i.email)}</div>
                     <div style="display:flex;align-items:center;gap:6px;margin-top:4px;">
                       <span class="status-badge ${d?"urgent":"done"}" style="font-size:9px;padding:1px 6px;">
-                        ${d?t(`${i.activeIncidents} خطأ نشط ⚠️`,`${i.activeIncidents} Active ⚠️`):t("مستقر ✓","Healthy ✓")}
+                        ${d?t(`${i.activeIncidents} خطأ نشط ⚠️`,`${i.activeIncidents} Active ⚠️`):t("مستقر ✓ (0 أعطال)","Healthy ✓ (0 errors)")}
                       </span>
                     </div>
                   </div>

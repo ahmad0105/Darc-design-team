@@ -357,9 +357,10 @@ export async function recordErrorIncident(env, report = {}) {
 }
 
 /**
- * Returns incidents grouped per user and system-wide incident statistics.
+ * Returns incidents grouped per user and system-wide incident statistics,
+ * integrating real active accounts from the database alongside active incidents.
  */
-export function getIncidentsPerUser(filterUserId = null) {
+export async function getIncidentsPerUser(supabase = null, filterUserId = null) {
   // Ensure seed timestamps are adjusted to real runtime (avoids Cloudflare Worker module-eval epoch 0 / 1969 bug)
   const now = Date.now();
   for (const inc of _telemetryStore.recentIncidents) {
@@ -384,34 +385,75 @@ export function getIncidentsPerUser(filterUserId = null) {
     incidents = incidents.filter(inc => inc.userId === filterUserId);
   }
 
-  // Group by user
+  // 1. Group by user, starting with real active database accounts
   const userMap = new Map();
-  for (const [id, profile] of Object.entries(USER_PROFILES)) {
-    userMap.set(id, {
-      userId: id,
-      name: profile.name,
-      nameEn: profile.nameEn,
-      email: profile.email,
-      role: profile.role,
-      avatarColor: profile.avatarColor,
-      totalIncidents: 0,
-      activeIncidents: 0,
-      resolvedIncidents: 0,
-      lastIncidentAt: null,
-      incidents: []
-    });
+
+  if (supabase) {
+    try {
+      const { data: dbUsers, error } = await supabase
+        .from('users')
+        .select('id, name, name_en, email, role_id, status, avatar_color, job_title_ar, job_title_en, custom_fields')
+        .eq('status', 'active');
+
+      if (!error && dbUsers && dbUsers.length > 0) {
+        for (const u of dbUsers) {
+          const roleLabel = u.job_title_ar || (u.role_id === 'admin' ? 'مدير النظام (كامل الصلاحيات)' : (u.role_id || 'عضو فريق'));
+          userMap.set(u.id, {
+            userId: u.id,
+            name: u.name,
+            nameEn: u.name_en || u.name,
+            email: u.email,
+            role: roleLabel,
+            avatarColor: u.avatar_color || '#0d6269',
+            isRealAccount: true,
+            status: u.status,
+            totalIncidents: 0,
+            activeIncidents: 0,
+            resolvedIncidents: 0,
+            lastIncidentAt: null,
+            incidents: []
+          });
+        }
+      }
+    } catch (err) {
+      console.warn('[Telemetry] Error querying DB users:', err.message);
+    }
   }
 
+  // 2. Also incorporate known workspace profiles (so simulated/demo testing continues smoothly)
+  for (const [id, profile] of Object.entries(USER_PROFILES)) {
+    if (!userMap.has(id)) {
+      userMap.set(id, {
+        userId: id,
+        name: profile.name,
+        nameEn: profile.nameEn,
+        email: profile.email,
+        role: profile.role,
+        avatarColor: profile.avatarColor,
+        isRealAccount: false,
+        status: 'active',
+        totalIncidents: 0,
+        activeIncidents: 0,
+        resolvedIncidents: 0,
+        lastIncidentAt: null,
+        incidents: []
+      });
+    }
+  }
+
+  // 3. Attach all recorded incidents to their matching user entry
   for (const inc of _telemetryStore.recentIncidents) {
     let entry = userMap.get(inc.userId);
     if (!entry) {
       entry = {
         userId: inc.userId,
-        name: inc.userName,
-        nameEn: inc.userName,
-        email: inc.userEmail,
-        role: inc.userRole,
+        name: inc.userName || 'مستخدم مسجل',
+        nameEn: inc.userName || 'Registered User',
+        email: inc.userEmail || (inc.userId + '@darc-design.bond'),
+        role: inc.userRole || 'مهندس مساحة العمل',
         avatarColor: inc.avatarColor || '#0d6269',
+        isRealAccount: true,
+        status: 'active',
         totalIncidents: 0,
         activeIncidents: 0,
         resolvedIncidents: 0,
@@ -432,7 +474,13 @@ export function getIncidentsPerUser(filterUserId = null) {
   }
 
   const usersList = Array.from(userMap.values());
-  usersList.sort((a, b) => b.totalIncidents - a.totalIncidents);
+  // Real accounts with errors first, then real accounts without errors, then others
+  usersList.sort((a, b) => {
+    if (b.activeIncidents !== a.activeIncidents) return b.activeIncidents - a.activeIncidents;
+    if (a.isRealAccount && !b.isRealAccount) return -1;
+    if (!a.isRealAccount && b.isRealAccount) return 1;
+    return b.totalIncidents - a.totalIncidents;
+  });
 
   const activeTotal = _telemetryStore.recentIncidents.filter(i => i.status === 'active').length;
   const resolvedTotal = _telemetryStore.recentIncidents.filter(i => i.status === 'resolved').length;
@@ -444,6 +492,7 @@ export function getIncidentsPerUser(filterUserId = null) {
       activeIncidents: activeTotal,
       resolvedIncidents: resolvedTotal,
       totalUsersMonitored: usersList.length,
+      realUsersMonitored: usersList.filter(u => u.isRealAccount).length,
       emailAlertsConfigured: true,
       alertEmailRecipient: 'admin@darc-design.bond'
     },

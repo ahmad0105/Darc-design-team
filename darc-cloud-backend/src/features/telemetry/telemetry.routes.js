@@ -190,7 +190,8 @@ app.get('/incidents', async (c) => {
     return c.json({ error: 'غير مصرح لك بعرض تشخيصات وسجلات الأعطال' }, 403);
   }
   const userIdFilter = c.req.query('userId') || null;
-  const result = getIncidentsPerUser(userIdFilter);
+  const supabase = c.get('supabase');
+  const result = await getIncidentsPerUser(supabase, userIdFilter);
   return c.json(result);
 });
 
