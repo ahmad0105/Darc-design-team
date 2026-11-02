@@ -545,6 +545,7 @@ export async function handleClick(event) {
     } catch (e) {
       try {
         localStorage.removeItem('darc_offline_bootstrap');
+        localStorage.removeItem('darc_offline_mutations_queue');
         localStorage.removeItem('darc_offline_queue');
       } catch (err) {}
     }
@@ -570,6 +571,7 @@ export async function handleClick(event) {
     } catch (e) {
       try {
         localStorage.removeItem('darc_offline_bootstrap');
+        localStorage.removeItem('darc_offline_mutations_queue');
         localStorage.removeItem('darc_offline_queue');
       } catch (err) {}
     }

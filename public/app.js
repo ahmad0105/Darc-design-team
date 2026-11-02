@@ -136,7 +136,18 @@ window.addEventListener('unhandledrejection', (event) => {
 // Register Service Worker for Offline-First PWA capabilities
 if ('serviceWorker' in navigator && window.location.protocol.startsWith('http')) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch((err) => {
+    navigator.serviceWorker.register('/sw.js').then((registration) => {
+      registration.addEventListener('updatefound', () => {
+        const installingWorker = registration.installing;
+        if (installingWorker) {
+          installingWorker.addEventListener('statechange', () => {
+            if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              console.log('[PWA] New version ready for next visit.');
+            }
+          });
+        }
+      });
+    }).catch((err) => {
       console.warn('[PWA] ServiceWorker registration skipped:', err.message);
     });
   });

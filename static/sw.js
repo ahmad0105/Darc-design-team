@@ -1,7 +1,17 @@
-// DARC Design Team — High-Resilience Service Worker (Vite Architecture)
-const CACHE_NAME = 'darc-cache-v4.9.5';
+// DARC Design Team — Enterprise Resilient Service Worker & Offline PWA Engine
+const CACHE_NAME = 'darc-cache-v5.0.0';
+const PRECACHE_ASSETS = [
+  '/',
+  '/index.html',
+  '/manifest.json'
+];
 
 self.addEventListener('install', (event) => {
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(PRECACHE_ASSETS)).catch((err) => {
+      console.warn('[SW] Precache failed:', err);
+    })
+  );
   self.skipWaiting();
 });
 
@@ -30,11 +40,19 @@ self.addEventListener('fetch', (event) => {
         .then((response) => {
           if (response && response.status === 200) {
             const clone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone)).catch(() => {});
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(event.request, clone);
+              cache.put('/index.html', clone.clone());
+              cache.put('/', clone.clone());
+            }).catch(() => {});
           }
           return response;
         })
-        .catch(() => caches.match(event.request).then((res) => res || caches.match('/index.html')))
+        .catch(() => {
+          return caches.match(event.request).then((res) => {
+            return res || caches.match('/index.html') || caches.match('/');
+          });
+        })
     );
     return;
   }

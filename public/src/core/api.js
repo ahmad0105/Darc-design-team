@@ -53,10 +53,20 @@ export async function api(path, options = {}) {
     }
   }
 
+  const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
+
   // Check if browser is actively offline before hitting network for mutations
   if (typeof navigator !== 'undefined' && !navigator.onLine && isMutation && !isAuth) {
     if (isReplay) {
       throw new Error(choose('تعذر الاتصال بالخادم، ما زال النظام دون اتصال.', 'Unable to connect to server. System is still offline.'));
+    }
+    if (isFormData) {
+      const uploadError = choose(
+        'لا يمكن رفع المخططات أو الملفات في وضع عدم الاتصال. يرجى الاتصال بالإنترنت لإتمام الرفع.',
+        'File and drawing uploads are not supported offline. Please reconnect to upload.'
+      );
+      showToast(uploadError, true);
+      throw new Error(uploadError);
     }
     const item = enqueueOfflineMutation({
       path,
@@ -74,7 +84,6 @@ export async function api(path, options = {}) {
   const shouldSendEtag = Boolean(_lastBootstrapEtag) && (isSilent || Boolean(state.data) || hasOfflineData);
   const clientMutationId = isMutation ? (`mut_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`) : null;
 
-  const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
   const headers = {
     ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
     ...(options.body && !isFormData ? { 'Content-Type': 'application/json' } : {}),
@@ -94,6 +103,14 @@ export async function api(path, options = {}) {
     response = await fetch(API_BASE + path, { ...options, headers });
   } catch (networkError) {
     if (isMutation && !isAuth && !isReplay) {
+      if (isFormData) {
+        const uploadError = choose(
+          'انقطع الاتصال بالإنترنت أثناء الرفع. يرجى إعادة المحاولة عند استقرار الشبكة.',
+          'Internet disconnected during file upload. Please retry once reconnected.'
+        );
+        showToast(uploadError, true);
+        throw new Error(uploadError);
+      }
       const item = enqueueOfflineMutation({
         path,
         method: options.method,
