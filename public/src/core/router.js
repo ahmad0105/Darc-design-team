@@ -99,6 +99,7 @@ export function renderApp() {
 
   document.getElementById('app').innerHTML = `
     <div class="app-shell ${state.lang === 'en' ? 'is-ltr' : ''}">
+      <div class="sidebar-backdrop ${state.sidebarOpen ? 'visible' : ''}" data-action="toggle-sidebar" aria-hidden="true"></div>
       <aside class="sidebar ${state.sidebarOpen ? 'open' : ''}">
         <div class="sidebar-brand">
           ${state.data?.company?.logoUrl 
@@ -155,11 +156,11 @@ export function renderApp() {
             <button class="icon-button" data-action="open-cheatsheet" title="${choose('دليل اختصارات لوحة المفاتيح (?)', 'Keyboard shortcuts guide (?)')}" style="color:var(--ink-soft);" aria-label="Shortcuts">
               <kbd class="shortcut-kbd" style="font-size:12px;padding:2px 7px;font-weight:bold;">?</kbd>
             </button>
-            <button class="btn btn-ghost btn-sm" data-action="toggle-theme">${state.theme === 'dark' ? '☀️' : '🌙'}</button>
-            <button class="btn btn-ghost btn-sm" data-action="toggle-lang">${state.lang === 'ar' ? 'EN' : 'عربي'} ${icon('globe', 14)}</button>
-            <button class="icon-button" data-action="show-notifications" aria-label="${t('notifications')}">${icon('bell', 17)}${unread ? '<span class="notification-dot"></span>' : ''}</button>
+            <button class="btn btn-ghost btn-sm topbar-action-btn" data-action="toggle-theme" title="${choose('تبديل المظهر', 'Toggle Theme')}" aria-label="${choose('تبديل المظهر', 'Toggle Theme')}">${state.theme === 'dark' ? '☀️' : '🌙'}</button>
+            <button class="btn btn-ghost btn-sm topbar-action-btn" data-action="toggle-lang" title="${choose('تبديل اللغة', 'Toggle Language')}" aria-label="${choose('تبديل اللغة', 'Toggle Language')}"><span class="lang-text">${state.lang === 'ar' ? 'EN' : 'عربي'}</span> ${icon('globe', 14)}</button>
+            <button class="icon-button topbar-action-btn" data-action="show-notifications" aria-label="${t('notifications')}">${icon('bell', 17)}${unread ? '<span class="notification-dot"></span>' : ''}</button>
             <div class="topbar-divider"></div>
-            <div class="profile-chip">${avatar(user)}<div class="profile-chip-text"><strong>${esc(choose(user.name, user.nameEn || user.name))}</strong><span>${esc(roleName(user))}</span></div></div>
+            <div class="profile-chip" data-action="open-user-profile" title="${esc(choose(user.name, user.nameEn || user.name))}">${avatar(user)}<div class="profile-chip-text"><strong>${esc(choose(user.name, user.nameEn || user.name))}</strong><span>${esc(roleName(user))}</span></div></div>
           </div>
         </header>
         <main id="main-content" class="workspace-content"></main>
@@ -206,6 +207,7 @@ export function switchView(view, projectId = undefined) {
   if (view === 'settings' && !state.settingsSection) state.settingsSection = 'profile';
   state.sidebarOpen = false;
   document.querySelector('.sidebar')?.classList.remove('open');
+  document.querySelector('.sidebar-backdrop')?.classList.remove('visible');
 
   // Instant 0ms visual feedback on navigation buttons
   document.querySelectorAll('.nav-item').forEach((btn) => {

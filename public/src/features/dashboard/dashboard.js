@@ -11,6 +11,10 @@ export function projectProgress(project) {
   return `<div class="progress-cell"><div class="progress-meta"><span>${t('weightedProgress')}</span><strong>${project.progress}%</strong></div><div class="progress-track"><div class="progress-fill ${fillClass}" style="width:${Math.min(100, project.progress)}%"></div></div></div>`;
 }
 
+export function projectRow(project) {
+  return `<div class="project-row"><div class="project-main"><span class="project-symbol">${icon('building', 17)}</span><div class="project-name"><strong>${esc(choose(project.nameAr, project.nameEn))}</strong><span>${esc(project.code)} · ${esc(choose(project.clientAr, project.clientEn))}</span></div></div>${projectProgress(project)}<div class="project-owner">${avatar(project.manager)}<span>${esc(project.manager ? choose(project.manager.name, project.manager.nameEn || project.manager.name) : '—')}</span></div><button class="project-arrow" data-action="open-project" data-project-id="${esc(project.id)}" aria-label="${t('viewDetails')}">${icon(state.lang === 'ar' ? 'arrowLeft' : 'arrow', 14)}</button></div>`;
+}
+
 export function attentionItem(task) {
   const type = isOverdue(task) ? 'red' : task.status === 'blocked' ? 'red' : 'amber';
   const title = isOverdue(task) ? choose('متأخرة', 'Overdue') : task.status === 'blocked' ? choose('متوقفة', 'Blocked') : choose('تستحق قريبًا', 'Due soon');

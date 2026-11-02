@@ -534,7 +534,12 @@ export async function handleClick(event) {
     }
     return;
   }
-  if (action === 'toggle-sidebar') { state.sidebarOpen = !state.sidebarOpen; document.querySelector('.sidebar')?.classList.toggle('open', state.sidebarOpen); return; }
+  if (action === 'toggle-sidebar') {
+    state.sidebarOpen = !state.sidebarOpen;
+    document.querySelector('.sidebar')?.classList.toggle('open', state.sidebarOpen);
+    document.querySelector('.sidebar-backdrop')?.classList.toggle('visible', state.sidebarOpen);
+    return;
+  }
   if (action === 'logout') {
     if (typeof localStorage !== 'undefined') localStorage.removeItem('darc_token');
     if (typeof window !== 'undefined' && typeof window.disconnectSupabaseRealtime === 'function') {
@@ -1163,6 +1168,11 @@ export async function handleClick(event) {
     return;
   }
   if (action === 'use-template') { if (!state.data.projects.length) return showToast(t('noProjects'), true); openTaskModal(null, target.dataset.templateId, state.activeProjectId); return; }
+  if (action === 'open-user-profile') {
+    state.settingsSection = 'profile';
+    switchView('settings');
+    return;
+  }
   if (action === 'open-user') {
     if (!isAdmin() && !can('manage_users') && !can('manage_existing_account_permissions')) {
       showToast(choose('غير مصرح لك بتعديل بيانات أو صلاحيات المستخدمين.', 'Permission denied to edit user accounts or permissions.'), true);
@@ -2574,9 +2584,22 @@ export async function uploadDirectFiles({ files, projectId = null, taskId = null
   }
 }
 
-// Global Drag & Drop handler for task dropzone
+// Global Drag & Drop handler for task dropzone & Window-level File Drop Navigation Shield
 if (typeof window !== 'undefined' && !window._taskDropzoneListenersSet) {
   window._taskDropzoneListenersSet = true;
+
+  // Window-level shield: Prevent accidental browser navigation when a file is dropped outside dropzones
+  window.addEventListener('dragover', (e) => {
+    if (!e.target.closest('#task-dropzone, #drawing-dropzone')) {
+      e.preventDefault();
+    }
+  });
+  window.addEventListener('drop', (e) => {
+    if (!e.target.closest('#task-dropzone, #drawing-dropzone')) {
+      e.preventDefault();
+    }
+  });
+
   document.addEventListener('dragover', (e) => {
     const dropzone = e.target.closest('#task-dropzone');
     if (dropzone) {

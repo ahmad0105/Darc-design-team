@@ -6,9 +6,7 @@ import { showToast, modalShell, closeModal } from '../../shared/ui.js';
 import { renderTaskSortSelect, getSavedTaskSort, renderTimeline } from '../tasks/tasks.js';
 import { renderAuditForProject } from '../settings/settings.js';
 
-export function projectRow(project) {
-  return `<div class="project-row"><div class="project-main"><span class="project-symbol">${icon('building', 17)}</span><div class="project-name"><strong>${esc(choose(project.nameAr, project.nameEn))}</strong><span>${esc(project.code)} · ${esc(choose(project.clientAr, project.clientEn))}</span></div></div>${projectProgress(project)}<div class="project-owner">${avatar(project.manager)}<span>${esc(project.manager ? choose(project.manager.name, project.manager.nameEn || project.manager.name) : '—')}</span></div><button class="project-arrow" data-action="open-project" data-project-id="${esc(project.id)}" aria-label="${t('viewDetails')}">${icon(state.lang === 'ar' ? 'arrowLeft' : 'arrow', 14)}</button></div>`;
-}
+export { projectRow } from '../dashboard/dashboard.js';
 
 export function getDaysLeftBadge(dueDate) {
   if (!dueDate) return '';

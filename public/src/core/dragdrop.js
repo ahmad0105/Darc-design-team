@@ -99,44 +99,122 @@ function getDragAfterElement(cardsContainer, clientY) {
   }, { offset: Number.NEGATIVE_INFINITY }).element;
 }
 
-// Dynamic Placeholder & Dropzone Hit-Testing
+// Universal Multi-Engine RTL Scroll Type Detector
+function getRtlScrollType() {
+  if (typeof window === 'undefined') return 'reverse';
+  if (window.__rtlScrollType) return window.__rtlScrollType;
+  try {
+    const def = document.createElement('div');
+    def.dir = 'rtl';
+    def.style.width = '4px';
+    def.style.height = '4px';
+    def.style.position = 'absolute';
+    def.style.top = '-9999px';
+    def.style.overflow = 'scroll';
+    document.body.appendChild(def);
+    let type = 'reverse';
+    if (def.scrollLeft > 0) {
+      type = 'default';
+    } else {
+      def.scrollLeft = 1;
+      if (def.scrollLeft === 0) type = 'negative';
+    }
+    document.body.removeChild(def);
+    window.__rtlScrollType = type;
+    return type;
+  } catch (e) {
+    return 'reverse';
+  }
+}
+
+// Interactive Visual Edge Hotzones for Mobile & Narrow Viewports
+let leftEdgeHotzone = null;
+let rightEdgeHotzone = null;
+
+function showEdgeHotzones() {
+  if (typeof document === 'undefined') return;
+  if (!leftEdgeHotzone) {
+    leftEdgeHotzone = document.createElement('div');
+    leftEdgeHotzone.className = 'dnd-edge-hotzone left';
+    document.body.appendChild(leftEdgeHotzone);
+  }
+  if (!rightEdgeHotzone) {
+    rightEdgeHotzone = document.createElement('div');
+    rightEdgeHotzone.className = 'dnd-edge-hotzone right';
+    document.body.appendChild(rightEdgeHotzone);
+  }
+}
+
+function hideEdgeHotzones() {
+  if (leftEdgeHotzone && leftEdgeHotzone.parentNode) {
+    leftEdgeHotzone.parentNode.removeChild(leftEdgeHotzone);
+    leftEdgeHotzone = null;
+  }
+  if (rightEdgeHotzone && rightEdgeHotzone.parentNode) {
+    rightEdgeHotzone.parentNode.removeChild(rightEdgeHotzone);
+    rightEdgeHotzone = null;
+  }
+}
+
+let lastPlaceholderY = -1;
+let lastPlaceholderColumn = null;
+let lastHapticColIndex = -1;
+
+// Dynamic Placeholder & Dropzone Hit-Testing with Spatial Hysteresis Deadband
 function updatePlaceholderPosition(clientX, clientY) {
   if (!isDraggingActive || clientX < 0 || clientY < 0) return;
 
   const elUnder = document.elementFromPoint(clientX, clientY);
   let column = elUnder?.closest('.board-column');
-  if (!column) {
-    const columns = Array.from(document.querySelectorAll('.board-column'));
-    if (columns.length > 0) {
-      column = columns.reduce((closest, col) => {
-        const rect = col.getBoundingClientRect();
-        const dist = Math.abs(clientX - (rect.left + rect.width / 2));
-        return dist < closest.dist ? { col, dist } : closest;
-      }, { col: null, dist: Infinity }).col;
+
+  // If outside all columns, only snap to nearest column if cursor is within horizontal bounds of the board
+  const boardEl = document.querySelector('.board, .tasks-board, .board-columns');
+  if (!column && boardEl) {
+    const bRect = boardEl.getBoundingClientRect();
+    if (clientX >= bRect.left && clientX <= bRect.right && clientY >= bRect.top - 60 && clientY <= bRect.bottom + 60) {
+      const columns = Array.from(document.querySelectorAll('.board-column'));
+      if (columns.length > 0) {
+        column = columns.reduce((closest, col) => {
+          const rect = col.getBoundingClientRect();
+          const dist = Math.abs(clientX - (rect.left + rect.width / 2));
+          return dist < closest.dist ? { col, dist } : closest;
+        }, { col: null, dist: Infinity }).col;
+      }
     }
+  }
+
+  // If completely outside the board, clean drag-over and exit cleanly without jumping
+  if (!column) {
+    document.querySelectorAll('.board-column').forEach(col => col.classList.remove('drag-over'));
+    return;
   }
 
   document.querySelectorAll('.board-column').forEach(col => col.classList.toggle('drag-over', col === column));
 
-  if (column) {
-    const cardsContainer = column.querySelector('.board-cards');
-    if (cardsContainer) {
-      const ph = getOrCreatePlaceholder(draggedCardHeight);
-      const afterCard = getDragAfterElement(cardsContainer, clientY);
-      if (afterCard == null) {
-        if (!cardsContainer.contains(ph) || cardsContainer.lastElementChild !== ph) {
-          cardsContainer.appendChild(ph);
-        }
-      } else {
-        if (ph.nextElementSibling !== afterCard) {
-          cardsContainer.insertBefore(ph, afterCard);
-        }
+  const cardsContainer = column.querySelector('.board-cards');
+  if (cardsContainer) {
+    // Spatial Hysteresis Buffer (14px): If same column and vertical movement is within deadband, avoid DOM churn
+    if (lastPlaceholderColumn === column && lastPlaceholderY >= 0 && Math.abs(clientY - lastPlaceholderY) < 14) {
+      return;
+    }
+    lastPlaceholderColumn = column;
+    lastPlaceholderY = clientY;
+
+    const ph = getOrCreatePlaceholder(draggedCardHeight);
+    const afterCard = getDragAfterElement(cardsContainer, clientY);
+    if (afterCard == null) {
+      if (!cardsContainer.contains(ph) || cardsContainer.lastElementChild !== ph) {
+        cardsContainer.appendChild(ph);
+      }
+    } else {
+      if (ph.nextElementSibling !== afterCard) {
+        cardsContainer.insertBefore(ph, afterCard);
       }
     }
   }
 }
 
-// Continuous Velocity-Based Proportional Auto-Scroller via requestAnimationFrame (Dual-Axis & Viewport Aware)
+// Continuous Velocity-Based Proportional Auto-Scroller via requestAnimationFrame (Multi-Engine RTL Aware)
 function startContinuousAutoScroll() {
   if (autoScrollRaf) return;
 
@@ -149,23 +227,50 @@ function startContinuousAutoScroll() {
     if (currentMouseX >= 0 && currentMouseY >= 0) {
       let didScroll = false;
 
-      // ── 1. HORIZONTAL BOARD AUTO-SCROLL (RTL & LTR Aware) ──
+      // ── 1. HORIZONTAL BOARD AUTO-SCROLL (Universal RTL & Multi-Engine Aware) ──
       const boardEl = document.querySelector('.board, .board-columns, .tasks-board, [data-board]');
-      const hEdgeMargin = 85;
-      const maxHScrollSpeed = 26;
+      const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
+      const hEdgeMargin = isMobile ? 55 : 85;
+      const maxHScrollSpeed = isMobile ? 22 : 26;
 
       if (boardEl) {
         const isRtl = document.documentElement.dir === 'rtl' || state.lang === 'ar';
+        const rtlType = isRtl ? getRtlScrollType() : 'default';
+
+        let hDelta = 0;
         if (currentMouseX < hEdgeMargin) {
           const factor = (hEdgeMargin - currentMouseX) / hEdgeMargin;
-          const delta = -Math.max(4, Math.round(factor * maxHScrollSpeed));
-          boardEl.scrollBy({ left: isRtl ? -delta : delta, behavior: 'instant' });
-          didScroll = true;
+          hDelta = -Math.max(4, Math.round(factor * maxHScrollSpeed));
         } else if (currentMouseX > window.innerWidth - hEdgeMargin) {
           const factor = (currentMouseX - (window.innerWidth - hEdgeMargin)) / hEdgeMargin;
-          const delta = Math.max(4, Math.round(factor * maxHScrollSpeed));
-          boardEl.scrollBy({ left: isRtl ? -delta : delta, behavior: 'instant' });
+          hDelta = Math.max(4, Math.round(factor * maxHScrollSpeed));
+        }
+
+        if (hDelta !== 0) {
+          let scrollStep = hDelta;
+          if (isRtl) {
+            if (rtlType === 'negative') scrollStep = -hDelta;
+            else if (rtlType === 'reverse') scrollStep = hDelta;
+            else scrollStep = -hDelta;
+          }
+          boardEl.scrollBy({ left: scrollStep, behavior: 'instant' });
           didScroll = true;
+
+          // Haptic tick when crossing columns on touch devices
+          if (isMobile) {
+            const centerEl = document.elementFromPoint(window.innerWidth / 2, window.innerHeight / 2);
+            const activeCol = centerEl?.closest('.board-column');
+            if (activeCol) {
+              const allCols = Array.from(document.querySelectorAll('.board-column'));
+              const colIdx = allCols.indexOf(activeCol);
+              if (colIdx !== -1 && colIdx !== lastHapticColIndex) {
+                lastHapticColIndex = colIdx;
+                if (typeof navigator !== 'undefined' && navigator.vibrate) {
+                  try { navigator.vibrate(10); } catch (e) {}
+                }
+              }
+            }
+          }
         }
       }
 
@@ -182,7 +287,6 @@ function startContinuousAutoScroll() {
       const bottomBoundary = mainRect ? Math.min(window.innerHeight - 30, mainRect.bottom - 60) : (window.innerHeight - 80);
 
       if (currentMouseY > bottomBoundary) {
-        // Dragging downwards near bottom edge -> Scroll page DOWN
         const factor = Math.min(1.5, Math.max(0.2, (currentMouseY - bottomBoundary) / vEdgeMargin));
         const speed = Math.max(4, Math.round(factor * maxVScrollSpeed));
 
@@ -197,7 +301,6 @@ function startContinuousAutoScroll() {
           if (window.scrollY !== prev) didScroll = true;
         }
       } else if (currentMouseY < topBoundary) {
-        // Dragging upwards near top edge -> Scroll page UP
         const factor = Math.min(1.5, Math.max(0.2, (topBoundary - currentMouseY) / vEdgeMargin));
         const speed = -Math.max(4, Math.round(factor * maxVScrollSpeed));
 
@@ -304,12 +407,12 @@ async function handleTaskDrop(column, clientY, explicitTaskId = null) {
       insertIdx = 0; // Guaranteed TOP of the column
     } else {
       let cur = placeholder.nextElementSibling;
-      while (cur && !cur.classList?.contains('task-card')) {
+      while (cur && (!cur.classList?.contains('task-card') || cur.dataset?.taskId === taskId || cur.classList?.contains('is-dragging'))) {
         cur = cur.nextElementSibling;
       }
-      if (cur && cur.dataset?.taskId) {
+      if (cur && cur.dataset?.taskId && cur.dataset.taskId !== taskId) {
         const idx = existingTaskIds.indexOf(cur.dataset.taskId);
-        insertIdx = (idx !== -1) ? idx : 0;
+        insertIdx = (idx !== -1) ? idx : existingTaskIds.length;
       } else {
         insertIdx = existingTaskIds.length;
       }
@@ -326,7 +429,7 @@ async function handleTaskDrop(column, clientY, explicitTaskId = null) {
       insertIdx = existingTaskIds.length; // Guaranteed BOTTOM of the column
     } else {
       const afterCard = getDragAfterElement(cardsContainer, effectiveY);
-      if (afterCard) {
+      if (afterCard && afterCard.dataset.taskId !== taskId) {
         const idx = existingTaskIds.indexOf(afterCard.dataset.taskId);
         if (idx !== -1) insertIdx = idx;
       }
@@ -378,34 +481,91 @@ async function handleTaskDrop(column, clientY, explicitTaskId = null) {
     task.progress = 80;
   }
 
-  // 7. Assign clean, contiguous sortOrder (100, 200, 300, ...) to every task in this column
-  // And register ALL affected tasks in recently moved tasks cache to protect against stale background polls
-  if (!window._recentlyMovedTasks) {
-    window._recentlyMovedTasks = new Map();
-  }
-  const nowMovedAt = Date.now();
+  // 7. Calculate Midpoint Fractional sortOrder (O(1) update)
+  let newSortOrder = 100;
+  let needsBatchNormalize = false;
 
-  newColumnTaskIds.forEach((id, idx) => {
-    const t = (state.data?.tasks || []).find(x => x.id === id);
-    if (t) {
-      const order = (idx + 1) * 100;
-      t.sortOrder = order;
-      t.sort_order = order;
-      if (!t.customFields) t.customFields = {};
-      t.customFields.sortOrder = order;
-      t.customFields.sort_order = order;
-      if (!t.custom_fields) t.custom_fields = {};
-      t.custom_fields.sortOrder = order;
-      t.custom_fields.sort_order = order;
+  if (newColumnTaskIds.length <= 1) {
+    newSortOrder = 100;
+  } else if (insertIdx === 0) {
+    const nextTask = (state.data?.tasks || []).find(x => x.id === newColumnTaskIds[1]);
+    const nextOrder = (nextTask?.sortOrder || nextTask?.sort_order || 100);
+    newSortOrder = Math.max(1, Math.round(nextOrder / 2));
+    if (newSortOrder >= nextOrder) needsBatchNormalize = true;
+  } else if (insertIdx === newColumnTaskIds.length - 1) {
+    const prevTask = (state.data?.tasks || []).find(x => x.id === newColumnTaskIds[newColumnTaskIds.length - 2]);
+    const prevOrder = (prevTask?.sortOrder || prevTask?.sort_order || 100);
+    newSortOrder = prevOrder + 100;
+  } else {
+    const prevTask = (state.data?.tasks || []).find(x => x.id === newColumnTaskIds[insertIdx - 1]);
+    const nextTask = (state.data?.tasks || []).find(x => x.id === newColumnTaskIds[insertIdx + 1]);
+    const prevOrder = (prevTask?.sortOrder || prevTask?.sort_order || 100);
+    const nextOrder = (nextTask?.sortOrder || nextTask?.sort_order || 200);
 
-      window._recentlyMovedTasks.set(id, {
-        status: t.status,
-        sortOrder: order,
-        progress: t.progress,
-        timestamp: nowMovedAt
-      });
+    if (nextOrder - prevOrder > 1) {
+      newSortOrder = Math.round((prevOrder + nextOrder) / 2);
+    } else {
+      needsBatchNormalize = true;
     }
-  });
+  }
+
+  const nowMovedAt = Date.now();
+  if (!window._recentlyMovedTasks) window._recentlyMovedTasks = new Map();
+  const syncItems = [];
+
+  if (needsBatchNormalize) {
+    newColumnTaskIds.forEach((id, idx) => {
+      const t = (state.data?.tasks || []).find(x => x.id === id);
+      if (t) {
+        const order = (idx + 1) * 100;
+        t.sortOrder = order;
+        t.sort_order = order;
+        if (!t.customFields) t.customFields = {};
+        t.customFields.sortOrder = order;
+        t.customFields.sort_order = order;
+        if (!t.custom_fields) t.custom_fields = {};
+        t.custom_fields.sortOrder = order;
+        t.custom_fields.sort_order = order;
+
+        window._recentlyMovedTasks.set(id, {
+          status: t.status,
+          sortOrder: order,
+          progress: t.progress,
+          timestamp: nowMovedAt
+        });
+
+        syncItems.push({
+          id: t.id,
+          status: t.status,
+          sortOrder: order,
+          customFields: t.customFields
+        });
+      }
+    });
+  } else {
+    task.sortOrder = newSortOrder;
+    task.sort_order = newSortOrder;
+    if (!task.customFields) task.customFields = {};
+    task.customFields.sortOrder = newSortOrder;
+    task.customFields.sort_order = newSortOrder;
+    if (!task.custom_fields) task.custom_fields = {};
+    task.custom_fields.sortOrder = newSortOrder;
+    task.custom_fields.sort_order = newSortOrder;
+
+    window._recentlyMovedTasks.set(task.id, {
+      status: task.status,
+      sortOrder: newSortOrder,
+      progress: task.progress,
+      timestamp: nowMovedAt
+    });
+
+    syncItems.push({
+      id: task.id,
+      status: task.status,
+      sortOrder: newSortOrder,
+      customFields: task.customFields
+    });
+  }
 
   // Cleanup old entries (> 45s) from recently moved cache
   for (const [id, info] of window._recentlyMovedTasks.entries()) {
@@ -413,21 +573,6 @@ async function handleTaskDrop(column, clientY, explicitTaskId = null) {
       window._recentlyMovedTasks.delete(id);
     }
   }
-
-  // Also adjust trailing orders for any non-visible tasks sharing this status within the same project
-  const columnStatuses = (newStatus === 'review') ? ['review', 'approval', 'blocked'] : [newStatus];
-  const projectScope = task.projectId || task.project_id;
-  let trailingOrder = (newColumnTaskIds.length + 1) * 100;
-  (state.data?.tasks || []).forEach(t => {
-    if (projectScope && (t.projectId || t.project_id) !== projectScope) return;
-    if (columnStatuses.includes(t.status) && !newColumnTaskIds.includes(t.id)) {
-      t.sortOrder = trailingOrder;
-      t.sort_order = trailingOrder;
-      if (t.customFields) { t.customFields.sortOrder = trailingOrder; t.customFields.sort_order = trailingOrder; }
-      if (t.custom_fields) { t.custom_fields.sortOrder = trailingOrder; t.custom_fields.sort_order = trailingOrder; }
-      trailingOrder += 100;
-    }
-  });
 
   // 8. Enforce Custom Sort mode across state and storage so board renders the exact drop order
   setSavedTaskSort('custom');
@@ -469,16 +614,8 @@ async function handleTaskDrop(column, clientY, explicitTaskId = null) {
   // 14. Debounce & Queue batch reorder API sync to consolidate rapid consecutive drops
   if (window._reorderSyncTimer) clearTimeout(window._reorderSyncTimer);
   window._pendingReorderBatch = window._pendingReorderBatch || new Map();
-  newColumnTaskIds.forEach(id => {
-    const t = (state.data.tasks || []).find(x => x.id === id);
-    if (t) {
-      window._pendingReorderBatch.set(t.id, {
-        id: t.id,
-        status: t.status,
-        sortOrder: t.sortOrder,
-        customFields: t.customFields
-      });
-    }
+  syncItems.forEach(item => {
+    window._pendingReorderBatch.set(item.id, item);
   });
 
   window._reorderSyncTimer = setTimeout(() => {
@@ -526,6 +663,7 @@ function cleanDragState() {
     dragCard.style.pointerEvents = '';
     dragCard.style.touchAction = '';
     dragCard.classList.remove('is-dragging');
+    dragCard.classList.remove('is-touch-charging');
     dragCard.classList.remove('is-touch-holding');
   }
   dragCard = null;
@@ -534,13 +672,19 @@ function cleanDragState() {
   activePointerId = null;
   isPointerDragging = false;
   isDraggingActive = false;
+  isTouchCharging = false;
+  isScrollingGesture = false;
   window._isDraggingTask = false;
   activeDraggedTaskId = null;
   currentMouseX = -1;
   currentMouseY = -1;
   prevMouseX = -1;
   currentTilt = 0;
+  lastPlaceholderY = -1;
+  lastPlaceholderColumn = null;
+  lastHapticColIndex = -1;
 
+  hideEdgeHotzones();
   stopContinuousAutoScroll();
   document.querySelectorAll('.board-column').forEach(col => col.classList.remove('drag-over'));
   removePlaceholder();
@@ -566,6 +710,12 @@ function initiateDrag(clientX, clientY) {
     return;
   }
 
+  // Reject invalid synthetic coordinates (WebKit mobile 0,0 bug shield)
+  if (clientX === 0 && clientY === 0 && (dragStartX !== 0 || dragStartY !== 0)) {
+    clientX = dragStartX;
+    clientY = dragStartY;
+  }
+
   isPointerDragging = true;
   isDraggingActive = true;
   window._isDraggingTask = true;
@@ -585,14 +735,15 @@ function initiateDrag(clientX, clientY) {
   dragOffsetX = clientX - rect.left;
   dragOffsetY = clientY - rect.top;
 
-  // Safety fallback if offset is NaN
-  if (isNaN(dragOffsetX)) dragOffsetX = rect.width / 2;
-  if (isNaN(dragOffsetY)) dragOffsetY = rect.height / 2;
+  // Safety fallback if offset is NaN or out of bounds
+  if (isNaN(dragOffsetX) || dragOffsetX <= 0 || dragOffsetX > rect.width) dragOffsetX = rect.width / 2;
+  if (isNaN(dragOffsetY) || dragOffsetY <= 0 || dragOffsetY > rect.height) dragOffsetY = rect.height / 2;
 
   const startGx = clientX - dragOffsetX;
   const startGy = clientY - dragOffsetY;
 
   // Linear-standard hardware-accelerated floating clone that smoothly follows cursor/finger
+  // WebKit GPU layer isolation: backface-visibility, transform-style, no transition
   dragGhost = dragCard.cloneNode(true);
   dragGhost.id = 'active-drag-ghost';
   dragGhost.style.cssText = `
@@ -602,18 +753,24 @@ function initiateDrag(clientX, clientY) {
     width: ${rect.width}px;
     pointer-events: none;
     z-index: 10000;
-    opacity: 0.96;
+    opacity: 0.98;
     transform: translate3d(${startGx}px, ${startGy}px, 0) scale(1.025);
     box-shadow: 0 20px 42px -8px rgba(13, 98, 105, 0.28), 0 8px 18px rgba(0, 0, 0, 0.12);
     border: 1.5px solid var(--brand-teal, #0d6269);
     background: var(--surface, #ffffff);
     border-radius: 12px;
-    will-change: transform, box-shadow;
+    will-change: transform;
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+    -webkit-transform-style: preserve-3d;
+    transform-style: preserve-3d;
+    transition: none !important;
     cursor: grabbing !important;
   `;
   document.body.appendChild(dragGhost);
 
   // Dim source card & make it transparent to elementFromPoint hit-testing
+  dragCard.classList.remove('is-touch-charging');
   dragCard.classList.remove('is-touch-holding');
   dragCard.classList.add('is-dragging');
   dragCard.style.opacity = '0.22';
@@ -623,6 +780,8 @@ function initiateDrag(clientX, clientY) {
   document.body.style.userSelect = 'none';
   document.body.style.webkitUserSelect = 'none';
   document.body.style.cursor = 'grabbing';
+
+  showEdgeHotzones();
 
   // Highlight initial column
   const column = dragCard.closest('.board-column');
@@ -643,28 +802,34 @@ function initiateDrag(clientX, clientY) {
   startContinuousAutoScroll();
 }
 
-// Unified Velocity & Tilt Physics Movement Engine (Identical for Mouse and Touch)
+// Unified Velocity & Tilt Physics Movement Engine (Low-Pass Filter & Safari Jitter Elimination)
 function updateDragMovement(clientX, clientY) {
   if (!isDraggingActive || !dragGhost) return;
-  if (clientX == null || clientY == null || isNaN(clientX) || isNaN(clientY)) return;
+  // Guard WebKit synthetic (0, 0) coordinate glitch on mobile
+  if (clientX === 0 && clientY === 0 && (dragStartX !== 0 || dragStartY !== 0)) return;
+  if (!Number.isFinite(clientX) || !Number.isFinite(clientY)) return;
 
   currentMouseX = clientX;
   currentMouseY = clientY;
 
-  // Dynamic Velocity-Responsive Tilt (-2.5deg to +2.5deg)
-  const velX = (prevMouseX >= 0) ? (clientX - prevMouseX) : 0;
+  // Dynamic Velocity-Responsive Tilt with Low-Pass Damping & Deadband (-2deg to +2deg)
+  // Eliminates Safari mouse jitter by damping micro-tremors below 1.5px
+  const rawVelX = (prevMouseX >= 0) ? (clientX - prevMouseX) : 0;
   prevMouseX = clientX;
-  const targetTilt = Math.max(-2.5, Math.min(2.5, velX * 0.16));
-  currentTilt += (targetTilt - currentTilt) * 0.28;
+  const velX = Math.abs(rawVelX) < 1.5 ? 0 : rawVelX;
+  const targetTilt = Math.max(-2, Math.min(2, velX * 0.12));
+  currentTilt += (targetTilt - currentTilt) * 0.22;
+  if (Math.abs(currentTilt) < 0.12) currentTilt = 0;
 
   // Move floating ghost smoothly with cursor/finger via GPU hardware acceleration
   const gx = clientX - dragOffsetX;
   const gy = clientY - dragOffsetY;
-  if (!isNaN(gx) && !isNaN(gy)) {
-    dragGhost.style.transform = `translate3d(${gx}px, ${gy}px, 0) scale(1.025) rotate(${currentTilt.toFixed(2)}deg)`;
+  if (Number.isFinite(gx) && Number.isFinite(gy)) {
+    const tiltStr = currentTilt !== 0 ? ` rotate(${currentTilt.toFixed(1)}deg)` : '';
+    dragGhost.style.transform = `translate3d(${gx}px, ${gy}px, 0) scale(1.025)${tiltStr}`;
   }
 
-  // Update target column and placeholder position
+  // Update target column and placeholder position with spatial deadband hysteresis
   updatePlaceholderPosition(clientX, clientY);
 }
 
@@ -675,6 +840,7 @@ async function finalizeDragDrop(clientX, clientY) {
     touchHoldTimer = null;
   }
   if (dragCard) {
+    dragCard.classList.remove('is-touch-charging');
     dragCard.classList.remove('is-touch-holding');
   }
 
@@ -737,15 +903,21 @@ async function finalizeDragDrop(clientX, clientY) {
   cleanDragState();
 }
 
-// ── UNIFIED POINTER ENGINE (Mouse, Stylus & Touch) ──────────────────────────
+// ── UNIFIED POINTER ENGINE (Mouse, Stylus & Touch with Slop Box & Decoupled Capture) ──
+
+const TOUCH_SLOP = 8;
+let isTouchCharging = false;
+let isScrollingGesture = false;
+let isDragStartedFromGrip = false;
 
 document.addEventListener('pointerdown', (e) => {
   // Only handle primary button (left mouse click or touch contact)
   if (e.button !== 0 && e.pointerType === 'mouse') return;
 
-  const card = e.target.closest('.task-card');
+  const targetEl = (e.target instanceof Element) ? e.target : (e.target?.parentElement || null);
+  const card = targetEl?.closest?.('.task-card');
   // Avoid dragging if interaction started on a button, link, input, etc.
-  if (!card || e.target.closest('button, a, input, select, textarea, .btn, .tag, [data-prevent-drag]')) return;
+  if (!card || targetEl?.closest?.('button, a, input, select, textarea, .btn, .tag, [data-prevent-drag]')) return;
 
   const task = (state.data?.tasks || []).find(t => t.id === card.dataset.taskId);
   if (!canUserMoveTask(task)) return;
@@ -758,6 +930,7 @@ document.addEventListener('pointerdown', (e) => {
   currentMouseY = e.clientY;
   prevMouseX = e.clientX;
   isPointerDragging = false;
+  isScrollingGesture = false;
 
   const rect = card.getBoundingClientRect();
   draggedCardHeight = rect.height;
@@ -766,49 +939,79 @@ document.addEventListener('pointerdown', (e) => {
   if (isNaN(dragOffsetX)) dragOffsetX = rect.width / 2;
   if (isNaN(dragOffsetY)) dragOffsetY = rect.height / 2;
 
-  // Capture pointer immediately so all subsequent touch/pointer moves stream directly to JS
-  try {
-    card.setPointerCapture(e.pointerId);
-  } catch (err) {}
+  isDragStartedFromGrip = Boolean(targetEl?.closest?.('.task-drag-handle'));
 
-  card.style.touchAction = 'none';
-
-  // Tactile pickup long-press (110ms) as an alternative trigger for stationary finger touch
-  const isGripHandle = Boolean(e.target.closest('.task-drag-handle'));
-  if (e.pointerType === 'touch' && !isGripHandle) {
-    card.classList.add('is-touch-holding');
-    touchHoldTimer = setTimeout(() => {
-      touchHoldTimer = null;
-      if (dragCard && !isPointerDragging) {
-        initiateDrag(currentMouseX, currentMouseY);
-      }
-    }, 110);
+  if (e.pointerType === 'touch') {
+    if (isDragStartedFromGrip) {
+      // Grip handle dragged: Immediate capture for fluid drag
+      try { card.setPointerCapture(e.pointerId); } catch (err) {}
+    } else {
+      // Card body touched: Allow native scrolling! Require deliberate 280ms hold
+      isTouchCharging = true;
+      card.classList.add('is-touch-charging');
+      touchHoldTimer = setTimeout(() => {
+        touchHoldTimer = null;
+        if (dragCard && !isScrollingGesture && !isPointerDragging) {
+          isTouchCharging = false;
+          card.classList.remove('is-touch-charging');
+          if (typeof navigator !== 'undefined' && navigator.vibrate) {
+            try { navigator.vibrate(28); } catch (e) {}
+          }
+          initiateDrag(currentMouseX, currentMouseY);
+        }
+      }, 280);
+    }
+  } else {
+    // Mouse / Pen: Instant ready, will initiate on 6px movement
+    try { card.setPointerCapture(e.pointerId); } catch (err) {}
   }
 }, { passive: true });
 
 document.addEventListener('pointermove', (e) => {
-  if (!dragCard) return;
+  if (!dragCard || isScrollingGesture) return;
+  if (activePointerId != null && e.pointerId !== activePointerId) return;
 
   currentMouseX = e.clientX;
   currentMouseY = e.clientY;
 
-  // Unified movement threshold (>= 4px) - works equally for mouse, pen, and touch!
   if (!isPointerDragging) {
     const dist = Math.hypot(e.clientX - dragStartX, e.clientY - dragStartY);
-    if (dist >= 4) {
-      if (touchHoldTimer) {
-        clearTimeout(touchHoldTimer);
-        touchHoldTimer = null;
+
+    if (e.pointerType === 'touch') {
+      if (isDragStartedFromGrip) {
+        if (dist >= 4) {
+          initiateDrag(e.clientX, e.clientY);
+        }
+      } else {
+        if (dist > TOUCH_SLOP) {
+          // Moved before 280ms expired -> Treat as pure scroll gesture!
+          isScrollingGesture = true;
+          if (touchHoldTimer) {
+            clearTimeout(touchHoldTimer);
+            touchHoldTimer = null;
+          }
+          if (dragCard) {
+            dragCard.classList.remove('is-touch-charging');
+            dragCard.classList.remove('is-touch-holding');
+          }
+          return; // Let browser scroll naturally without drag interference
+        }
       }
-      initiateDrag(e.clientX, e.clientY);
     } else {
-      return;
+      // Mouse movement threshold (>= 6px)
+      if (dist >= 6) {
+        initiateDrag(e.clientX, e.clientY);
+      } else {
+        return;
+      }
     }
   }
 
   // Active Dragging Mode: Cancel native gesture interference and update position
-  if (e.cancelable) e.preventDefault();
-  updateDragMovement(e.clientX, e.clientY);
+  if (isPointerDragging) {
+    if (e.cancelable) e.preventDefault();
+    updateDragMovement(e.clientX, e.clientY);
+  }
 }, { passive: false });
 
 document.addEventListener('pointerup', async (e) => {
@@ -816,13 +1019,14 @@ document.addEventListener('pointerup', async (e) => {
     clearTimeout(touchHoldTimer);
     touchHoldTimer = null;
   }
+  if (dragCard) {
+    dragCard.classList.remove('is-touch-charging');
+    dragCard.classList.remove('is-touch-holding');
+  }
   if (activePointerId != null && dragCard) {
     try {
       dragCard.releasePointerCapture(activePointerId);
     } catch (err) {}
-  }
-  if (dragCard) {
-    dragCard.classList.remove('is-touch-holding');
   }
   if (!isPointerDragging) {
     cleanDragState();
@@ -837,31 +1041,26 @@ document.addEventListener('pointercancel', (e) => {
   cleanDragState();
 });
 
+// Window blur & tab visibility change: prevent ghost hanging on screen if user switches tab
+window.addEventListener('blur', () => {
+  if (isPointerDragging || dragCard) cleanDragState();
+});
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden && (isPointerDragging || dragCard)) cleanDragState();
+});
+
 // ── DEDICATED NATIVE TOUCH INTERCEPTORS (iOS Safari, Android Chrome, iPadOS) ──
 
 window.addEventListener('touchmove', (e) => {
-  if (isPointerDragging) {
-    if (e.cancelable) e.preventDefault();
-    const touch = e.touches ? e.touches[0] : null;
-    if (touch) {
-      updateDragMovement(touch.clientX, touch.clientY);
-    }
+  if (isPointerDragging && e.cancelable) {
+    e.preventDefault();
   }
 }, { passive: false });
 
-window.addEventListener('touchend', async (e) => {
+window.addEventListener('touchend', () => {
   if (touchHoldTimer) {
     clearTimeout(touchHoldTimer);
     touchHoldTimer = null;
-  }
-  if (dragCard) {
-    dragCard.classList.remove('is-touch-holding');
-  }
-  if (isPointerDragging) {
-    const touch = e.changedTouches ? e.changedTouches[0] : null;
-    const clientX = touch ? touch.clientX : currentMouseX;
-    const clientY = touch ? touch.clientY : currentMouseY;
-    await finalizeDragDrop(clientX, clientY);
   }
 }, { passive: true });
 
