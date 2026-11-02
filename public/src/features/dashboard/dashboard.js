@@ -1,6 +1,6 @@
 
 import { state } from '../../core/state.js';
-import { getTimeBasedGreeting, can, isAdmin, esc, icon, t, choose, avatar, isOverdue, dueLabel } from '../../core/utils.js';
+import { getTimeBasedGreeting, can, isAdmin, esc, icon, t, choose, avatar, isOverdue, dueLabel, parseEndOfDay } from '../../core/utils.js';
 
 export function metricCard(label, value, note, type, iconName, noteClass = '') {
   return `<article class="metric-card ${type}"><div class="metric-top"><span class="metric-label">${esc(label)}</span><span class="metric-icon">${icon(iconName, 15)}</span></div><div class="metric-value">${esc(value)}</div><span class="metric-note ${noteClass}">${esc(note)}</span></article>`;
@@ -45,7 +45,21 @@ export function renderDashboard() {
 
   const totalWeight = projects.reduce((sum, project) => sum + (Number(project.totalWeight) || 0), 0);
   const portfolioProgress = totalWeight ? Math.round(projects.reduce((sum, project) => sum + (Number(project.progress) || 0) * (Number(project.totalWeight) || 0), 0) / totalWeight) : 0;
-  const attention = [...tasks].filter((task) => isOverdue(task) || task.status === 'blocked' || (task.dueDate && (new Date(`${task.dueDate}T23:59:59`) - new Date()) / 86_400_000 <= 7)).sort((a, b) => new Date(a.dueDate || '9999-12-31') - new Date(b.dueDate || '9999-12-31')).slice(0, 5);
+  const attention = [...tasks].filter((task) => {
+    if (isOverdue(task) || task.status === 'blocked') return true;
+    if (task.dueDate) {
+      const due = parseEndOfDay(task.dueDate);
+      if (due) {
+        const diff = (due - new Date()) / 86_400_000;
+        return diff >= 0 && diff <= 7;
+      }
+    }
+    return false;
+  }).sort((a, b) => {
+    const aTime = a.dueDate ? (parseEndOfDay(a.dueDate)?.getTime() ?? Infinity) : Infinity;
+    const bTime = b.dueDate ? (parseEndOfDay(b.dueDate)?.getTime() ?? Infinity) : Infinity;
+    return aTime - bTime;
+  }).slice(0, 5);
   const activeUsers = users.filter((member) => member.status !== 'inactive');
   const projectCount = stats.projectCount ?? projects.length;
   const myTasksCount = stats.myTasks ?? tasks.filter(t => t.assigneeId === user.id).length;

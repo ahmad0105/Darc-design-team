@@ -85,8 +85,8 @@ export function createDemoTask(taskData) {
     progress: taskData.status === 'done' ? 100 : (taskData.status === 'in_progress' ? 50 : 0),
     assigneeId: taskData.assigneeId || 'usr_demo_arch',
     reviewerId: 'usr_demo',
-    startDate: taskData.startDate || new Date().toISOString(),
-    dueDate: taskData.dueDate || new Date(Date.now() + 14 * 86400000).toISOString(),
+    startDate: taskData.startDate || new Date().toISOString().split('T')[0],
+    dueDate: taskData.dueDate || new Date(Date.now() + 14 * 86400000).toISOString().split('T')[0],
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
   };

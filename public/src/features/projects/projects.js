@@ -1,7 +1,7 @@
 
 import { state } from '../../core/state.js';
 import { api } from '../../core/api.js';
-import { choose, esc, icon, avatar, statusText, t, can, isAdmin, roleName, sanitizeForSpreadsheet, formatReportDate, formatReportTime, dateLabel, isOverdue } from '../../core/utils.js';
+import { choose, esc, icon, avatar, statusText, t, can, isAdmin, roleName, sanitizeForSpreadsheet, formatReportDate, formatReportTime, dateLabel, isOverdue, parseEndOfDay } from '../../core/utils.js';
 import { showToast, modalShell, closeModal } from '../../shared/ui.js';
 import { renderTaskSortSelect, getSavedTaskSort, renderTimeline } from '../tasks/tasks.js';
 import { renderAuditForProject } from '../settings/settings.js';
@@ -12,8 +12,10 @@ export function projectRow(project) {
 
 export function getDaysLeftBadge(dueDate) {
   if (!dueDate) return '';
-  const due = new Date(`${dueDate}T23:59:59`);
+  const due = parseEndOfDay(dueDate);
+  if (!due || isNaN(due.getTime())) return '';
   const diff = Math.ceil((due - new Date()) / 86_400_000);
+  if (isNaN(diff)) return '';
 
   let color = 'var(--mint-strong)';
   let bg = 'var(--mint)';
@@ -142,13 +144,14 @@ export function renderProjectTeamAvatars(members, maxVisible = 4, clickable = tr
 
 export function renderProjectTimelineBar(project) {
   if (!project.dueDate) return '';
+  const end = parseEndOfDay(project.dueDate);
+  if (!end || isNaN(end.getTime())) return '';
   const start = new Date(project.startDate || project.createdAt || (Date.now() - 30 * 86400000));
-  const end = new Date(`${project.dueDate}T23:59:59`);
   const now = new Date();
 
   const total = end.getTime() - start.getTime();
   let elapsedPercent = 0;
-  if (total > 0) {
+  if (total > 0 && !isNaN(total)) {
     elapsedPercent = Math.min(100, Math.max(0, Math.round(((now.getTime() - start.getTime()) / total) * 100)));
   }
 
@@ -1272,7 +1275,9 @@ export function exportProjectPDF(projectId, isClientFacing = false) {
   }
 
   function isTaskOverdue(t) {
-    return t?.dueDate && !['done', 'completed', 'canceled'].includes(t.status) && new Date(`${t.dueDate}T23:59:59`) < new Date();
+    if (!t?.dueDate || ['done', 'completed', 'canceled'].includes(t.status)) return false;
+    const due = parseEndOfDay(t.dueDate);
+    return due ? due < new Date() : false;
   }
 
   const totalTasks = tasks.length;

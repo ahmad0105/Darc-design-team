@@ -379,17 +379,52 @@ export function getHijriDateEquivalent(value) {
   }).format(date);
 }
 
+export function parseEndOfDay(value) {
+  if (!value) return null;
+  if (value instanceof Date) {
+    if (isNaN(value.getTime())) return null;
+    const d = new Date(value.getTime());
+    d.setHours(23, 59, 59, 999);
+    return d;
+  }
+  if (typeof value === 'number') {
+    const d = new Date(value);
+    if (isNaN(d.getTime())) return null;
+    d.setHours(23, 59, 59, 999);
+    return d;
+  }
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+    const datePart = trimmed.split('T')[0].split(' ')[0];
+    if (/^\d{4}-\d{2}-\d{2}$/.test(datePart)) {
+      const [y, m, d] = datePart.split('-').map(Number);
+      return new Date(y, m - 1, d, 23, 59, 59, 999);
+    }
+    const parsed = new Date(trimmed);
+    if (!isNaN(parsed.getTime())) {
+      parsed.setHours(23, 59, 59, 999);
+      return parsed;
+    }
+  }
+  return null;
+}
+
 export function dueLabel(value) {
   if (!value) return '—';
-  const due = new Date(`${value}T23:59:59`);
+  const due = parseEndOfDay(value);
+  if (!due || isNaN(due.getTime())) return '—';
   const diff = Math.ceil((due - new Date()) / 86_400_000);
+  if (isNaN(diff)) return '—';
   if (diff < 0) return choose(`متأخرة ${Math.abs(diff)} ${t('days')}`, `${Math.abs(diff)} ${t('days')} ${t('ago')}`);
   if (diff === 0) return t('today');
   return choose(`بعد ${diff} ${t('days')}`, `in ${diff} ${t('days')}`);
 }
 
 export function isOverdue(task) {
-  return task?.dueDate && !['done', 'completed', 'canceled'].includes(task.status) && new Date(`${task.dueDate}T23:59:59`) < new Date();
+  if (!task?.dueDate || ['done', 'completed', 'canceled'].includes(task.status)) return false;
+  const due = parseEndOfDay(task.dueDate);
+  return due ? due < new Date() : false;
 }
 
 export function statusText(key) {

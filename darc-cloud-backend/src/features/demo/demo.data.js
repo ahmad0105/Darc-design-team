@@ -4,6 +4,7 @@
 export function createDemoDataset() {
   const now = new Date();
   const dateStr = (offsetDays) => new Date(Date.now() + offsetDays * 86400000).toISOString();
+  const dateOnlyStr = (offsetDays) => new Date(Date.now() + offsetDays * 86400000).toISOString().split('T')[0];
 
   const demoUsers = [
     {
@@ -92,8 +93,8 @@ export function createDemoDataset() {
       descriptionEn: 'Contemporary beachfront mansion of 2,400m² combining smart glass facades, natural stone cladding, and full home automation.',
       lifecycle: 'active',
       health: 'on_track',
-      startDate: dateStr(-45),
-      dueDate: dateStr(60),
+      startDate: dateOnlyStr(-45),
+      dueDate: dateOnlyStr(60),
       managerId: 'usr_demo',
       progress: 82,
       progressMode: 'weighted',
@@ -114,8 +115,8 @@ export function createDemoDataset() {
       descriptionEn: '34-story grade-A business tower targeting LEED Platinum sustainability certification with premium flexible workspaces.',
       lifecycle: 'active',
       health: 'at_risk',
-      startDate: dateStr(-90),
-      dueDate: dateStr(30),
+      startDate: dateOnlyStr(-90),
+      dueDate: dateOnlyStr(30),
       managerId: 'usr_demo_arch',
       progress: 68,
       progressMode: 'weighted',
@@ -136,8 +137,8 @@ export function createDemoDataset() {
       descriptionEn: 'Ultra-luxury eco-resort featuring 45 overwater villas, boutique spa facilities, and zero-carbon solar microgrid.',
       lifecycle: 'active',
       health: 'on_track',
-      startDate: dateStr(-120),
-      dueDate: dateStr(90),
+      startDate: dateOnlyStr(-120),
+      dueDate: dateOnlyStr(90),
       managerId: 'usr_demo',
       progress: 91,
       progressMode: 'weighted',
@@ -158,8 +159,8 @@ export function createDemoDataset() {
       descriptionEn: 'Modern interior design and fit-out package across 4,800m² accommodating collaborative hubs, trading floors, and executive suites.',
       lifecycle: 'completed',
       health: 'on_track',
-      startDate: dateStr(-180),
-      dueDate: dateStr(-10),
+      startDate: dateOnlyStr(-180),
+      dueDate: dateOnlyStr(-10),
       managerId: 'usr_demo_int',
       progress: 100,
       progressMode: 'weighted',
@@ -186,8 +187,8 @@ export function createDemoDataset() {
       progress: 100,
       assigneeId: 'usr_demo_arch',
       reviewerId: 'usr_demo',
-      startDate: dateStr(-40),
-      dueDate: dateStr(-15),
+      startDate: dateOnlyStr(-40),
+      dueDate: dateOnlyStr(-15),
       createdAt: dateStr(-40),
       updatedAt: dateStr(-15)
     },
@@ -204,8 +205,8 @@ export function createDemoDataset() {
       progress: 80,
       assigneeId: 'usr_demo_int',
       reviewerId: 'usr_demo',
-      startDate: dateStr(-20),
-      dueDate: dateStr(3),
+      startDate: dateOnlyStr(-20),
+      dueDate: dateOnlyStr(3),
       createdAt: dateStr(-20),
       updatedAt: dateStr(-1)
     },
@@ -222,8 +223,8 @@ export function createDemoDataset() {
       progress: 100,
       assigneeId: 'usr_demo_3d',
       reviewerId: 'usr_demo_int',
-      startDate: dateStr(-30),
-      dueDate: dateStr(-5),
+      startDate: dateOnlyStr(-30),
+      dueDate: dateOnlyStr(-5),
       createdAt: dateStr(-30),
       updatedAt: dateStr(-5)
     },
@@ -240,8 +241,8 @@ export function createDemoDataset() {
       progress: 50,
       assigneeId: 'usr_demo_mep',
       reviewerId: 'usr_demo_arch',
-      startDate: dateStr(-10),
-      dueDate: dateStr(15),
+      startDate: dateOnlyStr(-10),
+      dueDate: dateOnlyStr(15),
       createdAt: dateStr(-10),
       updatedAt: dateStr(-1)
     },
@@ -258,8 +259,8 @@ export function createDemoDataset() {
       progress: 80,
       assigneeId: 'usr_demo_int',
       reviewerId: 'usr_demo',
-      startDate: dateStr(-5),
-      dueDate: dateStr(7),
+      startDate: dateOnlyStr(-5),
+      dueDate: dateOnlyStr(7),
       createdAt: dateStr(-5),
       updatedAt: dateStr(-1)
     },
@@ -278,8 +279,8 @@ export function createDemoDataset() {
       progress: 100,
       assigneeId: 'usr_demo_struct',
       reviewerId: 'usr_demo_arch',
-      startDate: dateStr(-80),
-      dueDate: dateStr(-40),
+      startDate: dateOnlyStr(-80),
+      dueDate: dateOnlyStr(-40),
       createdAt: dateStr(-80),
       updatedAt: dateStr(-40)
     },
@@ -296,8 +297,8 @@ export function createDemoDataset() {
       progress: 50,
       assigneeId: 'usr_demo_arch',
       reviewerId: 'usr_demo',
-      startDate: dateStr(-25),
-      dueDate: dateStr(10),
+      startDate: dateOnlyStr(-25),
+      dueDate: dateOnlyStr(10),
       createdAt: dateStr(-25),
       updatedAt: dateStr(-2)
     },
@@ -314,8 +315,8 @@ export function createDemoDataset() {
       progress: 80,
       assigneeId: 'usr_demo_mep',
       reviewerId: 'usr_demo_arch',
-      startDate: dateStr(-15),
-      dueDate: dateStr(5),
+      startDate: dateOnlyStr(-15),
+      dueDate: dateOnlyStr(5),
       createdAt: dateStr(-15),
       updatedAt: dateStr(-1)
     },
@@ -334,8 +335,8 @@ export function createDemoDataset() {
       progress: 100,
       assigneeId: 'usr_demo_arch',
       reviewerId: 'usr_demo',
-      startDate: dateStr(-110),
-      dueDate: dateStr(-70),
+      startDate: dateOnlyStr(-110),
+      dueDate: dateOnlyStr(-70),
       createdAt: dateStr(-110),
       updatedAt: dateStr(-70)
     },
@@ -352,8 +353,8 @@ export function createDemoDataset() {
       progress: 100,
       assigneeId: 'usr_demo_arch',
       reviewerId: 'usr_demo',
-      startDate: dateStr(-60),
-      dueDate: dateStr(-20),
+      startDate: dateOnlyStr(-60),
+      dueDate: dateOnlyStr(-20),
       createdAt: dateStr(-60),
       updatedAt: dateStr(-20)
     }
