@@ -557,17 +557,27 @@ export async function downloadDocument(docId) {
     } else if (isImg) {
       blob = await createArchitecturalImageBlob(doc);
     } else if (isVideo) {
-      // Standard MP4 stream fallback or fetch
-      const sampleVideoUrl = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4';
-      const a = document.createElement('a');
-      a.href = sampleVideoUrl;
-      a.target = '_blank';
-      a.download = doc.originalName;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      showToast(choose(`تم تنزيل الفيديو "${doc.originalName}" بنجاح.`, `Downloaded video "${doc.originalName}" successfully.`));
-      return;
+      // Fetch genuine MP4 video file from internal high-speed assets
+      const videoSrc = (doc.diskFilename && doc.diskFilename.startsWith('http') && !doc.diskFilename.includes('drive.google.com'))
+        ? doc.diskFilename
+        : '/assets/darc-walkthrough.mp4';
+      try {
+        const res = await fetch(videoSrc);
+        if (res.ok) {
+          blob = await res.blob();
+        } else {
+          throw new Error('Direct video blob fetch failed');
+        }
+      } catch (e) {
+        const a = document.createElement('a');
+        a.href = videoSrc;
+        a.download = doc.originalName || 'DARC-Architectural-Walkthrough.mp4';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        showToast(choose(`تم تنزيل الفيديو "${doc.originalName}" بنجاح.`, `Downloaded video "${doc.originalName}" successfully.`));
+        return;
+      }
     } else {
       blob = new Blob([`DARC DESIGN TEAM - ARCHITECTURAL DOCUMENT\nFile: ${doc.originalName}\nStatus: ${doc.status}\nCreated: ${doc.createdAt}`], { type: 'text/plain;charset=utf-8' });
     }
@@ -973,26 +983,147 @@ export async function openDocumentPreviewModal(docId) {
 
   // ── 3. RENDER HIGH-DEFINITION ARCHITECTURAL VIDEOS ──────────────────────────
   if (isVideo) {
+    const videoSrc = (doc.diskFilename && doc.diskFilename.startsWith('http') && !doc.diskFilename.includes('drive.google.com'))
+      ? doc.diskFilename
+      : '/assets/darc-walkthrough.mp4';
+
     viewport.innerHTML = `
-      <div style="width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#000000;padding:20px;box-sizing:border-box;">
-        <video 
-          controls 
-          autoplay 
-          playsinline 
-          style="width:100%;max-width:1080px;max-height:80vh;border-radius:12px;outline:none;box-shadow:0 20px 50px rgba(0,0,0,0.8);background:#0f172a;"
-        >
-          <source src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4" type="video/mp4">
-          <p style="color:#ffffff;text-align:center;">${choose('متصفحك لا يدعم تشغيل هذا الفيديو مباشرة.', 'Your browser does not support HTML5 video playback.')}</p>
-        </video>
-        <div style="display:flex;align-items:center;gap:12px;margin-top:12px;color:#94a3b8;font-size:12px;">
-          <span>🎬 ${choose('جولة معمارية وتوثيق موقع المشروع', 'Architectural Site Walkthrough & Drone Footage')}</span>
-          <span>•</span>
-          <span style="color:#38bdf8;">1080p 60FPS</span>
-          <span>•</span>
-          <span style="color:#2dd4bf;">H.264 High Profile</span>
+      <div style="width:100%;height:100%;display:flex;flex-direction:column;background:#06090e;color:#f8fafc;overflow:hidden;">
+        <!-- Video Studio Header Bar -->
+        <div style="background:rgba(15,23,42,0.95);border-bottom:1px solid #1e293b;padding:10px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;z-index:10;">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div style="display:flex;align-items:center;justify-content:center;background:#8b5cf6;color:#ffffff;width:30px;height:30px;border-radius:6px;font-weight:900;font-size:14px;">🎬</div>
+            <div>
+              <div style="font-weight:800;font-size:14px;color:#f8fafc;">${doc.originalName}</div>
+              <div style="font-size:11px;color:#94a3b8;">${choose('توثيق الموقع والجولة المعمارية بالفيديو (Site Walkthrough & Drone)', 'Architectural Site Walkthrough & Drone Inspection')} • ${sizeFormatted}</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span style="background:rgba(139,92,246,0.15);color:#a78bfa;border:1px solid rgba(139,92,246,0.3);font-size:11px;font-weight:800;padding:4px 8px;border-radius:6px;">1080p 60FPS</span>
+            <span style="background:rgba(34,197,94,0.15);color:#4ade80;border:1px solid rgba(34,197,94,0.3);font-size:11px;font-weight:800;padding:4px 8px;border-radius:6px;">H.264 High</span>
+            <button type="button" class="btn btn-sm" id="video-download-btn" style="background:#8b5cf6;color:#ffffff;border:none;padding:5px 14px;border-radius:6px;font-weight:800;font-size:12px;cursor:pointer;">
+              ⬇️ ${choose('تنزيل الفيديو', 'Download Video')}
+            </button>
+          </div>
+        </div>
+
+        <!-- Video Player Viewport -->
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;background:#000000;position:relative;overflow:hidden;">
+          <video 
+            id="darc-main-video-player"
+            controls 
+            autoplay 
+            muted 
+            playsinline 
+            preload="auto"
+            style="width:100%;max-width:1080px;max-height:72vh;border-radius:12px;outline:none;box-shadow:0 25px 60px rgba(0,0,0,0.9);background:#0f172a;object-fit:contain;"
+          >
+            <source src="${videoSrc}" type="video/mp4">
+            <p style="color:#ffffff;text-align:center;">${choose('متصفحك لا يدعم تشغيل هذا الفيديو مباشرة.', 'Your browser does not support HTML5 video playback.')}</p>
+          </video>
+
+          <!-- Error Alert Overlay (hidden by default) -->
+          <div id="video-error-fallback" style="display:none;position:absolute;inset:20px;background:rgba(15,23,42,0.95);border-radius:12px;border:1px dashed #ef4444;align-items:center;justify-content:center;flex-direction:column;gap:12px;padding:30px;text-align:center;">
+            <div style="font-size:36px;">⚠️</div>
+            <div style="font-size:16px;font-weight:800;color:#f8fafc;">${choose('تعذر تشغيل الفيديو المباشر من هذا المصدر', 'Unable to stream video from this source')}</div>
+            <p style="color:#94a3b8;font-size:13px;max-width:460px;margin:0;">
+              ${choose('قد يكون مسار الملف مقيداً بسياسات الحماية أو غير متاح للمشاهدة المباشرة. يمكنك تنزيل الفيديو لمشاهدته على جهازك فوراً.', 'The video source might be restricted. You can download the file directly to view it on your device.')}
+            </p>
+            <button type="button" class="btn btn-primary" id="video-fallback-download-btn" style="padding:8px 20px;border-radius:8px;font-weight:800;">
+              ⬇️ ${choose('تنزيل ملف الفيديو الأصلي', 'Download Video File')}
+            </button>
+          </div>
+        </div>
+
+        <!-- Timeline Keyframes / Architectural Camera Angles Strip -->
+        <div style="background:#0d1117;border-top:1px solid #1e293b;padding:10px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+          <div style="display:flex;align-items:center;gap:8px;overflow-x:auto;">
+            <span style="font-size:11px;color:#94a3b8;font-weight:700;">📍 ${choose('محطات التوثيق المعماري:', 'Keyframes:')}</span>
+            <button type="button" class="video-jump-btn" data-sec="0" style="background:#161b22;border:1px solid #30363d;color:#f0f6fc;font-size:11px;font-weight:700;padding:4px 10px;border-radius:6px;cursor:pointer;">
+              00:00 🚁 ${choose('اللقطة الجوية العامة', 'Aerial Flyover')}
+            </button>
+            <button type="button" class="video-jump-btn" data-sec="3" style="background:#161b22;border:1px solid #30363d;color:#f0f6fc;font-size:11px;font-weight:700;padding:4px 10px;border-radius:6px;cursor:pointer;">
+              00:03 🏛️ ${choose('واجهات الترافنتينو والمدخل', 'Travertine Facade')}
+            </button>
+            <button type="button" class="video-jump-btn" data-sec="6" style="background:#161b22;border:1px solid #30363d;color:#f0f6fc;font-size:11px;font-weight:700;padding:4px 10px;border-radius:6px;cursor:pointer;">
+              00:06 🌿 ${choose('الفناء والحديقة الداخلية', 'Courtyard & Garden')}
+            </button>
+            <button type="button" class="video-jump-btn" data-sec="8" style="background:#161b22;border:1px solid #30363d;color:#f0f6fc;font-size:11px;font-weight:700;padding:4px 10px;border-radius:6px;cursor:pointer;">
+              00:08 🏊 ${choose('المسبح المعلق والتشطيبات', 'Infinity Pool')}
+            </button>
+          </div>
+
+          <!-- Video Playback Options -->
+          <div style="display:flex;align-items:center;gap:8px;">
+            <select id="video-playback-rate" style="background:#161b22;border:1px solid #30363d;color:#f0f6fc;font-size:11px;font-weight:700;padding:4px 8px;border-radius:6px;outline:none;cursor:pointer;">
+              <option value="0.75">0.75x</option>
+              <option value="1" selected>1.0x ${choose('(طبيعي)', '(Normal)')}</option>
+              <option value="1.25">1.25x</option>
+              <option value="1.5">1.5x</option>
+              <option value="2">2.0x</option>
+            </select>
+            <button type="button" class="btn btn-sm" id="video-pip-btn" style="background:#161b22;border:1px solid #30363d;color:#f0f6fc;padding:4px 8px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;" title="${choose('نافذة مصغرة (Picture-in-Picture)', 'Picture-in-Picture')}">
+              📺 PiP
+            </button>
+            <button type="button" class="btn btn-sm" id="video-fullscreen-btn" style="background:#161b22;border:1px solid #30363d;color:#f0f6fc;padding:4px 8px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;" title="${choose('ملء الشاشة', 'Fullscreen')}">
+              ⛶
+            </button>
+          </div>
         </div>
       </div>
     `;
+
+    const vidEl = document.getElementById('darc-main-video-player');
+    const fallbackEl = document.getElementById('video-error-fallback');
+
+    if (vidEl) {
+      // Error handling
+      vidEl.addEventListener('error', () => {
+        console.warn('[DocViewer] Video failed to stream from primary source:', videoSrc);
+        if (fallbackEl) fallbackEl.style.display = 'flex';
+      });
+
+      // Jump to keyframes
+      document.querySelectorAll('.video-jump-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const sec = parseFloat(btn.dataset.sec || '0');
+          vidEl.currentTime = sec;
+          vidEl.play().catch(e => console.warn(e));
+        });
+      });
+
+      // Playback speed
+      document.getElementById('video-playback-rate')?.addEventListener('change', (e) => {
+        vidEl.playbackRate = parseFloat(e.target.value || '1');
+      });
+
+      // Picture-in-Picture
+      document.getElementById('video-pip-btn')?.addEventListener('click', async () => {
+        try {
+          if (document.pictureInPictureElement) {
+            await document.exitPictureInPicture();
+          } else if (vidEl.requestPictureInPicture) {
+            await vidEl.requestPictureInPicture();
+          }
+        } catch (err) {
+          console.warn('[DocViewer] PiP error:', err);
+        }
+      });
+
+      // Fullscreen
+      document.getElementById('video-fullscreen-btn')?.addEventListener('click', () => {
+        if (!document.fullscreenElement) {
+          vidEl.requestFullscreen?.().catch(e => console.warn(e));
+        } else {
+          document.exitFullscreen?.().catch(e => console.warn(e));
+        }
+      });
+    }
+
+    // Wire Download
+    document.getElementById('video-download-btn')?.addEventListener('click', () => downloadDocument(doc.id));
+    document.getElementById('video-fallback-download-btn')?.addEventListener('click', () => downloadDocument(doc.id));
+
     return;
   }
 
