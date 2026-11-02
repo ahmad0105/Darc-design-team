@@ -3,6 +3,8 @@
 import { state } from './src/core/state.js';
 import { api } from './src/core/api.js';
 
+window.state = state;
+
 document.documentElement.dataset.theme = state.theme;
 document.documentElement.lang = state.lang;
 document.documentElement.dir = state.lang === 'ar' ? 'rtl' : 'ltr';

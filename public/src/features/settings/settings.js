@@ -1107,22 +1107,30 @@ export function renderSettings() {
         </div>
       </div>
 
-      <div class="view-toolbar trash-filter-bar" style="gap:12px;margin-bottom:16px;">
-        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-          <button class="btn btn-sm ${currentFilter === 'all' ? 'btn-primary' : 'btn-ghost'}" data-action="filter-trash" data-filter="all">
-            ${choose('الكل', 'All')} <span class="badge ${currentFilter === 'all' ? 'badge-on-primary' : 'badge-neutral'}" style="margin-inline-start:4px;font-size:10px;">${allTrashItems.length}</span>
+      <div class="view-toolbar trash-filter-bar">
+        <div class="trash-filter-group">
+          <button type="button" class="btn btn-sm ${currentFilter === 'all' ? 'btn-primary' : 'btn-ghost'}" data-action="filter-trash" data-filter="all">
+            ${icon('layers', 14)}
+            <span>${choose('الكل', 'All')}</span>
+            <span class="badge ${currentFilter === 'all' ? 'badge-on-primary' : 'badge-neutral'}">${allTrashItems.length}</span>
           </button>
-          <button class="btn btn-sm ${currentFilter === 'project' ? 'btn-primary' : 'btn-ghost'}" data-action="filter-trash" data-filter="project">
-            ${icon('building', 12)} ${choose('المشاريع', 'Projects')} <span class="badge ${currentFilter === 'project' ? 'badge-on-primary' : 'badge-neutral'}" style="margin-inline-start:4px;font-size:10px;">${projectCount}</span>
+          <button type="button" class="btn btn-sm ${currentFilter === 'project' ? 'btn-primary' : 'btn-ghost'}" data-action="filter-trash" data-filter="project">
+            ${icon('building', 14)}
+            <span>${choose('المشاريع', 'Projects')}</span>
+            <span class="badge ${currentFilter === 'project' ? 'badge-on-primary' : 'badge-neutral'}">${projectCount}</span>
           </button>
-          <button class="btn btn-sm ${currentFilter === 'task' ? 'btn-primary' : 'btn-ghost'}" data-action="filter-trash" data-filter="task">
-            ${icon('checklist', 12)} ${choose('المهام', 'Tasks')} <span class="badge ${currentFilter === 'task' ? 'badge-on-primary' : 'badge-neutral'}" style="margin-inline-start:4px;font-size:10px;">${taskCount}</span>
+          <button type="button" class="btn btn-sm ${currentFilter === 'task' ? 'btn-primary' : 'btn-ghost'}" data-action="filter-trash" data-filter="task">
+            ${icon('checklist', 14)}
+            <span>${choose('المهام', 'Tasks')}</span>
+            <span class="badge ${currentFilter === 'task' ? 'badge-on-primary' : 'badge-neutral'}">${taskCount}</span>
           </button>
-          <button class="btn btn-sm ${currentFilter === 'document' ? 'btn-primary' : 'btn-ghost'}" data-action="filter-trash" data-filter="document">
-            ${icon('document', 12)} ${choose('المستندات', 'Documents')} <span class="badge ${currentFilter === 'document' ? 'badge-on-primary' : 'badge-neutral'}" style="margin-inline-start:4px;font-size:10px;">${docCount}</span>
+          <button type="button" class="btn btn-sm ${currentFilter === 'document' ? 'btn-primary' : 'btn-ghost'}" data-action="filter-trash" data-filter="document">
+            ${icon('document', 14)}
+            <span>${choose('المستندات', 'Documents')}</span>
+            <span class="badge ${currentFilter === 'document' ? 'badge-on-primary' : 'badge-neutral'}">${docCount}</span>
           </button>
         </div>
-        <div class="search-box search-sm" style="min-width:220px;max-width:320px;flex:1;">
+        <div class="search-box search-sm trash-search-box">
           ${icon('search', 14)}
           <input type="search" placeholder="${choose('بحث في المحذوفات...', 'Search deleted items...')}" value="${esc(state.trashQuery || '')}" data-action="search-trash-input" />
         </div>
