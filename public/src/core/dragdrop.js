@@ -167,11 +167,12 @@ function updatePlaceholderPosition(clientX, clientY) {
   const elUnder = document.elementFromPoint(clientX, clientY);
   let column = elUnder?.closest('.board-column');
 
-  // If outside all columns, only snap to nearest column if cursor is within horizontal bounds of the board
+  // If outside all columns, snap to nearest column if within vertical bounds of board
+  // (Tolerant edge detection: guarantees placeholder stays active even at mobile screen edges)
   const boardEl = document.querySelector('.board, .tasks-board, .board-columns');
   if (!column && boardEl) {
     const bRect = boardEl.getBoundingClientRect();
-    if (clientX >= bRect.left && clientX <= bRect.right && clientY >= bRect.top - 60 && clientY <= bRect.bottom + 60) {
+    if (clientY >= bRect.top - 80 && clientY <= bRect.bottom + 80) {
       const columns = Array.from(document.querySelectorAll('.board-column'));
       if (columns.length > 0) {
         column = columns.reduce((closest, col) => {
@@ -214,7 +215,7 @@ function updatePlaceholderPosition(clientX, clientY) {
   }
 }
 
-// Continuous Velocity-Based Proportional Auto-Scroller via requestAnimationFrame (Multi-Engine RTL Aware)
+// Continuous Velocity-Based Proportional Auto-Scroller via requestAnimationFrame (Universal Dual-Zone Engine)
 function startContinuousAutoScroll() {
   if (autoScrollRaf) return;
 
@@ -230,31 +231,41 @@ function startContinuousAutoScroll() {
       // ── 1. HORIZONTAL BOARD AUTO-SCROLL (Universal RTL & Multi-Engine Aware) ──
       const boardEl = document.querySelector('.board, .board-columns, .tasks-board, [data-board]');
       const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
-      const hEdgeMargin = isMobile ? 55 : 85;
-      const maxHScrollSpeed = isMobile ? 22 : 26;
+      const hEdgeMargin = isMobile ? 75 : 85;
+      const maxHScrollSpeed = isMobile ? 24 : 28;
 
       if (boardEl) {
-        const isRtl = document.documentElement.dir === 'rtl' || state.lang === 'ar';
-        const rtlType = isRtl ? getRtlScrollType() : 'default';
-
         let hDelta = 0;
-        if (currentMouseX < hEdgeMargin) {
-          const factor = (hEdgeMargin - currentMouseX) / hEdgeMargin;
-          hDelta = -Math.max(4, Math.round(factor * maxHScrollSpeed));
-        } else if (currentMouseX > window.innerWidth - hEdgeMargin) {
-          const factor = (currentMouseX - (window.innerWidth - hEdgeMargin)) / hEdgeMargin;
-          hDelta = Math.max(4, Math.round(factor * maxHScrollSpeed));
+        const screenW = (typeof window !== 'undefined' && window.visualViewport?.width) || window.innerWidth;
+        const ghostRect = dragGhost ? dragGhost.getBoundingClientRect() : null;
+
+        // Dual-zone detection: checks both finger touch coordinate and floating card bounding box
+        const isLeftZone = (currentMouseX < hEdgeMargin) || (ghostRect && ghostRect.left < 35);
+        const isRightZone = (currentMouseX > screenW - hEdgeMargin) || (ghostRect && ghostRect.right > screenW - 35);
+
+        if (isLeftZone) {
+          const edgeDist = Math.max(0, currentMouseX < hEdgeMargin ? (hEdgeMargin - currentMouseX) : 35);
+          const factor = Math.min(1.5, Math.max(0.15, edgeDist / hEdgeMargin));
+          const speed = Math.max(4, Math.round(Math.pow(factor, 1.3) * maxHScrollSpeed));
+          hDelta = -speed;
+        } else if (isRightZone) {
+          const edgeDist = Math.max(0, currentMouseX > screenW - hEdgeMargin ? (currentMouseX - (screenW - hEdgeMargin)) : 35);
+          const factor = Math.min(1.5, Math.max(0.15, edgeDist / hEdgeMargin));
+          const speed = Math.max(4, Math.round(Math.pow(factor, 1.3) * maxHScrollSpeed));
+          hDelta = speed;
         }
 
         if (hDelta !== 0) {
-          let scrollStep = hDelta;
-          if (isRtl) {
-            if (rtlType === 'negative') scrollStep = -hDelta;
-            else if (rtlType === 'reverse') scrollStep = hDelta;
-            else scrollStep = -hDelta;
+          const prevLeft = boardEl.scrollLeft;
+          try {
+            boardEl.scrollBy({ left: hDelta });
+          } catch (e) {}
+          if (boardEl.scrollLeft === prevLeft) {
+            boardEl.scrollLeft += hDelta;
           }
-          boardEl.scrollBy({ left: scrollStep, behavior: 'instant' });
-          didScroll = true;
+          if (boardEl.scrollLeft !== prevLeft) {
+            didScroll = true;
+          }
 
           // Haptic tick when crossing columns on touch devices
           if (isMobile) {
@@ -266,7 +277,7 @@ function startContinuousAutoScroll() {
               if (colIdx !== -1 && colIdx !== lastHapticColIndex) {
                 lastHapticColIndex = colIdx;
                 if (typeof navigator !== 'undefined' && navigator.vibrate) {
-                  try { navigator.vibrate(10); } catch (e) {}
+                  try { navigator.vibrate(12); } catch (e) {}
                 }
               }
             }
@@ -668,6 +679,10 @@ function cleanDragState() {
   }
   dragCard = null;
 
+  // Restore CSS scroll-snap on board container
+  const boardEl = document.querySelector('.board, .board-columns, .tasks-board, [data-board]');
+  if (boardEl) boardEl.style.scrollSnapType = '';
+
   document.body.classList.remove('is-touch-dragging');
   activePointerId = null;
   isPointerDragging = false;
@@ -675,6 +690,7 @@ function cleanDragState() {
   isTouchCharging = false;
   isScrollingGesture = false;
   window._isDraggingTask = false;
+  window._isTouchHoldingTask = false;
   activeDraggedTaskId = null;
   currentMouseX = -1;
   currentMouseY = -1;
@@ -704,6 +720,13 @@ function cleanDragState() {
 function initiateDrag(clientX, clientY) {
   if (!dragCard || isPointerDragging) return;
 
+  const targetTaskId = dragCard.dataset.taskId;
+  // Self-Healing DOM Reconnect: If dragCard was replaced/detached during touch charging, reconnect to live element!
+  if (!dragCard.isConnected && targetTaskId) {
+    const liveCard = document.querySelector(`.task-card[data-task-id="${targetTaskId}"]`);
+    if (liveCard) dragCard = liveCard;
+  }
+
   const task = (state.data?.tasks || []).find(t => t.id === dragCard.dataset.taskId);
   if (!canUserMoveTask(task)) {
     cleanDragState();
@@ -719,6 +742,7 @@ function initiateDrag(clientX, clientY) {
   isPointerDragging = true;
   isDraggingActive = true;
   window._isDraggingTask = true;
+  window._isTouchHoldingTask = false;
   activeDraggedTaskId = dragCard.dataset.taskId;
   currentMouseX = clientX;
   currentMouseY = clientY;
@@ -732,15 +756,30 @@ function initiateDrag(clientX, clientY) {
 
   const rect = dragCard.getBoundingClientRect();
   draggedCardHeight = rect.height;
+
+  // Defensive Dimension Clamping: guarantee card width matches column width and NEVER squishes into a pill
+  const col = dragCard.closest('.board-column') || document.querySelector('.board-column');
+  const colRect = col?.getBoundingClientRect();
+  const fallbackWidth = colRect ? Math.round(colRect.width - 24) : 260;
+  const expectedWidth = Math.max(230, Math.min(320, fallbackWidth));
+  const safeWidth = (rect && Number.isFinite(rect.width) && rect.width >= 180 && rect.width <= 400)
+    ? Math.round(rect.width)
+    : expectedWidth;
+
   dragOffsetX = clientX - rect.left;
   dragOffsetY = clientY - rect.top;
 
   // Safety fallback if offset is NaN or out of bounds
-  if (isNaN(dragOffsetX) || dragOffsetX <= 0 || dragOffsetX > rect.width) dragOffsetX = rect.width / 2;
-  if (isNaN(dragOffsetY) || dragOffsetY <= 0 || dragOffsetY > rect.height) dragOffsetY = rect.height / 2;
+  if (isNaN(dragOffsetX) || dragOffsetX <= 0 || dragOffsetX > safeWidth) dragOffsetX = safeWidth / 2;
+  if (isNaN(dragOffsetY) || dragOffsetY <= 0 || dragOffsetY > (rect.height || 120)) dragOffsetY = (rect.height || 120) / 2;
 
-  const startGx = clientX - dragOffsetX;
-  const startGy = clientY - dragOffsetY;
+  // Integer positioning eliminates subpixel text shimmering on macOS Safari
+  const startGx = Math.round(clientX - dragOffsetX);
+  const startGy = Math.round(clientY - dragOffsetY);
+
+  // Disable scroll-snap on board during drag so WebKit doesn't snap back against programmatic scroll
+  const boardEl = document.querySelector('.board, .board-columns, .tasks-board, [data-board]');
+  if (boardEl) boardEl.style.scrollSnapType = 'none';
 
   // Linear-standard hardware-accelerated floating clone that smoothly follows cursor/finger
   // WebKit GPU layer isolation: backface-visibility, transform-style, no transition
@@ -750,7 +789,12 @@ function initiateDrag(clientX, clientY) {
     position: fixed;
     top: 0;
     left: 0;
-    width: ${rect.width}px;
+    width: ${safeWidth}px;
+    min-width: 230px;
+    max-width: 320px;
+    box-sizing: border-box;
+    contain: none;
+    content-visibility: visible;
     pointer-events: none;
     z-index: 10000;
     opacity: 0.98;
@@ -803,7 +847,7 @@ function initiateDrag(clientX, clientY) {
 }
 
 // Unified Velocity & Tilt Physics Movement Engine (Low-Pass Filter & Safari Jitter Elimination)
-function updateDragMovement(clientX, clientY) {
+function updateDragMovement(clientX, clientY, pointerType = 'mouse') {
   if (!isDraggingActive || !dragGhost) return;
   // Guard WebKit synthetic (0, 0) coordinate glitch on mobile
   if (clientX === 0 && clientY === 0 && (dragStartX !== 0 || dragStartY !== 0)) return;
@@ -812,18 +856,22 @@ function updateDragMovement(clientX, clientY) {
   currentMouseX = clientX;
   currentMouseY = clientY;
 
-  // Dynamic Velocity-Responsive Tilt with Low-Pass Damping & Deadband (-2deg to +2deg)
-  // Eliminates Safari mouse jitter by damping micro-tremors below 1.5px
-  const rawVelX = (prevMouseX >= 0) ? (clientX - prevMouseX) : 0;
+  // On touch devices, keep tilt at 0 for 100% stable finger alignment
+  // On desktop mouse, apply subtle low-pass tilt (-2deg to +2deg) with deadband
+  if (pointerType === 'touch') {
+    currentTilt = 0;
+  } else {
+    const rawVelX = (prevMouseX >= 0) ? (clientX - prevMouseX) : 0;
+    const velX = Math.abs(rawVelX) < 1.5 ? 0 : rawVelX;
+    const targetTilt = Math.max(-2, Math.min(2, velX * 0.12));
+    currentTilt += (targetTilt - currentTilt) * 0.22;
+    if (Math.abs(currentTilt) < 0.12) currentTilt = 0;
+  }
   prevMouseX = clientX;
-  const velX = Math.abs(rawVelX) < 1.5 ? 0 : rawVelX;
-  const targetTilt = Math.max(-2, Math.min(2, velX * 0.12));
-  currentTilt += (targetTilt - currentTilt) * 0.22;
-  if (Math.abs(currentTilt) < 0.12) currentTilt = 0;
 
-  // Move floating ghost smoothly with cursor/finger via GPU hardware acceleration
-  const gx = clientX - dragOffsetX;
-  const gy = clientY - dragOffsetY;
+  // Integer positioning eliminates subpixel rasterization shimmering on Retina displays
+  const gx = Math.round(clientX - dragOffsetX);
+  const gy = Math.round(clientY - dragOffsetY);
   if (Number.isFinite(gx) && Number.isFinite(gy)) {
     const tiltStr = currentTilt !== 0 ? ` rotate(${currentTilt.toFixed(1)}deg)` : '';
     dragGhost.style.transform = `translate3d(${gx}px, ${gy}px, 0) scale(1.025)${tiltStr}`;
@@ -942,6 +990,7 @@ document.addEventListener('pointerdown', (e) => {
   isDragStartedFromGrip = Boolean(targetEl?.closest?.('.task-drag-handle'));
 
   if (e.pointerType === 'touch') {
+    window._isTouchHoldingTask = true;
     if (isDragStartedFromGrip) {
       // Grip handle dragged: Immediate capture for fluid drag
       try { card.setPointerCapture(e.pointerId); } catch (err) {}
@@ -986,6 +1035,7 @@ document.addEventListener('pointermove', (e) => {
         if (dist > TOUCH_SLOP) {
           // Moved before 280ms expired -> Treat as pure scroll gesture!
           isScrollingGesture = true;
+          window._isTouchHoldingTask = false;
           if (touchHoldTimer) {
             clearTimeout(touchHoldTimer);
             touchHoldTimer = null;
@@ -1010,7 +1060,7 @@ document.addEventListener('pointermove', (e) => {
   // Active Dragging Mode: Cancel native gesture interference and update position
   if (isPointerDragging) {
     if (e.cancelable) e.preventDefault();
-    updateDragMovement(e.clientX, e.clientY);
+    updateDragMovement(e.clientX, e.clientY, e.pointerType);
   }
 }, { passive: false });
 
@@ -1058,6 +1108,7 @@ window.addEventListener('touchmove', (e) => {
 }, { passive: false });
 
 window.addEventListener('touchend', () => {
+  window._isTouchHoldingTask = false;
   if (touchHoldTimer) {
     clearTimeout(touchHoldTimer);
     touchHoldTimer = null;
