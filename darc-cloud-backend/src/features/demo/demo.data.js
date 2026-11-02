@@ -444,6 +444,48 @@ export function createDemoDataset() {
       status: 'approved',
       uploaderId: 'usr_demo_arch',
       createdAt: dateStr(-8)
+    },
+    {
+      id: 'doc_demo_07',
+      projectId: 'prj_demo_villa',
+      taskId: 'tsk_demo_01',
+      originalName: 'DARC-VILLA-BOQ-BILL-OF-QUANTITIES.xlsx',
+      diskFilename: 'https://drive.google.com/drive/folders/1DsElwxs_mdPU16AsL4p5f2wB-a6V2LNH?usp=sharing',
+      driveFileId: '1DsElwxs_mdPU16AsL4p5f2wB-a6V2LNH',
+      viewLink: 'https://drive.google.com/drive/folders/1DsElwxs_mdPU16AsL4p5f2wB-a6V2LNH?usp=sharing',
+      mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      size: 4.2 * 1024 * 1024,
+      status: 'approved',
+      uploaderId: 'usr_demo',
+      createdAt: dateStr(-4)
+    },
+    {
+      id: 'doc_demo_08',
+      projectId: 'prj_demo_villa',
+      taskId: 'tsk_demo_01',
+      originalName: 'DARC-PALM-VILLA-TECHNICAL-SPECIFICATIONS.docx',
+      diskFilename: 'https://drive.google.com/drive/folders/1DsElwxs_mdPU16AsL4p5f2wB-a6V2LNH?usp=sharing',
+      driveFileId: '1DsElwxs_mdPU16AsL4p5f2wB-a6V2LNH',
+      viewLink: 'https://drive.google.com/drive/folders/1DsElwxs_mdPU16AsL4p5f2wB-a6V2LNH?usp=sharing',
+      mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      size: 6.8 * 1024 * 1024,
+      status: 'approved',
+      uploaderId: 'usr_demo_arch',
+      createdAt: dateStr(-3)
+    },
+    {
+      id: 'doc_demo_09',
+      projectId: 'prj_demo_villa',
+      taskId: 'tsk_demo_03',
+      originalName: 'DARC-ARCHITECTURAL-CONCEPT-PRESENTATION.pptx',
+      diskFilename: 'https://drive.google.com/drive/folders/1DsElwxs_mdPU16AsL4p5f2wB-a6V2LNH?usp=sharing',
+      driveFileId: '1DsElwxs_mdPU16AsL4p5f2wB-a6V2LNH',
+      viewLink: 'https://drive.google.com/drive/folders/1DsElwxs_mdPU16AsL4p5f2wB-a6V2LNH?usp=sharing',
+      mimeType: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      size: 32.4 * 1024 * 1024,
+      status: 'approved',
+      uploaderId: 'usr_demo_3d',
+      createdAt: dateStr(-1)
     }
   ];
 

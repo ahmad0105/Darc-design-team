@@ -16,6 +16,15 @@ export default defineConfig({
       }
     }
   },
+  preview: {
+    port: 4173,
+    proxy: {
+      '/api': {
+        target: 'https://darc-cloud-backend.ahmad-hashmi-c.workers.dev',
+        changeOrigin: true
+      }
+    }
+  },
   esbuild: {
     legalComments: 'none',
     treeShaking: true

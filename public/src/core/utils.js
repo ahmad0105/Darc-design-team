@@ -229,8 +229,20 @@ export function getFileFormatInfo(filename, mimeType = '') {
   if (ext === 'pdf') {
     return { ext: 'PDF', label: 'PDF Blueprint', color: '#dc2626', bg: 'rgba(220,38,38,0.12)', border: 'rgba(220,38,38,0.3)', isPdf: true };
   }
+  if (['xlsx', 'xls', 'csv'].includes(ext)) {
+    return { ext: ext.toUpperCase(), label: 'Excel Sheet', color: '#107c41', bg: 'rgba(16,124,65,0.12)', border: 'rgba(16,124,65,0.3)', isExcel: true };
+  }
+  if (['docx', 'doc', 'rtf', 'odt'].includes(ext)) {
+    return { ext: ext.toUpperCase(), label: 'Word Document', color: '#2b579a', bg: 'rgba(43,87,154,0.12)', border: 'rgba(43,87,154,0.3)', isWord: true };
+  }
+  if (['pptx', 'ppt', 'key'].includes(ext)) {
+    return { ext: ext.toUpperCase(), label: 'PowerPoint Deck', color: '#d24726', bg: 'rgba(210,71,38,0.12)', border: 'rgba(210,71,38,0.3)', isPpt: true };
+  }
   if (['png', 'jpg', 'jpeg', 'webp', 'heic'].includes(ext)) {
     return { ext: ext.toUpperCase(), label: 'Image', color: '#059669', bg: 'rgba(5,150,105,0.12)', border: 'rgba(5,150,105,0.3)', isImg: true };
+  }
+  if (['mp4', 'webm', 'mov', 'm4v', 'ogv'].includes(ext)) {
+    return { ext: ext.toUpperCase(), label: 'Video', color: '#8b5cf6', bg: 'rgba(139,92,246,0.12)', border: 'rgba(139,92,246,0.3)', isVideo: true };
   }
   if (['zip', 'rar', '7z', 'tar'].includes(ext)) {
     return { ext: ext.toUpperCase(), label: 'Archive', color: '#d97706', bg: 'rgba(217,119,6,0.12)', border: 'rgba(217,119,6,0.3)', isZip: true };
