@@ -229,12 +229,20 @@ app.get('/:id', async (c) => {
     return c.json({ error: 'غير مصرح لك بعرض هذا المستند' }, 403);
   }
   
+  const isDownload = c.req.query('download') === '1' || c.req.query('export') === 'download';
+  
   if (doc.disk_filename && doc.disk_filename.startsWith('http')) {
     try {
       const u = new URL(doc.disk_filename);
       const isGoogle = u.hostname === 'google.com' || u.hostname.endsWith('.google.com') ||
                        u.hostname === 'googleusercontent.com' || u.hostname.endsWith('.googleusercontent.com');
       if (isGoogle) {
+        if (isDownload) {
+          const match = doc.disk_filename.match(/(?:file\/d\/|id=)([a-zA-Z0-9_-]{20,50})/);
+          if (match && match[1]) {
+            return c.redirect(`https://drive.google.com/uc?export=download&id=${match[1]}`);
+          }
+        }
         return c.redirect(doc.disk_filename);
       }
     } catch (e) {}

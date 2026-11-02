@@ -1132,8 +1132,9 @@ export function renderTaskDocuments(task) {
         </div>
       </div>
       <div style="display:flex;align-items:center;gap:4px;">
-        <button class="btn btn-ghost btn-sm" data-action="copy-doc-link" data-doc-id="${doc.id}" style="padding:4px;min-width:0;height:auto;color:var(--brand-teal);" title="${choose('نسخ رابط المشاركة', 'Copy share link')}">${icon('link', 14)}</button>
+        <button class="btn btn-ghost btn-sm" data-action="copy-doc-link" data-doc-id="${doc.id}" style="padding:4px;min-width:0;height:auto;color:var(--brand-teal);" title="${choose('نسخ رابط Google Drive', 'Copy Drive link')}">${icon('link', 14)}</button>
         <button class="btn btn-ghost btn-sm" data-action="preview-doc" data-doc-id="${doc.id}" style="padding:4px;min-width:0;height:auto;color:var(--brand-teal);" title="${choose('معاينة المخطط في نافذة منبثقة', 'Preview in popup modal')}">${icon('eye', 14)}</button>
+        <button class="btn btn-ghost btn-sm" data-action="download-doc" data-doc-id="${doc.id}" style="padding:4px;min-width:0;height:auto;color:var(--blue);" title="${choose('تحميل المخطط', 'Download')}">${icon('download', 14)}</button>
         ${(can('review_tasks') || can('approve_tasks') || can('upload_documents') || isAdmin()) ? `
           <select class="doc-status-select" data-doc-id="${doc.id}" style="font-size:11px;padding:2px 4px;border-radius:4px;border:1px solid var(--line);background:var(--surface);color:var(--ink);">
             <option value="draft" ${doc.status === 'draft' ? 'selected' : ''}>${choose('مسودة', 'Draft')}</option>
@@ -1149,153 +1150,8 @@ export function renderTaskDocuments(task) {
   `).join('')}</div>`;
 }
 
-export async function openDocumentPreviewModal(docId) {
-  if (!docId) return;
-  let doc = (state.data?.documents || []).find(d => d.id === docId);
-  if (!doc) {
-    try {
-      const fetched = await api(`/api/documents/${docId}`);
-      if (fetched && fetched.id) {
-        doc = fetched;
-        if (state.data && !state.data.documents) state.data.documents = [];
-        if (state.data?.documents) state.data.documents.push(doc);
-      }
-    } catch (err) {
-      console.warn('[Documents] Failed to fetch doc preview on demand:', err);
-    }
-  }
-  if (!doc) {
-    showToast(choose('المستند غير موجود أو تم نقله لسلة المهملات.', 'Document not found or moved to trash.'), true);
-    return;
-  }
-
-  let url = doc.diskFilename || `/api/documents/${doc.id}`;
-  if (url.startsWith('file://') || url.startsWith('/') || !url.startsWith('http')) {
-    url = `/api/documents/${doc.id}`;
-  }
-  let driveId = '';
-  if (url.includes('drive.google.com')) {
-    const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
-    if (match && match[1]) driveId = match[1];
-  }
-
-  const rawEmbed = driveId ? `https://drive.google.com/file/d/${encodeURIComponent(driveId)}/preview` : url;
-  const isSafeProtocol = /^(https?:\/\/|\/)/i.test(rawEmbed);
-  const embedUrl = isSafeProtocol ? rawEmbed : 'about:blank';
-  const rawExternal = driveId ? `https://drive.google.com/file/d/${encodeURIComponent(driveId)}/view?usp=drivesdk` : (url.startsWith('http') ? url : `${window.location.origin}${url}`);
-  const externalViewUrl = /^(https?:\/\/|\/)/i.test(rawExternal) ? rawExternal : '#';
-  const downloadUrl = `/api/documents/${encodeURIComponent(doc.id)}`;
-
-  const isImage = /\.(jpe?g|png|gif|webp|svg|heic)$/i.test(doc.originalName) || (doc.mimeType && doc.mimeType.startsWith('image/'));
-  const isVideo = /\.(mp4|webm|mov|m4v|ogv|ogg)$/i.test(doc.originalName) || (doc.mimeType && doc.mimeType.startsWith('video/'));
-  const isAudio = /\.(mp3|wav|m4a|aac|ogg)$/i.test(doc.originalName) || (doc.mimeType && doc.mimeType.startsWith('audio/'));
-  const fileSize = doc.size > 1024 * 1024 ? (doc.size / (1024 * 1024)).toFixed(1) + ' MB' : Math.round((doc.size || 0) / 1024) + ' KB';
-
-  const isDemoDoc = (doc.id && String(doc.id).includes('demo')) || (driveId && driveId.startsWith('demo_sample_')) || Boolean(state.data?.isDemo);
-
-  let overlay = document.getElementById('preview-modal-overlay');
-  if (!overlay) {
-    overlay = document.createElement('div');
-    overlay.id = 'preview-modal-overlay';
-    overlay.style.position = 'fixed';
-    overlay.style.inset = '0';
-    overlay.style.zIndex = '1300';
-    overlay.style.background = 'rgba(0, 0, 0, 0.75)';
-    overlay.style.backdropFilter = 'blur(4px)';
-    overlay.style.display = 'flex';
-    overlay.style.alignItems = 'center';
-    overlay.style.justifyContent = 'center';
-    overlay.style.padding = '20px';
-    document.body.appendChild(overlay);
-  }
-
-  overlay.innerHTML = `
-    <div style="background:var(--surface);width:95%;max-width:1100px;height:88vh;border-radius:12px;box-shadow:0 25px 50px rgba(0,0,0,0.3);overflow:hidden;display:flex;flex-direction:column;border:1px solid var(--border);">
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 20px;border-bottom:1px solid var(--line);background:var(--surface);">
-        <div style="display:flex;align-items:center;gap:10px;overflow:hidden;">
-          <span style="color:var(--brand-teal);background:var(--teal-soft);padding:6px;border-radius:6px;display:flex;">${icon('document', 16)}</span>
-          <div style="overflow:hidden;">
-            <h2 style="margin:0;font-size:15px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${esc(doc.originalName)}">${esc(doc.originalName)}</h2>
-          </div>
-        </div>
-        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
-          <button type="button" class="btn btn-soft btn-sm" data-action="copy-doc-link" data-doc-id="${esc(doc.id)}" style="display:flex;align-items:center;gap:6px;" title="${choose('نسخ رابط المشاركة', 'Copy share link')}">
-            ${icon('link', 13)} <span class="hide-mobile">${choose('نسخ الرابط', 'Copy Link')}</span>
-          </button>
-          ${!isDemoDoc ? `
-          <a href="${esc(externalViewUrl)}" target="_blank" rel="noopener noreferrer" class="btn btn-soft btn-sm" style="text-decoration:none;display:flex;align-items:center;gap:6px;" title="${choose('فتح في Google Drive', 'Open in Google Drive')}">
-            ${icon('globe', 13)} <span class="hide-mobile">${choose('فتح في Drive', 'Open in Drive')}</span>
-          </a>
-          <a href="${esc(downloadUrl)}" target="_blank" rel="noopener noreferrer" download class="btn btn-primary btn-sm" style="text-decoration:none;display:flex;align-items:center;gap:6px;" title="${choose('تحميل المخطط', 'Download')}">
-            ${icon('download', 13)} <span class="hide-mobile">${choose('تحميل', 'Download')}</span>
-          </a>
-          ` : ''}
-          <button type="button" class="btn btn-ghost btn-sm" id="close-preview-modal-btn" data-action="close-modal" style="padding:6px;min-width:0;margin-inline-start:4px;" title="${choose('إغلاق', 'Close')}">${icon('close', 18)}</button>
-        </div>
-      </div>
-      <div style="flex:1;position:relative;background:#1a1a1a;overflow:hidden;display:flex;align-items:center;justify-content:center;">
-        ${isDemoDoc ? `
-          <div style="width:100%;height:100%;background:#0f172a;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#e2e8f0;padding:24px;text-align:center;">
-            <div style="position:absolute;inset:0;background-image:radial-gradient(rgba(20,184,166,0.15) 1px, transparent 1px);background-size:24px 24px;opacity:0.6;pointer-events:none;"></div>
-            <div style="background:rgba(15,23,42,0.85);backdrop-filter:blur(8px);border:1px solid rgba(20,184,166,0.3);border-radius:12px;padding:32px 40px;max-width:540px;box-shadow:0 20px 40px rgba(0,0,0,0.5);z-index:2;">
-              <div style="font-size:48px;margin-bottom:16px;">📐</div>
-              <h3 style="font-size:18px;font-weight:700;color:#fff;margin:0 0 8px 0;">${esc(doc.originalName)}</h3>
-              <p style="font-size:13px;color:#94a3b8;margin:0 0 20px 0;line-height:1.6;">
-                ${choose('مخطط معماري هندسي تفصيلي (بيئة عرض تجريبية). عند العمل على مشروع حقيقي يمكنك رفع ملفات PDF ومخططات DWG بدقة كاملة.', 'Detailed architectural CAD drawing (Demo showcase). In production projects, uploaded PDF and DWG drawings render directly here.')}
-              </p>
-              <div style="display:flex;justify-content:center;gap:12px;font-size:12px;color:#38bdf8;">
-                <span style="background:rgba(56,189,248,0.1);padding:4px 10px;border-radius:6px;border:1px solid rgba(56,189,248,0.2);">${choose('الحجم المقدر', 'Size')}: ${fileSize}</span>
-                <span style="background:rgba(20,184,166,0.1);padding:4px 10px;border-radius:6px;border:1px solid rgba(20,184,166,0.2);color:#2dd4bf;">${choose('مخطط معتمد', 'Approved Drawing')}</span>
-              </div>
-            </div>
-          </div>
-        ` : (isVideo ? `
-          <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;padding:15px;background:#000;">
-            <video controls autoplay playsinline style="max-width:100%;max-height:100%;border-radius:6px;outline:none;box-shadow:0 8px 30px rgba(0,0,0,0.5);">
-              ${driveId ? `<source src="https://drive.google.com/uc?export=download&id=${esc(driveId)}" type="${esc(doc.mimeType || 'video/mp4')}">` : ''}
-              <source src="${esc(downloadUrl)}" type="${esc(doc.mimeType || 'video/mp4')}">
-              <source src="${esc(embedUrl)}">
-              <p style="color:#fff;text-align:center;">${choose('متصفحك لا يدعم تشغيل هذا الفيديو مباشرة.', 'Your browser does not support the video tag.')}</p>
-            </video>
-          </div>
-        ` : (isAudio ? `
-          <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;padding:24px;background:#0f172a;">
-            <audio controls style="width:80%;max-width:500px;">
-              ${driveId ? `<source src="https://drive.google.com/uc?export=download&id=${esc(driveId)}" type="${esc(doc.mimeType || 'audio/mpeg')}">` : ''}
-              <source src="${esc(downloadUrl)}" type="${esc(doc.mimeType || 'audio/mpeg')}">
-              <source src="${esc(embedUrl)}">
-            </audio>
-          </div>
-        ` : (!driveId && isImage ? `
-          <div style="width:100%;height:100%;overflow:auto;display:flex;align-items:center;justify-content:center;padding:15px;">
-            <img src="${esc(embedUrl)}" alt="${esc(doc.originalName)}" style="max-width:100%;max-height:100%;object-fit:contain;border-radius:4px;box-shadow:0 4px 20px rgba(0,0,0,0.5);" onerror="this.onerror=null;this.src='${esc(downloadUrl)}';" />
-          </div>
-        ` : `
-          <iframe 
-            src="${esc(embedUrl)}" 
-            style="width:100%;height:100%;border:none;background:#fff;" 
-            allow="autoplay; fullscreen; encrypted-media; picture-in-picture" 
-            allowfullscreen 
-            loading="lazy">
-          </iframe>
-        `)))}
-      </div>
-    </div>
-  `;
-  overlay.style.display = 'flex';
-
-  document.getElementById('close-preview-modal-btn')?.addEventListener('click', () => {
-    overlay.style.display = 'none';
-    overlay.innerHTML = '';
-  });
-
-  overlay.onclick = (e) => {
-    if (e.target === overlay) {
-      overlay.style.display = 'none';
-      overlay.innerHTML = '';
-    }
-  };
-}
+// Re-export Universal Document & Blueprint Viewer modules
+export { openDocumentPreviewModal, downloadDocument, handleCopyDocLink, getDocumentShareableLink } from '../documents/doc-viewer.js';
 
 export function STATUS_OPTIONS() { return [['not_started', t('notStarted')], ['in_progress', t('inProgress')], ['review', t('review')], ['approval', t('approval')], ['done', t('done')], ['blocked', t('blocked')], ['canceled', t('canceled')]]; }
 

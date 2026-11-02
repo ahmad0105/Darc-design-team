@@ -433,6 +433,26 @@ app.use('/api/*', async (c, next) => {
     if (path.startsWith('/api/documents/')) {
       const id = path.split('/')[3];
       const d = demoData.documents.find(x => x.id === id) || demoData.documents[0];
+      const isDownload = c.req.query('download') === '1' || c.req.query('export') === 'download';
+      if (isDownload) {
+        const filename = d.originalName || `document_${id}.pdf`;
+        const ext = filename.split('.').pop()?.toLowerCase();
+        let payload = '%PDF-1.4\n1 0 obj\n<< /Title (DARC Architecture Deliverable) >>\nendobj\ntrailer\n<< >>\n%%EOF';
+        let mime = d.mimeType || 'application/pdf';
+        if (ext === 'dxf' || ext === 'dwg') {
+          payload = '0\nSECTION\n2\nHEADER\n9\n$ACADVER\n1\nAC1015\n0\nENDSEC\n0\nEOF';
+          mime = 'application/dxf';
+        }
+        return new Response(payload, {
+          status: 200,
+          headers: {
+            'Content-Type': mime,
+            'Content-Disposition': `attachment; filename="${encodeURIComponent(filename)}"; filename*=UTF-8''${encodeURIComponent(filename)}`,
+            'Cache-Control': 'private, no-cache',
+            'X-Content-Type-Options': 'nosniff'
+          }
+        });
+      }
       return c.json({ ok: true, document: d });
     }
     if (path === '/api/trash' || path === '/api/trash/') return c.json({ projects: [], tasks: [], documents: [] });

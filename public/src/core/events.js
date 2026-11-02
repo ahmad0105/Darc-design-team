@@ -6,6 +6,7 @@ import { openOmnisearch, closeOmnisearch, openShortcutsCheatsheet } from '../fea
 import { playSuccessChime, savePreferencesCookies, choose, esc, icon, t, can, isAdmin, avatar, roleName, statusText, initials, dateLabel } from './utils.js';
 import { showToast, modalShell, closeModal, renderLoading } from '../shared/ui.js';
 import { setSavedTaskSort, openDocumentPreviewModal, renderTaskDocuments } from '../features/tasks/tasks.js';
+import { downloadDocument, handleCopyDocLink, getDocumentShareableLink } from '../features/documents/doc-viewer.js';
 import { getPendingMutations, syncPendingMutations, getOfflineBootstrap, clearOfflineBootstrap, saveOfflineBootstrap } from './offline.js';
 import { exportPortfolioXLS, exportProjectXLS, exportProjectPDF, exportPortfolioPDF } from '../features/projects/projects.js';
 import { exportAuditLogsXLS, printAuditReport, fetchFullAuditHistory, canAccessSettingsSection } from '../features/settings/settings.js';
@@ -801,29 +802,15 @@ export async function handleClick(event) {
     const docId = target.dataset.docId || target.closest('[data-doc-id]')?.dataset.docId;
     const doc = state.data?.documents?.find(d => d.id === docId);
     if (doc) {
-      let link = doc.viewLink || doc.downloadLink || (doc.driveFileId ? `https://drive.google.com/file/d/${doc.driveFileId}/view` : '');
-      if (!link || link.startsWith('file://') || link.startsWith('/')) {
-        link = `${window.location.origin}/api/documents/${doc.id}`;
-      }
-      if (link) {
-        try {
-          if (navigator.clipboard && navigator.clipboard.writeText) {
-            await navigator.clipboard.writeText(link);
-          } else {
-            const input = document.createElement('textarea');
-            input.value = link;
-            document.body.appendChild(input);
-            input.select();
-            document.execCommand('copy');
-            input.remove();
-          }
-          showToast(choose('تم نسخ رابط الملف إلى الحافظة بنجاح.', 'Document link copied to clipboard.'));
-        } catch (e) {
-          window.prompt(choose('انسخ رابط الملف من هنا:', 'Copy document link:'), link);
-        }
-      } else {
-        showToast(choose('لا يوجد رابط متاح لهذا الملف.', 'No link available for this document.'), true);
-      }
+      const btn = target.closest('button') || target;
+      await handleCopyDocLink(doc, btn);
+    }
+    return;
+  }
+  if (action === 'download-doc') {
+    const docId = target.dataset.docId || target.closest('[data-doc-id]')?.dataset.docId;
+    if (docId) {
+      await downloadDocument(docId);
     }
     return;
   }

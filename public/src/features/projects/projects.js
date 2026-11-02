@@ -594,12 +594,12 @@ export function renderProjectDetail() {
                           <button class="btn btn-ghost btn-sm" data-action="preview-doc" data-doc-id="${esc(doc.id)}" style="padding:5px;" title="${choose('معاينة المخطط', 'Preview')}">
                             ${icon('eye', 14)}
                           </button>
-                          <button class="btn btn-ghost btn-sm" data-action="copy-doc-link" data-doc-id="${esc(doc.id)}" style="padding:5px;color:var(--teal);" title="${choose('نسخ الرابط', 'Copy Link')}">
+                          <button class="btn btn-ghost btn-sm" data-action="copy-doc-link" data-doc-id="${esc(doc.id)}" style="padding:5px;color:var(--teal);" title="${choose('نسخ رابط Google Drive', 'Copy Drive Link')}">
                             ${icon('link', 14)}
                           </button>
-                          <a href="/api/documents/${esc(doc.id)}" target="_blank" rel="noopener noreferrer" download class="btn btn-ghost btn-sm" style="padding:5px;color:var(--blue);" title="${choose('تحميل', 'Download')}">
+                          <button class="btn btn-ghost btn-sm" data-action="download-doc" data-doc-id="${esc(doc.id)}" style="padding:5px;color:var(--blue);" title="${choose('تحميل المخطط', 'Download')}">
                             ${icon('download', 14)}
-                          </a>
+                          </button>
                         </div>
                       </td>
                     </tr>
