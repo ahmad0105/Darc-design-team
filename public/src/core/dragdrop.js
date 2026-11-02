@@ -1169,7 +1169,8 @@ window.addEventListener('touchcancel', () => {
 
 // Suppress browser native HTML5 drag on task cards to give 100% control to our engine
 document.addEventListener('dragstart', (e) => {
-  if (e.target.closest('.task-card')) {
+  const targetEl = (e.target instanceof Element) ? e.target : (e.target?.parentElement || null);
+  if (targetEl?.closest?.('.task-card')) {
     e.preventDefault();
   }
 });
@@ -1186,8 +1187,9 @@ document.addEventListener('click', (e) => {
 // ── ACCESSIBLE KEYBOARD DRAG & DROP ENGINE ─────────
 
 document.addEventListener('keydown', async (e) => {
+  const targetEl = (e.target instanceof Element) ? e.target : (e.target?.parentElement || null);
   // Ignore keyboard DnD if user is typing inside an input, textarea, or if a modal is open
-  if (e.target.closest('input, textarea, select, [contenteditable="true"]')) return;
+  if (targetEl?.closest?.('input, textarea, select, [contenteditable="true"]')) return;
   if (document.querySelector('.modal-overlay, #taskModal, .modal-backdrop')) return;
 
   const focusedCard = document.activeElement?.closest?.('.task-card');

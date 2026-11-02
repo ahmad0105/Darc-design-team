@@ -231,6 +231,16 @@ app.get('/:id', async (c) => {
   
   const isDownload = c.req.query('download') === '1' || c.req.query('export') === 'download';
   const isStream = c.req.query('stream') === '1';
+
+  const directDriveId = doc.drive_file_id || doc.driveFileId;
+  if (directDriveId && typeof directDriveId === 'string' && /^[a-zA-Z0-9_-]{20,50}$/.test(directDriveId)) {
+    if (isDownload) {
+      return c.redirect(`https://drive.google.com/uc?export=download&id=${directDriveId}`, 302);
+    }
+    if (isStream) {
+      return c.redirect(`https://drive.google.com/uc?export=view&id=${directDriveId}`, 302);
+    }
+  }
   
   if (doc.disk_filename && doc.disk_filename.startsWith('http')) {
     try {
