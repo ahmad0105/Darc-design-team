@@ -898,9 +898,15 @@ export async function openDocumentPreviewModal(docId) {
   // ── 5. RENDER EXCEL SPREADSHEETS (BOQ & FINANCIAL SCHEDULES) ─────────────────
   if (isExcel) {
     const realExcelUrl = getRealAssetUrl(doc);
+    const fullAbsoluteUrl = realExcelUrl.startsWith('http') 
+      ? realExcelUrl 
+      : (typeof window !== 'undefined' ? `${window.location.origin}${realExcelUrl}` : realExcelUrl);
     const drivePreviewUrl = (doc.driveFileId && doc.driveFileId.length >= 25 && !doc.driveFileId.startsWith('demo_') && doc.driveFileId !== GDRIVE_ROOT_FOLDER_ID) 
       ? `https://drive.google.com/file/d/${encodeURIComponent(doc.driveFileId)}/preview`
       : GDRIVE_ROOT_FOLDER_URL;
+    const googleDocsViewerUrl = (doc.driveFileId && doc.driveFileId.length >= 25 && !doc.driveFileId.startsWith('demo_') && doc.driveFileId !== GDRIVE_ROOT_FOLDER_ID)
+      ? drivePreviewUrl
+      : `https://docs.google.com/viewer?url=${encodeURIComponent(fullAbsoluteUrl)}&embedded=true`;
 
     viewport.innerHTML = `
       <div style="width:100%;height:100%;display:flex;flex-direction:column;background:var(--surface, #ffffff);color:var(--text, #0f172a);overflow:hidden;">
@@ -914,8 +920,14 @@ export async function openDocumentPreviewModal(docId) {
             </div>
           </div>
           <div style="display:flex;align-items:center;gap:8px;">
-            <button type="button" class="btn btn-sm" id="excel-view-drive" style="background:rgba(255,255,255,0.2);color:#ffffff;border:none;padding:5px 12px;border-radius:6px;font-weight:700;font-size:12px;cursor:pointer;">
-              🌐 Google Drive
+            <button type="button" class="btn btn-sm" id="excel-view-embed" style="background:#ffffff;color:#107c41;border:none;padding:5px 12px;border-radius:6px;font-weight:800;font-size:11px;cursor:pointer;">
+              📊 ${choose('معاينة Google Docs المباشرة', 'Google Docs Viewer')}
+            </button>
+            <button type="button" class="btn btn-sm" id="excel-view-drive" style="background:rgba(255,255,255,0.2);color:#ffffff;border:none;padding:5px 12px;border-radius:6px;font-weight:700;font-size:11px;cursor:pointer;">
+              ☁️ ${choose('معاينة Google Drive', 'Drive Preview')}
+            </button>
+            <button type="button" class="btn btn-sm" id="excel-view-info" style="background:rgba(255,255,255,0.2);color:#ffffff;border:none;padding:5px 12px;border-radius:6px;font-weight:700;font-size:11px;cursor:pointer;">
+              ℹ️ ${choose('بطاقة المخرج', 'Deliverable Info')}
             </button>
             <button type="button" class="btn btn-sm" id="excel-open-newtab" style="background:rgba(255,255,255,0.2);color:#ffffff;border:none;padding:5px 10px;border-radius:6px;font-size:12px;cursor:pointer;" title="${choose('فتح في نافذة جديدة', 'Open in New Tab')}">
               ↗️
@@ -926,13 +938,26 @@ export async function openDocumentPreviewModal(docId) {
           </div>
         </div>
 
-        <!-- Excel Main Workspace / Preview Viewport -->
-        <div id="excel-grid-viewport" style="flex:1;overflow:auto;background:var(--surface, #ffffff);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px;text-align:center;">
+        <!-- Live Embedded Viewer via Google Docs / Drive Embed -->
+        <div id="excel-frame-container" style="flex:1;width:100%;height:100%;position:relative;background:#ffffff;">
+          <iframe 
+            id="excel-embed-iframe" 
+            src="${esc(googleDocsViewerUrl)}" 
+            style="width:100%;height:100%;border:none;display:block;" 
+            allow="fullscreen"
+            sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
+            loading="lazy"
+            referrerpolicy="strict-origin-when-cross-origin"
+          ></iframe>
+        </div>
+
+        <!-- Deliverable Info Card (toggled via button) -->
+        <div id="excel-grid-viewport" style="display:none;flex:1;overflow:auto;background:var(--surface, #ffffff);flex-direction:column;align-items:center;justify-content:center;padding:40px;text-align:center;">
           <div style="max-width:540px;">
             <div style="font-size:48px;margin-bottom:16px;">📊</div>
             <h3 style="color:var(--text, #0f172a);font-size:18px;font-weight:800;margin:0 0 8px 0;">${esc(doc.originalName)}</h3>
             <p style="color:#64748b;font-size:13px;line-height:1.6;margin:0 0 24px 0;">
-              ${choose('جدول بيانات إكسل حقيقي معتمد. متاح للتنزيل المباشر أو الفتح عبر عارض المستندات.', 'Authentic Excel spreadsheet deliverable. Available for direct binary download or cloud review.')}
+              ${choose('جدول بيانات إكسل حقيقي معتمد. متاح للتنزيل المباشر أو المعاينة السحابية المباشرة.', 'Authentic Excel spreadsheet deliverable. Available for direct binary download or cloud review.')}
             </p>
             <div style="display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;">
               <button type="button" class="btn btn-primary" id="excel-cta-download" style="padding:10px 22px;border-radius:8px;font-weight:800;background:#107c41;color:#fff;border:none;cursor:pointer;">
@@ -944,27 +969,59 @@ export async function openDocumentPreviewModal(docId) {
             </div>
           </div>
         </div>
-
-        <!-- Google Drive Preview Viewport (hidden by default) -->
-        <div id="excel-drive-viewport" style="display:none;flex:1;width:100%;height:100%;background:#ffffff;">
-          <iframe id="excel-drive-iframe" src="" style="width:100%;height:100%;border:none;display:block;" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox" loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe>
-        </div>
       </div>
     `;
 
-    document.getElementById('excel-open-newtab')?.addEventListener('click', () => {
-      window.open(realExcelUrl, '_blank');
+    const frameContainer = document.getElementById('excel-frame-container');
+    const infoContainer = document.getElementById('excel-grid-viewport');
+    const iframe = document.getElementById('excel-embed-iframe');
+    const btnEmbed = document.getElementById('excel-view-embed');
+    const btnDrive = document.getElementById('excel-view-drive');
+    const btnInfo = document.getElementById('excel-view-info');
+
+    btnEmbed?.addEventListener('click', () => {
+      if (frameContainer && infoContainer && iframe) {
+        frameContainer.style.display = 'block';
+        infoContainer.style.display = 'none';
+        iframe.src = googleDocsViewerUrl;
+      }
+      btnEmbed.style.background = '#ffffff';
+      btnEmbed.style.color = '#107c41';
+      btnDrive.style.background = 'rgba(255,255,255,0.2)';
+      btnDrive.style.color = '#ffffff';
+      btnInfo.style.background = 'rgba(255,255,255,0.2)';
+      btnInfo.style.color = '#ffffff';
     });
 
-    document.getElementById('excel-view-drive')?.addEventListener('click', () => {
-      const grid = document.getElementById('excel-grid-viewport');
-      const driveView = document.getElementById('excel-drive-viewport');
-      const iframe = document.getElementById('excel-drive-iframe');
-      if (grid && driveView) {
-        grid.style.display = 'none';
-        driveView.style.display = 'block';
-        if (iframe && !iframe.src) iframe.src = drivePreviewUrl;
+    btnDrive?.addEventListener('click', () => {
+      if (frameContainer && infoContainer && iframe) {
+        frameContainer.style.display = 'block';
+        infoContainer.style.display = 'none';
+        iframe.src = drivePreviewUrl;
       }
+      btnDrive.style.background = '#ffffff';
+      btnDrive.style.color = '#107c41';
+      btnEmbed.style.background = 'rgba(255,255,255,0.2)';
+      btnEmbed.style.color = '#ffffff';
+      btnInfo.style.background = 'rgba(255,255,255,0.2)';
+      btnInfo.style.color = '#ffffff';
+    });
+
+    btnInfo?.addEventListener('click', () => {
+      if (frameContainer && infoContainer) {
+        frameContainer.style.display = 'none';
+        infoContainer.style.display = 'flex';
+      }
+      btnInfo.style.background = '#ffffff';
+      btnInfo.style.color = '#107c41';
+      btnEmbed.style.background = 'rgba(255,255,255,0.2)';
+      btnEmbed.style.color = '#ffffff';
+      btnDrive.style.background = 'rgba(255,255,255,0.2)';
+      btnDrive.style.color = '#ffffff';
+    });
+
+    document.getElementById('excel-open-newtab')?.addEventListener('click', () => {
+      window.open(realExcelUrl, '_blank');
     });
 
     document.getElementById('excel-cta-drive')?.addEventListener('click', () => {
@@ -979,9 +1036,15 @@ export async function openDocumentPreviewModal(docId) {
   // ── 6. RENDER WORD DOCUMENTS (SPECIFICATIONS & CONTRACTS) ───────────────────
   if (isWord) {
     const realWordUrl = getRealAssetUrl(doc);
-    const drivePreviewUrl = (doc.driveFileId && doc.driveFileId.length >= 25 && !doc.driveFileId.startsWith('demo_')) 
-      ? `https://drive.google.com/file/d/${doc.driveFileId}/preview`
-      : 'https://drive.google.com/drive/folders/1DsElwxs_mdPU16AsL4p5f2wB-a6V2LNH?usp=sharing';
+    const fullAbsoluteUrl = realWordUrl.startsWith('http') 
+      ? realWordUrl 
+      : (typeof window !== 'undefined' ? `${window.location.origin}${realWordUrl}` : realWordUrl);
+    const drivePreviewUrl = (doc.driveFileId && doc.driveFileId.length >= 25 && !doc.driveFileId.startsWith('demo_') && doc.driveFileId !== GDRIVE_ROOT_FOLDER_ID) 
+      ? `https://drive.google.com/file/d/${encodeURIComponent(doc.driveFileId)}/preview`
+      : GDRIVE_ROOT_FOLDER_URL;
+    const googleDocsViewerUrl = (doc.driveFileId && doc.driveFileId.length >= 25 && !doc.driveFileId.startsWith('demo_') && doc.driveFileId !== GDRIVE_ROOT_FOLDER_ID)
+      ? drivePreviewUrl
+      : `https://docs.google.com/viewer?url=${encodeURIComponent(fullAbsoluteUrl)}&embedded=true`;
 
     viewport.innerHTML = `
       <div style="width:100%;height:100%;display:flex;flex-direction:column;background:#1e242c;overflow:hidden;">
@@ -995,8 +1058,14 @@ export async function openDocumentPreviewModal(docId) {
             </div>
           </div>
           <div style="display:flex;align-items:center;gap:8px;">
+            <button type="button" class="btn btn-sm" id="word-view-embed" style="background:#ffffff;color:#2b579a;border:none;padding:5px 12px;border-radius:4px;font-size:11px;font-weight:800;cursor:pointer;">
+              📄 ${choose('معاينة Google Docs المباشرة', 'Google Docs Viewer')}
+            </button>
             <button type="button" class="btn btn-sm" id="word-view-drive" style="background:rgba(255,255,255,0.2);color:#ffffff;border:none;padding:5px 12px;border-radius:4px;font-size:11px;font-weight:700;cursor:pointer;">
               🌐 Google Drive
+            </button>
+            <button type="button" class="btn btn-sm" id="word-view-info" style="background:rgba(255,255,255,0.2);color:#ffffff;border:none;padding:5px 12px;border-radius:4px;font-size:11px;font-weight:700;cursor:pointer;">
+              ℹ️ ${choose('بطاقة المخرج', 'Deliverable Info')}
             </button>
             <button type="button" class="btn btn-sm" id="word-open-newtab" style="background:rgba(255,255,255,0.2);color:#ffffff;border:none;padding:5px 10px;border-radius:4px;font-size:11px;cursor:pointer;" title="${choose('فتح في نافذة جديدة', 'Open in New Tab')}">
               ↗️
@@ -1007,13 +1076,26 @@ export async function openDocumentPreviewModal(docId) {
           </div>
         </div>
 
-        <!-- Word Workspace Viewport -->
-        <div id="word-main-content-layout" style="flex:1;display:flex;align-items:center;justify-content:center;background:#0b0f15;padding:40px;text-align:center;">
+        <!-- Live Embedded Viewer via Google Docs / Drive Embed -->
+        <div id="word-frame-container" style="flex:1;width:100%;height:100%;position:relative;background:#ffffff;">
+          <iframe 
+            id="word-embed-iframe" 
+            src="${esc(googleDocsViewerUrl)}" 
+            style="width:100%;height:100%;border:none;display:block;" 
+            allow="fullscreen"
+            sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
+            loading="lazy"
+            referrerpolicy="strict-origin-when-cross-origin"
+          ></iframe>
+        </div>
+
+        <!-- Word Workspace Viewport (toggled via button) -->
+        <div id="word-main-content-layout" style="display:none;flex:1;align-items:center;justify-content:center;background:#0b0f15;padding:40px;text-align:center;">
           <div style="max-width:540px;">
             <div style="font-size:48px;margin-bottom:16px;">📄</div>
             <h3 style="color:#f8fafc;font-size:18px;font-weight:800;margin:0 0 8px 0;">${esc(doc.originalName)}</h3>
             <p style="color:#94a3b8;font-size:13px;line-height:1.6;margin:0 0 24px 0;">
-              ${choose('مستند وورد حقيقي معتمد. متاح للتنزيل المباشر أو الفتح عبر عارض المستندات السحابي.', 'Authentic Word document deliverable. Available for direct binary download or cloud review.')}
+              ${choose('مستند وورد حقيقي معتمد. متاح للتنزيل المباشر أو المعاينة السحابية المباشرة.', 'Authentic Word document deliverable. Available for direct binary download or cloud review.')}
             </p>
             <div style="display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;">
               <button type="button" class="btn btn-primary" id="word-cta-download" style="padding:10px 22px;border-radius:8px;font-weight:800;background:#2b579a;color:#fff;border:none;cursor:pointer;">
@@ -1025,27 +1107,59 @@ export async function openDocumentPreviewModal(docId) {
             </div>
           </div>
         </div>
-
-        <!-- Google Drive Preview Viewport (hidden by default) -->
-        <div id="word-drive-viewport" style="display:none;flex:1;width:100%;height:100%;background:#ffffff;">
-          <iframe id="word-drive-iframe" src="" style="width:100%;height:100%;border:none;display:block;" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox" loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe>
-        </div>
       </div>
     `;
 
-    document.getElementById('word-open-newtab')?.addEventListener('click', () => {
-      window.open(realWordUrl, '_blank');
+    const frameContainer = document.getElementById('word-frame-container');
+    const infoContainer = document.getElementById('word-main-content-layout');
+    const iframe = document.getElementById('word-embed-iframe');
+    const btnEmbed = document.getElementById('word-view-embed');
+    const btnDrive = document.getElementById('word-view-drive');
+    const btnInfo = document.getElementById('word-view-info');
+
+    btnEmbed?.addEventListener('click', () => {
+      if (frameContainer && infoContainer && iframe) {
+        frameContainer.style.display = 'block';
+        infoContainer.style.display = 'none';
+        iframe.src = googleDocsViewerUrl;
+      }
+      btnEmbed.style.background = '#ffffff';
+      btnEmbed.style.color = '#2b579a';
+      btnDrive.style.background = 'rgba(255,255,255,0.2)';
+      btnDrive.style.color = '#ffffff';
+      btnInfo.style.background = 'rgba(255,255,255,0.2)';
+      btnInfo.style.color = '#ffffff';
     });
 
-    document.getElementById('word-view-drive')?.addEventListener('click', () => {
-      const main = document.getElementById('word-main-content-layout');
-      const driveView = document.getElementById('word-drive-viewport');
-      const iframe = document.getElementById('word-drive-iframe');
-      if (main && driveView) {
-        main.style.display = 'none';
-        driveView.style.display = 'block';
-        if (iframe && !iframe.src) iframe.src = drivePreviewUrl;
+    btnDrive?.addEventListener('click', () => {
+      if (frameContainer && infoContainer && iframe) {
+        frameContainer.style.display = 'block';
+        infoContainer.style.display = 'none';
+        iframe.src = drivePreviewUrl;
       }
+      btnDrive.style.background = '#ffffff';
+      btnDrive.style.color = '#2b579a';
+      btnEmbed.style.background = 'rgba(255,255,255,0.2)';
+      btnEmbed.style.color = '#ffffff';
+      btnInfo.style.background = 'rgba(255,255,255,0.2)';
+      btnInfo.style.color = '#ffffff';
+    });
+
+    btnInfo?.addEventListener('click', () => {
+      if (frameContainer && infoContainer) {
+        frameContainer.style.display = 'none';
+        infoContainer.style.display = 'flex';
+      }
+      btnInfo.style.background = '#ffffff';
+      btnInfo.style.color = '#2b579a';
+      btnEmbed.style.background = 'rgba(255,255,255,0.2)';
+      btnEmbed.style.color = '#ffffff';
+      btnDrive.style.background = 'rgba(255,255,255,0.2)';
+      btnDrive.style.color = '#ffffff';
+    });
+
+    document.getElementById('word-open-newtab')?.addEventListener('click', () => {
+      window.open(realWordUrl, '_blank');
     });
 
     document.getElementById('word-cta-drive')?.addEventListener('click', () => {
@@ -1060,9 +1174,15 @@ export async function openDocumentPreviewModal(docId) {
   // ── 7. RENDER PRESENTATIONS (POWERPOINT PPTX) ──────────────────────────────
   if (isPpt) {
     const realPptUrl = getRealAssetUrl(doc);
-    const drivePreviewUrl = (doc.driveFileId && doc.driveFileId.length >= 25 && !doc.driveFileId.startsWith('demo_')) 
-      ? `https://drive.google.com/file/d/${doc.driveFileId}/preview`
-      : 'https://drive.google.com/drive/folders/1DsElwxs_mdPU16AsL4p5f2wB-a6V2LNH?usp=sharing';
+    const fullAbsoluteUrl = realPptUrl.startsWith('http') 
+      ? realPptUrl 
+      : (typeof window !== 'undefined' ? `${window.location.origin}${realPptUrl}` : realPptUrl);
+    const drivePreviewUrl = (doc.driveFileId && doc.driveFileId.length >= 25 && !doc.driveFileId.startsWith('demo_') && doc.driveFileId !== GDRIVE_ROOT_FOLDER_ID) 
+      ? `https://drive.google.com/file/d/${encodeURIComponent(doc.driveFileId)}/preview`
+      : GDRIVE_ROOT_FOLDER_URL;
+    const googleDocsViewerUrl = (doc.driveFileId && doc.driveFileId.length >= 25 && !doc.driveFileId.startsWith('demo_') && doc.driveFileId !== GDRIVE_ROOT_FOLDER_ID)
+      ? drivePreviewUrl
+      : `https://docs.google.com/viewer?url=${encodeURIComponent(fullAbsoluteUrl)}&embedded=true`;
 
     viewport.innerHTML = `
       <div style="width:100%;height:100%;display:flex;flex-direction:column;background:#0d1117;color:#f0f6fc;overflow:hidden;">
@@ -1076,8 +1196,14 @@ export async function openDocumentPreviewModal(docId) {
             </div>
           </div>
           <div style="display:flex;align-items:center;gap:8px;">
+            <button type="button" class="btn btn-sm" id="ppt-view-embed" style="background:#ffffff;color:#d24726;border:none;padding:5px 12px;border-radius:6px;font-weight:800;font-size:11px;cursor:pointer;">
+              🖥️ ${choose('معاينة Google Docs المباشرة', 'Google Docs Viewer')}
+            </button>
             <button type="button" class="btn btn-sm" id="ppt-view-drive" style="background:rgba(255,255,255,0.2);color:#ffffff;border:none;padding:5px 12px;border-radius:6px;font-weight:700;font-size:12px;cursor:pointer;">
               🌐 Google Drive
+            </button>
+            <button type="button" class="btn btn-sm" id="ppt-view-info" style="background:rgba(255,255,255,0.2);color:#ffffff;border:none;padding:5px 12px;border-radius:6px;font-weight:700;font-size:12px;cursor:pointer;">
+              ℹ️ ${choose('بطاقة المخرج', 'Deliverable Info')}
             </button>
             <button type="button" class="btn btn-sm" id="ppt-open-newtab" style="background:rgba(255,255,255,0.2);color:#ffffff;border:none;padding:5px 10px;border-radius:6px;font-size:12px;cursor:pointer;" title="${choose('فتح في نافذة جديدة', 'Open in New Tab')}">
               ↗️
@@ -1088,13 +1214,26 @@ export async function openDocumentPreviewModal(docId) {
           </div>
         </div>
 
-        <!-- PPT Presentation Canvas Viewport -->
-        <div id="ppt-canvas-container" style="flex:1;display:flex;align-items:center;justify-content:center;padding:40px;background:#090d13;overflow:auto;text-align:center;">
+        <!-- Live Embedded Viewer via Google Docs / Drive Embed -->
+        <div id="ppt-frame-container" style="flex:1;width:100%;height:100%;position:relative;background:#ffffff;">
+          <iframe 
+            id="ppt-embed-iframe" 
+            src="${esc(googleDocsViewerUrl)}" 
+            style="width:100%;height:100%;border:none;display:block;" 
+            allow="fullscreen"
+            sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
+            loading="lazy"
+            referrerpolicy="strict-origin-when-cross-origin"
+          ></iframe>
+        </div>
+
+        <!-- PPT Presentation Canvas Viewport (toggled via button) -->
+        <div id="ppt-canvas-container" style="display:none;flex:1;align-items:center;justify-content:center;padding:40px;background:#090d13;overflow:auto;text-align:center;">
           <div style="max-width:540px;">
             <div style="font-size:48px;margin-bottom:16px;">🖥️</div>
             <h3 style="color:#f8fafc;font-size:18px;font-weight:800;margin:0 0 8px 0;">${esc(doc.originalName)}</h3>
             <p style="color:#94a3b8;font-size:13px;line-height:1.6;margin:0 0 24px 0;">
-              ${choose('عرض تقديمي باوربوينت حقيقي معتمد. متاح للتنزيل المباشر أو المعاينة السحابية.', 'Authentic PowerPoint presentation deliverable. Available for direct binary download or cloud review.')}
+              ${choose('عرض تقديمي باوربوينت حقيقي معتمد. متاح للتنزيل المباشر أو المعاينة السحابية المباشرة.', 'Authentic PowerPoint presentation deliverable. Available for direct binary download or cloud review.')}
             </p>
             <div style="display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;">
               <button type="button" class="btn btn-primary" id="ppt-cta-download" style="padding:10px 22px;border-radius:8px;font-weight:800;background:#d24726;color:#fff;border:none;cursor:pointer;">
@@ -1106,27 +1245,59 @@ export async function openDocumentPreviewModal(docId) {
             </div>
           </div>
         </div>
-
-        <!-- Google Drive Preview Viewport (hidden by default) -->
-        <div id="ppt-drive-viewport" style="display:none;flex:1;width:100%;height:100%;background:#ffffff;">
-          <iframe id="ppt-drive-iframe" src="" style="width:100%;height:100%;border:none;display:block;" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox" loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe>
-        </div>
       </div>
     `;
 
-    document.getElementById('ppt-open-newtab')?.addEventListener('click', () => {
-      window.open(realPptUrl, '_blank');
+    const frameContainer = document.getElementById('ppt-frame-container');
+    const infoContainer = document.getElementById('ppt-canvas-container');
+    const iframe = document.getElementById('ppt-embed-iframe');
+    const btnEmbed = document.getElementById('ppt-view-embed');
+    const btnDrive = document.getElementById('ppt-view-drive');
+    const btnInfo = document.getElementById('ppt-view-info');
+
+    btnEmbed?.addEventListener('click', () => {
+      if (frameContainer && infoContainer && iframe) {
+        frameContainer.style.display = 'block';
+        infoContainer.style.display = 'none';
+        iframe.src = googleDocsViewerUrl;
+      }
+      btnEmbed.style.background = '#ffffff';
+      btnEmbed.style.color = '#d24726';
+      btnDrive.style.background = 'rgba(255,255,255,0.2)';
+      btnDrive.style.color = '#ffffff';
+      btnInfo.style.background = 'rgba(255,255,255,0.2)';
+      btnInfo.style.color = '#ffffff';
     });
 
-    document.getElementById('ppt-view-drive')?.addEventListener('click', () => {
-      const container = document.getElementById('ppt-canvas-container');
-      const driveView = document.getElementById('ppt-drive-viewport');
-      const iframe = document.getElementById('ppt-drive-iframe');
-      if (container && driveView) {
-        container.style.display = 'none';
-        driveView.style.display = 'block';
-        if (iframe && !iframe.src) iframe.src = drivePreviewUrl;
+    btnDrive?.addEventListener('click', () => {
+      if (frameContainer && infoContainer && iframe) {
+        frameContainer.style.display = 'block';
+        infoContainer.style.display = 'none';
+        iframe.src = drivePreviewUrl;
       }
+      btnDrive.style.background = '#ffffff';
+      btnDrive.style.color = '#d24726';
+      btnEmbed.style.background = 'rgba(255,255,255,0.2)';
+      btnEmbed.style.color = '#ffffff';
+      btnInfo.style.background = 'rgba(255,255,255,0.2)';
+      btnInfo.style.color = '#ffffff';
+    });
+
+    btnInfo?.addEventListener('click', () => {
+      if (frameContainer && infoContainer) {
+        frameContainer.style.display = 'none';
+        infoContainer.style.display = 'flex';
+      }
+      btnInfo.style.background = '#ffffff';
+      btnInfo.style.color = '#d24726';
+      btnEmbed.style.background = 'rgba(255,255,255,0.2)';
+      btnEmbed.style.color = '#ffffff';
+      btnDrive.style.background = 'rgba(255,255,255,0.2)';
+      btnDrive.style.color = '#ffffff';
+    });
+
+    document.getElementById('ppt-open-newtab')?.addEventListener('click', () => {
+      window.open(realPptUrl, '_blank');
     });
 
     document.getElementById('ppt-cta-drive')?.addEventListener('click', () => {
