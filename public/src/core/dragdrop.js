@@ -728,6 +728,9 @@ function cleanDragState() {
   lastPlaceholderY = -1;
   lastPlaceholderColumn = null;
   lastHapticColIndex = -1;
+  currentPointerType = 'mouse';
+  leftEdgeHotzone?.classList.remove('is-active');
+  rightEdgeHotzone?.classList.remove('is-active');
 
   hideEdgeHotzones();
   stopContinuousAutoScroll();
@@ -746,9 +749,10 @@ function cleanDragState() {
 }
 
 // Initiate Active Dragging (creates floating ghost, highlights column, starts auto-scroll)
-function initiateDrag(clientX, clientY) {
+function initiateDrag(clientX, clientY, pointerType = currentPointerType) {
   if (!dragCard || isPointerDragging) return;
 
+  currentPointerType = pointerType;
   const targetTaskId = dragCard.dataset.taskId;
   // Self-Healing DOM Reconnect: If dragCard was replaced/detached during touch charging, reconnect to live element!
   if (!dragCard.isConnected && targetTaskId) {
@@ -802,9 +806,11 @@ function initiateDrag(clientX, clientY) {
   if (isNaN(dragOffsetX) || dragOffsetX <= 0 || dragOffsetX > safeWidth) dragOffsetX = safeWidth / 2;
   if (isNaN(dragOffsetY) || dragOffsetY <= 0 || dragOffsetY > (rect.height || 120)) dragOffsetY = (rect.height || 120) / 2;
 
+  // Finger Occlusion Lift Offset on Touch: lifts floating clone 28px above finger for 100% visibility
+  const touchLift = (pointerType === 'touch') ? 28 : 0;
   // Integer positioning eliminates subpixel text shimmering on macOS Safari
   const startGx = Math.round(clientX - dragOffsetX);
-  const startGy = Math.round(clientY - dragOffsetY);
+  const startGy = Math.round(clientY - dragOffsetY - touchLift);
 
   // Disable scroll-snap on board during drag so WebKit doesn't snap back against programmatic scroll
   const boardEl = document.querySelector('.board, .board-columns, .tasks-board, [data-board]');
@@ -876,12 +882,13 @@ function initiateDrag(clientX, clientY) {
 }
 
 // Unified Velocity & Tilt Physics Movement Engine (Low-Pass Filter & Safari Jitter Elimination)
-function updateDragMovement(clientX, clientY, pointerType = 'mouse') {
+function updateDragMovement(clientX, clientY, pointerType = currentPointerType) {
   if (!isDraggingActive || !dragGhost) return;
   // Guard WebKit synthetic (0, 0) coordinate glitch on mobile
   if (clientX === 0 && clientY === 0 && (dragStartX !== 0 || dragStartY !== 0)) return;
   if (!Number.isFinite(clientX) || !Number.isFinite(clientY)) return;
 
+  currentPointerType = pointerType;
   currentMouseX = clientX;
   currentMouseY = clientY;
 
@@ -898,9 +905,11 @@ function updateDragMovement(clientX, clientY, pointerType = 'mouse') {
   }
   prevMouseX = clientX;
 
+  // Finger Occlusion Lift Offset on Touch: lifts floating clone 28px above finger for 100% visibility
+  const touchLift = (pointerType === 'touch') ? 28 : 0;
   // Integer positioning eliminates subpixel rasterization shimmering on Retina displays
   const gx = Math.round(clientX - dragOffsetX);
-  const gy = Math.round(clientY - dragOffsetY);
+  const gy = Math.round(clientY - dragOffsetY - touchLift);
   if (Number.isFinite(gx) && Number.isFinite(gy)) {
     const tiltStr = currentTilt !== 0 ? ` rotate(${currentTilt.toFixed(1)}deg)` : '';
     dragGhost.style.transform = `translate3d(${gx}px, ${gy}px, 0) scale(1.025)${tiltStr}`;
@@ -1019,6 +1028,7 @@ document.addEventListener('pointerdown', (e) => {
   isDragStartedFromGrip = Boolean(targetEl?.closest?.('.task-drag-handle'));
 
   if (e.pointerType === 'touch') {
+    currentPointerType = 'touch';
     window._isTouchHoldingTask = true;
     if (isDragStartedFromGrip) {
       // Grip handle dragged: Immediate capture for fluid drag
@@ -1035,11 +1045,12 @@ document.addEventListener('pointerdown', (e) => {
           if (typeof navigator !== 'undefined' && navigator.vibrate) {
             try { navigator.vibrate(28); } catch (e) {}
           }
-          initiateDrag(currentMouseX, currentMouseY);
+          initiateDrag(currentMouseX, currentMouseY, 'touch');
         }
       }, 280);
     }
   } else {
+    currentPointerType = e.pointerType || 'mouse';
     // Mouse / Pen: Instant ready, will initiate on 6px movement
     try { card.setPointerCapture(e.pointerId); } catch (err) {}
   }
@@ -1056,9 +1067,10 @@ document.addEventListener('pointermove', (e) => {
     const dist = Math.hypot(e.clientX - dragStartX, e.clientY - dragStartY);
 
     if (e.pointerType === 'touch') {
+      currentPointerType = 'touch';
       if (isDragStartedFromGrip) {
         if (dist >= 4) {
-          initiateDrag(e.clientX, e.clientY);
+          initiateDrag(e.clientX, e.clientY, 'touch');
         }
       } else {
         if (dist > TOUCH_SLOP) {
@@ -1077,9 +1089,10 @@ document.addEventListener('pointermove', (e) => {
         }
       }
     } else {
+      currentPointerType = e.pointerType || 'mouse';
       // Mouse movement threshold (>= 6px)
       if (dist >= 6) {
-        initiateDrag(e.clientX, e.clientY);
+        initiateDrag(e.clientX, e.clientY, e.pointerType || 'mouse');
       } else {
         return;
       }
@@ -1126,6 +1139,12 @@ window.addEventListener('blur', () => {
 });
 document.addEventListener('visibilitychange', () => {
   if (document.hidden && (isPointerDragging || dragCard)) cleanDragState();
+});
+window.addEventListener('orientationchange', () => {
+  if (isPointerDragging || dragCard) cleanDragState();
+});
+window.addEventListener('resize', () => {
+  if (isPointerDragging || dragCard) cleanDragState();
 });
 
 // ── DEDICATED NATIVE TOUCH INTERCEPTORS (iOS Safari, Android Chrome, iPadOS) ──

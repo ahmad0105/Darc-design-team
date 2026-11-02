@@ -670,6 +670,50 @@ export async function openDocumentPreviewModal(docId) {
 
     viewport.innerHTML = `
       <div style="width:100%;height:100%;display:flex;flex-direction:column;background:#06090e;color:#f8fafc;overflow:hidden;">
+        <!-- Video Architectural Inspection Bar -->
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 20px;background:rgba(15,23,42,0.95);border-bottom:1px solid #334155;color:#e2e8f0;font-size:12px;z-index:10;flex-wrap:wrap;gap:10px;">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <span style="font-weight:900;color:#a855f7;background:rgba(168,85,247,0.15);padding:4px 8px;border-radius:4px;">VIDEO</span>
+            <span style="font-weight:700;color:#f8fafc;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(doc.originalName)}">${esc(doc.originalName)}</span>
+            <span style="color:#64748b;">|</span>
+            <span>${sizeFormatted}</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <!-- Speed Control -->
+            <div style="display:flex;align-items:center;gap:4px;background:#1e293b;padding:2px 8px;border-radius:6px;border:1px solid #334155;">
+              <span style="color:#94a3b8;font-size:11px;">⚡</span>
+              <select id="video-playback-rate" style="background:transparent;border:none;color:#f8fafc;font-size:11px;font-weight:700;cursor:pointer;outline:none;">
+                <option value="0.5" style="background:#1e293b;">0.5x</option>
+                <option value="1" selected style="background:#1e293b;">1.0x</option>
+                <option value="1.25" style="background:#1e293b;">1.25x</option>
+                <option value="1.5" style="background:#1e293b;">1.5x</option>
+                <option value="2" style="background:#1e293b;">2.0x</option>
+              </select>
+            </div>
+            <!-- PiP -->
+            <button type="button" class="btn btn-sm" id="video-pip-btn" style="background:#1e293b;color:#cbd5e1;border:1px solid #334155;padding:5px 10px;border-radius:6px;font-size:11px;cursor:pointer;" title="${choose('صورة داخل صورة', 'Picture in Picture')}">
+              📺 PiP
+            </button>
+            <!-- Fullscreen -->
+            <button type="button" class="btn btn-sm" id="video-fullscreen-btn" style="background:#1e293b;color:#cbd5e1;border:1px solid #334155;padding:5px 10px;border-radius:6px;font-size:11px;cursor:pointer;" title="${choose('ملء الشاشة', 'Fullscreen')}">
+              ⛶
+            </button>
+            <span style="color:rgba(255,255,255,0.3);">|</span>
+            <!-- Drive -->
+            <button type="button" class="btn btn-sm" id="video-drive-btn" style="background:#1e293b;color:#94a3b8;border:1px solid #334155;padding:5px 12px;border-radius:6px;font-weight:700;font-size:11px;cursor:pointer;">
+              ☁️ ${choose('معاينة Google Drive', 'Drive Preview')}
+            </button>
+            <!-- Open New Tab -->
+            <button type="button" class="btn btn-ghost btn-sm" id="video-open-newtab" style="color:#38bdf8;padding:4px 10px;font-weight:700;" title="${choose('فتح في نافذة جديدة', 'Open in New Tab')}">
+              ↗
+            </button>
+            <!-- Download -->
+            <button type="button" class="btn btn-sm btn-primary" id="video-download-btn" style="padding:4px 14px;font-weight:800;background:#0284c7;border:none;color:#fff;cursor:pointer;">
+              ⬇️ ${choose('تنزيل الفيديو', 'Download Video')}
+            </button>
+          </div>
+        </div>
+
         <!-- Video Player Viewport -->
         <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;background:#000000;position:relative;overflow:hidden;">
           <video 

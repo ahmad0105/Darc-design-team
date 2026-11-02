@@ -1,7 +1,7 @@
 
 import { state } from '../../core/state.js';
 import { api } from '../../core/api.js';
-import { getTaskStatusStyle, esc, choose, avatar, icon, can, isAdmin, t, statusText, formatDateTime, getActiveCalendarSystem } from '../../core/utils.js';
+import { getTaskStatusStyle, esc, choose, avatar, icon, can, isAdmin, t, statusText, formatDateTime, getActiveCalendarSystem, isOverdue, priorityText, dateLabel } from '../../core/utils.js';
 import { showToast, modalShell, closeModal } from '../../shared/ui.js';
 
 export function renderTaskAssignees(task) {
@@ -1127,7 +1127,7 @@ export function renderTaskDocuments(task) {
   if (!docs.length) return `<div class="empty" style="padding:20px 10px;min-height:auto;">${icon('document', 18)}<span style="font-size:12px;">${choose('لا توجد ملفات مرفوعة', 'No documents uploaded')}</span></div>`;
   return `<div class="doc-list" style="display:flex;flex-direction:column;gap:8px;">${docs.map(doc => `
     <div class="doc-item" style="display:flex;align-items:center;justify-content:space-between;padding:10px;background:var(--surface-soft);border:1px solid var(--line);border-radius:8px;transition:background 0.15s ease;">
-      <div style="display:flex;align-items:center;gap:10px;overflow:hidden;flex:1;cursor:pointer;" data-action="preview-doc" data-doc-id="${doc.id}">
+      <div style="display:flex;align-items:center;gap:10px;overflow:hidden;flex:1;cursor:pointer;" data-action="preview-doc" data-doc-id="${esc(doc.id)}">
         <span style="color:var(--brand-teal);background:var(--teal-soft);padding:6px;border-radius:6px;display:flex;">${icon('document', 14)}</span>
         <div style="display:flex;flex-direction:column;overflow:hidden;flex:1;">
           <strong style="font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;color:var(--ink);" title="${esc(doc.originalName)}">${esc(doc.originalName)}</strong>
@@ -1135,19 +1135,19 @@ export function renderTaskDocuments(task) {
         </div>
       </div>
       <div style="display:flex;align-items:center;gap:4px;">
-        <button class="btn btn-ghost btn-sm" data-action="copy-doc-link" data-doc-id="${doc.id}" style="padding:4px;min-width:0;height:auto;color:var(--brand-teal);" title="${choose('نسخ رابط Google Drive', 'Copy Drive link')}">${icon('link', 14)}</button>
-        <button class="btn btn-ghost btn-sm" data-action="preview-doc" data-doc-id="${doc.id}" style="padding:4px;min-width:0;height:auto;color:var(--brand-teal);" title="${choose('معاينة المخطط في نافذة منبثقة', 'Preview in popup modal')}">${icon('eye', 14)}</button>
-        <button class="btn btn-ghost btn-sm" data-action="download-doc" data-doc-id="${doc.id}" style="padding:4px;min-width:0;height:auto;color:var(--blue);" title="${choose('تحميل المخطط', 'Download')}">${icon('download', 14)}</button>
+        <button class="btn btn-ghost btn-sm" data-action="copy-doc-link" data-doc-id="${esc(doc.id)}" style="padding:4px;min-width:0;height:auto;color:var(--brand-teal);" title="${choose('نسخ رابط Google Drive', 'Copy Drive link')}">${icon('link', 14)}</button>
+        <button class="btn btn-ghost btn-sm" data-action="preview-doc" data-doc-id="${esc(doc.id)}" style="padding:4px;min-width:0;height:auto;color:var(--brand-teal);" title="${choose('معاينة المخطط في نافذة منبثقة', 'Preview in popup modal')}">${icon('eye', 14)}</button>
+        <button class="btn btn-ghost btn-sm" data-action="download-doc" data-doc-id="${esc(doc.id)}" style="padding:4px;min-width:0;height:auto;color:var(--blue);" title="${choose('تحميل المخطط', 'Download')}">${icon('download', 14)}</button>
         ${(can('review_tasks') || can('approve_tasks') || can('upload_documents') || isAdmin()) ? `
-          <select class="doc-status-select" data-doc-id="${doc.id}" style="font-size:11px;padding:2px 4px;border-radius:4px;border:1px solid var(--line);background:var(--surface);color:var(--ink);">
+          <select class="doc-status-select" data-doc-id="${esc(doc.id)}" style="font-size:11px;padding:2px 4px;border-radius:4px;border:1px solid var(--line);background:var(--surface);color:var(--ink);">
             <option value="draft" ${doc.status === 'draft' ? 'selected' : ''}>${choose('مسودة', 'Draft')}</option>
             ${(can('review_tasks') || isAdmin()) ? `<option value="review" ${doc.status === 'review' ? 'selected' : ''}>${choose('مراجعة', 'Review')}</option>` : ''}
             ${(can('approve_tasks') || isAdmin()) ? `<option value="approved" ${doc.status === 'approved' ? 'selected' : ''}>${choose('معتمد', 'Approved')}</option>` : ''}
             <option value="superseded" ${doc.status === 'superseded' ? 'selected' : ''}>${choose('ملغى', 'Superseded')}</option>
           </select>
         ` : ''}
-        ${(can('upload_documents') || isAdmin()) ? `<button class="btn btn-ghost btn-sm" data-action="rename-doc" data-doc-id="${doc.id}" style="padding:4px;min-width:0;height:auto;" title="${choose('إعادة تسمية', 'Rename')}">${icon('edit', 14)}</button>` : ''}
-        ${(can('delete_documents') || isAdmin()) ? `<button class="btn btn-ghost btn-sm" data-action="delete-doc" data-doc-id="${doc.id}" style="padding:4px;min-width:0;height:auto;color:var(--red);" title="${choose('حذف', 'Delete')}">${icon('trash', 14)}</button>` : ''}
+        ${(can('upload_documents') || isAdmin()) ? `<button class="btn btn-ghost btn-sm" data-action="rename-doc" data-doc-id="${esc(doc.id)}" style="padding:4px;min-width:0;height:auto;" title="${choose('إعادة تسمية', 'Rename')}">${icon('edit', 14)}</button>` : ''}
+        ${(can('delete_documents') || isAdmin()) ? `<button class="btn btn-ghost btn-sm" data-action="delete-doc" data-doc-id="${esc(doc.id)}" style="padding:4px;min-width:0;height:auto;color:var(--red);" title="${choose('حذف', 'Delete')}">${icon('trash', 14)}</button>` : ''}
       </div>
     </div>
   `).join('')}</div>`;
