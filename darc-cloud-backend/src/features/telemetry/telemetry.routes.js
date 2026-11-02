@@ -77,16 +77,23 @@ app.post('/heartbeat', async (c) => {
     const city = c.req.header('cf-ipcity') || c.req.raw?.cf?.city || body.city || (country === 'AE' ? 'Dubai' : 'Riyadh');
     const ip = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || '127.0.0.1';
     const userAgent = c.req.header('user-agent') || '';
-    const { deviceType, browser } = parseClientInfo(userAgent);
+    const parsedClient = parseClientInfo(userAgent);
+    const deviceType = body.deviceType || parsedClient.deviceType;
+    const browser = body.browser || parsedClient.browser;
+    const os = body.os || parsedClient.os;
 
     const result = recordTelemetryHeartbeat(c.env, {
       userId,
+      sessionId: body.sessionId,
+      visitorId: body.visitorId,
+      isNewVisit: Boolean(body.isNewVisit),
       country,
       city,
       ip,
       deviceType,
       browser,
-      durationSeconds: body.durationSeconds || 60,
+      os,
+      durationSeconds: body.durationSeconds || 45,
       memoryMb: body.memoryMb || 0,
       errorCount: body.errorCount || 0,
       longTaskCount: body.longTaskCount || 0,

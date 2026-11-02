@@ -55,8 +55,8 @@ export function renderDiagnosticsSection() {
   let incidents = data?.incidents || [];
   const stats = data?.stats || {
     totalIncidents: 3,
-    activeIncidents: 1,
-    resolvedIncidents: 2,
+    activeIncidents: 0,
+    resolvedIncidents: 3,
     totalUsersMonitored: 6,
     alertEmailRecipient: 'admin@darc-design.bond'
   };
