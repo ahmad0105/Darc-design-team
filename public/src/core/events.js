@@ -1262,9 +1262,29 @@ export async function handleClick(event) {
         sessionStorage.setItem('darc_last_route', JSON.stringify(parsed));
       }
     } catch (e) {}
-    target.closest('.settings-nav')?.querySelectorAll('.settings-nav-item').forEach(b => b.classList.toggle('active', b === target));
+    target.closest('.settings-nav')?.querySelectorAll('button').forEach(b => b.classList.toggle('active', b === target));
+
+    // Reset scroll to top of page/main content when switching settings section
+    const resetScroll = () => {
+      const main = document.getElementById('main-content');
+      if (main) {
+        main.scrollTop = 0;
+        main.scrollLeft = 0;
+      }
+      if (typeof window !== 'undefined') {
+        window.scrollTo(0, 0);
+      }
+      if (document.documentElement) document.documentElement.scrollTop = 0;
+      if (document.body) document.body.scrollTop = 0;
+    };
+
+    resetScroll();
+
     if (state.settingsSection === 'analytics') {
-      fetchAnalyticsData(true).then(() => renderView()).catch(() => {});
+      fetchAnalyticsData(true).then(() => {
+        renderView();
+        resetScroll();
+      }).catch(() => {});
     }
     if (state.settingsSection === 'trash' && !state.trashLoaded) {
       api('/api/trash').then(data => {
@@ -1276,9 +1296,13 @@ export async function handleClick(event) {
         state.trashLoaded = true;
         try { if (typeof sessionStorage !== 'undefined') sessionStorage.setItem('darc_trash_cache', JSON.stringify(state.trash)); } catch (e) {}
         renderView();
+        resetScroll();
       }).catch(e => console.error(e));
     }
-    requestAnimationFrame(() => renderView()); 
+    requestAnimationFrame(() => {
+      renderView();
+      resetScroll();
+    }); 
     return; 
   }
   if (action === 'refresh-analytics') {
@@ -2829,6 +2853,18 @@ if (typeof window !== 'undefined' && !window._hashChangeListenerSet) {
         switchView(viewPart, pid);
       } else {
         renderView();
+        if (viewPart === 'settings') {
+          const main = document.getElementById('main-content');
+          if (main) {
+            main.scrollTop = 0;
+            main.scrollLeft = 0;
+          }
+          if (typeof window !== 'undefined') {
+            window.scrollTo(0, 0);
+          }
+          if (document.documentElement) document.documentElement.scrollTop = 0;
+          if (document.body) document.body.scrollTop = 0;
+        }
       }
     }
   });
