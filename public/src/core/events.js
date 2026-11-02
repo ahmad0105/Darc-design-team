@@ -841,7 +841,12 @@ export async function handleClick(event) {
     }
     return;
   }
-  if (action === 'new-project') { openProjectModal(); return; }
+  if (action === 'new-project') {
+    const existing = document.querySelector('.modal[data-modal="project"], #project-form');
+    if (existing) closeModal();
+    else openProjectModal();
+    return;
+  }
   if (action === 'edit-project') { const project = state.data.projects.find((item) => item.id === target.dataset.projectId); if (project) openProjectModal(project); return; }
   if (action === 'clone-project') { 
     const project = state.data.projects.find((item) => item.id === target.dataset.projectId);
@@ -1021,7 +1026,12 @@ export async function handleClick(event) {
     }
     return;
   }
-  if (action === 'new-task') { openTaskModal(null, null, target.dataset.projectId); return; }
+  if (action === 'new-task') {
+    const existing = document.querySelector('.modal[data-modal="task"], #task-form');
+    if (existing) closeModal();
+    else openTaskModal(null, null, target.dataset.projectId);
+    return;
+  }
   if (action === 'new-user') {
     if (!isAdmin() && !can('manage_users')) {
       showToast(choose('غير مصرح لك بإضافة مستخدمين جدد.', 'Permission denied to create new users.'), true);

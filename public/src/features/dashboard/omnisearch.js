@@ -323,11 +323,11 @@ export function openShortcutsCheatsheet() {
             <kbd class="shortcut-kbd">B</kbd>
           </div>
           <div class="cheatsheet-row">
-            <span>${choose('إضافة مهمة سريعة في المشروع', 'Add new task in project')}</span>
+            <span>${choose('إضافة مهمة سريعة (فتح / إغلاق)', 'Quick New Task (Toggle Open/Close)')}</span>
             <kbd class="shortcut-kbd">N</kbd>
           </div>
           <div class="cheatsheet-row">
-            <span>${choose('إنشاء مشروع جديد', 'Create new project')}</span>
+            <span>${choose('إنشاء مشروع جديد (فتح / إغلاق)', 'New Project (Toggle Open/Close)')}</span>
             <kbd class="shortcut-kbd">P</kbd>
           </div>
           <div class="cheatsheet-row">
@@ -441,20 +441,38 @@ export function setupGlobalShortcuts() {
       return;
     }
 
-    // 3. New Task on 'N' when not typing
+    // 3. New Task on 'N' (Toggle open/close) when not typing
     const isKeyN = e.code === 'KeyN' || e.key?.toLowerCase() === 'n' || e.key === 'ى';
     if (isKeyN && !isInput && !e.metaKey && !e.ctrlKey && !e.altKey) {
       e.preventDefault();
-      const targetPrjId = (state.view === 'project-detail' && state.activeProjectId) ? state.activeProjectId : (state.data?.projects?.[0]?.id);
-      openTaskModal(null, null, targetPrjId);
+      if (document.querySelector('.modal.is-closing')) return;
+      const taskModal = document.querySelector('.modal[data-modal="task"], #task-form');
+      if (taskModal) {
+        closeModal();
+      } else {
+        const otherModal = document.querySelector('.modal:not([data-modal="task"])');
+        if (!otherModal) {
+          const targetPrjId = (state.view === 'project-detail' && state.activeProjectId) ? state.activeProjectId : (state.data?.projects?.[0]?.id);
+          openTaskModal(null, null, targetPrjId);
+        }
+      }
       return;
     }
 
-    // 4. New Project on 'P' when not typing
+    // 4. New Project on 'P' (Toggle open/close) when not typing
     const isKeyP = e.code === 'KeyP' || e.key?.toLowerCase() === 'p' || e.key === 'ح';
     if (isKeyP && !isInput && !e.metaKey && !e.ctrlKey && !e.altKey) {
       e.preventDefault();
-      openProjectModal();
+      if (document.querySelector('.modal.is-closing')) return;
+      const projectModal = document.querySelector('.modal[data-modal="project"], #project-form');
+      if (projectModal) {
+        closeModal();
+      } else {
+        const otherModal = document.querySelector('.modal:not([data-modal="project"])');
+        if (!otherModal) {
+          openProjectModal();
+        }
+      }
       return;
     }
 
