@@ -6,7 +6,7 @@ import crypto from 'node:crypto';
 import { Buffer } from 'node:buffer';
 import { toCamelCase } from '../../utils/transformers.js';
 import { invalidateUsersCache, setUserTokenVersion } from '../../core/cache.js';
-import { computeClientFingerprint } from '../../core/security.js';
+import { computeClientFingerprint, computeDeviceFingerprint } from '../../core/security.js';
 import { sendEmail } from '../email/email.service.js';
 
 const app = new Hono();
@@ -135,7 +135,8 @@ app.post('/reset-password', async (c) => {
 
   // Issue session cookie with new tokenVersion & client device fingerprint
   const clientFpt = await computeClientFingerprint(c, c.env.JWT_SECRET);
-  const payload = { userId: user.id, roleId: user.role_id, v: nextVer, fpt: clientFpt, exp: Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60 };
+  const clientDeviceFpt = await computeDeviceFingerprint(c, c.env.JWT_SECRET);
+  const payload = { userId: user.id, roleId: user.role_id, v: nextVer, fpt: clientFpt, dfpt: clientDeviceFpt, exp: Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60 };
   const sessionToken = await sign(payload, c.env.JWT_SECRET);
   setSessionCookie(c, sessionToken, 604800);
 
@@ -193,7 +194,8 @@ app.post('/change-password', async (c) => {
 
   // Re-issue fresh cookie for current session with incremented version & client device fingerprint
   const clientFpt = await computeClientFingerprint(c, c.env.JWT_SECRET);
-  const payload = { userId: user.id, roleId: user.role_id, v: nextVer, fpt: clientFpt, exp: Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60 };
+  const clientDeviceFpt = await computeDeviceFingerprint(c, c.env.JWT_SECRET);
+  const payload = { userId: user.id, roleId: user.role_id, v: nextVer, fpt: clientFpt, dfpt: clientDeviceFpt, exp: Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60 };
   const sessionToken = await sign(payload, c.env.JWT_SECRET);
   setSessionCookie(c, sessionToken, 604800);
 
@@ -254,7 +256,8 @@ app.post('/activate', async (c) => {
 
   // Issue session cookie so user is logged in with client device fingerprint
   const clientFpt = await computeClientFingerprint(c, c.env.JWT_SECRET);
-  const payload = { userId: updatedUser.id, roleId: updatedUser.role_id, v: 1, fpt: clientFpt, exp: Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60 };
+  const clientDeviceFpt = await computeDeviceFingerprint(c, c.env.JWT_SECRET);
+  const payload = { userId: updatedUser.id, roleId: updatedUser.role_id, v: 1, fpt: clientFpt, dfpt: clientDeviceFpt, exp: Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60 };
   const sessionToken = await sign(payload, c.env.JWT_SECRET);
   setSessionCookie(c, sessionToken, 604800);
 

@@ -28,7 +28,7 @@ import { processDueReminders } from './features/reminders/reminders.service.js';
 
 // Core Security, Error Resilience & Performance
 import { createErrorHandler } from './core/errors.js';
-import { securityHeadersMiddleware, csrfGuardMiddleware, correlationIdMiddleware, payloadLimitMiddleware, edgeSentryMiddleware, computeClientFingerprint } from './core/security.js';
+import { securityHeadersMiddleware, csrfGuardMiddleware, correlationIdMiddleware, payloadLimitMiddleware, edgeSentryMiddleware, computeClientFingerprint, computeDeviceFingerprint } from './core/security.js';
 import { authRateLimiter, recordAuthFailure, clearAuthFailure, getClientIp, mutationRateLimiter } from './core/rate-limit.js';
 import { getDB } from './core/db.js';
 import { getUserTokenRecord, invalidateBootstrapCache } from './core/cache.js';
@@ -224,7 +224,8 @@ app.post('/api/auth/login', async (c) => {
   };
 
   const clientFpt = await computeClientFingerprint(c, c.env.JWT_SECRET);
-  const payload = { userId: user.id, roleId: user.role_id, v: tokenVer, fpt: clientFpt, exp: Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60 };
+  const clientDeviceFpt = await computeDeviceFingerprint(c, c.env.JWT_SECRET);
+  const payload = { userId: user.id, roleId: user.role_id, v: tokenVer, fpt: clientFpt, dfpt: clientDeviceFpt, exp: Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60 };
   const token = await sign(payload, c.env.JWT_SECRET);
   setSessionCookie(c, token, 604800);
 
@@ -287,7 +288,10 @@ app.use('/api/*', async (c, next) => {
   ];
   if (publicApiPaths.includes(c.req.path)) return next();
   const token = getSessionToken(c);
-  if (!token) return c.json({ error: 'غير مصرح لك بالدخول' }, 401);
+  if (!token) {
+    clearSessionCookie(c);
+    return c.json({ error: 'غير مصرح لك بالدخول' }, 401);
+  }
   let payload;
   try {
     payload = await verify(token, c.env.JWT_SECRET, 'HS256');
@@ -300,19 +304,31 @@ app.use('/api/*', async (c, next) => {
     const supabase = getDB(c.env);
     const userRec = await getUserTokenRecord(supabase, payload.userId);
     if (userRec.status && userRec.status !== 'active') {
+      clearSessionCookie(c);
       return c.json({ error: 'تم تعطيل أو تعليق هذا الحساب، يرجى مراجعة إدارة النظام.' }, 401);
     }
     if (payload.v && payload.v < userRec.ver) {
+      clearSessionCookie(c);
       return c.json({ error: 'تم تسجيل الخروج من هذه الجلسة، يرجى تسجيل الدخول مجدداً' }, 401);
     }
     // Anti-Session Hijacking: Verify cryptographic client fingerprint if bound to token
     if (payload.fpt && payload.userId !== 'usr_demo') {
       const currentFpt = await computeClientFingerprint(c, c.env.JWT_SECRET);
       if (payload.fpt !== currentFpt) {
-        return c.json({
-          error: 'تم رصد استخدام رمز الجلسة من جهاز أو شبكة غير مصرح بها (Session Hijack Prevention). يرجى تسجيل الدخول مجدداً.',
-          code: 'SESSION_FINGERPRINT_MISMATCH'
-        }, 401);
+        // Tolerant network roaming check (NIST SP 800-63B):
+        // If device matches (same browser/OS/client headers), allow legitimate network hops (e.g. Wi-Fi <-> 5G / IPv4 <-> IPv6)
+        let isDeviceMatch = false;
+        if (payload.dfpt) {
+          const currentDfpt = await computeDeviceFingerprint(c, c.env.JWT_SECRET);
+          isDeviceMatch = (payload.dfpt === currentDfpt);
+        }
+        if (!isDeviceMatch) {
+          clearSessionCookie(c);
+          return c.json({
+            error: 'تم رصد استخدام رمز الجلسة من جهاز أو شبكة غير مصرح بها (Session Hijack Prevention). يرجى تسجيل الدخول مجدداً.',
+            code: 'SESSION_FINGERPRINT_MISMATCH'
+          }, 401);
+        }
       }
     }
     c.set('userId', payload.userId);
@@ -326,6 +342,7 @@ app.use('/api/*', async (c, next) => {
         roleId: payload.roleId,
         v: payload.v || 1,
         fpt: payload.fpt,
+        dfpt: payload.dfpt,
         exp: Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60
       };
       sign(refreshedPayload, c.env.JWT_SECRET).then(newToken => {
@@ -333,6 +350,7 @@ app.use('/api/*', async (c, next) => {
       }).catch(() => {});
     }
   } catch (err) {
+    clearSessionCookie(c);
     return c.json({ error: 'الجلسة منتهية أو غير صالحة' }, 401);
   }
 

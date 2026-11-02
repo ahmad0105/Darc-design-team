@@ -136,10 +136,10 @@ export function icon(name, size = 18) {
 }
 
 export function initials(user) {
-  if (!user) return 'D';
-  const source = state.lang === 'ar' ? user.name : (user.nameEn || user.name);
-  const words = source.replace(/^(م\.|م\s|ح\.|ع\.|Eng\.\s)/i, '').split(/\s+/).filter(Boolean);
-  return (words.slice(0, 2).map((word) => word[0]).join('') || source.slice(0, 2)).toUpperCase();
+  if (!user || typeof user !== 'object') return 'D';
+  const source = (state.lang === 'ar' ? user.name : (user.nameEn || user.name)) || user.email || 'DARC';
+  const words = String(source).replace(/^(م\.|م\s|ح\.|ع\.|Eng\.\s)/i, '').split(/\s+/).filter(Boolean);
+  return (words.slice(0, 2).map((word) => word[0]).join('') || String(source).slice(0, 2)).toUpperCase();
 }
 
 export function avatar(user, extra = '') {

@@ -52,7 +52,7 @@ export function setSessionCookie(c, token, maxAgeSeconds = DEFAULT_SESSION_MAX_A
 
 /**
  * Clears the session cookie definitively across all browsers by precisely matching
- * the path, secure, sameSite, and httpOnly flags.
+ * the path, secure, sameSite, and httpOnly flags across both domain-scoped and host-only cookies (RFC 6265bis).
  */
 export function clearSessionCookie(c) {
   const secure = isSecureRequest(c);
@@ -64,25 +64,42 @@ export function clearSessionCookie(c) {
     }
   } catch(e) {}
 
+  // 1. Delete domain-scoped cookie
+  if (cookieDomain) {
+    deleteCookie(c, SESSION_COOKIE_NAME, {
+      path: '/',
+      httpOnly: true,
+      secure: secure,
+      sameSite: 'Lax',
+      domain: cookieDomain
+    });
+  }
+
+  // 2. Delete host-only cookie (without domain attribute)
   deleteCookie(c, SESSION_COOKIE_NAME, {
     path: '/',
     httpOnly: true,
     secure: secure,
-    sameSite: 'Lax',
-    domain: cookieDomain
+    sameSite: 'Lax'
   });
 }
 
 /**
- * Retrieves the session token from either the hardened HttpOnly cookie or Authorization Bearer header
+ * Retrieves the session token adhering strictly to RFC 6750:
+ * 1. Explicit Authorization Bearer header takes top priority (immune to stale ambient cookie desynchronization)
+ * 2. HttpOnly session cookie acts as the resilient ambient fallback (for direct navigation or file requests)
  */
 export function getSessionToken(c) {
+  // 1. Primary: Explicit client authorization header
+  const authHeader = c.req.header('Authorization') || c.req.header('authorization');
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    const token = authHeader.slice(7).trim();
+    if (token) return token;
+  }
+
+  // 2. Fallback: Ambient HttpOnly cookie
   const cookieToken = getCookie(c, SESSION_COOKIE_NAME);
   if (cookieToken) return cookieToken;
 
-  const authHeader = c.req.header('Authorization') || c.req.header('authorization');
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    return authHeader.slice(7).trim();
-  }
   return null;
 }

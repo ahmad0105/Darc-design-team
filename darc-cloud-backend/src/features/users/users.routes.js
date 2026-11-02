@@ -4,7 +4,7 @@ import { invalidateUsersCache, invalidateBootstrapCache, setUserTokenVersion, ge
 import { logAudit } from '../../core/audit.js';
 import { toCamelCase, sanitizeUserCustomFields } from '../../utils/transformers.js';
 import { hasPermission } from '../../utils/permissions.js';
-import { computeClientFingerprint } from '../../core/security.js';
+import { computeClientFingerprint, computeDeviceFingerprint } from '../../core/security.js';
 import { sendEmail } from '../email/email.service.js';
 
 const isValidEntityId = (id) => typeof id === 'string' && /^[a-zA-Z0-9_-]{3,64}$/.test(id);
@@ -521,7 +521,8 @@ app.post('/:id/impersonate', requireAdmin, async (c) => {
   const tokenVer = Number(user.custom_fields?.tokenVersion || 1);
   const exp = Math.floor(Date.now() / 1000) + 60 * 60 * 4; // 4 hours
   const clientFpt = await computeClientFingerprint(c, secret);
-  const token = await sign({ userId: user.id, roleId: user.role_id, v: tokenVer, fpt: clientFpt, exp }, secret);
+  const clientDeviceFpt = await computeDeviceFingerprint(c, secret);
+  const token = await sign({ userId: user.id, roleId: user.role_id, v: tokenVer, fpt: clientFpt, dfpt: clientDeviceFpt, exp }, secret);
   setSessionCookie(c, token, 60 * 60 * 4);
   await logAudit(supabase, { userId: currentUserId, action: 'impersonate', entityType: 'user', entityId: targetId });
   return c.json({ ok: true, token, user: { id: user.id, roleId: user.role_id } });

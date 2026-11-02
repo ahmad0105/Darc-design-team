@@ -136,7 +136,7 @@ export async function api(path, options = {}) {
     try { payload = JSON.parse(text); } catch(e) {}
     
     if (response.status === 401) {
-      _lastBootstrapEtag = null;
+      invalidateBootstrapEtag();
       if (typeof window !== 'undefined' && typeof window.disconnectSupabaseRealtime === 'function') {
         window.disconnectSupabaseRealtime('unauthorized_401');
       }

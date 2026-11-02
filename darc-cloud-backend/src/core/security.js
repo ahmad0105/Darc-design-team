@@ -149,6 +149,23 @@ export async function computeClientFingerprint(c, secret = 'darc_sec_salt') {
 }
 
 /**
+ * Computes a cryptographic client device-only fingerprint (User-Agent + Accept-Language + Sec-CH headers).
+ * Adheres to NIST SP 800-63B to accommodate legitimate cellular roaming and dual-stack IPv4/IPv6 hops
+ * without triggering false-positive session revocation.
+ */
+export async function computeDeviceFingerprint(c, secret = 'darc_sec_salt') {
+  const ua = (c.req.header('user-agent') || 'unknown').slice(0, 120);
+  const lang = (c.req.header('accept-language') || 'unknown').slice(0, 40);
+  const chPlatform = (c.req.header('sec-ch-ua-platform') || '').slice(0, 20);
+
+  const raw = `dev|${ua}|${lang}|${chPlatform}|${secret}`;
+  const enc = new TextEncoder().encode(raw);
+  const hashBuf = await crypto.subtle.digest('SHA-256', enc);
+  const hashArr = Array.from(new Uint8Array(hashBuf));
+  return hashArr.map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 16);
+}
+
+/**
  * Correlation ID Middleware (Request Tracing)
  * Attaches unique X-Request-Id to request context and outgoing response headers.
  */
