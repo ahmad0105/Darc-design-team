@@ -2166,7 +2166,9 @@ export function getOrCreateFloatingUploadWidget({ projectName, taskName, totalFi
     widget.innerHTML = `
       <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--surface-soft);border-bottom:1px solid var(--line);">
         <div style="display:flex;align-items:center;gap:8px;">
-          <span id="fum-indicator" style="display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--teal);box-shadow:0 0 8px var(--teal);"></span>
+          <span id="fum-indicator" class="toast-icon-badge upload" style="width:26px;height:26px;min-width:26px;border-radius:8px;">
+            ${icon('upload', 14)}
+          </span>
           <strong id="fum-header-title" style="font-size:12.5px;color:var(--ink);">${choose('رفع الملفات في الخلفية', 'Background File Upload')}</strong>
         </div>
         <div style="display:flex;align-items:center;gap:6px;">
@@ -2274,10 +2276,10 @@ export function updateFloatingUploadWidget({
 
   if (isDone) {
     if (indicator) {
-      indicator.style.background = 'var(--mint-strong)';
-      indicator.style.boxShadow = '0 0 10px var(--mint-strong)';
+      indicator.className = 'toast-icon-badge success';
+      indicator.innerHTML = icon('check', 14);
     }
-    if (headerTitle) headerTitle.textContent = choose('اكتمل الرفع بنجاح! ✓', 'Upload Complete! ✓');
+    if (headerTitle) headerTitle.textContent = choose('اكتمل الرفع بنجاح!', 'Upload Complete!');
     if (pctText) pctText.textContent = '100%';
     if (fill) fill.style.width = '100%';
     if (closeBtn) closeBtn.style.display = 'inline-block';
@@ -2299,10 +2301,10 @@ export function updateFloatingUploadWidget({
 
   if (isError) {
     if (indicator) {
-      indicator.style.background = 'var(--red)';
-      indicator.style.boxShadow = '0 0 10px var(--red)';
+      indicator.className = 'toast-icon-badge error';
+      indicator.innerHTML = icon('alert', 14);
     }
-    if (headerTitle) headerTitle.textContent = choose('فشل في الرفع ✕', 'Upload Failed ✕');
+    if (headerTitle) headerTitle.textContent = choose('فشل في الرفع', 'Upload Failed');
     if (closeBtn) closeBtn.style.display = 'inline-block';
   }
 }
@@ -2656,7 +2658,7 @@ export async function uploadDirectFiles({ files, projectId = null, taskId = null
       isDone: true
     });
 
-    showToast(choose('تم رفع المخطط وتوثيقه بنجاح إلى الخادم ✅', 'Drawing uploaded & registered successfully ✅'));
+    showToast(choose('تم رفع المخطط وتوثيقه بنجاح إلى الخادم', 'Drawing uploaded & registered successfully'), 'upload');
   } catch (err) {
     updateFloatingUploadWidget({
       isError: true,
