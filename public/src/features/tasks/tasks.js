@@ -103,6 +103,7 @@ export function canUserUploadToTask(task) {
 
 export function taskCard(task) {
   const dueTier = getTaskDueTier(task);
+  const overdue = dueTier === 'overdue' || isOverdue(task);
   let dueBadge = '';
   let dueClass = '';
 
@@ -119,6 +120,16 @@ export function taskCard(task) {
     dueClass = 'is-due-72h';
     dueBadge = `<span class="due-tag-72h" style="display:inline-flex;align-items:center;gap:3px;" title="${choose('متبقي أقل من 72 ساعة على موعد التسليم', 'Due within 72 hours')}">${icon('clock', 11)} ${choose('خلال 72 ساعة', 'Due in 72h')}</span>`;
   }
+
+  const dueDateColor = overdue
+    ? 'var(--red)'
+    : dueTier === 'due_24h'
+      ? '#ea580c'
+      : dueTier === 'due_48h'
+        ? '#d97706'
+        : dueTier === 'due_72h'
+          ? '#0284c7'
+          : 'var(--muted)';
 
   const commentCount = state._commentCounts ? (state._commentCounts[task.id] || 0) : (state.data?.comments || []).filter(c => c.taskId === task.id).length;
   const docCount = state._docCounts ? (state._docCounts[task.id] || 0) : (state.data?.documents || []).filter(d => d.taskId === task.id).length;
@@ -157,7 +168,7 @@ export function taskCard(task) {
     })()}
     <div class="task-meta-row" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;font-size:10px;color:var(--ink-soft);">
       <span class="task-category">${esc(choose(task.categoryAr, task.categoryEn) || '')}</span>
-      ${task.dueDate ? `<span style="display:inline-flex;align-items:center;gap:3px;color:${overdue ? 'var(--red)' : 'var(--muted)'};">${icon('calendar', 11)} ${dateLabel(task.dueDate)}</span>` : ''}
+      ${task.dueDate ? `<span style="display:inline-flex;align-items:center;gap:3px;color:${dueDateColor};">${icon('calendar', 11)} ${dateLabel(task.dueDate)}</span>` : ''}
     </div>
     <div class="task-card-foot">
       ${renderTaskAssignees(task)}
