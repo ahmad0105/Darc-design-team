@@ -42,6 +42,18 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: resolve(__dirname, 'public/index.html')
+      },
+      output: {
+        manualChunks(id) {
+          if (id.includes('/features/reports/')) return 'feature-reports';
+          if (id.includes('/features/documents/')) return 'feature-documents';
+          if (id.includes('/features/auth/')) return 'feature-auth';
+          if (id.includes('/core/realtime')) return 'core-realtime';
+          if (id.includes('/features/settings/')) return 'feature-settings';
+          if (id.includes('/features/projects/') || id.includes('/features/tasks/')) {
+            return 'feature-workspace';
+          }
+        }
       }
     }
   }

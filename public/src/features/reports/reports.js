@@ -1,7 +1,6 @@
 import { state } from '../../core/state.js';
 import { choose, esc, icon, avatar, statusText, t, can, isAdmin, roleName, sanitizeForSpreadsheet, formatReportDate, formatReportTime, dateLabel, isOverdue, parseEndOfDay, getDaysOverdue, getCompanyBranding, exportXLS } from '../../core/utils.js';
 import { showToast } from '../../shared/ui.js';
-import { exportPortfolioPDF, exportPortfolioXLS } from '../projects/projects.js';
 
 export { getDaysOverdue } from '../../core/utils.js';
 

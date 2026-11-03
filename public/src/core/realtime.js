@@ -7,7 +7,6 @@ import { syncPendingMutations } from './offline.js';
 import { invalidateBootstrapEtag } from './api.js';
 import { choose } from './utils.js';
 import { showToast } from '../shared/ui.js';
-import { renderTaskComments, renderTaskDocuments } from '../features/tasks/tasks.js';
 import { showNotifications } from '../features/notifications/notifications.js';
 
 const SUPABASE_WS_ENDPOINT = 'wss://yjfmrpwkjstxldnwegob.supabase.co/realtime/v1/websocket?apikey=sb_publishable_Zr7mRIWo5djcRpwq4Ihl0A_Eb3AA8gJ&vsn=1.0.0';
@@ -374,8 +373,8 @@ export function applyGranularDelta(tableName, actionType, rawRecord, rawOldRecor
           const openCommentForm = document.getElementById('task-comment-form');
           if (openCommentForm && openCommentForm.dataset.taskId === openTaskId) {
             const commentListEl = document.getElementById('task-comments-list');
-            if (commentListEl && typeof renderTaskComments === 'function') {
-              commentListEl.innerHTML = renderTaskComments(parentTask);
+            if (commentListEl && typeof window.renderTaskComments === 'function') {
+              commentListEl.innerHTML = window.renderTaskComments(parentTask);
               commentListEl.scrollTop = commentListEl.scrollHeight;
             }
           }
@@ -385,8 +384,8 @@ export function applyGranularDelta(tableName, actionType, rawRecord, rawOldRecor
           const dropzoneEl = document.getElementById('task-dropzone');
           if (dropzoneEl && dropzoneEl.dataset.taskId === openTaskId) {
             const docListEl = document.getElementById('task-documents-list');
-            if (docListEl && typeof renderTaskDocuments === 'function') {
-              docListEl.innerHTML = renderTaskDocuments(parentTask);
+            if (docListEl && typeof window.renderTaskDocuments === 'function') {
+              docListEl.innerHTML = window.renderTaskDocuments(parentTask);
             }
           }
         }

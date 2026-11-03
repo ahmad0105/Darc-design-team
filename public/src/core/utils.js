@@ -724,3 +724,43 @@ export function exportXLS(filename, htmlTable) {
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
+
+export function canUserMoveTask(task) {
+  if (!task) return false;
+  if (isAdmin()) return true;
+  if (!can('edit_tasks')) return false;
+  const userId = state.data?.user?.id;
+  if (!userId) return false;
+  const assignee = task.assigneeId || task.assignee_id;
+  if (assignee === userId) return true;
+  const creator = task.creatorId || task.createdById || task.created_by_id || task.created_by;
+  if (creator === userId) return true;
+  const reviewer = task.reviewerId || task.reviewer_id;
+  const approver = task.approverId || task.approver_id;
+  if (reviewer === userId || approver === userId) return true;
+
+  const additional = task.customFields?.additionalAssignees || task.customFields?.additional_assignees || task.custom_fields?.additionalAssignees || task.custom_fields?.additional_assignees;
+  if (Array.isArray(additional) && additional.includes(userId)) return true;
+
+  const projectId = task.projectId || task.project_id;
+  if (projectId && state.data?.projects) {
+    const proj = state.data?.projects?.find(p => p.id === projectId);
+    if (proj) {
+      const pm = proj.managerId || proj.manager_id;
+      const owner = proj.ownerId || proj.owner_id || proj.leadId || proj.lead_id || proj.createdById || proj.created_by;
+      if (pm === userId || owner === userId) return true;
+      if (Array.isArray(proj.members) && proj.members.some(m => (m.userId || m.id || m) === userId)) return true;
+      if (Array.isArray(proj.memberIds) && proj.memberIds.includes(userId)) return true;
+    }
+  }
+  return false;
+}
+
+export function setSavedTaskSort(mode) {
+  try {
+    localStorage.setItem('darc_task_sort_pref', mode);
+  } catch (e) {}
+  state.taskSortPref = mode;
+  state.projectTaskSort = mode;
+  state.myTaskSort = mode;
+}

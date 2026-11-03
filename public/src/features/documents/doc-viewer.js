@@ -55,8 +55,7 @@ const KNOWN_MASTER_ASSETS = new Set([
   'DARC-ARCHITECTURAL-CONCEPT-PRESENTATION.pptx',
   'DARC-VILLA-SITE-PROGRESS-WALKTHROUGH.mp4',
   'PALM_VILLA_MAJLIS_3D_RENDER_4K.jpg',
-  'DARC-STRUCTURAL-LAYOUT-V2.dwg',
-  'darc-walkthrough.mp4'
+  'DARC-STRUCTURAL-LAYOUT-V2.dwg'
 ]);
 
 /**
@@ -88,6 +87,9 @@ export function getRealAssetUrl(doc) {
 
   // 2. Tier 2: Exact Pre-Bundled Architectural Master Assets (Available locally in /assets/)
   const originalName = (doc.originalName || '').trim();
+  if (originalName === 'darc-walkthrough.mp4') {
+    return '/assets/DARC-VILLA-SITE-PROGRESS-WALKTHROUGH.mp4';
+  }
   if (originalName && KNOWN_MASTER_ASSETS.has(originalName)) {
     return `/assets/${encodeURIComponent(originalName)}`;
   }

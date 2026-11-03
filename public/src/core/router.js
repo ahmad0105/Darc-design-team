@@ -5,14 +5,7 @@ import { saveOfflineBootstrap, getOfflineBootstrap, getOfflineBootstrapAsync, ge
 import { showToast } from '../shared/ui.js';
 import { recordBreadcrumb } from './telemetry.js';
 import { renderNavbar, renderSyncIndicator, initSyncIndicatorListener, updateNavbarTitle } from '../shared/navbar.js';
-import { renderSidebar, renderSidebarBackdrop, navItem } from '../shared/sidebar.js';
-import { renderReports } from '../features/reports/reports.js';
-import { renderDashboard } from '../features/dashboard/dashboard.js';
-import { renderProjects, renderProjectDetail } from '../features/projects/projects.js';
-import { renderTasks, drawTimelineArrows } from '../features/tasks/tasks.js';
-import { renderDocuments } from '../features/documents/documents.js';
-import { renderTemplates } from '../features/templates/templates.js';
-import { renderTeam, renderSettings } from '../features/settings/settings.js';
+import { renderSidebar, renderSidebarBackdrop } from '../shared/sidebar.js';
 
 export function canAccessView(view) {
   if (!state.data) return true;
@@ -115,15 +108,15 @@ export function renderView(force = false) {
   lastRenderedView = state.view;
 
   let html = '';
-  if (state.view === 'dashboard') html = renderDashboard();
-  if (state.view === 'projects') html = renderProjects();
-  if (state.view === 'tasks') html = renderTasks();
-  if (state.view === 'documents') html = renderDocuments();
-  if (state.view === 'templates') html = renderTemplates();
-  if (state.view === 'team') html = renderTeam();
-  if (state.view === 'reports') html = renderReports();
-  if (state.view === 'settings') html = renderSettings();
-  if (state.view === 'project-detail') html = renderProjectDetail();
+  if (state.view === 'dashboard' && typeof window.renderDashboard === 'function') html = window.renderDashboard();
+  if (state.view === 'projects' && typeof window.renderProjects === 'function') html = window.renderProjects();
+  if (state.view === 'tasks' && typeof window.renderTasks === 'function') html = window.renderTasks();
+  if (state.view === 'documents' && typeof window.renderDocuments === 'function') html = window.renderDocuments();
+  if (state.view === 'templates' && typeof window.renderTemplates === 'function') html = window.renderTemplates();
+  if (state.view === 'team' && typeof window.renderTeam === 'function') html = window.renderTeam();
+  if (state.view === 'reports' && typeof window.renderReports === 'function') html = window.renderReports();
+  if (state.view === 'settings' && typeof window.renderSettings === 'function') html = window.renderSettings();
+  if (state.view === 'project-detail' && typeof window.renderProjectDetail === 'function') html = window.renderProjectDetail();
   main.innerHTML = html;
 
   // Restore scroll positions so user stays exactly where they were
@@ -143,7 +136,9 @@ export function renderView(force = false) {
   }
   
   if (state.view === 'project-detail' && state.projectTab === 'timeline') {
-    setTimeout(drawTimelineArrows, 0);
+    setTimeout(() => {
+      if (typeof window.drawTimelineArrows === 'function') window.drawTimelineArrows();
+    }, 0);
   }
 }
 

@@ -2,8 +2,7 @@ import { state } from './state.js';
 import { api } from './api.js';
 import { renderView } from './router.js';
 import { showToast } from '../shared/ui.js';
-import { choose, t } from '../core/utils.js';
-import { setSavedTaskSort, canUserMoveTask } from '../features/tasks/tasks.js';
+import { choose, t, setSavedTaskSort, canUserMoveTask } from '../core/utils.js';
 
 let placeholder = null;
 let activeDraggedTaskId = null;
