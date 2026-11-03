@@ -18,7 +18,8 @@ export function projectRow(project) {
 export function attentionItem(task) {
   const type = isOverdue(task) ? 'red' : task.status === 'blocked' ? 'red' : 'amber';
   const title = isOverdue(task) ? choose('متأخرة', 'Overdue') : task.status === 'blocked' ? choose('متوقفة', 'Blocked') : choose('تستحق قريبًا', 'Due soon');
-  return `<button class="attention-item" data-action="open-task" data-task-id="${esc(task.id)}" style="border:0;text-align:inherit;width:100%"><span class="attention-icon ${type}">${icon(isOverdue(task) || task.status === 'blocked' ? 'alert' : 'clock', 14)}</span><span class="attention-copy"><strong style="color:var(--${type})">${esc(choose(task.titleAr, task.titleEn))}</strong><span>${esc(title)} · ${esc(dueLabel(task.dueDate))}</span></span></button>`;
+  const taskTitle = choose(task.titleAr, task.titleEn);
+  return `<button type="button" class="attention-item" data-action="open-task" data-task-id="${esc(task.id)}" title="${esc(taskTitle)}"><span class="attention-icon ${type}">${icon(isOverdue(task) || task.status === 'blocked' ? 'alert' : 'clock', 14)}</span><span class="attention-copy"><strong style="color:var(--${type})">${esc(taskTitle)}</strong><span>${esc(title)} · ${esc(dueLabel(task.dueDate))}</span></span></button>`;
 }
 
 export function teamMetrics(userId, tasks) {
