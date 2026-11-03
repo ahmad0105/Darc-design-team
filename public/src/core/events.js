@@ -5,17 +5,19 @@ import { switchView, refreshView, renderView, renderApp, canAccessView, getFirst
 import { openOmnisearch, closeOmnisearch, openShortcutsCheatsheet } from '../features/dashboard/omnisearch.js';
 import { playSuccessChime, savePreferencesCookies, choose, esc, icon, t, can, isAdmin, avatar, roleName, statusText, initials, dateLabel } from './utils.js';
 import { showToast, modalShell, closeModal, renderLoading } from '../shared/ui.js';
-import { setSavedTaskSort, openDocumentPreviewModal, renderTaskDocuments, canUserUploadToTask } from '../features/tasks/tasks.js';
+import { setSavedTaskSort, openDocumentPreviewModal, renderTaskDocuments, canUserUploadToTask, openTaskModal, renderTaskComments, drawTimelineArrows } from '../features/tasks/tasks.js';
 import { downloadDocument, handleCopyDocLink, getDocumentShareableLink } from '../features/documents/doc-viewer.js';
+import { openUploadDrawingModal } from '../features/documents/documents.js';
 import { getPendingMutations, syncPendingMutations, getOfflineBootstrap, clearOfflineBootstrap, saveOfflineBootstrap } from './offline.js';
-import { exportPortfolioXLS, exportProjectXLS, exportProjectPDF, exportPortfolioPDF } from '../features/projects/projects.js';
-import { exportAuditLogsXLS, printAuditReport, fetchFullAuditHistory, canAccessSettingsSection } from '../features/settings/settings.js';
+import { exportPortfolioXLS, exportProjectXLS, exportProjectPDF, exportPortfolioPDF, openProjectModal, openCloneModal } from '../features/projects/projects.js';
+import { exportAuditLogsXLS, printAuditReport, fetchFullAuditHistory, canAccessSettingsSection, openUserModal, openRoleModal } from '../features/settings/settings.js';
 import { fetchAnalyticsData } from '../features/settings/analytics.js';
 import { fetchDiagnosticsData, setDiagnosticsUserFilter, setDiagnosticsSeverityFilter, setDiagnosticsStatusFilter } from '../features/settings/diagnostics.js';
-import { renderActivation, renderLogin, renderResetPassword } from '../features/auth/auth.js';
+import { renderActivation, renderLogin, renderResetPassword, openForcePasswordModal } from '../features/auth/auth.js';
 import { playNotificationChime } from './realtime.js';
 import { openTemplateModal, getNextAvailableTemplateCode, isTemplateCodeReserved } from '../features/templates/templates.js';
 import { exportDisciplinesExcel, exportTeamWorkloadExcel, exportRisksExcel, exportDrawingsExcel } from '../features/reports/reports.js';
+import { showNotifications } from '../features/notifications/notifications.js';
 
 export async function handleSubmit(event) {
   const form = event.target;

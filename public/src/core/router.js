@@ -7,6 +7,12 @@ import { recordBreadcrumb } from './telemetry.js';
 import { renderNavbar, renderSyncIndicator, initSyncIndicatorListener, updateNavbarTitle } from '../shared/navbar.js';
 import { renderSidebar, renderSidebarBackdrop, navItem } from '../shared/sidebar.js';
 import { renderReports } from '../features/reports/reports.js';
+import { renderDashboard } from '../features/dashboard/dashboard.js';
+import { renderProjects, renderProjectDetail } from '../features/projects/projects.js';
+import { renderTasks, drawTimelineArrows } from '../features/tasks/tasks.js';
+import { renderDocuments } from '../features/documents/documents.js';
+import { renderTemplates } from '../features/templates/templates.js';
+import { renderTeam, renderSettings } from '../features/settings/settings.js';
 
 export function canAccessView(view) {
   if (!state.data) return true;

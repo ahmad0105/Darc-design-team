@@ -6,7 +6,9 @@
   "description": "DARC Design Team construction project operations dashboard",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "lint": "eslint public/src/",
+    "test": "node test/task-card.test.js",
+    "build": "node test/task-card.test.js && eslint public/src/ && vite build",
     "preview": "vite preview",
     "start": "vite preview",
     "deploy": "wrangler deploy",
@@ -16,6 +18,8 @@
     "node": ">=20"
   },
   "devDependencies": {
+    "eslint": "^10.14.0",
+    "globals": "^17.14.0",
     "vite": "^8.3.4",
     "wrangler": "^4.151.3"
   }

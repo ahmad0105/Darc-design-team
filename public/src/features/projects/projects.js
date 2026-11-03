@@ -1,9 +1,10 @@
 
 import { state } from '../../core/state.js';
 import { api } from '../../core/api.js';
-import { choose, esc, icon, avatar, statusText, t, can, isAdmin, roleName, sanitizeForSpreadsheet, formatReportDate, formatReportTime, dateLabel, isOverdue, parseEndOfDay } from '../../core/utils.js';
+import { choose, esc, icon, avatar, statusText, t, can, isAdmin, roleName, sanitizeForSpreadsheet, formatReportDate, formatReportTime, dateLabel, isOverdue, parseEndOfDay, getCompanyBranding, exportXLS } from '../../core/utils.js';
 import { showToast, modalShell, closeModal } from '../../shared/ui.js';
-import { renderTaskSortSelect, getSavedTaskSort, renderTimeline } from '../tasks/tasks.js';
+import { refreshView } from '../../core/router.js';
+import { renderTaskSortSelect, getSavedTaskSort, renderTimeline, renderBoard } from '../tasks/tasks.js';
 import { renderAuditForProject } from '../settings/settings.js';
 
 export function getDaysLeftBadge(dueDate) {

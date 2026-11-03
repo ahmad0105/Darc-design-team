@@ -1,9 +1,10 @@
 import { state } from '../../core/state.js';
 import { api } from '../../core/api.js';
-import { getActiveCalendarSystem, esc, sanitizeForSpreadsheet, choose, icon, t, can, isAdmin, avatar, roleName, initials, statusText, formatDateTime, formatReportDate, formatReportTime, getCompanyBranding, exportXLS, PERMISSION_ALIASES } from '../../core/utils.js';
+import { getActiveCalendarSystem, esc, sanitizeForSpreadsheet, choose, icon, t, can, isAdmin, avatar, roleName, initials, statusText, formatDateTime, formatReportDate, formatReportTime, getCompanyBranding, exportXLS, PERMISSION_ALIASES, canManageAccountPermissions, dateLabel } from '../../core/utils.js';
 import { showToast, modalShell, closeModal } from '../../shared/ui.js';
 import { renderAnalyticsSection, fetchAnalyticsData } from './analytics.js';
 import { renderDiagnosticsSection, fetchDiagnosticsData } from './diagnostics.js';
+import { teamMetrics } from '../dashboard/dashboard.js';
 
 export function renderTeam() {
   if (!isAdmin() && !can('manage_users')) {
