@@ -897,6 +897,78 @@ select, .filter-select, .select-compact {
 .board-count { min-width: 21px; padding: 3px 6px; border-radius: 7px; color: var(--muted); background: #e9efed; text-align: center; font-size: 11px; font-weight: 800; }
 .board-cards { display: grid; gap: 8px; }
 .task-card { padding: 13px; border: 1px solid #e5ecea; border-radius: 13px; background: #fff; box-shadow: 0 3px 10px rgba(30, 65, 65, .035); cursor: grab; user-select: none; -webkit-user-select: none; -webkit-user-drag: none; -webkit-touch-callout: none; touch-action: pan-y pan-x; transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease; contain: layout style; content-visibility: auto; contain-intrinsic-size: auto 115px; outline: none; }
+.task-card.is-file-drag-over {
+  border: 2px dashed var(--brand-teal, #0d6269) !important;
+  background: rgba(13, 98, 105, 0.08) !important;
+  box-shadow: 0 0 0 4px rgba(13, 98, 105, 0.16), 0 10px 24px rgba(13, 98, 105, 0.14) !important;
+  transform: translateY(-2px) scale(1.02) !important;
+  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+.task-card.is-overdue {
+  border-inline-start: 3px solid var(--red, #ef4444) !important;
+}
+.task-card.is-due-soon,
+.task-card.is-due-48h {
+  border-inline-start: 3px solid #d97706 !important;
+}
+.task-card.is-due-24h {
+  border-inline-start: 3px solid #ea580c !important;
+}
+.task-card.is-due-72h {
+  border-inline-start: 3px solid #0284c7 !important;
+}
+.due-soon-tag,
+.due-tag-48h {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: #b45309;
+  background: rgba(217, 119, 6, 0.14);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  border: 1px solid rgba(217, 119, 6, 0.28);
+}
+[data-theme="dark"] .due-soon-tag,
+[data-theme="dark"] .due-tag-48h {
+  color: #fcd34d;
+  background: rgba(217, 119, 6, 0.22);
+}
+
+.due-tag-24h {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: #c2410c;
+  background: rgba(234, 88, 12, 0.14);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  border: 1px solid rgba(234, 88, 12, 0.28);
+}
+[data-theme="dark"] .due-tag-24h {
+  color: #fb923c;
+  background: rgba(234, 88, 12, 0.22);
+}
+
+.due-tag-72h {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: #0369a1;
+  background: rgba(2, 132, 199, 0.14);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  border: 1px solid rgba(2, 132, 199, 0.28);
+}
+[data-theme="dark"] .due-tag-72h {
+  color: #38bdf8;
+  background: rgba(2, 132, 199, 0.22);
+}
 .task-card.is-touch-charging {
   transform: scale(0.985) !important;
   box-shadow: 0 0 0 2px var(--brand-teal, #0d6269), 0 6px 18px rgba(13, 98, 105, 0.14) !important;

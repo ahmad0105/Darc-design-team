@@ -1,7 +1,7 @@
 
 import { state } from '../../core/state.js';
 import { api } from '../../core/api.js';
-import { getTaskStatusStyle, esc, choose, avatar, icon, can, isAdmin, t, statusText, formatDateTime, getActiveCalendarSystem, isOverdue, priorityText, dateLabel } from '../../core/utils.js';
+import { getTaskStatusStyle, esc, choose, avatar, icon, can, isAdmin, t, statusText, formatDateTime, getActiveCalendarSystem, isOverdue, isDueSoon, getTaskDueTier, priorityText, dateLabel } from '../../core/utils.js';
 import { showToast, modalShell, closeModal } from '../../shared/ui.js';
 
 export function renderTaskAssignees(task) {
@@ -74,11 +74,51 @@ export function canUserMoveTask(task) {
   return false;
 }
 
+/**
+ * Validates if the current user has permission to upload engineering files/drawings to a specific task
+ */
+export function canUserUploadToTask(task) {
+  if (!task) return false;
+  if (isAdmin()) return true;
+  if (!can('upload_documents') && !can('edit_tasks')) return false;
+
+  const userId = state.data?.user?.id;
+  if (!userId) return false;
+
+  if (canUserMoveTask(task)) return true;
+
+  const projectId = task.projectId || task.project_id;
+  if (projectId && Array.isArray(state.data?.projects)) {
+    const proj = state.data.projects.find(p => p.id === projectId);
+    if (proj) {
+      const pm = proj.managerId || proj.manager_id;
+      const owner = proj.ownerId || proj.owner_id || proj.leadId || proj.lead_id || proj.createdById || proj.created_by;
+      if (pm === userId || owner === userId) return true;
+      if (Array.isArray(proj.members) && proj.members.some(m => (m.userId || m.id || m) === userId)) return true;
+    }
+  }
+
+  return false;
+}
+
 export function taskCard(task) {
-  const overdue = isOverdue(task);
-  const overdueBadge = overdue
-    ? `<span class="overdue-tag" style="display:inline-flex;align-items:center;gap:3px;color:var(--red);background:var(--red-soft);padding:2px 6px;border-radius:4px;font-size:10px;font-weight:600;">${icon('alert', 11)} ${t('overdue')}</span>`
-    : '';
+  const dueTier = getTaskDueTier(task);
+  let dueBadge = '';
+  let dueClass = '';
+
+  if (dueTier === 'overdue') {
+    dueClass = 'is-overdue';
+    dueBadge = `<span class="overdue-tag" style="display:inline-flex;align-items:center;gap:3px;color:var(--red);background:var(--red-soft);padding:2px 6px;border-radius:4px;font-size:10px;font-weight:600;">${icon('alert', 11)} ${t('overdue')}</span>`;
+  } else if (dueTier === 'due_24h') {
+    dueClass = 'is-due-24h';
+    dueBadge = `<span class="due-tag-24h" style="display:inline-flex;align-items:center;gap:3px;" title="${choose('متبقي أقل من 24 ساعة على موعد التسليم', 'Due in less than 24 hours')}">${icon('clock', 11)} ${choose('خلال 24 ساعة', 'Due in 24h')}</span>`;
+  } else if (dueTier === 'due_48h') {
+    dueClass = 'is-due-48h';
+    dueBadge = `<span class="due-tag-48h" style="display:inline-flex;align-items:center;gap:3px;" title="${choose('متبقي أقل من 48 ساعة على موعد التسليم', 'Due within 48 hours')}">${icon('clock', 11)} ${choose('خلال 48 ساعة', 'Due in 48h')}</span>`;
+  } else if (dueTier === 'due_72h') {
+    dueClass = 'is-due-72h';
+    dueBadge = `<span class="due-tag-72h" style="display:inline-flex;align-items:center;gap:3px;" title="${choose('متبقي أقل من 72 ساعة على موعد التسليم', 'Due within 72 hours')}">${icon('clock', 11)} ${choose('خلال 72 ساعة', 'Due in 72h')}</span>`;
+  }
 
   const commentCount = state._commentCounts ? (state._commentCounts[task.id] || 0) : (state.data?.comments || []).filter(c => c.taskId === task.id).length;
   const docCount = state._docCounts ? (state._docCounts[task.id] || 0) : (state.data?.documents || []).filter(d => d.taskId === task.id).length;
@@ -94,7 +134,7 @@ export function taskCard(task) {
   const canEditTask = canUserMoveTask(task);
   const taskTitle = choose(task.titleAr, task.titleEn);
 
-  return `<article class="task-card ${overdue ? 'is-overdue' : ''} ${!canEditTask ? 'not-draggable' : ''}" draggable="false" tabindex="0" role="button" aria-roledescription="sortable task card" aria-label="${esc(taskTitle)}" data-action="open-task" data-task-id="${esc(task.id)}">
+  return `<article class="task-card ${dueClass} ${!canEditTask ? 'not-draggable' : ''}" draggable="false" tabindex="0" role="button" aria-roledescription="sortable task card" aria-label="${esc(taskTitle)}" data-action="open-task" data-task-id="${esc(task.id)}">
     <div class="task-card-top">
       <div style="display:flex;align-items:center;gap:6px;">
         <span class="task-drag-handle" title="${choose('اسحب لتحريك المهمة', 'Drag to reorder')}" style="cursor:grab;touch-action:none;padding:1px 4px;border-radius:4px;color:var(--muted);font-size:12px;opacity:0.65;user-select:none;transition:opacity 0.15s ease;">⋮⋮</span>
@@ -104,7 +144,7 @@ export function taskCard(task) {
         ${task._isOfflinePending ? `<span class="badge badge-amber" style="font-size:9px;padding:1px 5px;" title="${choose('بانتظار المزامنة مع السيرفر', 'Pending cloud sync')}">⏳ ${choose('معلقة', 'Pending')}</span>` : ''}
         ${commentCount > 0 ? `<span style="font-size:10px;color:var(--muted);display:inline-flex;align-items:center;gap:2px;" title="${commentCount} ${choose('تعليقات', 'comments')}">💬 ${commentCount}</span>` : ''}
         ${docCount > 0 ? `<span style="font-size:10px;color:var(--muted);display:inline-flex;align-items:center;gap:2px;" title="${docCount} ${choose('مرفقات', 'attachments')}">📎 ${docCount}</span>` : ''}
-        ${overdueBadge}
+        ${dueBadge}
         <span class="priority-badge ${esc(task.priority)}">${esc(priorityText(task.priority))}</span>
       </div>
     </div>
@@ -430,7 +470,7 @@ export function filterTasks(tasks) {
   const query = state.searches.tasks.trim().toLowerCase();
   return tasks.filter((task) => {
     const matchesQuery = `${task.titleAr} ${task.titleEn} ${task.categoryAr} ${task.categoryEn}`.toLowerCase().includes(query);
-    const matchesFilter = state.taskFilter === 'all' || (state.taskFilter === 'mine' && task.assigneeId === state.data?.user?.id) || (state.taskFilter === 'overdue' && isOverdue(task)) || (state.taskFilter === 'blocked' && task.status === 'blocked');
+    const matchesFilter = state.taskFilter === 'all' || (state.taskFilter === 'mine' && task.assigneeId === state.data?.user?.id) || (state.taskFilter === 'due_soon' && isDueSoon(task)) || (state.taskFilter === 'overdue' && isOverdue(task)) || (state.taskFilter === 'blocked' && task.status === 'blocked');
     const matchesProject = state.taskProjectFilter === 'all' || task.projectId === state.taskProjectFilter;
     const matchesPriority = !state.taskPriorityFilter || state.taskPriorityFilter === 'all' || task.priority === state.taskPriorityFilter;
     return matchesQuery && matchesFilter && matchesProject && matchesPriority;
@@ -439,7 +479,7 @@ export function filterTasks(tasks) {
 
 export function renderTasks() {
   const tasks = filterTasks(state.data?.tasks || []);
-  const tabs = [['all', t('all')], ['mine', choose('مسندة لي', 'Assigned to me')], ['overdue', t('overdue')], ['blocked', t('blocked')]];
+  const tabs = [['all', t('all')], ['mine', choose('مسندة لي', 'Assigned to me')], ['due_soon', choose('تستحق قريباً', 'Due soon')], ['overdue', t('overdue')], ['blocked', t('blocked')]];
   const currentSort = state.myTaskSort || getSavedTaskSort();
   return `
     <div class="page-head">

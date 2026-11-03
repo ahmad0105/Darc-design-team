@@ -223,6 +223,34 @@ export function enqueueOfflineMutation({ path, method = 'POST', body = null, des
       }
     }
 
+    // Outbox Compaction for Task Reorder: merge items into single consolidated reorder
+    if (method === 'PATCH' && path === '/api/tasks/reorder' && body?.items && Array.isArray(body.items)) {
+      const existingReorderIdx = queue.findIndex(m => m.method === 'PATCH' && m.path === '/api/tasks/reorder');
+      if (existingReorderIdx !== -1) {
+        const existing = queue[existingReorderIdx];
+        const itemMap = new Map((existing.body?.items || []).map(i => [i.id, i]));
+        body.items.forEach(i => itemMap.set(i.id, i));
+        existing.body = { items: Array.from(itemMap.values()) };
+        existing.createdAt = new Date().toISOString();
+        localStorage.setItem(STORAGE_QUEUE_KEY, JSON.stringify(queue));
+        emitQueueChange();
+        return existing;
+      }
+    }
+
+    // Outbox Compaction for Entity Updates (PATCH): coalesce successive edits to same entity
+    if (method === 'PATCH' && body && typeof body === 'object') {
+      const existingPatchIdx = queue.findIndex(m => m.method === 'PATCH' && m.path === path);
+      if (existingPatchIdx !== -1) {
+        const existing = queue[existingPatchIdx];
+        existing.body = { ...(existing.body || {}), ...body };
+        existing.createdAt = new Date().toISOString();
+        localStorage.setItem(STORAGE_QUEUE_KEY, JSON.stringify(queue));
+        emitQueueChange();
+        return existing;
+      }
+    }
+
     const item = {
       id: 'mut_' + Date.now() + '_' + Math.random().toString(36).substring(2, 8),
       path,
@@ -477,9 +505,17 @@ export async function syncPendingMutations(apiFunction) {
         console.warn('[Offline Sync] Dropping unprocessable mutation:', item.id, res.error);
       } else {
         syncedCount++;
-        const syncedId = (item.body && typeof item.body === 'object' && item.body.id) || (typeof item.path === 'string' && item.path.split('/')[3]);
-        if (syncedId && typeof window !== 'undefined' && typeof window.recordRecentLocalMutation === 'function') {
-          window.recordRecentLocalMutation(syncedId);
+        if (item.path === '/api/tasks/reorder' && Array.isArray(item.body?.items)) {
+          item.body.items.forEach(it => {
+            if (it?.id && typeof window !== 'undefined' && typeof window.recordRecentLocalMutation === 'function') {
+              window.recordRecentLocalMutation(it.id);
+            }
+          });
+        } else {
+          const syncedId = (item.body && typeof item.body === 'object' && item.body.id) || (typeof item.path === 'string' && item.path.split('/')[3]);
+          if (syncedId && typeof window !== 'undefined' && typeof window.recordRecentLocalMutation === 'function') {
+            window.recordRecentLocalMutation(syncedId);
+          }
         }
       }
     } catch (err) {

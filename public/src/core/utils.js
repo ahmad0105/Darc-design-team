@@ -439,6 +439,33 @@ export function isOverdue(task) {
   return due ? due < new Date() : false;
 }
 
+/**
+ * Evaluates the 3-Tier SLA deadline urgency of a task:
+ * - 'overdue': due date has passed (< 0 hours) -> Red
+ * - 'due_24h': 0 to 24 hours remaining -> Critical (Coral Orange #ea580c)
+ * - 'due_48h': 24 to 48 hours remaining -> Moderate (Warm Amber #d97706)
+ * - 'due_72h': 48 to 72 hours remaining -> Early notice (Sky Blue #0284c7)
+ * - null: > 72 hours, completed, or no due date
+ */
+export function getTaskDueTier(task) {
+  if (!task?.dueDate || ['done', 'completed', 'canceled'].includes(task.status)) return null;
+  const due = parseEndOfDay(task.dueDate);
+  if (!due) return null;
+  const now = new Date();
+  const diffHours = (due.getTime() - now.getTime()) / (1000 * 60 * 60);
+
+  if (diffHours < 0) return 'overdue';
+  if (diffHours <= 24) return 'due_24h';
+  if (diffHours <= 48) return 'due_48h';
+  if (diffHours <= 72) return 'due_72h';
+  return null;
+}
+
+export function isDueSoon(task, withinDays = 3) {
+  const tier = getTaskDueTier(task);
+  return tier === 'due_24h' || tier === 'due_48h' || tier === 'due_72h';
+}
+
 export function statusText(key) {
   switch (key) {
     case 'not_started': return t('notStarted');

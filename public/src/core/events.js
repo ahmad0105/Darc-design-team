@@ -5,7 +5,7 @@ import { switchView, refreshView, renderView, renderApp, canAccessView, getFirst
 import { openOmnisearch, closeOmnisearch, openShortcutsCheatsheet } from '../features/dashboard/omnisearch.js';
 import { playSuccessChime, savePreferencesCookies, choose, esc, icon, t, can, isAdmin, avatar, roleName, statusText, initials, dateLabel } from './utils.js';
 import { showToast, modalShell, closeModal, renderLoading } from '../shared/ui.js';
-import { setSavedTaskSort, openDocumentPreviewModal, renderTaskDocuments } from '../features/tasks/tasks.js';
+import { setSavedTaskSort, openDocumentPreviewModal, renderTaskDocuments, canUserUploadToTask } from '../features/tasks/tasks.js';
 import { downloadDocument, handleCopyDocLink, getDocumentShareableLink } from '../features/documents/doc-viewer.js';
 import { getPendingMutations, syncPendingMutations, getOfflineBootstrap, clearOfflineBootstrap, saveOfflineBootstrap } from './offline.js';
 import { exportPortfolioXLS, exportProjectXLS, exportProjectPDF, exportPortfolioPDF } from '../features/projects/projects.js';
@@ -2693,10 +2693,30 @@ if (typeof window !== 'undefined' && !window._taskDropzoneListenersSet) {
     }
   });
   window.addEventListener('drop', (e) => {
-    if (!e.target.closest('#task-dropzone, #drawing-dropzone')) {
+    if (!e.target.closest('#task-dropzone, #drawing-dropzone, .task-card')) {
       e.preventDefault();
     }
   });
+
+  const DANGEROUS_CLIENT_EXTS = new Set([
+    'exe', 'bat', 'cmd', 'sh', 'bash', 'ps1', 'vbs', 'js', 'mjs', 'cjs',
+    'py', 'php', 'phtml', 'php3', 'php4', 'php5', 'phps', 'html', 'htm',
+    'xhtml', 'jar', 'msi', 'dll', 'com', 'scr', 'hta', 'svg', 'apk', 'app',
+    'deb', 'rpm', 'vbe', 'wsf', 'wsh', 'jsp', 'asp', 'aspx', 'cgi', 'pl'
+  ]);
+
+  function isDangerousClientFile(file) {
+    if (!file || !file.name) return true;
+    const name = file.name.trim().toLowerCase();
+    const parts = name.split('.');
+    if (parts.length >= 2) {
+      for (const part of parts.slice(1)) {
+        if (DANGEROUS_CLIENT_EXTS.has(part.trim())) return true;
+      }
+    }
+    if (/[\u202A-\u202E\u2066-\u2069]/.test(name)) return true;
+    return false;
+  }
 
   document.addEventListener('dragover', (e) => {
     const dropzone = e.target.closest('#task-dropzone');
@@ -2704,6 +2724,22 @@ if (typeof window !== 'undefined' && !window._taskDropzoneListenersSet) {
       e.preventDefault();
       dropzone.style.borderColor = 'var(--brand-teal)';
       dropzone.style.background = 'var(--teal-soft)';
+      return;
+    }
+    const taskCard = e.target.closest('.task-card');
+    if (taskCard && e.dataTransfer?.types?.includes('Files')) {
+      const taskId = taskCard.dataset.taskId;
+      const task = taskId ? (state.data?.tasks || []).find(t => t.id === taskId) : null;
+      if (!task || !canUserUploadToTask(task)) {
+        e.dataTransfer.dropEffect = 'none';
+        return;
+      }
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'copy';
+      document.querySelectorAll('.task-card.is-file-drag-over').forEach(el => {
+        if (el !== taskCard) el.classList.remove('is-file-drag-over');
+      });
+      taskCard.classList.add('is-file-drag-over');
     }
   });
 
@@ -2712,6 +2748,14 @@ if (typeof window !== 'undefined' && !window._taskDropzoneListenersSet) {
     if (dropzone) {
       dropzone.style.borderColor = 'var(--border)';
       dropzone.style.background = 'var(--surface-soft)';
+      return;
+    }
+    const taskCard = e.target.closest('.task-card');
+    if (taskCard) {
+      const rel = e.relatedTarget;
+      if (!rel || !taskCard.contains(rel)) {
+        taskCard.classList.remove('is-file-drag-over');
+      }
     }
   });
 
@@ -2725,6 +2769,47 @@ if (typeof window !== 'undefined' && !window._taskDropzoneListenersSet) {
       const files = e.dataTransfer?.files;
       if (files && files.length) {
         uploadTaskFiles(files, taskId);
+      }
+      return;
+    }
+    const taskCard = e.target.closest('.task-card');
+    if (taskCard && e.dataTransfer?.files?.length) {
+      e.preventDefault();
+      taskCard.classList.remove('is-file-drag-over');
+      const taskId = taskCard.dataset.taskId;
+      const task = (state.data?.tasks || []).find(t => t.id === taskId);
+      if (!task) return;
+
+      if (!canUserUploadToTask(task)) {
+        return showToast(choose('ليس لديك صلاحية لإرفاق ملفات في هذه المهمة أو المشروع.', 'You do not have permission to attach files to this task.'), true);
+      }
+
+      const rawFiles = Array.from(e.dataTransfer.files);
+      const cleanFiles = [];
+      let blockedCount = 0;
+
+      for (const f of rawFiles) {
+        if (isDangerousClientFile(f)) {
+          blockedCount++;
+        } else {
+          cleanFiles.push(f);
+        }
+      }
+
+      if (blockedCount > 0) {
+        showToast(choose(`تم حظر ${blockedCount} ملف(ات) غير مصرح بها لأسباب أمنية.`, `Blocked ${blockedCount} file(s) for security reasons.`), true);
+      }
+
+      if (cleanFiles.length > 0) {
+        showToast(choose(`جاري رفع ${cleanFiles.length} ملف(ات) وإرفاقها بالمهمة...`, `Uploading ${cleanFiles.length} file(s) to task...`));
+        uploadDirectFiles({
+          files: cleanFiles,
+          projectId: task.projectId,
+          taskId: taskId,
+          discipline: task.categoryAr || 'عام',
+          status: 'draft',
+          isTaskModal: false
+        });
       }
     }
   });
