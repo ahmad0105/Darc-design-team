@@ -1750,8 +1750,11 @@ export function handleInput(event) {
     _searchDebounceTimer = setTimeout(() => {
       renderView();
       const next = document.querySelector('[data-action="search-trash-input"]');
-      if (next) { next.focus(); next.setSelectionRange(cursor, cursor); }
-    }, 120);
+      if (next) {
+        next.focus({ preventScroll: true });
+        try { next.setSelectionRange(cursor, cursor); } catch (_) {}
+      }
+    }, 180);
     return;
   }
 
@@ -1762,8 +1765,11 @@ export function handleInput(event) {
     _searchDebounceTimer = setTimeout(() => {
       renderView();
       const next = document.querySelector('[data-action="search-audit-input"]');
-      if (next) { next.focus(); next.setSelectionRange(cursor, cursor); }
-    }, 120);
+      if (next) {
+        next.focus({ preventScroll: true });
+        try { next.setSelectionRange(cursor, cursor); } catch (_) {}
+      }
+    }, 180);
     return;
   }
 
@@ -1775,8 +1781,11 @@ export function handleInput(event) {
   _searchDebounceTimer = setTimeout(() => {
     renderView();
     const next = document.querySelector(`[data-search="${search}"], [data-action="search-documents"]`);
-    if (next) { next.focus(); next.setSelectionRange(cursor, cursor); }
-  }, 120);
+    if (next) {
+      next.focus({ preventScroll: true });
+      try { next.setSelectionRange(cursor, cursor); } catch (_) {}
+    }
+  }, 180);
 }
 
 export async function handleChange(event) {
@@ -2414,13 +2423,12 @@ export async function uploadDirectFiles({ files, projectId = null, taskId = null
       const v = getNextVersion(ext);
       const compiledName = `${safeProj}_${safeTask}_${safeBase}_v${v}${ext}`;
 
-      // Enterprise Zero-Latency Memory Blob Cache: Keep authentic file bytes accessible immediately for preview
-      if (typeof window !== 'undefined') {
-        window.__docBlobCache = window.__docBlobCache || new Map();
+      // Enterprise Zero-Latency Memory Blob Cache: Managed via bounded LRU to eliminate memory leaks
+      if (typeof window !== 'undefined' && window.__docBlobCache) {
         try {
           const localBlobUrl = URL.createObjectURL(file);
-          window.__docBlobCache.set(compiledName, localBlobUrl);
-          window.__docBlobCache.set(file.name, localBlobUrl);
+          window.__docBlobCache.set(compiledName, localBlobUrl, file.size);
+          window.__docBlobCache.set(file.name, localBlobUrl, file.size);
         } catch (e) {}
       }
       const fileSizeMB = file.size >= 1024 * 1024 * 1024
@@ -3086,12 +3094,12 @@ if (typeof window !== 'undefined' && !window._hashChangeListenerSet) {
   });
 }
 
-// UI-03: Auto-update timeline arrows on scroll with requestAnimationFrame throttling
+// UI-03: Auto-update timeline arrows on window resize (zero scroll thrashing)
 if (typeof window !== 'undefined' && !window._timelineScrollListenerSet) {
   window._timelineScrollListenerSet = true;
   let _timelineRafScheduled = false;
-  document.addEventListener('scroll', (e) => {
-    if (e.target && e.target.classList && (e.target.classList.contains('timeline-scroll') || e.target.classList.contains('gantt-scroll') || e.target.classList.contains('timeline-board'))) {
+  window.addEventListener('resize', () => {
+    if (state.view === 'project-detail' && state.projectTab === 'timeline') {
       if (!_timelineRafScheduled) {
         _timelineRafScheduled = true;
         requestAnimationFrame(() => {
@@ -3100,5 +3108,5 @@ if (typeof window !== 'undefined' && !window._timelineScrollListenerSet) {
         });
       }
     }
-  }, true);
+  }, { passive: true });
 }

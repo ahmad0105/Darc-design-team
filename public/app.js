@@ -83,10 +83,19 @@ document.addEventListener('submit', (event) => {
 });
 
 document.addEventListener('input', (e) => {
-  if (typeof handleInput === 'function') handleInput(e);
+  try {
+    if (typeof handleInput === 'function') handleInput(e);
+  } catch (error) {
+    reportClientError(error, { source: 'handleInput' });
+  }
 });
 document.addEventListener('change', (e) => {
-  if (typeof handleChange === 'function') handleChange(e);
+  if (typeof handleChange === 'function') {
+    Promise.resolve(handleChange(e)).catch((error) => {
+      reportClientError(error, { source: 'handleChange' });
+      if (typeof showToast === 'function') showToast(error.message, true);
+    });
+  }
 });
 document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape' && typeof closeModal === 'function') closeModal();

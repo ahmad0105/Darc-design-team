@@ -328,6 +328,10 @@ function startRateLimitCountdown(buttonEl, seconds = 60) {
   const originalText = buttonEl.innerHTML;
   
   const timer = setInterval(() => {
+    if (!buttonEl.isConnected) {
+      clearInterval(timer);
+      return;
+    }
     remaining--;
     buttonEl.innerHTML = `<span>${state.lang === 'ar' ? `يرجى الانتظار (${remaining} ثانية)...` : `Please wait (${remaining}s)...`}</span>`;
     if (remaining <= 0) {

@@ -20,6 +20,23 @@ export function closeModal(immediate = false) {
     previewOverlay.innerHTML = '';
   }
 
+  const projectPrintOverlay = document.getElementById('project-report-preview-modal');
+  if (projectPrintOverlay) {
+    projectPrintOverlay.style.display = 'none';
+    projectPrintOverlay.innerHTML = '';
+  }
+
+  const auditPrintOverlay = document.getElementById('audit-report-preview-modal');
+  if (auditPrintOverlay) {
+    auditPrintOverlay.style.display = 'none';
+    auditPrintOverlay.innerHTML = '';
+  }
+
+  const omnisearchModal = document.getElementById('omnisearch-modal');
+  if (omnisearchModal) {
+    omnisearchModal.remove();
+  }
+
   const modalRoot = document.getElementById('modal-root');
   if (!modalRoot || !modalRoot.hasChildNodes()) {
     document.body.style.overflow = '';
@@ -72,8 +89,16 @@ export function modalShell(title, subtitle, body, id = '', extraClass = '') {
  * Compatible with legacy signature: showToast(message, isError = false)
  */
 export function showToast(message, typeOrIsError = 'success') {
-  const stack = document.getElementById('toast-root');
-  if (!stack || !message) return;
+  if (!message) return;
+  let stack = document.getElementById('toast-root');
+  if (!stack) {
+    stack = document.createElement('div');
+    stack.id = 'toast-root';
+    stack.className = 'toast-stack';
+    stack.setAttribute('role', 'region');
+    stack.setAttribute('aria-label', 'Notifications');
+    document.body.appendChild(stack);
+  }
 
   // Resolve type
   let type = 'success';

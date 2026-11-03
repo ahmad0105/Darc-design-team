@@ -325,11 +325,6 @@ export function printAuditReport(logs = null) {
     `;
   });
 
-  const printWindow = window.open('', '_blank', 'width=1100,height=850');
-  if (!printWindow) {
-    showToast(choose('يرجى السماح بالنوافذ المنبثقة للطباعة.', 'Please allow popups to print report.'), true);
-    return;
-  }
 
   const printHtml = `
     <!DOCTYPE html>
@@ -543,9 +538,60 @@ export function printAuditReport(logs = null) {
     </html>
   `;
 
-  printWindow.document.open();
-  printWindow.document.write(printHtml);
-  printWindow.document.close();
+  let overlay = document.getElementById('audit-report-preview-modal');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'audit-report-preview-modal';
+    overlay.style.position = 'fixed';
+    overlay.style.inset = '0';
+    overlay.style.background = 'rgba(0, 0, 0, 0.7)';
+    overlay.style.backdropFilter = 'blur(4px)';
+    overlay.style.zIndex = '999999';
+    overlay.style.display = 'none';
+    overlay.style.alignItems = 'center';
+    overlay.style.justifyContent = 'center';
+    overlay.style.padding = '15px';
+    document.body.appendChild(overlay);
+  }
+
+  overlay.innerHTML = `
+    <div style="background:var(--surface, #ffffff);color:var(--ink);width:95%;max-width:1150px;height:92vh;border-radius:12px;box-shadow:0 25px 50px rgba(0,0,0,0.4);overflow:hidden;display:flex;flex-direction:column;border:1px solid var(--line);">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 20px;border-bottom:1px solid var(--line);background:var(--surface-soft);flex-wrap:wrap;gap:8px;">
+        <strong style="color:var(--brand-teal);font-size:14px;">${choose('معاينة التقرير الرقابي الرسمي (Audit Trail PDF Preview)', 'Official Audit Trail Report (PDF Preview)')}</strong>
+        <div style="display:flex;gap:10px;">
+          <button type="button" class="btn btn-primary btn-sm" id="btn-print-audit-iframe" style="display:flex;align-items:center;gap:6px;">
+            ${icon('printer', 14)} ${choose('طباعة / حفظ كـ PDF', 'Print / Save as PDF')}
+          </button>
+          <button type="button" class="btn btn-ghost btn-sm" id="btn-close-audit-print-modal">✕</button>
+        </div>
+      </div>
+      <div style="flex:1;overflow:hidden;position:relative;background:#ffffff;">
+        <iframe id="audit-print-preview-iframe" style="width:100%;height:100%;border:none;background:#ffffff;" srcdoc="${esc(printHtml)}"></iframe>
+      </div>
+    </div>
+  `;
+  overlay.style.display = 'flex';
+
+  const closePrintModal = () => {
+    overlay.style.display = 'none';
+    overlay.innerHTML = '';
+    window.removeEventListener('keydown', handleEsc);
+  };
+
+  const handleEsc = (e) => {
+    if (e.key === 'Escape') closePrintModal();
+  };
+
+  window.addEventListener('keydown', handleEsc);
+  document.getElementById('btn-close-audit-print-modal')?.addEventListener('click', closePrintModal);
+
+  document.getElementById('btn-print-audit-iframe')?.addEventListener('click', () => {
+    const iframe = document.getElementById('audit-print-preview-iframe');
+    if (iframe && iframe.contentWindow) {
+      iframe.contentWindow.focus();
+      iframe.contentWindow.print();
+    }
+  });
 
   // Log report print action in audit trail
   api('/api/audit', {

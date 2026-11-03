@@ -764,3 +764,80 @@ export function setSavedTaskSort(mode) {
   state.projectTaskSort = mode;
   state.myTaskSort = mode;
 }
+
+// Enterprise Bounded LRU Document Blob Cache (OWASP Client Memory Exhaustion Guard)
+const MAX_BLOB_CACHE_SIZE = 8;
+const BLOB_TTL_MS = 15 * 60 * 1000; // 15 minutes TTL
+
+class DocumentBlobManager {
+  constructor(maxSize = MAX_BLOB_CACHE_SIZE) {
+    this.maxSize = maxSize;
+    this.cache = new Map();
+  }
+
+  set(key, blobUrl, size = 0) {
+    if (!key || !blobUrl) return;
+    if (this.cache.has(key)) {
+      const existing = this.cache.get(key);
+      if (existing?.url && existing.url !== blobUrl) {
+        try { URL.revokeObjectURL(existing.url); } catch (_) {}
+      }
+      this.cache.delete(key);
+    }
+
+    while (this.cache.size >= this.maxSize) {
+      const oldestKey = this.cache.keys().next().value;
+      if (!oldestKey) break;
+      const entry = this.cache.get(oldestKey);
+      if (entry?.url) {
+        try { URL.revokeObjectURL(entry.url); } catch (_) {}
+      }
+      this.cache.delete(oldestKey);
+    }
+
+    this.cache.set(key, { url: blobUrl, size, timestamp: Date.now() });
+  }
+
+  get(key) {
+    if (!key || !this.cache.has(key)) return null;
+    const entry = this.cache.get(key);
+    if (!entry) return null;
+    if (Date.now() - entry.timestamp > BLOB_TTL_MS) {
+      if (entry.url) {
+        try { URL.revokeObjectURL(entry.url); } catch (_) {}
+      }
+      this.cache.delete(key);
+      return null;
+    }
+    this.cache.delete(key);
+    this.cache.set(key, entry);
+    return entry.url;
+  }
+
+  has(key) {
+    return Boolean(this.get(key));
+  }
+
+  revoke(key) {
+    if (!key || !this.cache.has(key)) return;
+    const entry = this.cache.get(key);
+    if (entry?.url) {
+      try { URL.revokeObjectURL(entry.url); } catch (_) {}
+    }
+    this.cache.delete(key);
+  }
+
+  clear() {
+    for (const [, entry] of this.cache.entries()) {
+      if (entry?.url) {
+        try { URL.revokeObjectURL(entry.url); } catch (_) {}
+      }
+    }
+    this.cache.clear();
+  }
+}
+
+export const docBlobManager = new DocumentBlobManager();
+if (typeof window !== 'undefined') {
+  window.__docBlobCache = docBlobManager;
+}

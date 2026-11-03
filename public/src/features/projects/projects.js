@@ -2013,9 +2013,9 @@ export function renderInPagePrintModal(printHtml) {
   }
 
   overlay.innerHTML = `
-    <div style="background:#fff;width:95%;max-width:1150px;height:92vh;border-radius:12px;box-shadow:0 25px 50px rgba(0,0,0,0.3);overflow:hidden;display:flex;flex-direction:column;">
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 20px;border-bottom:1px solid #e2e8f0;background:#f8fafc;flex-wrap:wrap;gap:8px;">
-        <strong style="color:#0d6269;font-size:14px;">${choose('معاينة التقرير الرسمي المعتمد (PDF Preview)', 'Official Approved Report (PDF Preview)')}</strong>
+    <div style="background:var(--surface, #ffffff);color:var(--ink);width:95%;max-width:1150px;height:92vh;border-radius:12px;box-shadow:0 25px 50px rgba(0,0,0,0.4);overflow:hidden;display:flex;flex-direction:column;border:1px solid var(--line);">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 20px;border-bottom:1px solid var(--line);background:var(--surface-soft);flex-wrap:wrap;gap:8px;">
+        <strong style="color:var(--brand-teal);font-size:14px;">${choose('معاينة التقرير الرسمي المعتمد (PDF Preview)', 'Official Approved Report (PDF Preview)')}</strong>
         <div style="display:flex;gap:10px;">
           <button type="button" class="btn btn-primary btn-sm" id="btn-print-iframe" style="display:flex;align-items:center;gap:6px;">
             ${icon('printer', 14)} ${choose('طباعة / حفظ كـ PDF', 'Print / Save as PDF')}
@@ -2023,8 +2023,8 @@ export function renderInPagePrintModal(printHtml) {
           <button type="button" class="btn btn-ghost btn-sm" id="btn-close-print-modal">✕</button>
         </div>
       </div>
-      <div style="flex:1;overflow:hidden;position:relative;">
-        <iframe id="print-preview-iframe" style="width:100%;height:100%;border:none;" srcdoc="${esc(printHtml)}"></iframe>
+      <div style="flex:1;overflow:hidden;position:relative;background:#ffffff;">
+        <iframe id="print-preview-iframe" style="width:100%;height:100%;border:none;background:#ffffff;" srcdoc="${esc(printHtml)}"></iframe>
       </div>
     </div>
   `;

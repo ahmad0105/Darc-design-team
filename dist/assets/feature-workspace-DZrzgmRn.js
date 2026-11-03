@@ -1,4 +1,4 @@
-import{t as me}from"./rolldown-runtime-BQ-_32WO.js";import{$ as E,A as a,B as _e,C as _,D as e,E as ee,F as ue,G as S,I as Le,J as Me,K as Ne,L as W,N as Fe,O,P as Y,Q as X,U as x,V as fe,Y as te,Z as ve,at as Oe,ct as L,g as R,ht as l,j as ae,l as Re,nt as M,ot as ie,q as ne,rt as u,tt as Be,w as j}from"./core-realtime-CCg9Uthr.js";import{s as qe}from"./feature-settings-C9xPF_qQ.js";import{a as Ue,i as He,o as Je,r as We,s as Ge}from"./feature-documents-DZbG6MdG.js";var lt=me({STATUS_OPTIONS:()=>ze,buildAssigneeChipsHtml:()=>de,buildRemindersListHtml:()=>le,canUserMoveTask:()=>ee,canUserUploadToTask:()=>be,closeDocumentPreviewModal:()=>We,downloadDocument:()=>He,drawTimelineArrows:()=>Ve,filterTasks:()=>ke,formatRemindAtDate:()=>De,getDocumentShareableLink:()=>Ue,getSavedTaskSort:()=>q,getTaskSortOrder:()=>J,handleCopyDocLink:()=>Je,initTaskModalWidgets:()=>Te,openDocumentPreviewModal:()=>Ge,openTaskModal:()=>Ye,renderBoard:()=>re,renderCalendar:()=>oe,renderTaskAssignees:()=>xe,renderTaskComments:()=>pe,renderTaskDocuments:()=>Ae,renderTaskSortSelect:()=>se,renderTasks:()=>Xe,renderTimeline:()=>V,renderTimelinePanel:()=>we,setSavedTaskSort:()=>Be,sortTasks:()=>$e,sortTasksByImportance:()=>he,taskCard:()=>ye});function xe(t){const s=l.data?.users||[],i=l._userMap||new Map(s.map(p=>[p.id,p])),n=t.assignee||i.get(t.assigneeId),r=(t.customFields?.additionalAssignees||t.customFields?.additional_assignees||[]).map(p=>i.get(p)).filter(Boolean),o=t.customFields?.externalAssignees||t.customFields?.external_assignees||[];let c='<div class="task-assignees-wrap" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">';return n||r.length?(c+='<div class="avatar-stack" style="display:flex;align-items:center;">',n&&(c+=`<span title="${a(e(n.name,n.nameEn||n.name))}">${_(n,"mini-avatar")}</span>`),r.slice(0,2).forEach(p=>{c+=`<span title="${a(e(p.name,p.nameEn||p.name))}" style="margin-inline-start:-8px;">${_(p,"mini-avatar")}</span>`}),r.length>2&&(c+=`<span class="avatar-more" style="margin-inline-start:-8px;background:var(--surface-soft);border:1px solid var(--line);border-radius:50%;width:22px;height:22px;display:inline-grid;place-items:center;font-size:9px;font-weight:bold;color:var(--ink-soft);" title="${r.slice(2).map(p=>e(p.name,p.nameEn||p.name)).join("، ")}">+${r.length-2}</span>`),c+="</div>",n&&(c+=`<span class="task-primary-name" style="font-size:11px;color:var(--ink-soft);">${a(e(n.name,n.nameEn||n.name))}</span>`)):o.length||(c+='<span class="task-unassigned" style="font-size:11px;color:var(--muted);">—</span>'),o.length&&(o.slice(0,2).forEach(p=>{c+=`<span class="external-assignee-badge" style="font-size:10px;padding:2px 6px;border-radius:6px;background:var(--amber-soft);color:var(--amber);border:1px solid rgba(199,131,52,0.25);display:inline-flex;align-items:center;gap:3px;" title="${a(p)}">🌐 ${a(p)} <small style="opacity:0.8">(${e("خارجي","Ext")})</small></span>`}),o.length>2&&(c+=`<span style="font-size:10px;color:var(--amber);" title="${o.slice(2).map(a).join("، ")}">+${o.length-2}</span>`)),c+="</div>",c}function be(t){if(!t)return!1;if(S())return!0;if(!j("upload_documents")&&!j("edit_tasks"))return!1;const s=l.data?.user?.id;if(!s)return!1;if(ee(t))return!0;const i=t.projectId||t.project_id;if(i&&Array.isArray(l.data?.projects)){const n=l.data.projects.find(r=>r.id===i);if(n){const r=n.managerId||n.manager_id,o=n.ownerId||n.owner_id||n.leadId||n.lead_id||n.createdById||n.created_by;if(r===s||o===s||Array.isArray(n.members)&&n.members.some(c=>(c.userId||c.id||c)===s)||Array.isArray(n.memberIds)&&n.memberIds.includes(s))return!0}}return!1}function ye(t){const s=_e(t),i=s==="overdue"||ne(t);let n="",r="";s==="overdue"?(r="is-overdue",n=`<span class="overdue-tag" style="display:inline-flex;align-items:center;gap:3px;color:var(--red);background:var(--red-soft);padding:2px 6px;border-radius:4px;font-size:10px;font-weight:600;">${x("alert",11)} ${u("overdue")}</span>`):s==="due_24h"?(r="is-due-24h",n=`<span class="due-tag-24h" style="display:inline-flex;align-items:center;gap:3px;" title="${e("متبقي أقل من 24 ساعة على موعد التسليم","Due in less than 24 hours")}">${x("clock",11)} ${e("خلال 24 ساعة","Due in 24h")}</span>`):s==="due_48h"?(r="is-due-48h",n=`<span class="due-tag-48h" style="display:inline-flex;align-items:center;gap:3px;" title="${e("متبقي أقل من 48 ساعة على موعد التسليم","Due within 48 hours")}">${x("clock",11)} ${e("خلال 48 ساعة","Due in 48h")}</span>`):s==="due_72h"&&(r="is-due-72h",n=`<span class="due-tag-72h" style="display:inline-flex;align-items:center;gap:3px;" title="${e("متبقي أقل من 72 ساعة على موعد التسليم","Due within 72 hours")}">${x("clock",11)} ${e("خلال 72 ساعة","Due in 72h")}</span>`);const o=i?"var(--red)":s==="due_24h"?"#ea580c":s==="due_48h"?"#d97706":s==="due_72h"?"#0284c7":"var(--muted)",c=l._commentCounts?l._commentCounts[t.id]||0:(l.data?.comments||[]).filter(f=>f.taskId===t.id).length,p=l._docCounts?l._docCounts[t.id]||0:(l.data?.documents||[]).filter(f=>f.taskId===t.id).length,d=t.progress===100?"var(--mint-strong)":t.progress>=80?"var(--amber)":t.progress>0?"var(--blue)":"var(--line)",v=ee(t),m=e(t.titleAr,t.titleEn);return`<article class="task-card ${r} ${v?"":"not-draggable"}" draggable="false" tabindex="0" role="button" aria-roledescription="sortable task card" aria-label="${a(m)}" data-action="open-task" data-task-id="${a(t.id)}">
+import{t as ue}from"./rolldown-runtime-BQ-_32WO.js";import{$ as E,A as a,B as Me,C as I,D as e,E as ee,F as fe,G as S,I as Le,J as Ne,K as Fe,L as W,N as Oe,O,P as Y,Q as X,U as x,V as ve,Y as te,Z as xe,at as Re,ct as M,g as B,ht as l,j as ae,l as Be,nt as L,ot as ie,q as ne,rt as u,tt as qe,w as j}from"./core-realtime-Cr24Cgah.js";import{s as Ue}from"./feature-settings-Bj6gbzYU.js";import{a as He,i as Je,o as We,r as Ge,s as Xe}from"./feature-documents-B2QcqpAl.js";var pt=ue({STATUS_OPTIONS:()=>je,buildAssigneeChipsHtml:()=>de,buildRemindersListHtml:()=>le,canUserMoveTask:()=>ee,canUserUploadToTask:()=>ye,closeDocumentPreviewModal:()=>Ge,downloadDocument:()=>Je,drawTimelineArrows:()=>Ke,filterTasks:()=>De,formatRemindAtDate:()=>Te,getDocumentShareableLink:()=>He,getSavedTaskSort:()=>U,getTaskSortOrder:()=>J,handleCopyDocLink:()=>We,initTaskModalWidgets:()=>Ae,openDocumentPreviewModal:()=>Xe,openTaskModal:()=>Ve,renderBoard:()=>re,renderCalendar:()=>oe,renderTaskAssignees:()=>be,renderTaskComments:()=>pe,renderTaskDocuments:()=>ze,renderTaskSortSelect:()=>se,renderTasks:()=>Ye,renderTimeline:()=>V,renderTimelinePanel:()=>ke,setSavedTaskSort:()=>qe,sortTasks:()=>we,sortTasksByImportance:()=>$e,taskCard:()=>he});function be(t){const s=l.data?.users||[],i=l._userMap||new Map(s.map(p=>[p.id,p])),n=t.assignee||i.get(t.assigneeId),r=(t.customFields?.additionalAssignees||t.customFields?.additional_assignees||[]).map(p=>i.get(p)).filter(Boolean),o=t.customFields?.externalAssignees||t.customFields?.external_assignees||[];let c='<div class="task-assignees-wrap" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">';return n||r.length?(c+='<div class="avatar-stack" style="display:flex;align-items:center;">',n&&(c+=`<span title="${a(e(n.name,n.nameEn||n.name))}">${I(n,"mini-avatar")}</span>`),r.slice(0,2).forEach(p=>{c+=`<span title="${a(e(p.name,p.nameEn||p.name))}" style="margin-inline-start:-8px;">${I(p,"mini-avatar")}</span>`}),r.length>2&&(c+=`<span class="avatar-more" style="margin-inline-start:-8px;background:var(--surface-soft);border:1px solid var(--line);border-radius:50%;width:22px;height:22px;display:inline-grid;place-items:center;font-size:9px;font-weight:bold;color:var(--ink-soft);" title="${r.slice(2).map(p=>e(p.name,p.nameEn||p.name)).join("، ")}">+${r.length-2}</span>`),c+="</div>",n&&(c+=`<span class="task-primary-name" style="font-size:11px;color:var(--ink-soft);">${a(e(n.name,n.nameEn||n.name))}</span>`)):o.length||(c+='<span class="task-unassigned" style="font-size:11px;color:var(--muted);">—</span>'),o.length&&(o.slice(0,2).forEach(p=>{c+=`<span class="external-assignee-badge" style="font-size:10px;padding:2px 6px;border-radius:6px;background:var(--amber-soft);color:var(--amber);border:1px solid rgba(199,131,52,0.25);display:inline-flex;align-items:center;gap:3px;" title="${a(p)}">🌐 ${a(p)} <small style="opacity:0.8">(${e("خارجي","Ext")})</small></span>`}),o.length>2&&(c+=`<span style="font-size:10px;color:var(--amber);" title="${o.slice(2).map(a).join("، ")}">+${o.length-2}</span>`)),c+="</div>",c}function ye(t){if(!t)return!1;if(S())return!0;if(!j("upload_documents")&&!j("edit_tasks"))return!1;const s=l.data?.user?.id;if(!s)return!1;if(ee(t))return!0;const i=t.projectId||t.project_id;if(i&&Array.isArray(l.data?.projects)){const n=l.data.projects.find(r=>r.id===i);if(n){const r=n.managerId||n.manager_id,o=n.ownerId||n.owner_id||n.leadId||n.lead_id||n.createdById||n.created_by;if(r===s||o===s||Array.isArray(n.members)&&n.members.some(c=>(c.userId||c.id||c)===s)||Array.isArray(n.memberIds)&&n.memberIds.includes(s))return!0}}return!1}function he(t){const s=Me(t),i=s==="overdue"||ne(t);let n="",r="";s==="overdue"?(r="is-overdue",n=`<span class="overdue-tag" style="display:inline-flex;align-items:center;gap:3px;color:var(--red);background:var(--red-soft);padding:2px 6px;border-radius:4px;font-size:10px;font-weight:600;">${x("alert",11)} ${u("overdue")}</span>`):s==="due_24h"?(r="is-due-24h",n=`<span class="due-tag-24h" style="display:inline-flex;align-items:center;gap:3px;" title="${e("متبقي أقل من 24 ساعة على موعد التسليم","Due in less than 24 hours")}">${x("clock",11)} ${e("خلال 24 ساعة","Due in 24h")}</span>`):s==="due_48h"?(r="is-due-48h",n=`<span class="due-tag-48h" style="display:inline-flex;align-items:center;gap:3px;" title="${e("متبقي أقل من 48 ساعة على موعد التسليم","Due within 48 hours")}">${x("clock",11)} ${e("خلال 48 ساعة","Due in 48h")}</span>`):s==="due_72h"&&(r="is-due-72h",n=`<span class="due-tag-72h" style="display:inline-flex;align-items:center;gap:3px;" title="${e("متبقي أقل من 72 ساعة على موعد التسليم","Due within 72 hours")}">${x("clock",11)} ${e("خلال 72 ساعة","Due in 72h")}</span>`);const o=i?"var(--red)":s==="due_24h"?"#ea580c":s==="due_48h"?"#d97706":s==="due_72h"?"#0284c7":"var(--muted)",c=l._commentCounts?l._commentCounts[t.id]||0:(l.data?.comments||[]).filter(v=>v.taskId===t.id).length,p=l._docCounts?l._docCounts[t.id]||0:(l.data?.documents||[]).filter(v=>v.taskId===t.id).length,d=t.progress===100?"var(--mint-strong)":t.progress>=80?"var(--amber)":t.progress>0?"var(--blue)":"var(--line)",f=ee(t),m=e(t.titleAr,t.titleEn);return`<article class="task-card ${r} ${f?"":"not-draggable"}" draggable="false" tabindex="0" role="button" aria-roledescription="sortable task card" aria-label="${a(m)}" data-action="open-task" data-task-id="${a(t.id)}">
     <div class="task-card-top">
       <div style="display:flex;align-items:center;gap:6px;">
         <span class="task-drag-handle" title="${e("اسحب لتحريك المهمة","Drag to reorder")}" style="cursor:grab;touch-action:none;padding:1px 4px;border-radius:4px;color:var(--muted);font-size:12px;opacity:0.65;user-select:none;transition:opacity 0.15s ease;">⋮⋮</span>
@@ -9,24 +9,24 @@ import{t as me}from"./rolldown-runtime-BQ-_32WO.js";import{$ as E,A as a,B as _e
         ${c>0?`<span style="font-size:10px;color:var(--muted);display:inline-flex;align-items:center;gap:2px;" title="${c} ${e("تعليقات","comments")}">💬 ${c}</span>`:""}
         ${p>0?`<span style="font-size:10px;color:var(--muted);display:inline-flex;align-items:center;gap:2px;" title="${p} ${e("مرفقات","attachments")}">📎 ${p}</span>`:""}
         ${n}
-        <span class="priority-badge ${a(t.priority)}">${a(ve(t.priority))}</span>
+        <span class="priority-badge ${a(t.priority)}">${a(xe(t.priority))}</span>
       </div>
     </div>
     <h4>${a(e(t.titleAr,t.titleEn))}</h4>
-    ${(()=>{const f=String(e(t.descriptionAr||t.description,t.descriptionEn||t.description)||"").trim();if(!f)return"";const $=f.length>50?f.substring(0,50).trim()+"...":f;return`<p class="task-card-desc" style="margin:3px 0 8px;font-size:11px;color:var(--ink-soft);line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word;" title="${a(f)}">${a($)}</p>`})()}
+    ${(()=>{const v=String(e(t.descriptionAr||t.description,t.descriptionEn||t.description)||"").trim();if(!v)return"";const h=v.length>50?v.substring(0,50).trim()+"...":v;return`<p class="task-card-desc" style="margin:3px 0 8px;font-size:11px;color:var(--ink-soft);line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word;" title="${a(v)}">${a(h)}</p>`})()}
     <div class="task-meta-row" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;font-size:10px;color:var(--ink-soft);">
       <span class="task-category">${a(e(t.categoryAr,t.categoryEn)||"")}</span>
       ${t.dueDate?`<span class="task-due-date" style="display:inline-flex;align-items:center;gap:3px;color:${o};font-weight:${i||s?"700":"500"};">${x("calendar",11)} ${O(t.dueDate)}</span>`:""}
     </div>
     <div class="task-card-foot">
-      ${xe(t)}
+      ${be(t)}
       <span class="task-progress" style="font-size:11px;font-weight:700;color:${t.progress===100?"var(--mint-strong)":"var(--teal)"};">${t.progress}%</span>
     </div>
     <!-- Mini progress bar -->
     <div class="task-card-mini-bar" style="height:3px;background:var(--line);border-radius:2px;overflow:hidden;margin-top:8px;">
       <div style="height:100%;width:${t.progress}%;background:${d};border-radius:2px;transition:width .3s;"></div>
     </div>
-  </article>`}function J(t){if(!t)return 999999;if(typeof t.sortOrder=="number")return t.sortOrder;if(typeof t.sort_order=="number")return t.sort_order;if(t.customFields){if(typeof t.customFields.sortOrder=="number")return t.customFields.sortOrder;if(typeof t.customFields.sort_order=="number")return t.customFields.sort_order}if(t.custom_fields){if(typeof t.custom_fields.sortOrder=="number")return t.custom_fields.sortOrder;if(typeof t.custom_fields.sort_order=="number")return t.custom_fields.sort_order}return 999999}function he(t=[]){const s={urgent:4,high:3,medium:2,low:1},i=Date.now();return[...t].sort((n,r)=>{const o=n.status==="blocked"?1:0,c=r.status==="blocked"?1:0;if(o!==c)return c-o;const p=n.dueDate?new Date(`${n.dueDate.split("T")[0]}T23:59:59`).getTime():null,d=r.dueDate?new Date(`${r.dueDate.split("T")[0]}T23:59:59`).getTime():null,v=p&&p<i&&n.status!=="done"?1:0,m=d&&d<i&&r.status!=="done"?1:0;if(v!==m)return m-v;const f=s[n.priority]||2,$=s[r.priority]||2;if(f!==$)return $-f;if(p&&d){if(p!==d)return p-d}else{if(p&&!d)return-1;if(!p&&d)return 1}const b=J(n),D=J(r);return b!==D?b-D:(n.titleAr||"").localeCompare(r.titleAr||"","ar")})}function q(){try{return localStorage.getItem("darc_task_sort_pref")||"custom"}catch{return"custom"}}function se(t,s="sort-project-tasks"){const i=t||q();return`
+  </article>`}function J(t){if(!t)return 999999;if(typeof t.sortOrder=="number")return t.sortOrder;if(typeof t.sort_order=="number")return t.sort_order;if(t.customFields){if(typeof t.customFields.sortOrder=="number")return t.customFields.sortOrder;if(typeof t.customFields.sort_order=="number")return t.customFields.sort_order}if(t.custom_fields){if(typeof t.custom_fields.sortOrder=="number")return t.custom_fields.sortOrder;if(typeof t.custom_fields.sort_order=="number")return t.custom_fields.sort_order}return 999999}function $e(t=[]){const s={urgent:4,high:3,medium:2,low:1},i=Date.now();return[...t].sort((n,r)=>{const o=n.status==="blocked"?1:0,c=r.status==="blocked"?1:0;if(o!==c)return c-o;const p=n.dueDate?new Date(`${n.dueDate.split("T")[0]}T23:59:59`).getTime():null,d=r.dueDate?new Date(`${r.dueDate.split("T")[0]}T23:59:59`).getTime():null,f=p&&p<i&&n.status!=="done"?1:0,m=d&&d<i&&r.status!=="done"?1:0;if(f!==m)return m-f;const v=s[n.priority]||2,h=s[r.priority]||2;if(v!==h)return h-v;if(p&&d){if(p!==d)return p-d}else{if(p&&!d)return-1;if(!p&&d)return 1}const b=J(n),D=J(r);return b!==D?b-D:(n.titleAr||"").localeCompare(r.titleAr||"","ar")})}function U(){try{return localStorage.getItem("darc_task_sort_pref")||"custom"}catch{return"custom"}}function se(t,s="sort-project-tasks"){const i=t||U();return`
     <div class="sort-box">
       <span>${e("الترتيب:","Sort:")}</span>
       <select class="filter-select select-compact" data-action="${s}">
@@ -36,15 +36,15 @@ import{t as me}from"./rolldown-runtime-BQ-_32WO.js";import{$ as E,A as a,B as _e
         <option value="alpha" ${i==="alpha"?"selected":""}>${e("أبجدياً","Alphabetical")}</option>
       </select>
     </div>
-  `}function $e(t=[],s=q()){return s==="deadline"?[...t].sort((i,n)=>(i.dueDate?new Date(`${i.dueDate.split("T")[0]}T23:59:59`).getTime():1/0)-(n.dueDate?new Date(`${n.dueDate.split("T")[0]}T23:59:59`).getTime():1/0)):s==="custom"?[...t].sort((i,n)=>J(i)-J(n)):s==="alpha"?[...t].sort((i,n)=>(i.titleAr||"").localeCompare(n.titleAr||"","ar")):he(t)}function re(t,s=q()){const i=l.data?.users||[];l._userMap=new Map(i.map(o=>[o.id,o]));const n={};for(const o of l.data?.comments||[])o.taskId&&(n[o.taskId]=(n[o.taskId]||0)+1);const r={};for(const o of l.data?.documents||[])o.taskId&&(r[o.taskId]=(r[o.taskId]||0)+1);return l._commentCounts=n,l._docCounts=r,`<div class="board">${[{key:"not_started",dot:"",label:u("notStarted")},{key:"in_progress",dot:"blue",label:u("inProgress")},{key:"review",dot:"amber",label:e("مراجعة / اعتماد","Review / approval"),statuses:["review","approval","blocked"]},{key:"done",dot:"green",label:u("done")}].map(o=>{const c=$e(t.filter(p=>(o.statuses||[o.key]).includes(p.status)),s);return`<section class="board-column" data-status="${o.key}"><div class="board-column-head"><div class="board-column-title"><span class="column-dot ${o.dot}"></span>${o.label}</div><span class="board-count">${c.length}</span></div><div class="board-cards">${c.length?c.map(ye).join(""):`<div class="empty" style="min-height:150px;pointer-events:none;">${u("noTasks")}</div>`}</div></section>`}).join("")}</div>`}function oe(t,s){const i=l.calendarDate?new Date(l.calendarDate):new Date,n=i.getFullYear(),r=i.getMonth(),o=`${l.lang==="ar"?["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"][r]:["January","February","March","April","May","June","July","August","September","October","November","December"][r]} ${n}`,c=l.lang==="ar"?["الأحد","الإثنين","الثلاثاء","الأربعاء","الخميس","الجمعة","السبت"]:["Sun","Mon","Tue","Wed","Thu","Fri","Sat"],p=new Date(n,r,1).getDay(),d=new Date(n,r+1,0).getDate(),v=new Date,m=v.getFullYear()===n&&v.getMonth()===r;let f="";for(let $=0;$<p;$++)f+='<div class="calendar-day empty" style="min-height:85px;background:var(--surface-soft);opacity:0.25;border:1px solid var(--line);border-radius:6px;"></div>';for(let $=1;$<=d;$++){const b=m&&v.getDate()===$,D=`${n}-${String(r+1).padStart(2,"0")}-${String($).padStart(2,"0")}`,g=t.filter(w=>{if(!w.dueDate&&!w.startDate)return!1;const A=w.dueDate?w.dueDate.split("T")[0]:null,C=w.startDate?w.startDate.split("T")[0]:null;return A===D||C===D});f+=`
+  `}function we(t=[],s=U()){return s==="deadline"?[...t].sort((i,n)=>(i.dueDate?new Date(`${i.dueDate.split("T")[0]}T23:59:59`).getTime():1/0)-(n.dueDate?new Date(`${n.dueDate.split("T")[0]}T23:59:59`).getTime():1/0)):s==="custom"?[...t].sort((i,n)=>J(i)-J(n)):s==="alpha"?[...t].sort((i,n)=>(i.titleAr||"").localeCompare(n.titleAr||"","ar")):$e(t)}function re(t,s=U()){const i=l.data?.users||[];l._userMap=new Map(i.map(o=>[o.id,o]));const n={};for(const o of l.data?.comments||[])o.taskId&&(n[o.taskId]=(n[o.taskId]||0)+1);const r={};for(const o of l.data?.documents||[])o.taskId&&(r[o.taskId]=(r[o.taskId]||0)+1);return l._commentCounts=n,l._docCounts=r,`<div class="board">${[{key:"not_started",dot:"",label:u("notStarted")},{key:"in_progress",dot:"blue",label:u("inProgress")},{key:"review",dot:"amber",label:e("مراجعة / اعتماد","Review / approval"),statuses:["review","approval","blocked"]},{key:"done",dot:"green",label:u("done")}].map(o=>{const c=we(t.filter(p=>(o.statuses||[o.key]).includes(p.status)),s);return`<section class="board-column" data-status="${o.key}"><div class="board-column-head"><div class="board-column-title"><span class="column-dot ${o.dot}"></span>${o.label}</div><span class="board-count">${c.length}</span></div><div class="board-cards">${c.length?c.map(he).join(""):`<div class="empty" style="min-height:150px;pointer-events:none;">${u("noTasks")}</div>`}</div></section>`}).join("")}</div>`}function oe(t,s){const i=l.calendarDate?new Date(l.calendarDate):new Date,n=i.getFullYear(),r=i.getMonth(),o=`${l.lang==="ar"?["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"][r]:["January","February","March","April","May","June","July","August","September","October","November","December"][r]} ${n}`,c=l.lang==="ar"?["الأحد","الإثنين","الثلاثاء","الأربعاء","الخميس","الجمعة","السبت"]:["Sun","Mon","Tue","Wed","Thu","Fri","Sat"],p=new Date(n,r,1).getDay(),d=new Date(n,r+1,0).getDate(),f=new Date,m=f.getFullYear()===n&&f.getMonth()===r;let v="";for(let h=0;h<p;h++)v+='<div class="calendar-day empty" style="min-height:85px;background:var(--surface-soft);opacity:0.25;border:1px solid var(--line);border-radius:6px;"></div>';for(let h=1;h<=d;h++){const b=m&&f.getDate()===h,D=`${n}-${String(r+1).padStart(2,"0")}-${String(h).padStart(2,"0")}`,g=t.filter(w=>{if(!w.dueDate&&!w.startDate)return!1;const z=w.dueDate?w.dueDate.split("T")[0]:null,C=w.startDate?w.startDate.split("T")[0]:null;return z===D||C===D});v+=`
       <div class="calendar-day ${b?"is-today":""}" style="min-height:95px;min-width:0;overflow:hidden;background:${b?"var(--mint)":"var(--surface)"};border:1px solid ${b?"var(--teal)":"var(--line)"};border-radius:8px;padding:6px;display:flex;flex-direction:column;gap:4px;position:relative;">
         <div style="display:flex;align-items:center;justify-content:space-between;font-size:11px;font-weight:${b?"bold":"600"};color:${b?"var(--teal)":"var(--ink)"};">
-          <span>${$}</span>
+          <span>${h}</span>
           ${b?`<span style="font-size:9px;background:var(--teal);color:#fff;border-radius:4px;padding:1px 4px;">${e("اليوم","Today")}</span>`:""}
         </div>
         <div style="display:flex;flex-direction:column;gap:3px;overflow-y:auto;max-height:85px;">
-          ${g.map(w=>{const A=fe(w);return`
-              <div data-action="open-task" data-task-id="${a(w.id)}" style="background:${A.bgColor};border:1px solid ${A.borderColor};border-inline-start:3px solid ${A.color};border-radius:4px;padding:3px 5px;font-size:10px;color:${A.textColor};cursor:pointer;line-height:1.25;max-height:36px;overflow:hidden;word-break:break-word;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;" title="${a(e(w.titleAr,w.titleEn))} — ${A.label}">
+          ${g.map(w=>{const z=ve(w);return`
+              <div data-action="open-task" data-task-id="${a(w.id)}" style="background:${z.bgColor};border:1px solid ${z.borderColor};border-inline-start:3px solid ${z.color};border-radius:4px;padding:3px 5px;font-size:10px;color:${z.textColor};cursor:pointer;line-height:1.25;max-height:36px;overflow:hidden;word-break:break-word;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;" title="${a(e(w.titleAr,w.titleEn))} — ${z.label}">
                 <span style="font-weight:700;">${a(e(w.titleAr,w.titleEn))}</span>
               </div>
             `}).join("")}
@@ -64,16 +64,16 @@ import{t as me}from"./rolldown-runtime-BQ-_32WO.js";import{$ as E,A as a,B as _e
       </div>
 
       <div style="display:grid;grid-template-columns:repeat(7, minmax(0, 1fr));gap:6px;text-align:center;margin-bottom:6px;font-size:11px;font-weight:700;color:var(--ink-soft);">
-        ${c.map($=>`<div style="padding:6px 0;background:var(--surface-soft);border-radius:6px;border:1px solid var(--line);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${$}</div>`).join("")}
+        ${c.map(h=>`<div style="padding:6px 0;background:var(--surface-soft);border-radius:6px;border:1px solid var(--line);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${h}</div>`).join("")}
       </div>
 
       <div style="display:grid;grid-template-columns:repeat(7, minmax(0, 1fr));gap:6px;">
-        ${f}
+        ${v}
       </div>
     </div>
-  `}function V(t){const s=t.filter(d=>d.startDate&&d.dueDate).sort((d,v)=>new Date(d.startDate)-new Date(v.startDate));if(!s.length)return`<div class="empty" style="min-height:300px">${x("calendar",24)}<span>${e("لا توجد مهام مجدولة زمنياً في هذا المشروع.","No scheduled tasks in this project.")}</span></div>`;let i=Math.min(...s.map(d=>new Date(d.startDate).getTime())),n=Math.max(...s.map(d=>new Date(d.dueDate).getTime()));const r=2592e5;i-=r,n+=r;const o=Math.max(7,Math.ceil((n-i)/864e5));let c="";for(let d=0;d<o;d++){const v=new Date(i+d*864e5),m=v.getDay()===5||v.getDay()===6,f=Le()==="hijri"?l.lang==="ar"?"ar-SA-u-ca-islamic-umalqura":"en-u-ca-islamic-umalqura":l.lang==="ar"?"ar-u-ca-gregory":"en-GB-u-ca-gregory",$=new Intl.DateTimeFormat(f,{month:"short"}).format(v);c+=`<div style="padding:10px 5px;text-align:center;font-size:10px;color:var(--ink-soft);border-right:1px solid var(--line);background:${m?"var(--surface-soft)":"transparent"};border-bottom:1px solid var(--line)">${v.getDate()}<br>${$}</div>`}const p=s.map((d,v)=>{const m=Math.floor((new Date(d.startDate).getTime()-i)/864e5)+1,f=m+Math.max(1,Math.ceil((new Date(d.dueDate).getTime()-new Date(d.startDate).getTime())/864e5)+1),$=fe(d);return`<div style="display:contents" class="timeline-row" data-task-id="${d.id}" data-row="${v}">
+  `}function V(t){const s=t.filter(d=>d.startDate&&d.dueDate).sort((d,f)=>new Date(d.startDate)-new Date(f.startDate));if(!s.length)return`<div class="empty" style="min-height:300px">${x("calendar",24)}<span>${e("لا توجد مهام مجدولة زمنياً في هذا المشروع.","No scheduled tasks in this project.")}</span></div>`;let i=Math.min(...s.map(d=>new Date(d.startDate).getTime())),n=Math.max(...s.map(d=>new Date(d.dueDate).getTime()));const r=2592e5;i-=r,n+=r;const o=Math.max(7,Math.ceil((n-i)/864e5));let c="";for(let d=0;d<o;d++){const f=new Date(i+d*864e5),m=f.getDay()===5||f.getDay()===6,v=Le()==="hijri"?l.lang==="ar"?"ar-SA-u-ca-islamic-umalqura":"en-u-ca-islamic-umalqura":l.lang==="ar"?"ar-u-ca-gregory":"en-GB-u-ca-gregory",h=new Intl.DateTimeFormat(v,{month:"short"}).format(f);c+=`<div style="padding:10px 5px;text-align:center;font-size:10px;color:var(--ink-soft);border-right:1px solid var(--line);background:${m?"var(--surface-soft)":"transparent"};border-bottom:1px solid var(--line)">${f.getDate()}<br>${h}</div>`}const p=s.map((d,f)=>{const m=Math.floor((new Date(d.startDate).getTime()-i)/864e5)+1,v=m+Math.max(1,Math.ceil((new Date(d.dueDate).getTime()-new Date(d.startDate).getTime())/864e5)+1),h=ve(d);return`<div style="display:contents" class="timeline-row" data-task-id="${d.id}" data-row="${f}">
       <div style="grid-column: 1 / -1; border-bottom: 1px solid var(--line); pointer-events:none;"></div>
-      <div class="timeline-bar" data-action="open-task" data-task-id="${d.id}" style="grid-column: ${m} / ${f}; margin: 8px 4px; background: ${$.color}; border: 1px solid ${$.borderColor}; border-radius: 6px; padding: 6px 10px; color: #fff; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.12); position:relative; z-index: 2; transition: transform 0.2s, opacity 0.2s" title="${a(e(d.titleAr,d.titleEn))} — ${$.label}">
+      <div class="timeline-bar" data-action="open-task" data-task-id="${d.id}" style="grid-column: ${m} / ${v}; margin: 8px 4px; background: ${h.color}; border: 1px solid ${h.borderColor}; border-radius: 6px; padding: 6px 10px; color: #fff; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.12); position:relative; z-index: 2; transition: transform 0.2s, opacity 0.2s" title="${a(e(d.titleAr,d.titleEn))} — ${h.label}">
         <span style="font-weight:600;opacity:0.9">${a(d.templateId?d.templateId.replace("tpl-","#"):"#")}</span> ${a(e(d.titleAr,d.titleEn))}
         ${d.dependencies&&d.dependencies.length?`<span style="float:${l.lang==="ar"?"left":"right"};opacity:0.8">${x("link",10)}</span>`:""}
       </div>
@@ -83,7 +83,7 @@ import{t as me}from"./rolldown-runtime-BQ-_32WO.js";import{$ as E,A as a,B as _e
       ${p}
       <svg class="timeline-svg" style="position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:1"></svg>
     </div>
-  </div>`}function we(t,s){const i=l.timelineView||"gantt";return`
+  </div>`}function ke(t,s){const i=l.timelineView||"gantt";return`
     <div class="panel">
       <div class="panel-head" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
         <div>
@@ -102,7 +102,7 @@ import{t as me}from"./rolldown-runtime-BQ-_32WO.js";import{$ as E,A as a,B as _e
       
       ${i==="calendar"?oe(t,s):V(t)}
     </div>
-  `}typeof window<"u"&&(window.__timelineExports={renderTimelinePanel:we,renderCalendar:oe,renderTimeline:V});function ke(t){const s=(l.searches?.tasks||"").trim().toLowerCase();return t.filter(i=>{const n=!s||`${i.titleAr||""} ${i.titleEn||""} ${i.categoryAr||""} ${i.categoryEn||""}`.toLowerCase().includes(s),r=l.taskFilter==="all"||l.taskFilter==="mine"&&Me(i,l.data?.user?.id)||l.taskFilter==="due_soon"&&Ne(i)||l.taskFilter==="overdue"&&ne(i)||l.taskFilter==="blocked"&&i.status==="blocked",o=l.taskProjectFilter==="all"||i.projectId===l.taskProjectFilter,c=!l.taskPriorityFilter||l.taskPriorityFilter==="all"||i.priority===l.taskPriorityFilter;return n&&r&&o&&c})}function Xe(){const t=ke(l.data?.tasks||[]),s=[["all",u("all")],["mine",e("مسندة لي","Assigned to me")],["due_soon",e("تستحق قريباً","Due soon")],["overdue",u("overdue")],["blocked",u("blocked")]],i=l.myTaskSort||q();return`
+  `}typeof window<"u"&&(window.__timelineExports={renderTimelinePanel:ke,renderCalendar:oe,renderTimeline:V});function De(t){const s=(l.searches?.tasks||"").trim().toLowerCase();return t.filter(i=>{const n=!s||`${i.titleAr||""} ${i.titleEn||""} ${i.categoryAr||""} ${i.categoryEn||""}`.toLowerCase().includes(s),r=l.taskFilter==="all"||l.taskFilter==="mine"&&Ne(i,l.data?.user?.id)||l.taskFilter==="due_soon"&&Fe(i)||l.taskFilter==="overdue"&&ne(i)||l.taskFilter==="blocked"&&i.status==="blocked",o=l.taskProjectFilter==="all"||i.projectId===l.taskProjectFilter,c=!l.taskPriorityFilter||l.taskPriorityFilter==="all"||i.priority===l.taskPriorityFilter;return n&&r&&o&&c})}function Ye(){const t=De(l.data?.tasks||[]),s=[["all",u("all")],["mine",e("مسندة لي","Assigned to me")],["due_soon",e("تستحق قريباً","Due soon")],["overdue",u("overdue")],["blocked",u("blocked")]],i=l.myTaskSort||U();return`
     <div class="page-head">
       <div>
         <p class="eyebrow">${e("حركة التنفيذ","EXECUTION")}</p>
@@ -149,9 +149,9 @@ import{t as me}from"./rolldown-runtime-BQ-_32WO.js";import{$ as E,A as a,B as _e
     </div>
 
     ${t.length?re(t,i):`<section class="panel"><div class="empty">${x("checklist",18)}<span>${u("noTasks")}</span></div></section>`}
-  `}function De(t){return Fe(t,{includeSeconds:!1}).full}function de(t=[],s=[]){const i=l.data?.users||[];let n="";return t.forEach(r=>{const o=i.find(c=>c.id===r)||{name:r,id:r};n+=`
+  `}function Te(t){return Oe(t,{includeSeconds:!1}).full}function de(t=[],s=[]){const i=l.data?.users||[];let n="";return t.forEach(r=>{const o=i.find(c=>c.id===r)||{name:r,id:r};n+=`
       <span class="chip-item" style="display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:2px 8px 2px 6px;font-size:11px;color:var(--ink);">
-        ${_(o,"mini-avatar")}
+        ${I(o,"mini-avatar")}
         <span style="font-weight:500;">${a(e(o.name,o.nameEn||o.name))}</span>
         <button type="button" class="btn-remove-chip-user" data-uid="${a(r)}" style="border:none;background:none;cursor:pointer;color:var(--muted);padding:0 2px;font-size:13px;line-height:1;" title="${e("إزالة","Remove")}">×</button>
       </span>
@@ -166,14 +166,14 @@ import{t as me}from"./rolldown-runtime-BQ-_32WO.js";import{$ as E,A as a,B as _e
     <div class="reminder-card-row" data-idx="${i}" style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:var(--surface);border:1px solid var(--border);border-radius:8px;font-size:12px;">
       <div style="display:flex;align-items:center;gap:8px;overflow:hidden;">
         <span style="color:var(--teal);font-size:14px;">⏰</span>
-        <strong style="color:var(--ink);">${a(De(s.remindAt))}</strong>
+        <strong style="color:var(--ink);">${a(Te(s.remindAt))}</strong>
         ${s.noteAr?`<span style="color:var(--muted);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${a(s.noteAr)}">(${a(s.noteAr)})</span>`:""}
       </div>
       <button type="button" class="btn-delete-reminder" data-idx="${i}" data-rem-id="${a(s.id||"")}" style="border:none;background:none;cursor:pointer;color:var(--red);padding:2px 6px;border-radius:4px;display:flex;align-items:center;transition:opacity 0.15s;" title="${e("حذف التذكير","Delete reminder")}">
         ${x("trash",13)}
       </button>
     </div>
-  `).join(""):`<div style="font-size:11px;color:var(--muted);padding:6px;text-align:center;">${e("لا توجد مواعيد تذكير مجدولة لهذه المهمة","No scheduled reminders for this task")}</div>`}function Ye(t=null,s=null,i=null){const n=l.data?.templates?.find(g=>g.id===(s||t?.templateId)),r=t?.projectId||i||l.activeProjectId||l.data?.projects?.[0]?.id||"",o=Array.isArray(t?.customFields?.additionalAssignees)?t.customFields.additionalAssignees:Array.isArray(t?.customFields?.additional_assignees)?t.customFields.additional_assignees:[],c=Array.isArray(t?.customFields?.externalAssignees)?t.customFields.externalAssignees:Array.isArray(t?.customFields?.external_assignees)?t.customFields.external_assignees:[];let p=[];Array.isArray(t?.customFields?.reminders)?p=t.customFields.reminders:t?.remindAt?p=[{id:"rem_"+Math.random().toString(36).substring(2,11),remindAt:t.remindAt,noteAr:""}]:Array.isArray(l.data?.reminders)&&t?.id&&(p=(l.data?.reminders||[]).filter(g=>g.taskId===t.id));const d=t?.progress!==void 0?t.progress:t?.status==="done"?100:t?.status==="review"||t?.status==="approval"?80:t?.status==="in_progress"?50:0,v=o.length>0||c.length>0,m=v?de(o,c):"",f=le(p),$=`<form id="task-form" data-task-id="${a(t?.id||"")}">
+  `).join(""):`<div style="font-size:11px;color:var(--muted);padding:6px;text-align:center;">${e("لا توجد مواعيد تذكير مجدولة لهذه المهمة","No scheduled reminders for this task")}</div>`}function Ve(t=null,s=null,i=null){const n=l.data?.templates?.find(g=>g.id===(s||t?.templateId)),r=t?.projectId||i||l.activeProjectId||l.data?.projects?.[0]?.id||"",o=Array.isArray(t?.customFields?.additionalAssignees)?t.customFields.additionalAssignees:Array.isArray(t?.customFields?.additional_assignees)?t.customFields.additional_assignees:[],c=Array.isArray(t?.customFields?.externalAssignees)?t.customFields.externalAssignees:Array.isArray(t?.customFields?.external_assignees)?t.customFields.external_assignees:[];let p=[];Array.isArray(t?.customFields?.reminders)?p=t.customFields.reminders:t?.remindAt?p=[{id:"rem_"+Math.random().toString(36).substring(2,11),remindAt:t.remindAt,noteAr:""}]:Array.isArray(l.data?.reminders)&&t?.id&&(p=(l.data?.reminders||[]).filter(g=>g.taskId===t.id));const d=t?.progress!==void 0?t.progress:t?.status==="done"?100:t?.status==="review"||t?.status==="approval"?80:t?.status==="in_progress"?50:0,f=o.length>0||c.length>0,m=f?de(o,c):"",v=le(p),h=`<form id="task-form" data-task-id="${a(t?.id||"")}">
     <input type="hidden" name="typeAr" id="task-type-ar" value="${a(t?.typeAr||n?.typeAr||(n?"مخطط":""))}" />
     <input type="hidden" name="typeEn" id="task-type-en" value="${a(t?.typeEn||n?.typeEn||(n?"Drawing":""))}" />
     <input type="hidden" name="additionalAssignees" id="task-additional-assignees-input" value="${a(JSON.stringify(o))}" />
@@ -230,7 +230,7 @@ import{t as me}from"./rolldown-runtime-BQ-_32WO.js";import{$ as E,A as a,B as _e
         </label>
 
         <!-- الشارات المحددة حالياً (Pre-rendered for zero layout shift) -->
-        <div id="assignees-chips-container" style="display:${v?"flex":"none"};flex-wrap:wrap;gap:6px;min-height:36px;padding:6px;background:var(--surface-soft);border:1px solid var(--line);border-radius:8px;margin-bottom:6px;align-items:center;">
+        <div id="assignees-chips-container" style="display:${f?"flex":"none"};flex-wrap:wrap;gap:6px;min-height:36px;padding:6px;background:var(--surface-soft);border:1px solid var(--line);border-radius:8px;margin-bottom:6px;align-items:center;">
           ${m}
         </div>
 
@@ -257,11 +257,11 @@ import{t as me}from"./rolldown-runtime-BQ-_32WO.js";import{$ as E,A as a,B as _e
           <span>${u("status")}</span>
           <span id="task-auto-progress-badge" style="font-size:11px;font-weight:600;color:var(--teal);">(${d}%)</span>
         </label>
-        <select name="status" id="task-status-select">${ze().map(([g,w])=>`<option value="${g}" ${t?.status===g?"selected":""}>${w}</option>`).join("")}</select>
+        <select name="status" id="task-status-select">${je().map(([g,w])=>`<option value="${g}" ${t?.status===g?"selected":""}>${w}</option>`).join("")}</select>
       </div>
       <div class="field">
         <label>${u("priority")}</label>
-        <select name="priority">${["low","medium","high","urgent"].map(g=>`<option value="${g}" ${(t?.priority||"medium")===g?"selected":""}>${ve(g)}</option>`).join("")}</select>
+        <select name="priority">${["low","medium","high","urgent"].map(g=>`<option value="${g}" ${(t?.priority||"medium")===g?"selected":""}>${xe(g)}</option>`).join("")}</select>
       </div>
       <div class="field">
         <label>${u("startDate")}</label>
@@ -283,7 +283,7 @@ import{t as me}from"./rolldown-runtime-BQ-_32WO.js";import{$ as E,A as a,B as _e
 
         <!-- قائمة التذكيرات المضافة (Pre-rendered for zero layout shift) -->
         <div id="task-reminders-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px;">
-          ${f}
+          ${v}
         </div>
 
         <!-- صف إضافة تذكير جديد -->
@@ -319,11 +319,11 @@ import{t as me}from"./rolldown-runtime-BQ-_32WO.js";import{$ as E,A as a,B as _e
         <button type="submit" class="btn btn-primary">${x("check",14)} ${t?u("save"):u("create")}</button>
       </div>
     </div>
-  </form>`;let b=$,D="";if(t){D="modal-lg";const g=be(t);b=`
+  </form>`;let b=h,D="";if(t){D="modal-lg";const g=ye(t);b=`
       <div class="task-modal-layout">
         <div class="task-modal-col task-modal-main">
           <h3 style="margin:0 0 15px;font-size:14px;">${e("تفاصيل المهمة","Task Details")}</h3>
-          ${$}
+          ${h}
         </div>
         <div class="task-modal-col task-modal-side">
           <div class="task-documents-section">
@@ -360,7 +360,7 @@ import{t as me}from"./rolldown-runtime-BQ-_32WO.js";import{$ as E,A as a,B as _e
               🔒 ${e("إرفاق ورفع الملفات متاح لمدير المشروع والمسند إليهم المهمة فقط.","File attachments restricted to project managers and task assignees.")}
             </div>
             `}
-            <div id="task-documents-list">${Ae(t)}</div>
+            <div id="task-documents-list">${ze(t)}</div>
           </div>
           <div class="task-comments-section" style="flex:1;display:flex;flex-direction:column;">
             <h3 style="margin:0 0 15px;font-size:14px;">${e("النقاشات والتعليقات","Discussion & Comments")}</h3>
@@ -373,26 +373,26 @@ import{t as me}from"./rolldown-runtime-BQ-_32WO.js";import{$ as E,A as a,B as _e
           </div>
         </div>
       </div>
-    `}document.getElementById("modal-root").innerHTML=ie(t?e("تعديل المهمة","Edit task"):u("addTask"),e("المهمة هي وحدة التنفيذ؛ يمكن ربطها بمخرج قياسي وإضافة تذكير.","A task is the unit of execution; link a standard deliverable and add a reminder."),b,"task",D),Te(t)}function Te(t){const s=document.getElementById("modal-root");if(!s)return;const i=s.querySelector("#task-status-select"),n=s.querySelector("#task-auto-progress-badge");i&&n&&i.addEventListener("change",()=>{const h={not_started:0,in_progress:50,review:80,approval:80,done:100}[i.value]??0;n.textContent=`(${h}%)`});const r=s.querySelector("#task-template-select");r&&r.addEventListener("change",()=>{const h=r.value,k=(l.data?.templates||[]).find(T=>T.id===h);if(k){const T=s.querySelector("#task-title-ar"),z=s.querySelector("#task-title-en"),N=s.querySelector("#task-type-ar"),F=s.querySelector("#task-type-en");T&&!T.value&&(T.value=k.nameAr||""),z&&!z.value&&(z.value=k.nameEn||""),N&&(N.value=k.typeAr||"مخطط"),F&&(F.value=k.typeEn||"Drawing")}});const o=s.querySelector("#task-additional-assignees-input"),c=s.querySelector("#task-external-assignees-input"),p=s.querySelector("#assignees-chips-container"),d=s.querySelector("#assignee-combobox-search"),v=s.querySelector("#assignee-combobox-dropdown"),m=s.querySelector("#btn-add-external-quick");let f=[];try{f=JSON.parse(o?.value||"[]")}catch{f=[]}let $=[];try{$=JSON.parse(c?.value||"[]")}catch{$=[]}function b(){o&&(o.value=JSON.stringify(f)),c&&(c.value=JSON.stringify($))}function D(){if(p){if(f.length===0&&$.length===0){p.style.display="none",p.innerHTML="",b();return}p.style.display="flex",p.innerHTML=de(f,$),b()}}function g(h=""){if(!v)return;const k=h.trim().toLowerCase(),T=l.data?.users||[],z=s.querySelector("#task-primary-assignee")?.value,N=T.filter(P=>{if(P.id===z)return!1;if(!k)return!0;const B=(P.name||"").toLowerCase(),K=(P.nameEn||"").toLowerCase(),Q=(P.email||"").toLowerCase();return B.includes(k)||K.includes(k)||Q.includes(k)});let F="";k&&(F+=`
+    `}document.getElementById("modal-root").innerHTML=ie(t?e("تعديل المهمة","Edit task"):u("addTask"),e("المهمة هي وحدة التنفيذ؛ يمكن ربطها بمخرج قياسي وإضافة تذكير.","A task is the unit of execution; link a standard deliverable and add a reminder."),b,"task",D),Ae(t)}function Ae(t){const s=document.getElementById("modal-root");if(!s)return;const i=s.querySelector("#task-status-select"),n=s.querySelector("#task-auto-progress-badge");i&&n&&i.addEventListener("change",()=>{const $={not_started:0,in_progress:50,review:80,approval:80,done:100}[i.value]??0;n.textContent=`(${$}%)`});const r=s.querySelector("#task-template-select");r&&r.addEventListener("change",()=>{const $=r.value,k=(l.data?.templates||[]).find(T=>T.id===$);if(k){const T=s.querySelector("#task-title-ar"),A=s.querySelector("#task-title-en"),N=s.querySelector("#task-type-ar"),F=s.querySelector("#task-type-en");T&&!T.value&&(T.value=k.nameAr||""),A&&!A.value&&(A.value=k.nameEn||""),N&&(N.value=k.typeAr||"مخطط"),F&&(F.value=k.typeEn||"Drawing")}});const o=s.querySelector("#task-additional-assignees-input"),c=s.querySelector("#task-external-assignees-input"),p=s.querySelector("#assignees-chips-container"),d=s.querySelector("#assignee-combobox-search"),f=s.querySelector("#assignee-combobox-dropdown"),m=s.querySelector("#btn-add-external-quick");let v=[];try{v=JSON.parse(o?.value||"[]")}catch{v=[]}let h=[];try{h=JSON.parse(c?.value||"[]")}catch{h=[]}function b(){o&&(o.value=JSON.stringify(v)),c&&(c.value=JSON.stringify(h))}function D(){if(p){if(v.length===0&&h.length===0){p.style.display="none",p.innerHTML="",b();return}p.style.display="flex",p.innerHTML=de(v,h),b()}}function g($=""){if(!f)return;const k=$.trim().toLowerCase(),T=l.data?.users||[],A=s.querySelector("#task-primary-assignee")?.value,N=T.filter(P=>{if(P.id===A)return!1;if(!k)return!0;const q=(P.name||"").toLowerCase(),K=(P.nameEn||"").toLowerCase(),Q=(P.email||"").toLowerCase();return q.includes(k)||K.includes(k)||Q.includes(k)});let F="";k&&(F+=`
         <div class="dropdown-ext-action" style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:var(--teal-soft);color:var(--teal);border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;margin-bottom:4px;">
-          <span>➕ ${e("إضافة مسؤول خارجي:","Add external assignee:")} "${a(h.trim())}"</span>
+          <span>➕ ${e("إضافة مسؤول خارجي:","Add external assignee:")} "${a($.trim())}"</span>
           <span style="font-size:10px;background:var(--teal);color:#fff;border-radius:4px;padding:2px 6px;">${e("إضافة سريعة","Quick Add")}</span>
         </div>
-      `),N.length===0&&!k?F+=`<div style="padding:10px;font-size:11px;color:var(--muted);text-align:center;">${e("لا يوجد مستخدمين آخرين","No other users")}</div>`:N.forEach(P=>{const B=f.includes(P.id);F+=`
+      `),N.length===0&&!k?F+=`<div style="padding:10px;font-size:11px;color:var(--muted);text-align:center;">${e("لا يوجد مستخدمين آخرين","No other users")}</div>`:N.forEach(P=>{const q=v.includes(P.id);F+=`
           <div class="combobox-user-row" data-uid="${a(P.id)}" style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;border-radius:6px;cursor:pointer;transition:background 0.1s;font-size:12px;margin-bottom:2px;">
             <div style="display:-webkit-inline-box;align-items:center;gap:8px;">
-              <input type="checkbox" class="user-chk" data-uid="${a(P.id)}" ${B?"checked":""} style="margin:0;cursor:pointer;pointer-events:none;" />
-              ${_(P,"mini-avatar")}
+              <input type="checkbox" class="user-chk" data-uid="${a(P.id)}" ${q?"checked":""} style="margin:0;cursor:pointer;pointer-events:none;" />
+              ${I(P,"mini-avatar")}
               <div>
                 <strong style="color:var(--ink);">${a(e(P.name,P.nameEn||P.name))}</strong>
                 <span style="font-size:10px;color:var(--muted);display:block;">${a(e(P.jobTitleAr,P.jobTitleEn)||P.email||"")}</span>
               </div>
             </div>
-            ${B?'<span style="font-size:11px;color:var(--teal);font-weight:bold;">✓</span>':""}
+            ${q?'<span style="font-size:11px;color:var(--teal);font-weight:bold;">✓</span>':""}
           </div>
-        `}),v.innerHTML=F,v.style.display="block"}b(),d&&(d.addEventListener("focus",()=>{g(d.value)}),d.addEventListener("input",()=>{const h=d.value.trim();g(h),m&&(m.style.display=h.length>1?"inline-flex":"none")}),d.addEventListener("keydown",h=>{if(h.key==="Enter"){h.preventDefault();const k=d.value.trim();k&&($.includes(k)||($.push(k),D()),d.value="",m&&(m.style.display="none"),v&&(v.style.display="none"))}})),m&&m.addEventListener("click",()=>{const h=d?.value.trim();h&&($.includes(h)||($.push(h),D()),d.value="",m.style.display="none",v&&(v.style.display="none"))}),v&&v.addEventListener("click",h=>{if(h.target.closest(".dropdown-ext-action")){const T=d?.value.trim();T&&!$.includes(T)&&($.push(T),D()),d&&(d.value=""),m&&(m.style.display="none"),v.style.display="none";return}const k=h.target.closest(".combobox-user-row");if(k){const T=k.dataset.uid;f.includes(T)?f=f.filter(z=>z!==T):f.push(T),D(),g(d?.value||"")}}),p&&p.addEventListener("click",h=>{const k=h.target.closest(".btn-remove-chip-user");if(k){const z=k.dataset.uid;f=f.filter(N=>N!==z),D(),v&&v.style.display==="block"&&g(d?.value||"");return}const T=h.target.closest(".btn-remove-chip-ext");if(T){const z=T.dataset.ext;$=$.filter(N=>N!==z),D()}});const w=s.querySelector("#task-reminders-input"),A=s.querySelector("#task-reminders-list"),C=s.querySelector("#new-reminder-datetime"),U=s.querySelector("#new-reminder-note"),H=s.querySelector("#btn-add-reminder");let I=[];try{I=JSON.parse(w?.value||"[]")}catch{I=[]}Array.isArray(I)||(I=[]);function y(){A&&(w&&(w.value=JSON.stringify(I)),A.innerHTML=le(I))}H&&H.addEventListener("click",()=>{const h=C?.value;if(!h){L(e("يرجى اختيار تاريخ ووقت التذكير.","Please pick a reminder date & time."),!0);return}const k=U?.value.trim()||"",T={id:"rem_temp_"+Math.random().toString(36).substring(2,11),remindAt:new Date(h).toISOString(),noteAr:k};I.push(T),C&&(C.value=""),U&&(U.value=""),y(),L(e("تمت إضافة موعد التذكير للقائمة.","Reminder added to list."))}),A&&A.addEventListener("click",async h=>{const k=h.target.closest(".btn-delete-reminder");if(k){const T=Number(k.dataset.idx),z=k.dataset.remId;!isNaN(T)&&T>=0&&T<I.length&&(I.splice(T,1),y(),z&&!z.startsWith("rem_temp_")&&R(`/api/reminders/${z}`,{method:"DELETE"}).catch(()=>{}),L(e("تم حذف موعد التذكير.","Reminder deleted.")))}}),s.addEventListener("mousedown",h=>{v?.contains(h.target)||d?.contains(h.target)||m?.contains(h.target)||(v&&(v.style.display="none"),m&&(m.style.display="none"))}),t&&t.id&&!t.id.startsWith("demo_")&&R(`/api/tasks/${encodeURIComponent(t.id)}/comments`,{silent:!0}).then(h=>{if(h&&Array.isArray(h.comments)){l.data&&!l.data.comments&&(l.data.comments=[]);const k=new Map((l.data?.comments||[]).map(z=>[z.id,z]));for(const z of h.comments)k.set(z.id,z);l.data&&(l.data.comments=Array.from(k.values()));const T=document.getElementById("task-comments-list");T&&document.getElementById("task-comment-form")?.dataset?.taskId===t.id&&(T.innerHTML=pe(t))}}).catch(()=>{})}function pe(t){const s=(l.data?.comments||[]).filter(i=>i.taskId===t.id).sort((i,n)=>new Date(i.createdAt)-new Date(n.createdAt));return s.length?`<div style="display:flex;flex-direction:column;gap:12px;">${s.map(i=>{const n=i.user||(l.data?.users||[]).find(p=>p.id===i.userId)||l.data?.user||{name:"DARC Member",id:""},r=!!(n.id&&l.data?.user?.id&&n.id===l.data?.user?.id),o=r||typeof S=="function"&&S(),c=a(i.content).replace(/@([\p{L}\p{N}_.\-]+)/gu,'<strong style="color:var(--blue)">@$1</strong>');return`
+        `}),f.innerHTML=F,f.style.display="block"}b(),d&&(d.addEventListener("focus",()=>{g(d.value)}),d.addEventListener("input",()=>{const $=d.value.trim();g($),m&&(m.style.display=$.length>1?"inline-flex":"none")}),d.addEventListener("keydown",$=>{if($.key==="Enter"){$.preventDefault();const k=d.value.trim();k&&(h.includes(k)||(h.push(k),D()),d.value="",m&&(m.style.display="none"),f&&(f.style.display="none"))}})),m&&m.addEventListener("click",()=>{const $=d?.value.trim();$&&(h.includes($)||(h.push($),D()),d.value="",m.style.display="none",f&&(f.style.display="none"))}),f&&f.addEventListener("click",$=>{if($.target.closest(".dropdown-ext-action")){const T=d?.value.trim();T&&!h.includes(T)&&(h.push(T),D()),d&&(d.value=""),m&&(m.style.display="none"),f.style.display="none";return}const k=$.target.closest(".combobox-user-row");if(k){const T=k.dataset.uid;v.includes(T)?v=v.filter(A=>A!==T):v.push(T),D(),g(d?.value||"")}}),p&&p.addEventListener("click",$=>{const k=$.target.closest(".btn-remove-chip-user");if(k){const A=k.dataset.uid;v=v.filter(N=>N!==A),D(),f&&f.style.display==="block"&&g(d?.value||"");return}const T=$.target.closest(".btn-remove-chip-ext");if(T){const A=T.dataset.ext;h=h.filter(N=>N!==A),D()}});const w=s.querySelector("#task-reminders-input"),z=s.querySelector("#task-reminders-list"),C=s.querySelector("#new-reminder-datetime"),R=s.querySelector("#new-reminder-note"),H=s.querySelector("#btn-add-reminder");let _=[];try{_=JSON.parse(w?.value||"[]")}catch{_=[]}Array.isArray(_)||(_=[]);function y(){z&&(w&&(w.value=JSON.stringify(_)),z.innerHTML=le(_))}H&&H.addEventListener("click",()=>{const $=C?.value;if(!$){M(e("يرجى اختيار تاريخ ووقت التذكير.","Please pick a reminder date & time."),!0);return}const k=R?.value.trim()||"",T={id:"rem_temp_"+Math.random().toString(36).substring(2,11),remindAt:new Date($).toISOString(),noteAr:k};_.push(T),C&&(C.value=""),R&&(R.value=""),y(),M(e("تمت إضافة موعد التذكير للقائمة.","Reminder added to list."))}),z&&z.addEventListener("click",async $=>{const k=$.target.closest(".btn-delete-reminder");if(k){const T=Number(k.dataset.idx),A=k.dataset.remId;!isNaN(T)&&T>=0&&T<_.length&&(_.splice(T,1),y(),A&&!A.startsWith("rem_temp_")&&B(`/api/reminders/${A}`,{method:"DELETE"}).catch(()=>{}),M(e("تم حذف موعد التذكير.","Reminder deleted.")))}}),s.addEventListener("mousedown",$=>{f?.contains($.target)||d?.contains($.target)||m?.contains($.target)||(f&&(f.style.display="none"),m&&(m.style.display="none"))}),t&&t.id&&!t.id.startsWith("demo_")&&B(`/api/tasks/${encodeURIComponent(t.id)}/comments`,{silent:!0}).then($=>{if($&&Array.isArray($.comments)){l.data&&!l.data.comments&&(l.data.comments=[]);const k=new Map((l.data?.comments||[]).map(A=>[A.id,A]));for(const A of $.comments)k.set(A.id,A);l.data&&(l.data.comments=Array.from(k.values()));const T=document.getElementById("task-comments-list");T&&document.getElementById("task-comment-form")?.dataset?.taskId===t.id&&(T.innerHTML=pe(t))}}).catch(()=>{})}function pe(t){const s=(l.data?.comments||[]).filter(i=>i.taskId===t.id).sort((i,n)=>new Date(i.createdAt)-new Date(n.createdAt));return s.length?`<div style="display:flex;flex-direction:column;gap:12px;">${s.map(i=>{const n=i.user||(l.data?.users||[]).find(p=>p.id===i.userId)||l.data?.user||{name:"DARC Member",id:""},r=!!(n.id&&l.data?.user?.id&&n.id===l.data?.user?.id),o=r||typeof S=="function"&&S(),c=a(i.content).replace(/@([\p{L}\p{N}_.\-]+)/gu,'<strong style="color:var(--blue)">@$1</strong>');return`
       <div class="task-comment-item" data-comment-id="${a(i.id)}" style="display:flex;gap:10px;flex-direction:${r?"row-reverse":"row"};">
-        ${_(n)}
+        ${I(n)}
         <div style="display:flex;flex-direction:column;align-items:${r?"flex-end":"flex-start"};max-width:85%;">
           <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
             <strong style="font-size:12px;color:var(--ink);">${a(e(n.name,n.nameEn||n.name))}</strong>
@@ -411,7 +411,7 @@ import{t as me}from"./rolldown-runtime-BQ-_32WO.js";import{$ as E,A as a,B as _e
           <div id="comment-bubble-${a(i.id)}" style="background:${r?"var(--blue)":"var(--surface)"};color:${r?"#fff":"var(--ink)"};padding:8px 12px;border-radius:12px;font-size:13px;border:${r?"none":"1px solid var(--border)"};border-top-${r?"right":"left"}-radius:0;word-break:break-word;white-space:pre-wrap;line-height:1.4;">${c}</div>
         </div>
       </div>
-    `}).join("")}</div>`:`<div class="empty" style="padding:40px 10px;min-height:auto;">${x("message",18)}<span style="font-size:12px;">${e("لا توجد تعليقات","No comments yet")}</span></div>`}function Ae(t){const s=(l.data?.documents||[]).filter(i=>i.taskId===t.id).sort((i,n)=>new Date(n.createdAt)-new Date(i.createdAt));return s.length?`<div class="doc-list" style="display:flex;flex-direction:column;gap:8px;">${s.map(i=>`
+    `}).join("")}</div>`:`<div class="empty" style="padding:40px 10px;min-height:auto;">${x("message",18)}<span style="font-size:12px;">${e("لا توجد تعليقات","No comments yet")}</span></div>`}function ze(t){const s=(l.data?.documents||[]).filter(i=>i.taskId===t.id).sort((i,n)=>new Date(n.createdAt)-new Date(i.createdAt));return s.length?`<div class="doc-list" style="display:flex;flex-direction:column;gap:8px;">${s.map(i=>`
     <div class="doc-item" style="display:flex;align-items:center;justify-content:space-between;padding:10px;background:var(--surface-soft);border:1px solid var(--line);border-radius:8px;transition:background 0.15s ease;">
       <div style="display:flex;align-items:center;gap:10px;overflow:hidden;flex:1;cursor:pointer;" data-action="preview-doc" data-doc-id="${a(i.id)}">
         <span style="color:var(--brand-teal);background:var(--teal-soft);padding:6px;border-radius:6px;display:flex;">${x("document",14)}</span>
@@ -436,17 +436,17 @@ import{t as me}from"./rolldown-runtime-BQ-_32WO.js";import{$ as E,A as a,B as _e
         ${j("delete_documents")||S()?`<button class="btn btn-ghost btn-sm" data-action="delete-doc" data-doc-id="${a(i.id)}" style="padding:4px;min-width:0;height:auto;color:var(--red);" title="${e("حذف","Delete")}">${x("trash",14)}</button>`:""}
       </div>
     </div>
-  `).join("")}</div>`:`<div class="empty" style="padding:20px 10px;min-height:auto;">${x("document",18)}<span style="font-size:12px;">${e("لا توجد ملفات مرفوعة","No documents uploaded")}</span></div>`}function ze(){return[["not_started",u("notStarted")],["in_progress",u("inProgress")],["review",u("review")],["approval",u("approval")],["done",u("done")],["blocked",u("blocked")],["canceled",u("canceled")]]}function Ve(){const t=document.querySelector(".timeline-container > div"),s=document.querySelector(".timeline-svg");if(!t||!s)return;s.innerHTML="";const i=Array.from(document.querySelectorAll(".timeline-bar")),n={},r=t.getBoundingClientRect();i.forEach(p=>{const d=p.getBoundingClientRect();n[p.dataset.taskId]={left:d.left-r.left,right:d.right-r.left,top:d.top-r.top,bottom:d.bottom-r.top,width:d.width,height:d.height,center:d.top-r.top+d.height/2}});let o="";const c=l.lang==="ar";i.forEach(p=>{const d=p.dataset.taskId,v=(l.data?.tasks||[]).find($=>$.id===d),m=v?.dependencies||v?.customFields?.dependencies||[];if(!v||!m.length)return;const f=n[d];f&&m.forEach($=>{const b=n[$];if(!b)return;const D=c?b.left:b.right,g=b.center,w=c?f.right:f.left,A=f.center,C=D+(c?-20:20);o+=`<path d="M ${D} ${g} C ${C} ${g}, ${C} ${A}, ${w} ${A}" fill="none" stroke="var(--ink-soft)" stroke-width="1.5" stroke-dasharray="3,3" marker-end="url(#arrowhead)" opacity="0.6"/>`})}),s.innerHTML=`
+  `).join("")}</div>`:`<div class="empty" style="padding:20px 10px;min-height:auto;">${x("document",18)}<span style="font-size:12px;">${e("لا توجد ملفات مرفوعة","No documents uploaded")}</span></div>`}function je(){return[["not_started",u("notStarted")],["in_progress",u("inProgress")],["review",u("review")],["approval",u("approval")],["done",u("done")],["blocked",u("blocked")],["canceled",u("canceled")]]}var me="";function Ke(){const t=document.querySelector(".timeline-container > div"),s=document.querySelector(".timeline-svg");if(!t||!s)return;const i=Array.from(document.querySelectorAll(".timeline-bar")),n=t.getBoundingClientRect(),r=`${Math.round(n.width)}_${i.length}_${l.lang}_${(l.data?.tasks||[]).length}`;if(r===me&&s.hasChildNodes())return;me=r,s.innerHTML="";const o={};i.forEach(d=>{const f=d.getBoundingClientRect();o[d.dataset.taskId]={left:f.left-n.left,right:f.right-n.left,top:f.top-n.top,bottom:f.bottom-n.top,width:f.width,height:f.height,center:f.top-n.top+f.height/2}});let c="";const p=l.lang==="ar";i.forEach(d=>{const f=d.dataset.taskId,m=(l.data?.tasks||[]).find(b=>b.id===f),v=m?.dependencies||m?.customFields?.dependencies||[];if(!m||!v.length)return;const h=o[f];h&&v.forEach(b=>{const D=o[b];if(!D)return;const g=p?D.left:D.right,w=D.center,z=p?h.right:h.left,C=h.center,R=g+(p?-20:20);c+=`<path d="M ${g} ${w} C ${R} ${w}, ${R} ${C}, ${z} ${C}" fill="none" stroke="var(--ink-soft)" stroke-width="1.5" stroke-dasharray="3,3" marker-end="url(#arrowhead)" opacity="0.6"/>`})}),s.innerHTML=`
     <defs>
       <marker id="arrowhead" markerWidth="6" markerHeight="4" refX="5" refY="2" orient="auto">
         <polygon points="0 0, 6 2, 0 4" fill="var(--ink-soft)" />
       </marker>
     </defs>
-    ${o}
-  `}var pt=me({buildProjectMemberChipsHtml:()=>Z,exportPortfolioPDF:()=>nt,exportPortfolioXLS:()=>tt,exportProjectPDF:()=>it,exportProjectXLS:()=>at,exportXLS:()=>ae,getCompanyBranding:()=>W,getDaysLeftBadge:()=>ce,getProjectTeam:()=>Ke,getProjectTeamData:()=>G,openCloneModal:()=>et,openProjectModal:()=>Ze,projectCard:()=>Se,renderInPagePrintModal:()=>ge,renderProjectCardTeamAvatars:()=>Pe,renderProjectDetail:()=>Qe,renderProjectOverviewTab:()=>Ce,renderProjectTeamAvatars:()=>je,renderProjectTimelineBar:()=>Ee,renderProjects:()=>Ie});function ce(t){if(!t)return"";const s=te(t);if(!s||isNaN(s.getTime()))return"";const i=Math.ceil((s-new Date)/864e5);if(isNaN(i))return"";let n="var(--mint-strong)",r="var(--mint)",o="";return i<0?(n="var(--red)",r="var(--red-soft)",o=e(`متأخر ${Math.abs(i)} يوم`,`${Math.abs(i)}d overdue`)):i===0?(n="var(--red)",r="var(--red-soft)",o=e("يستحق اليوم","Due today")):i<=2?(n="var(--red)",r="var(--red-soft)",o=e(`باقي ${i} يوم`,`${i}d left`)):i<=7?(n="var(--amber)",r="var(--amber-soft)",o=e(`باقي ${i} أيام`,`${i}d left`)):(n="var(--mint-strong)",r="var(--mint)",o=e(`باقي ${i} يوم`,`${i}d left`)),`<span class="days-left-badge" style="display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:700;color:${n};background:${r};border:1px solid currentColor;">${x("clock",11)} ${o}</span>`}function G(t){const s=l.data?.users||[],i=(l.data?.tasks||[]).filter(o=>o.projectId===t.id),n=new Set,r=new Set;return t.managerId&&n.add(t.managerId),i.forEach(o=>{o.assigneeId&&n.add(o.assigneeId),(o.customFields?.additionalAssignees||o.customFields?.additional_assignees||[]).forEach(c=>n.add(c)),(o.customFields?.externalAssignees||o.customFields?.external_assignees||[]).forEach(c=>{c&&typeof c=="string"&&c.trim()&&r.add(c.trim())})}),{internalMembers:Array.from(n).map(o=>s.find(c=>c.id===o)).filter(Boolean),externalMembers:Array.from(r)}}function Ke(t){return G(t).internalMembers}function je(t,s=4,i=!0,n=[]){if((!t||!t.length)&&(!n||!n.length))return`<span style="font-size:11px;color:var(--muted);">${e("لا يوجد فريق محدد","No team assigned")}</span>`;const r=(t||[]).slice(0,s),o=(t||[]).length-s,c=(t||[]).map(d=>e(d.name,d.nameEn||d.name)).join("، ");let p='<div class="project-team-stack" style="display:inline-flex;align-items:center;flex-wrap:wrap;gap:6px;position:relative;vertical-align:middle;">';return r.forEach(d=>{const v=e(d.name,d.nameEn||d.name),m=i?`data-action="filter-by-member" data-member-id="${a(d.id)}" style="cursor:pointer;display:inline-flex;align-items:center;gap:5px;background:var(--surface-soft);padding:2px 8px 2px 3px;border-radius:999px;border:1px solid var(--line);transition:all .15s ease;" onmouseover="this.style.borderColor='var(--brand-teal)';this.style.background='var(--mint)'" onmouseout="this.style.borderColor='var(--line)';this.style.background='var(--surface-soft)'"`:'style="display:inline-flex;align-items:center;gap:5px;background:var(--surface-soft);padding:2px 8px 2px 3px;border-radius:999px;border:1px solid var(--line);"';p+=`
-      <span class="team-member-chip" ${m} title="${a(v)} (${a(X(d))})">
-        ${_(d,"mini-avatar")}
-        <span style="font-size:11px;font-weight:600;color:var(--ink);">${a(v)}</span>
+    ${c}
+  `}var ct=ue({buildProjectMemberChipsHtml:()=>Z,exportPortfolioPDF:()=>st,exportPortfolioXLS:()=>at,exportProjectPDF:()=>nt,exportProjectXLS:()=>it,exportXLS:()=>ae,getCompanyBranding:()=>W,getDaysLeftBadge:()=>ce,getProjectTeam:()=>Qe,getProjectTeamData:()=>G,openCloneModal:()=>tt,openProjectModal:()=>et,projectCard:()=>Ce,renderInPagePrintModal:()=>ge,renderProjectCardTeamAvatars:()=>Se,renderProjectDetail:()=>Ze,renderProjectOverviewTab:()=>_e,renderProjectTeamAvatars:()=>Ee,renderProjectTimelineBar:()=>Pe,renderProjects:()=>Ie});function ce(t){if(!t)return"";const s=te(t);if(!s||isNaN(s.getTime()))return"";const i=Math.ceil((s-new Date)/864e5);if(isNaN(i))return"";let n="var(--mint-strong)",r="var(--mint)",o="";return i<0?(n="var(--red)",r="var(--red-soft)",o=e(`متأخر ${Math.abs(i)} يوم`,`${Math.abs(i)}d overdue`)):i===0?(n="var(--red)",r="var(--red-soft)",o=e("يستحق اليوم","Due today")):i<=2?(n="var(--red)",r="var(--red-soft)",o=e(`باقي ${i} يوم`,`${i}d left`)):i<=7?(n="var(--amber)",r="var(--amber-soft)",o=e(`باقي ${i} أيام`,`${i}d left`)):(n="var(--mint-strong)",r="var(--mint)",o=e(`باقي ${i} يوم`,`${i}d left`)),`<span class="days-left-badge" style="display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:700;color:${n};background:${r};border:1px solid currentColor;">${x("clock",11)} ${o}</span>`}function G(t){const s=l.data?.users||[],i=(l.data?.tasks||[]).filter(o=>o.projectId===t.id),n=new Set,r=new Set;return t.managerId&&n.add(t.managerId),i.forEach(o=>{o.assigneeId&&n.add(o.assigneeId),(o.customFields?.additionalAssignees||o.customFields?.additional_assignees||[]).forEach(c=>n.add(c)),(o.customFields?.externalAssignees||o.customFields?.external_assignees||[]).forEach(c=>{c&&typeof c=="string"&&c.trim()&&r.add(c.trim())})}),{internalMembers:Array.from(n).map(o=>s.find(c=>c.id===o)).filter(Boolean),externalMembers:Array.from(r)}}function Qe(t){return G(t).internalMembers}function Ee(t,s=4,i=!0,n=[]){if((!t||!t.length)&&(!n||!n.length))return`<span style="font-size:11px;color:var(--muted);">${e("لا يوجد فريق محدد","No team assigned")}</span>`;const r=(t||[]).slice(0,s),o=(t||[]).length-s,c=(t||[]).map(d=>e(d.name,d.nameEn||d.name)).join("، ");let p='<div class="project-team-stack" style="display:inline-flex;align-items:center;flex-wrap:wrap;gap:6px;position:relative;vertical-align:middle;">';return r.forEach(d=>{const f=e(d.name,d.nameEn||d.name),m=i?`data-action="filter-by-member" data-member-id="${a(d.id)}" style="cursor:pointer;display:inline-flex;align-items:center;gap:5px;background:var(--surface-soft);padding:2px 8px 2px 3px;border-radius:999px;border:1px solid var(--line);transition:all .15s ease;" onmouseover="this.style.borderColor='var(--brand-teal)';this.style.background='var(--mint)'" onmouseout="this.style.borderColor='var(--line)';this.style.background='var(--surface-soft)'"`:'style="display:inline-flex;align-items:center;gap:5px;background:var(--surface-soft);padding:2px 8px 2px 3px;border-radius:999px;border:1px solid var(--line);"';p+=`
+      <span class="team-member-chip" ${m} title="${a(f)} (${a(X(d))})">
+        ${I(d,"mini-avatar")}
+        <span style="font-size:11px;font-weight:600;color:var(--ink);">${a(f)}</span>
       </span>
     `}),o>0&&(p+=`<span class="team-count-chip" style="background:var(--surface-soft);border:1px solid var(--line);border-radius:999px;padding:2px 7px;display:inline-flex;align-items:center;font-size:10.5px;font-weight:700;color:var(--ink-soft);box-shadow:var(--shadow-sm);" title="${a(c)}">+${o} ${e("آخرين","more")}</span>`),n&&n.length>0&&(p+=`<span class="mini-badge" style="font-size:10px;padding:2px 6px;background:var(--surface-soft);color:var(--teal);border:1px solid var(--line);border-radius:999px;" title="${a(n.join("، "))}">🌐 +${n.length} ${e("خارجي","ext")}</span>`),p+=`<div class="team-hover-tooltip" style="display:none;position:absolute;top:calc(100% + 4px);inset-inline-start:0;background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,0.14);padding:10px 14px;z-index:90;width:330px;max-width:330px;pointer-events:auto;">
     <strong style="display:block;font-size:12px;color:var(--ink);margin-bottom:8px;border-bottom:1px solid var(--line);padding-bottom:4px;">${e("فريق العمل الداخلي","Internal Team")} (${(t||[]).length})</strong>
@@ -454,7 +454,7 @@ import{t as me}from"./rolldown-runtime-BQ-_32WO.js";import{$ as E,A as a,B as _e
 
       ${(t||[]).map(d=>`
         <div ${i?`data-action="filter-by-member" data-member-id="${a(d.id)}" title="${a(e("فلترة مهام "+(d.name||""),"Filter tasks of "+(d.nameEn||d.name||"")))}"`:""} style="display:flex;align-items:center;gap:6px;background:var(--surface-soft);border:1px solid var(--line);border-radius:8px;padding:4px 8px;flex-shrink:0;${i?"cursor:pointer;transition:all 0.15s;":""}" ${i?`onmouseover="this.style.borderColor='var(--teal)';this.style.background='var(--teal-subtle)'" onmouseout="this.style.borderColor='var(--line)';this.style.background='var(--surface-soft)'"`:""}>
-          ${_(d,"micro-avatar")}
+          ${I(d,"micro-avatar")}
           <div style="display:flex;flex-direction:column;line-height:1.1;white-space:nowrap;">
             <span style="font-size:11px;color:var(--ink);font-weight:600;">${a(e(d.name,d.nameEn||d.name))}</span>
             <span style="font-size:9px;color:var(--muted);">${a(X(d))}</span>
@@ -477,7 +477,7 @@ import{t as me}from"./rolldown-runtime-BQ-_32WO.js";import{$ as E,A as a,B as _e
     `:""}
 
     ${i?`<div style="margin-top:6px;padding-top:4px;border-top:1px dashed var(--line);font-size:9px;color:var(--teal);">${e("💡 اضغط على أي عضو لفلترة مهامه","💡 Click member to filter tasks")}</div>`:""}
-  </div>`,p+="</div>",p}function Ee(t){if(!t.dueDate)return"";const s=te(t.dueDate);if(!s||isNaN(s.getTime()))return"";const i=new Date(t.startDate||t.createdAt||Date.now()-2592e6),n=new Date,r=s.getTime()-i.getTime();let o=0;r>0&&!isNaN(r)&&(o=Math.min(100,Math.max(0,Math.round((n.getTime()-i.getTime())/r*100))));const c=n>s,p=c?"var(--red)":o>=80&&!c?"var(--amber)":"var(--blue)";return`
+  </div>`,p+="</div>",p}function Pe(t){if(!t.dueDate)return"";const s=te(t.dueDate);if(!s||isNaN(s.getTime()))return"";const i=new Date(t.startDate||t.createdAt||Date.now()-2592e6),n=new Date,r=s.getTime()-i.getTime();let o=0;r>0&&!isNaN(r)&&(o=Math.min(100,Math.max(0,Math.round((n.getTime()-i.getTime())/r*100))));const c=n>s,p=c?"var(--red)":o>=80&&!c?"var(--amber)":"var(--blue)";return`
     <div class="project-timeline-indicator" style="background:var(--surface-soft);border:1px solid var(--line);border-radius:12px;padding:12px 16px;margin:14px 0;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;font-size:11px;flex-wrap:wrap;gap:6px;">
         <span style="color:var(--ink-soft);display:flex;align-items:center;gap:4px;">
@@ -491,9 +491,9 @@ import{t as me}from"./rolldown-runtime-BQ-_32WO.js";import{$ as E,A as a,B as _e
         <div class="progress-fill" style="width:${o}%;background:${p};height:100%;border-radius:6px;transition:width 0.4s ease;"></div>
       </div>
     </div>
-  `}function Pe(t=[],s=[],i=3){const n=t.length+s.length;if(n===0)return'<span style="font-size:11px;color:var(--muted);">—</span>';const r=t.slice(0,i),o=n-r.length;[...t.map(p=>e(p.name,p.nameEn||p.name)),...s].join("، ");let c=`<div class="project-card-team-stack" tabindex="0" role="button" aria-haspopup="true" aria-label="${e("عرض فريق العمل","View Team")}">`;return c+='<div class="project-card-avatar-stack" style="display:inline-flex;align-items:center;">',r.forEach((p,d)=>{c+=`
+  `}function Se(t=[],s=[],i=3){const n=t.length+s.length;if(n===0)return'<span style="font-size:11px;color:var(--muted);">—</span>';const r=t.slice(0,i),o=n-r.length;[...t.map(p=>e(p.name,p.nameEn||p.name)),...s].join("، ");let c=`<div class="project-card-team-stack" tabindex="0" role="button" aria-haspopup="true" aria-label="${e("عرض فريق العمل","View Team")}">`;return c+='<div class="project-card-avatar-stack" style="display:inline-flex;align-items:center;">',r.forEach((p,d)=>{c+=`
       <div style="margin-inline-start:${d===0?"0":"-8px"};position:relative;z-index:${10-d};border:2px solid var(--surface);border-radius:50%;overflow:hidden;flex-shrink:0;">
-        ${_(p,"mini-avatar")}
+        ${I(p,"mini-avatar")}
       </div>
     `}),o>0&&(c+=`
       <div style="margin-inline-start:-8px;position:relative;z-index:0;width:24px;height:24px;border-radius:50%;background:var(--surface-soft);border:2px solid var(--surface);display:flex;align-items:center;justify-content:center;font-size:9.5px;font-weight:700;color:var(--ink-soft);flex-shrink:0;">
@@ -508,7 +508,7 @@ import{t as me}from"./rolldown-runtime-BQ-_32WO.js";import{$ as E,A as a,B as _e
       <div style="display:flex;flex-direction:column;gap:6px;">
         ${t.map(p=>`
           <div style="display:flex;align-items:center;gap:8px;padding:3px 4px;border-radius:6px;transition:background 0.15s ease;" onmouseover="this.style.background='var(--surface-soft)'" onmouseout="this.style.background='transparent'">
-            ${_(p,"micro-avatar")}
+            ${I(p,"micro-avatar")}
             <div style="display:flex;flex-direction:column;line-height:1.2;min-width:0;flex:1;">
               <span style="font-size:11px;font-weight:600;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${a(e(p.name,p.nameEn||p.name))}</span>
               <span style="font-size:9px;color:var(--muted);">${a(X(p))}</span>
@@ -529,7 +529,7 @@ import{t as me}from"./rolldown-runtime-BQ-_32WO.js";import{$ as E,A as a,B as _e
         </div>
       `:""}
     </div>
-  `,c+="</div>",c}function Se(t){const{internalMembers:s,externalMembers:i}=G(t),n=t.manager||(l.data?.users||[]).find(c=>c.id===t.managerId),r=ce(t.dueDate),o=e(t.descriptionAr||t.clientAr,t.descriptionEn||t.clientEn);return`<article class="project-card">
+  `,c+="</div>",c}function Ce(t){const{internalMembers:s,externalMembers:i}=G(t),n=t.manager||(l.data?.users||[]).find(c=>c.id===t.managerId),r=ce(t.dueDate),o=e(t.descriptionAr||t.clientAr,t.descriptionEn||t.clientEn);return`<article class="project-card">
     <div class="project-card-top">
       <div style="display:flex;align-items:center;gap:10px;min-width:0;flex:1;cursor:pointer;" data-action="open-project" data-project-id="${a(t.id)}">
         <span class="project-card-symbol">${x("building",19)}</span>
@@ -540,7 +540,7 @@ import{t as me}from"./rolldown-runtime-BQ-_32WO.js";import{$ as E,A as a,B as _e
       </div>
       <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;align-self:flex-start;">
         ${t._isOfflinePending?`<span class="badge badge-amber" style="font-size:9px;padding:1px 5px;" title="${e("بانتظار المزامنة مع السيرفر","Pending cloud sync")}">⏳ ${e("معلقة","Pending")}</span>`:""}
-        <span class="status-badge ${a(t.health)}">${a(M(t.health))}</span>
+        <span class="status-badge ${a(t.health)}">${a(L(t.health))}</span>
       </div>
     </div>
     
@@ -550,7 +550,7 @@ import{t as me}from"./rolldown-runtime-BQ-_32WO.js";import{$ as E,A as a,B as _e
     
     <div class="project-card-meta-row">
       <div class="project-card-manager" style="display:flex;align-items:center;gap:6px;min-width:0;flex:1;">
-        ${_(n,"mini-avatar")}
+        ${I(n,"mini-avatar")}
         <div style="display:flex;flex-direction:column;line-height:1.2;min-width:0;">
           <span style="font-size:9px;color:var(--muted);">${u("manager")}</span>
           <strong style="font-size:11px;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${a(n?e(n.name,n.nameEn||n.name):"—")}</strong>
@@ -558,7 +558,7 @@ import{t as me}from"./rolldown-runtime-BQ-_32WO.js";import{$ as E,A as a,B as _e
       </div>
       <div class="project-card-team" style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.2;flex-shrink:0;">
         <span style="font-size:9px;color:var(--muted);margin-bottom:3px;">${u("team")} (${s.length+i.length})</span>
-        ${Pe(s,i,3)}
+        ${Se(s,i,3)}
       </div>
     </div>
 
@@ -579,7 +579,7 @@ import{t as me}from"./rolldown-runtime-BQ-_32WO.js";import{$ as E,A as a,B as _e
     <button class="btn btn-soft btn-sm" style="width:100%;" data-action="open-project" data-project-id="${a(t.id)}">
       ${u("viewDetails")} ${x(l.lang==="ar"?"arrowLeft":"arrow",13)}
     </button>
-  </article>`}function Ce(t,s,i,n=[]){const r=t.manager||(l.data?.users||[]).find(d=>d.id===t.managerId),o=s.filter(d=>d.status==="done").length,c=s.filter(d=>d.status==="in_progress").length,p=s.filter(ne).length;return`
+  </article>`}function _e(t,s,i,n=[]){const r=t.manager||(l.data?.users||[]).find(d=>d.id===t.managerId),o=s.filter(d=>d.status==="done").length,c=s.filter(d=>d.status==="in_progress").length,p=s.filter(ne).length;return`
     <div class="project-overview-panel" style="display:flex;flex-direction:column;gap:20px;">
       <!-- Stats Row -->
       <div class="metrics-grid">
@@ -606,7 +606,7 @@ import{t as me}from"./rolldown-runtime-BQ-_32WO.js";import{$ as E,A as a,B as _e
       </div>
 
       <!-- Schedule Timeline Bar -->
-      ${Ee(t)}
+      ${Pe(t)}
 
       <!-- Details Grid -->
       <div class="project-details-grid" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(min(100%, 280px), 1fr));gap:16px;">
@@ -627,7 +627,7 @@ import{t as me}from"./rolldown-runtime-BQ-_32WO.js";import{$ as E,A as a,B as _e
             </div>
             <div>
               <span style="font-size:10px;color:var(--muted);display:block;">${u("lifecycle")}</span>
-              <strong style="font-size:13px;color:var(--ink);">${a(M(t.lifecycle))}</strong>
+              <strong style="font-size:13px;color:var(--ink);">${a(L(t.lifecycle))}</strong>
             </div>
             <div>
               <span style="font-size:10px;color:var(--muted);display:block;">${u("startDate")}</span>
@@ -649,7 +649,7 @@ import{t as me}from"./rolldown-runtime-BQ-_32WO.js";import{$ as E,A as a,B as _e
 
           <!-- Manager card -->
           <div style="display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--line);border-radius:10px;margin-bottom:16px;background:var(--surface);">
-            ${_(r)}
+            ${I(r)}
             <div style="flex:1;">
               <span style="font-size:10px;color:var(--teal);font-weight:700;text-transform:uppercase;">${u("manager")}</span>
               <strong style="font-size:13px;color:var(--ink);display:block;">${a(r?e(r.name,r.nameEn||r.name):"—")}</strong>
@@ -660,16 +660,16 @@ import{t as me}from"./rolldown-runtime-BQ-_32WO.js";import{$ as E,A as a,B as _e
           <!-- Members list -->
           <span style="font-size:11px;color:var(--muted);margin-bottom:8px;display:block;">${e("أعضاء الفريق الداخلي:","Internal Team Members:")}</span>
           <div style="display:flex;flex-direction:column;gap:8px;max-height:220px;overflow-y:auto;">
-            ${i.map(d=>{const v=s.filter(m=>m.assigneeId===d.id).length;return`
+            ${i.map(d=>{const f=s.filter(m=>m.assigneeId===d.id).length;return`
                 <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:var(--surface-soft);border-radius:8px;font-size:12px;">
                   <div style="display:flex;align-items:center;gap:8px;">
-                    ${_(d,"mini-avatar")}
+                    ${I(d,"mini-avatar")}
                     <div>
                       <strong style="display:block;font-size:12px;color:var(--ink);">${a(e(d.name,d.nameEn||d.name))}</strong>
                       <span style="font-size:10px;color:var(--muted);">${a(X(d))}</span>
                     </div>
                   </div>
-                  <span class="mini-badge" style="font-size:10px;padding:2px 6px;">${v} ${u("tasks")}</span>
+                  <span class="mini-badge" style="font-size:10px;padding:2px 6px;">${f} ${u("tasks")}</span>
                 </div>
               `}).join("")}
           </div>
@@ -680,7 +680,7 @@ import{t as me}from"./rolldown-runtime-BQ-_32WO.js";import{$ as E,A as a,B as _e
               🌐 ${e("الشركاء والمتعاونون الخارجيون:","External Partners & Collaborators:")}
             </span>
             <div style="display:flex;flex-direction:column;gap:8px;max-height:180px;overflow-y:auto;">
-              ${n.map(d=>{const v=s.filter(m=>(m.customFields?.externalAssignees||m.customFields?.external_assignees||[]).includes(d)).length;return`
+              ${n.map(d=>{const f=s.filter(m=>(m.customFields?.externalAssignees||m.customFields?.external_assignees||[]).includes(d)).length;return`
                   <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:var(--surface-soft);border-radius:8px;font-size:12px;">
                     <div style="display:flex;align-items:center;gap:8px;">
                       <span style="font-size:14px;">🌐</span>
@@ -689,7 +689,7 @@ import{t as me}from"./rolldown-runtime-BQ-_32WO.js";import{$ as E,A as a,B as _e
                         <span style="font-size:10px;color:var(--muted);">${e("شريك / جهة خارجية","External Partner")}</span>
                       </div>
                     </div>
-                    <span class="mini-badge" style="font-size:10px;padding:2px 6px;">${v} ${u("tasks")}</span>
+                    <span class="mini-badge" style="font-size:10px;padding:2px 6px;">${f} ${u("tasks")}</span>
                   </div>
                 `}).join("")}
             </div>
@@ -697,7 +697,7 @@ import{t as me}from"./rolldown-runtime-BQ-_32WO.js";import{$ as E,A as a,B as _e
         </div>
       </div>
     </div>
-  `}function Ie(){const t=(l.searches?.projects||"").trim().toLowerCase();let s=(l.data?.projects||[]).filter(n=>!t||`${n.nameAr||""} ${n.nameEn||""} ${n.code||""} ${n.clientAr||""} ${n.clientEn||""}`.toLowerCase().includes(t));const i=l.projectSort||"default";return i==="alpha-asc"?s.sort((n,r)=>(e(n.nameAr,n.nameEn)||"").localeCompare(e(r.nameAr,r.nameEn)||"",l.lang==="ar"?"ar":"en")):i==="alpha-desc"?s.sort((n,r)=>(e(r.nameAr,r.nameEn)||"").localeCompare(e(n.nameAr,n.nameEn)||"",l.lang==="ar"?"ar":"en")):i==="progress-asc"?s.sort((n,r)=>(Number(n.progress)||0)-(Number(r.progress)||0)):i==="progress-desc"&&s.sort((n,r)=>(Number(r.progress)||0)-(Number(n.progress)||0)),`<div class="page-head"><div><p class="eyebrow">${e("المحفظة","PORTFOLIO")}</p><h1>${u("projects")}</h1><p>${e("كل مشروع في صورة واحدة: الحالة، الإنجاز، الفريق، والموعد التالي.","One view for every project: health, progress, team, and next deadline.")}</p></div><div class="page-actions">${j("create_projects")?`<button class="btn btn-primary" data-action="new-project">${x("plus",15)} ${u("addProject")}</button>`:""}</div></div><div class="view-toolbar"><div class="view-toolbar-start"><div class="search-box">${x("search",15)}<input data-search="projects" value="${a(l.searches.projects)}" placeholder="${u("search")}" /></div><div class="sort-box"><span>${e("الترتيب:","Sort:")}</span><select id="sort-projects" class="select-compact" data-action="sort-projects"><option value="default" ${i==="default"?"selected":""}>${e("الافتراضي","Default")}</option><option value="alpha-asc" ${i==="alpha-asc"?"selected":""}>${e("أبجدياً (أ - ي)","Alphabetical (A - Z)")}</option><option value="alpha-desc" ${i==="alpha-desc"?"selected":""}>${e("أبجدياً (ي - أ)","Alphabetical (Z - A)")}</option><option value="progress-asc" ${i==="progress-asc"?"selected":""}>${e("نسبة الإنجاز (تصاعدي 0% ← 100%)","Progress (Low to High)")}</option><option value="progress-desc" ${i==="progress-desc"?"selected":""}>${e("نسبة الإنجاز (تنازلي 100% ← 0%)","Progress (High to Low)")}</option></select></div></div><div class="view-toolbar-end"><span class="mini-badge" style="padding:8px 10px;color:var(--ink-soft);background:var(--surface-soft)">${s.length} ${e("مشاريع","projects")}</span></div></div>${s.length?`<div class="project-cards">${s.map(Se).join("")}</div>`:`<section class="panel"><div class="empty">${x("building",18)}<span>${u("noProjects")}</span></div></section>`}`}function Qe(){const t=l.data?.projects?.find(f=>f.id===l.activeProjectId);if(!t)return l.view="projects",Ie();const s=(l.data?.tasks||[]).filter(f=>f.projectId===t.id),{internalMembers:i,externalMembers:n}=G(t),r=l.projectTab||"tasks",o=l.projectMemberFilter||null,c=o?s.filter(f=>f.assigneeId===o||(f.customFields?.additionalAssignees||f.customFields?.additional_assignees||[]).includes(o)):s,p=o?l.data?.users?.find(f=>f.id===o):null;let d="";if(r==="overview")d=Ce(t,s,i,n);else if(r==="tasks"){const f=l.projectTaskSort||q();d=`
+  `}function Ie(){const t=(l.searches?.projects||"").trim().toLowerCase();let s=(l.data?.projects||[]).filter(n=>!t||`${n.nameAr||""} ${n.nameEn||""} ${n.code||""} ${n.clientAr||""} ${n.clientEn||""}`.toLowerCase().includes(t));const i=l.projectSort||"default";return i==="alpha-asc"?s.sort((n,r)=>(e(n.nameAr,n.nameEn)||"").localeCompare(e(r.nameAr,r.nameEn)||"",l.lang==="ar"?"ar":"en")):i==="alpha-desc"?s.sort((n,r)=>(e(r.nameAr,r.nameEn)||"").localeCompare(e(n.nameAr,n.nameEn)||"",l.lang==="ar"?"ar":"en")):i==="progress-asc"?s.sort((n,r)=>(Number(n.progress)||0)-(Number(r.progress)||0)):i==="progress-desc"&&s.sort((n,r)=>(Number(r.progress)||0)-(Number(n.progress)||0)),`<div class="page-head"><div><p class="eyebrow">${e("المحفظة","PORTFOLIO")}</p><h1>${u("projects")}</h1><p>${e("كل مشروع في صورة واحدة: الحالة، الإنجاز، الفريق، والموعد التالي.","One view for every project: health, progress, team, and next deadline.")}</p></div><div class="page-actions">${j("create_projects")?`<button class="btn btn-primary" data-action="new-project">${x("plus",15)} ${u("addProject")}</button>`:""}</div></div><div class="view-toolbar"><div class="view-toolbar-start"><div class="search-box">${x("search",15)}<input data-search="projects" value="${a(l.searches.projects)}" placeholder="${u("search")}" /></div><div class="sort-box"><span>${e("الترتيب:","Sort:")}</span><select id="sort-projects" class="select-compact" data-action="sort-projects"><option value="default" ${i==="default"?"selected":""}>${e("الافتراضي","Default")}</option><option value="alpha-asc" ${i==="alpha-asc"?"selected":""}>${e("أبجدياً (أ - ي)","Alphabetical (A - Z)")}</option><option value="alpha-desc" ${i==="alpha-desc"?"selected":""}>${e("أبجدياً (ي - أ)","Alphabetical (Z - A)")}</option><option value="progress-asc" ${i==="progress-asc"?"selected":""}>${e("نسبة الإنجاز (تصاعدي 0% ← 100%)","Progress (Low to High)")}</option><option value="progress-desc" ${i==="progress-desc"?"selected":""}>${e("نسبة الإنجاز (تنازلي 100% ← 0%)","Progress (High to Low)")}</option></select></div></div><div class="view-toolbar-end"><span class="mini-badge" style="padding:8px 10px;color:var(--ink-soft);background:var(--surface-soft)">${s.length} ${e("مشاريع","projects")}</span></div></div>${s.length?`<div class="project-cards">${s.map(Ce).join("")}</div>`:`<section class="panel"><div class="empty">${x("building",18)}<span>${u("noProjects")}</span></div></section>`}`}function Ze(){const t=l.data?.projects?.find(v=>v.id===l.activeProjectId);if(!t)return l.view="projects",Ie();const s=(l.data?.tasks||[]).filter(v=>v.projectId===t.id),{internalMembers:i,externalMembers:n}=G(t),r=l.projectTab||"tasks",o=l.projectMemberFilter||null,c=o?s.filter(v=>v.assigneeId===o||(v.customFields?.additionalAssignees||v.customFields?.additional_assignees||[]).includes(o)):s,p=o?l.data?.users?.find(v=>v.id===o):null;let d="";if(r==="overview")d=_e(t,s,i,n);else if(r==="tasks"){const v=l.projectTaskSort||U();d=`
       <div class="panel">
         <div class="panel-head">
           <div>
@@ -705,14 +705,14 @@ import{t as me}from"./rolldown-runtime-BQ-_32WO.js";import{$ as E,A as a,B as _e
             <p class="panel-subtitle">${e("توزيع المهام حسب دورة العمل الحالية مرتبة تلقائياً بحسب تفضيل الترتيب.","Tasks grouped by current workflow state, automatically sorted.")}</p>
           </div>
           <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-            ${se(f,"sort-project-tasks")}
+            ${se(v,"sort-project-tasks")}
             ${o?`<button class="btn btn-ghost btn-sm" data-action="clear-member-filter" style="font-size:11px;">${x("close",12)} ${e("إلغاء الفلترة","Clear filter")}</button>`:""}
             ${j("create_tasks")?`<button class="btn btn-soft btn-sm" data-action="new-task" data-project-id="${a(t.id)}" title="${e("اضغط N للإضافة السريعة","Press N to add quickly")}">${x("plus",14)} ${u("addTask")} <kbd class="shortcut-kbd" style="margin-inline-start:4px;">N</kbd></button>`:""}
           </div>
         </div>
-        ${re(c,f)}
+        ${re(c,v)}
       </div>
-    `}else if(r==="timeline"){const{renderTimelinePanel:f}=window.__timelineExports||{};d=f?f(c,t):`<div class="panel"><div class="panel-head"><div><h2 class="panel-title">${e("المخطط الزمني والتقويم","Timeline & Calendar")}</h2></div></div>${V(c)}</div>`}else if(r==="drawings"){const f=(l.data?.documents||[]).filter(g=>g.projectId===t.id&&!g.deletedAt),$=s.filter(g=>g.typeAr==="مخطط"||g.typeEn==="Drawing"||g.templateId),b=l.docTaskFilter||"all",D=b==="all"?f:f.filter(g=>g.taskId===b);d=`
+    `}else if(r==="timeline"){const{renderTimelinePanel:v}=window.__timelineExports||{};d=v?v(c,t):`<div class="panel"><div class="panel-head"><div><h2 class="panel-title">${e("المخطط الزمني والتقويم","Timeline & Calendar")}</h2></div></div>${V(c)}</div>`}else if(r==="drawings"){const v=(l.data?.documents||[]).filter(g=>g.projectId===t.id&&!g.deletedAt),h=s.filter(g=>g.typeAr==="مخطط"||g.typeEn==="Drawing"||g.templateId),b=l.docTaskFilter||"all",D=b==="all"?v:v.filter(g=>g.taskId===b);d=`
       <div class="panel">
         <div class="panel-head" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
           <div>
@@ -754,7 +754,7 @@ import{t as me}from"./rolldown-runtime-BQ-_32WO.js";import{$ as E,A as a,B as _e
                 </tr>
               </thead>
               <tbody>
-                ${D.length>0?D.map(g=>{const w=s.find(C=>C.id===g.taskId),A=g.size>1048576?(g.size/1048576).toFixed(1)+" MB":Math.round((g.size||0)/1024)+" KB";return`
+                ${D.length>0?D.map(g=>{const w=s.find(C=>C.id===g.taskId),z=g.size>1048576?(g.size/1048576).toFixed(1)+" MB":Math.round((g.size||0)/1024)+" KB";return`
                     <tr data-doc-id="${a(g.id)}">
                       <td>
                         <div style="display:flex;align-items:center;gap:10px;cursor:pointer;" data-action="preview-doc" data-doc-id="${a(g.id)}">
@@ -774,10 +774,10 @@ import{t as me}from"./rolldown-runtime-BQ-_32WO.js";import{$ as E,A as a,B as _e
                       </td>
                       <td>
                         <span class="status-badge ${a(g.status||"draft")}" style="font-size:11px;">
-                          ${a(M(g.status||"draft"))}
+                          ${a(L(g.status||"draft"))}
                         </span>
                       </td>
-                      <td style="font-size:12px;color:var(--ink-soft);">${A}</td>
+                      <td style="font-size:12px;color:var(--ink-soft);">${z}</td>
                       <td style="font-size:12px;color:var(--ink-soft);">${O(g.createdAt,!0)}</td>
                       <td style="text-align:end;">
                         <div style="display:inline-flex;align-items:center;gap:4px;">
@@ -811,7 +811,7 @@ import{t as me}from"./rolldown-runtime-BQ-_32WO.js";import{$ as E,A as a,B as _e
         <!-- Section 2: Drawing Deliverable Tasks Summary -->
         <div>
           <h3 style="margin:0 0 12px;font-size:13px;color:var(--teal);display:flex;align-items:center;gap:6px;">
-            ${x("checklist",14)} ${e("مخرجات المخططات المجدولة","Scheduled Drawing Tasks")} (${$.length})
+            ${x("checklist",14)} ${e("مخرجات المخططات المجدولة","Scheduled Drawing Tasks")} (${h.length})
           </h3>
           <div class="table-wrap">
             <table class="data-table">
@@ -825,11 +825,11 @@ import{t as me}from"./rolldown-runtime-BQ-_32WO.js";import{$ as E,A as a,B as _e
                 </tr>
               </thead>
               <tbody>
-                ${$.map(g=>`
+                ${h.map(g=>`
                   <tr data-action="open-task" data-task-id="${a(g.id)}" style="cursor:pointer;" title="${e("انقر لعرض وتعديل المهمة ورفع المخططات","Click to open task and manage files")}">
                     <td><span class="table-title">${a(e(g.titleAr,g.titleEn))}</span><span class="table-sub">${a(g.templateId||"CUSTOM")}</span></td>
                     <td><span class="mini-badge badge-blue" style="font-size:10px;padding:3px 8px;">${a(e(g.typeAr,g.typeEn)||e("مخطط","Drawing"))}</span></td>
-                    <td><span class="status-badge ${a(g.status)}">${a(M(g.status))}</span></td>
+                    <td><span class="status-badge ${a(g.status)}">${a(L(g.status))}</span></td>
                     <td>
                       <div style="display:flex;align-items:center;gap:6px;">
                         <div style="flex:1;height:5px;background:var(--line);border-radius:3px;overflow:hidden;min-width:40px;">
@@ -846,7 +846,7 @@ import{t as me}from"./rolldown-runtime-BQ-_32WO.js";import{$ as E,A as a,B as _e
           </div>
         </div>
       </div>
-    `}else r==="activity"&&(d=`<div class="panel"><div class="panel-head"><div><h2 class="panel-title">${u("activity")}</h2><p class="panel-subtitle">${e("كل تغيير مهم يبقى قابلًا للمراجعة.","Every important change remains reviewable.")}</p></div></div>${qe(t.id)}</div>`);const v=t.manager||(l.data?.users||[]).find(f=>f.id===t.managerId),m=ce(t.dueDate);return`
+    `}else r==="activity"&&(d=`<div class="panel"><div class="panel-head"><div><h2 class="panel-title">${u("activity")}</h2><p class="panel-subtitle">${e("كل تغيير مهم يبقى قابلًا للمراجعة.","Every important change remains reviewable.")}</p></div></div>${Ue(t.id)}</div>`);const f=t.manager||(l.data?.users||[]).find(v=>v.id===t.managerId),m=ce(t.dueDate);return`
     <div class="project-hero">
       <div class="project-hero-copy">
         <button class="back-button" data-action="back-to-projects">${x(l.lang==="ar"?"arrow":"arrowLeft",15)}</button>
@@ -858,7 +858,7 @@ import{t as me}from"./rolldown-runtime-BQ-_32WO.js";import{$ as E,A as a,B as _e
           <div class="project-hero-meta">
             <span class="meta-chip">
               ${x("user",12)} 
-              <strong>${u("manager")}:</strong> ${a(v?e(v.name,v.nameEn||v.name):"—")}
+              <strong>${u("manager")}:</strong> ${a(f?e(f.name,f.nameEn||f.name):"—")}
             </span>
             ${t.dueDate?`
               <span class="meta-chip" style="display:inline-flex;align-items:center;gap:6px;">
@@ -869,9 +869,9 @@ import{t as me}from"./rolldown-runtime-BQ-_32WO.js";import{$ as E,A as a,B as _e
             <span class="meta-chip" style="display:inline-flex;align-items:center;gap:6px;position:relative;">
               ${x("users",12)}
               <span style="font-size:11px;">${u("team")}:</span>
-              ${je(i,4,!0,n)}
+              ${Ee(i,4,!0,n)}
             </span>
-            <span class="status-badge ${a(t.health)}">${a(M(t.health))}</span>
+            <span class="status-badge ${a(t.health)}">${a(L(t.health))}</span>
           </div>
         </div>
       </div>
@@ -914,11 +914,11 @@ import{t as me}from"./rolldown-runtime-BQ-_32WO.js";import{$ as E,A as a,B as _e
     ${d}
   `}function Z(t=[]){const s=l.data?.users||[];return t.map(i=>{const n=s.find(r=>r.id===i)||{name:i,id:i};return`
       <span class="chip-item" data-uid="${a(i)}" style="display:inline-flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:3px 10px 3px 6px;font-size:12px;color:var(--ink);">
-        ${_(n,"mini-avatar")}
+        ${I(n,"mini-avatar")}
         <span style="font-weight:500;">${a(e(n.name,n.nameEn||n.name))}</span>
         <button type="button" class="btn-remove-project-member" data-uid="${a(i)}" style="border:none;background:none;cursor:pointer;color:var(--muted);padding:0 2px;font-size:14px;line-height:1;margin-inline-start:4px;" title="${e("إزالة","Remove")}">×</button>
       </span>
-    `}).join("")}function Ze(t=null){const s=t?.code||`DARC-${String((l.data?.projects?.length||0)+1).padStart(3,"0")}`,i=t?G(t).internalMembers.map(o=>o.id):[],n=i.length>0?i:[l.data?.user?.id].filter(Boolean),r=`
+    `}).join("")}function et(t=null){const s=t?.code||`DARC-${String((l.data?.projects?.length||0)+1).padStart(3,"0")}`,i=t?G(t).internalMembers.map(o=>o.id):[],n=i.length>0?i:[l.data?.user?.id].filter(Boolean),r=`
     <form id="project-form" data-project-id="${a(t?.id||"")}">
       <input type="hidden" name="memberIds" id="project-members-input" value="${a(JSON.stringify(n))}" />
 
@@ -1034,16 +1034,16 @@ import{t as me}from"./rolldown-runtime-BQ-_32WO.js";import{$ as E,A as a,B as _e
         </div>
       </div>
     </form>
-  `;document.getElementById("modal-root").innerHTML=ie(t?e("تعديل بيانات المشروع","Edit Project"):u("addProject"),e("إدارة البيانات الأساسية وحالة متابعة المشروع والجدول الزمني.","Manage project details, schedule, and workflow health."),r,"project"),setTimeout(()=>{const o=document.getElementById("project-member-search"),c=document.getElementById("project-member-dropdown"),p=document.getElementById("project-members-chips-container"),d=document.getElementById("project-members-input"),v=document.getElementById("project-manager-select");if(!o||!c||!p||!d)return;let m=[...n];function f(){p.innerHTML=Z(m),p.style.display=m.length?"flex":"none",d.value=JSON.stringify(m),p.querySelectorAll(".btn-remove-project-member").forEach(b=>{b.addEventListener("click",D=>{D.stopPropagation();const g=b.dataset.uid;m=m.filter(w=>w!==g),f()})})}v&&v.addEventListener("change",()=>{const b=v.value;b&&!m.includes(b)&&(m.push(b),f())});function $(b=""){const D=b.toLowerCase().trim(),g=(l.data?.users||[]).filter(w=>!m.includes(w.id)&&(!D||w.name&&w.name.toLowerCase().includes(D)||w.nameEn&&w.nameEn.toLowerCase().includes(D)||w.email&&w.email.toLowerCase().includes(D)));g.length?(c.innerHTML=g.map(w=>`
+  `;document.getElementById("modal-root").innerHTML=ie(t?e("تعديل بيانات المشروع","Edit Project"):u("addProject"),e("إدارة البيانات الأساسية وحالة متابعة المشروع والجدول الزمني.","Manage project details, schedule, and workflow health."),r,"project"),setTimeout(()=>{const o=document.getElementById("project-member-search"),c=document.getElementById("project-member-dropdown"),p=document.getElementById("project-members-chips-container"),d=document.getElementById("project-members-input"),f=document.getElementById("project-manager-select");if(!o||!c||!p||!d)return;let m=[...n];function v(){p.innerHTML=Z(m),p.style.display=m.length?"flex":"none",d.value=JSON.stringify(m),p.querySelectorAll(".btn-remove-project-member").forEach(b=>{b.addEventListener("click",D=>{D.stopPropagation();const g=b.dataset.uid;m=m.filter(w=>w!==g),v()})})}f&&f.addEventListener("change",()=>{const b=f.value;b&&!m.includes(b)&&(m.push(b),v())});function h(b=""){const D=b.toLowerCase().trim(),g=(l.data?.users||[]).filter(w=>!m.includes(w.id)&&(!D||w.name&&w.name.toLowerCase().includes(D)||w.nameEn&&w.nameEn.toLowerCase().includes(D)||w.email&&w.email.toLowerCase().includes(D)));g.length?(c.innerHTML=g.map(w=>`
           <div class="project-member-opt" data-uid="${a(w.id)}" style="display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:6px;cursor:pointer;font-size:12px;">
-            ${_(w,"mini-avatar")}
+            ${I(w,"mini-avatar")}
             <div style="flex:1;">
               <div style="font-weight:600;color:var(--ink);">${a(e(w.name,w.nameEn||w.name))}</div>
               <div style="font-size:10px;color:var(--muted);">${a(w.roleId||"")}</div>
             </div>
             <span style="font-size:11px;color:var(--teal);">➕ ${e("إضافة","Add")}</span>
           </div>
-        `).join(""),c.querySelectorAll(".project-member-opt").forEach(w=>{w.addEventListener("mouseenter",()=>w.style.background="var(--surface-soft)"),w.addEventListener("mouseleave",()=>w.style.background="transparent"),w.addEventListener("click",()=>{const A=w.dataset.uid;A&&!m.includes(A)&&(m.push(A),f(),o.value="",c.style.display="none")})})):c.innerHTML=`<div style="padding:8px 12px;font-size:12px;color:var(--muted);">${e("لا يوجد أعضاء مطابقون","No matching members")}</div>`,c.style.display="block"}o.addEventListener("focus",()=>$(o.value)),o.addEventListener("input",()=>$(o.value)),document.addEventListener("click",b=>{!o.contains(b.target)&&!c.contains(b.target)&&(c.style.display="none")}),f()},50)}function et(t){const s=`
+        `).join(""),c.querySelectorAll(".project-member-opt").forEach(w=>{w.addEventListener("mouseenter",()=>w.style.background="var(--surface-soft)"),w.addEventListener("mouseleave",()=>w.style.background="transparent"),w.addEventListener("click",()=>{const z=w.dataset.uid;z&&!m.includes(z)&&(m.push(z),v(),o.value="",c.style.display="none")})})):c.innerHTML=`<div style="padding:8px 12px;font-size:12px;color:var(--muted);">${e("لا يوجد أعضاء مطابقون","No matching members")}</div>`,c.style.display="block"}o.addEventListener("focus",()=>h(o.value)),o.addEventListener("input",()=>h(o.value)),document.addEventListener("click",b=>{!o.contains(b.target)&&!c.contains(b.target)&&(c.style.display="none")}),v()},50)}function tt(t){const s=`
     <form id="clone-form" data-project-id="${t.id}">
       <p style="margin-top:0;margin-bottom:20px;color:var(--ink-soft);font-size:13px">${e("أنت على وشك استنساخ المشروع:","You are about to clone the project:")} <strong style="color:var(--ink)">${a(e(t.nameAr,t.nameEn))}</strong></p>
       <div class="form-grid">
@@ -1090,7 +1090,7 @@ import{t as me}from"./rolldown-runtime-BQ-_32WO.js";import{$ as E,A as a,B as _e
         <button type="submit" class="btn btn-primary">${x("document",14)} ${e("استنساخ المشروع","Clone Project")}</button>
       </div>
     </form>
-  `;document.getElementById("modal-root").innerHTML=ie(e("استنساخ المشروع","Clone Project"),e("أداة إنشاء قوالب المشاريع السريعة","Rapid project templating tool"),s,"clone");const i=document.getElementById("clone-form"),n=i.querySelector('input[name="cloneTasks"]'),r=i.querySelector('input[name="keepAssignees"]');n.addEventListener("change",o=>{r.disabled=!o.target.checked,o.target.checked||(r.checked=!1)}),i.addEventListener("submit",async o=>{o.preventDefault();const c=i.querySelector('button[type="submit"]');c.disabled=!0;try{const p={nameAr:i.nameAr.value,nameEn:i.nameEn.value,dueDate:i.dueDate.value,cloneTasks:i.cloneTasks.checked,keepAssignees:i.keepAssignees.checked,cloneMembers:i.cloneMembers.checked},d=await R(`/api/projects/${t.id}/clone`,{method:"POST",body:JSON.stringify(p)});Oe(),l.view="project-detail",l.activeProjectId=d.project.id,await Re(),L(e("تم استنساخ المشروع بنجاح.","Project cloned successfully."))}catch(p){L(p.message,!0),c.disabled=!1}})}function tt(){const t=l.data?.projects||[];if(!t||!t.length){L(e("لا توجد بيانات لتصديرها.","No data to export."),!0);return}const s=W(),i=Y(),n=11;let r="<table>";r+=`<tr><td colspan="${n}" class="title" style="background:#0d6269;color:#ffffff;font-size:18px;font-weight:bold;text-align:center;padding:14px;">
+  `;document.getElementById("modal-root").innerHTML=ie(e("استنساخ المشروع","Clone Project"),e("أداة إنشاء قوالب المشاريع السريعة","Rapid project templating tool"),s,"clone");const i=document.getElementById("clone-form"),n=i.querySelector('input[name="cloneTasks"]'),r=i.querySelector('input[name="keepAssignees"]');n.addEventListener("change",o=>{r.disabled=!o.target.checked,o.target.checked||(r.checked=!1)}),i.addEventListener("submit",async o=>{o.preventDefault();const c=i.querySelector('button[type="submit"]');c.disabled=!0;try{const p={nameAr:i.nameAr.value,nameEn:i.nameEn.value,dueDate:i.dueDate.value,cloneTasks:i.cloneTasks.checked,keepAssignees:i.keepAssignees.checked,cloneMembers:i.cloneMembers.checked},d=await B(`/api/projects/${t.id}/clone`,{method:"POST",body:JSON.stringify(p)});Re(),l.view="project-detail",l.activeProjectId=d.project.id,await Be(),M(e("تم استنساخ المشروع بنجاح.","Project cloned successfully."))}catch(p){M(p.message,!0),c.disabled=!1}})}function at(){const t=l.data?.projects||[];if(!t||!t.length){M(e("لا توجد بيانات لتصديرها.","No data to export."),!0);return}const s=W(),i=Y(),n=11;let r="<table>";r+=`<tr><td colspan="${n}" class="title" style="background:#0d6269;color:#ffffff;font-size:18px;font-weight:bold;text-align:center;padding:14px;">
     ${s.logoUrl?`<img src="${a(s.logoUrl)}" height="42" style="vertical-align:middle;margin-inline-end:12px;" />`:""}
     <span style="vertical-align:middle;">${a(s.displayName)}</span>
   </td></tr>`,r+=`<tr><td colspan="${n}" class="subtitle">${e("تقرير حالة مشاريع المحفظة الهندسية","Portfolio Projects Status Report")}</td></tr>`,r+=`<tr><td colspan="${n}" class="meta">${e("تاريخ الإصدار:","Generated on:")} ${i}</td></tr>`,r+=`<tr><td colspan="${n}" style="border:none;"></td></tr>`,r+=`<tr class="header">
@@ -1111,16 +1111,16 @@ import{t as me}from"./rolldown-runtime-BQ-_32WO.js";import{$ as E,A as a,B as _e
       <td>${a(E(o.nameEn))}</td>
       <td>${a(E(e(o.clientAr,o.clientEn)))}</td>
       <td>${a(E(c))}</td>
-      <td>${a(E(M(o.lifecycle)))}</td>
-      <td>${a(E(M(o.health)))}</td>
+      <td>${a(E(L(o.lifecycle)))}</td>
+      <td>${a(E(L(o.health)))}</td>
       <td>${a(E(o.startDate||""))}</td>
       <td>${a(E(o.dueDate||""))}</td>
       <td>${o.progress||0}%</td>
       <td>${o.memberCount||0}</td>
-    </tr>`}),r+="</table>",ae(`DARC_Portfolio_Report_${new Date().toISOString().split("T")[0]}`,r),L(e("تم بدء تحميل تقرير المحفظة.","Portfolio report download started.")),R("/api/audit",{method:"POST",body:JSON.stringify({action:"export_report",entityType:"report",details:{title:e("تقرير حالة مشاريع المحفظة (Excel)","Portfolio Projects Report (Excel)"),count:t.length}})}).catch(()=>{})}function at(t){const s=(l.data?.projects||[]).find(m=>m.id===t);if(!s)return;const i=(l.data?.tasks||[]).filter(m=>m.projectId===t);if(!i.length){L(e("لا توجد مهام لهذا المشروع لتصديرها.","No tasks to export."),!0);return}const n=W(),r=l.data?.users||[],o=new Map(r.map(m=>[m.id,m]));function c(m){if(!m)return"—";const f=o.get(m);return f?e(f.name,f.nameEn||f.name):m}const p=Y(),d=11;let v="<table>";v+=`<tr><td colspan="${d}" class="title" style="background:#0d6269;color:#ffffff;font-size:18px;font-weight:bold;text-align:center;padding:14px;">
+    </tr>`}),r+="</table>",ae(`DARC_Portfolio_Report_${new Date().toISOString().split("T")[0]}`,r),M(e("تم بدء تحميل تقرير المحفظة.","Portfolio report download started.")),B("/api/audit",{method:"POST",body:JSON.stringify({action:"export_report",entityType:"report",details:{title:e("تقرير حالة مشاريع المحفظة (Excel)","Portfolio Projects Report (Excel)"),count:t.length}})}).catch(()=>{})}function it(t){const s=(l.data?.projects||[]).find(m=>m.id===t);if(!s)return;const i=(l.data?.tasks||[]).filter(m=>m.projectId===t);if(!i.length){M(e("لا توجد مهام لهذا المشروع لتصديرها.","No tasks to export."),!0);return}const n=W(),r=l.data?.users||[],o=new Map(r.map(m=>[m.id,m]));function c(m){if(!m)return"—";const v=o.get(m);return v?e(v.name,v.nameEn||v.name):m}const p=Y(),d=11;let f="<table>";f+=`<tr><td colspan="${d}" class="title" style="background:#0d6269;color:#ffffff;font-size:18px;font-weight:bold;text-align:center;padding:14px;">
     ${n.logoUrl?`<img src="${a(n.logoUrl)}" height="42" style="vertical-align:middle;margin-inline-end:12px;" />`:""}
     <span style="vertical-align:middle;">${a(n.displayName)}</span>
-  </td></tr>`,v+=`<tr><td colspan="${d}" class="subtitle">${e("تقرير مهام ومخرجات المشروع:","Project Tasks & Deliverables Report:")} ${a(e(s.nameAr,s.nameEn))} (${a(s.code)})</td></tr>`,v+=`<tr><td colspan="${d}" class="meta">${e("العميل / المالك:","Client:")} ${a(e(s.clientAr,s.clientEn))||"—"} | ${e("تاريخ الإصدار:","Generated on:")} ${p}</td></tr>`,v+=`<tr><td colspan="${d}" style="border:none;"></td></tr>`,v+=`<tr class="header">
+  </td></tr>`,f+=`<tr><td colspan="${d}" class="subtitle">${e("تقرير مهام ومخرجات المشروع:","Project Tasks & Deliverables Report:")} ${a(e(s.nameAr,s.nameEn))} (${a(s.code)})</td></tr>`,f+=`<tr><td colspan="${d}" class="meta">${e("العميل / المالك:","Client:")} ${a(e(s.clientAr,s.clientEn))||"—"} | ${e("تاريخ الإصدار:","Generated on:")} ${p}</td></tr>`,f+=`<tr><td colspan="${d}" style="border:none;"></td></tr>`,f+=`<tr class="header">
     <td>${e("كود المخرج","Code")}</td>
     <td>${e("المهمة (عربي)","Task (Ar)")}</td>
     <td>${e("المهمة (إنجليزي)","Task (En)")}</td>
@@ -1132,35 +1132,35 @@ import{t as me}from"./rolldown-runtime-BQ-_32WO.js";import{$ as E,A as a,B as _e
     <td>${e("تاريخ البدء","Start Date")}</td>
     <td>${e("تاريخ التسليم","Due Date")}</td>
     <td>${e("الإنجاز","Progress %")}</td>
-  </tr>`,i.forEach((m,f)=>{const $=m.templateId?m.templateId.replace("tpl-","#"):m.id?`#${m.id.slice(-6)}`:`#${f+1}`,b=c(m.assigneeId||m.assignee_id),D=c(m.reviewerId||m.reviewer_id),g=c(m.approverId||m.approver_id);v+=`<tr>
-      <td style="text-align:center;font-weight:bold;">${a(E($))}</td>
+  </tr>`,i.forEach((m,v)=>{const h=m.templateId?m.templateId.replace("tpl-","#"):m.id?`#${m.id.slice(-6)}`:`#${v+1}`,b=c(m.assigneeId||m.assignee_id),D=c(m.reviewerId||m.reviewer_id),g=c(m.approverId||m.approver_id);f+=`<tr>
+      <td style="text-align:center;font-weight:bold;">${a(E(h))}</td>
       <td>${a(E(m.titleAr))}</td>
       <td>${a(E(m.titleEn))}</td>
       <td>${a(E(e(m.categoryAr,m.categoryEn)))}</td>
       <td>${a(E(b))}</td>
       <td style="color:#0369a1;">${a(E(D))}</td>
       <td style="color:#047857;">${a(E(g))}</td>
-      <td>${a(E(M(m.status)))}</td>
+      <td>${a(E(L(m.status)))}</td>
       <td>${a(E(m.startDate||""))}</td>
       <td>${a(E(m.dueDate||""))}</td>
       <td style="font-weight:bold;">${m.progress||0}%</td>
-    </tr>`}),v+="</table>",ae(`DARC_Project_${s.code}_${new Date().toISOString().split("T")[0]}`,v),L(e("تم بدء تحميل تقرير المهام.","Report download started.")),R("/api/audit",{method:"POST",body:JSON.stringify({action:"export_report",entityType:"project",entityId:t,details:{title:e(`تقرير مهام مشروع: ${s.nameAr}`,`Project Tasks Report: ${s.nameEn||s.nameAr}`),taskCount:i.length}})}).catch(()=>{})}function it(t,s=!1){const i=(l.data?.projects||[]).find(y=>y.id===t);if(!i)return;const n=(l.data?.tasks||[]).filter(y=>y.projectId===t);if(!n.length){L(e("لا توجد مهام لهذا المشروع لطباعة التقرير.","No tasks to print report."),!0);return}const r=W(),o=l.data?.users||[],c=new Map(o.map(y=>[y.id,y]));function p(y){if(!y)return"—";const h=c.get(y);return h?e(h.name,h.nameEn||h.name):y}function d(y){if(!y?.dueDate||["done","completed","canceled"].includes(y.status))return!1;const h=te(y.dueDate);return h?h<new Date:!1}const v=n.length,m=n.filter(y=>["done","completed"].includes(y.status)).length,f=n.filter(y=>["review","approval"].includes(y.status)).length;n.filter(y=>y.status==="in_progress").length;const $=n.filter(y=>d(y)).length,b=new Date,D=Y(b),g=ue(b),w=new Map;n.forEach(y=>{const h=e(y.categoryAr,y.categoryEn)||e(y.typeAr,y.typeEn)||e("عام","General"),k=w.get(h)||{total:0,completed:0,weight:0,progressSum:0},T=Number(y.weight||1);k.total++,["done","completed"].includes(y.status)&&k.completed++,k.weight+=T,k.progressSum+=(y.progress||0)*T,w.set(h,k)});const A=Array.from(w.entries()).map(([y,h])=>({name:y,percent:h.weight?Math.round(h.progressSum/h.weight):0,completed:h.completed,total:h.total})),C=s?e("تقرير تسليمات ومخرجات المشروع للمالك والعميل","Client Deliverables & Milestone Brief"):e("تقرير الإنجاز التنفيذي والمخرجات والاعتمادات الهندسية","Official Executive Engineering & Deliverables Audit");s?e("ملخص رسمي لمخرجات ومخططات المشروع المعتمدة وتواريخ التسليم التعاقدية.","Official summary of approved architectural drawings, milestones, and deliverables."):e("بيان تفصيلي بمسار التنفيذ ومسؤوليات المراجعة والاعتماد لكافة مخرجات المشروع.","Detailed execution readout with review and approval sign-offs for all project assets.");const U=n.map((y,h)=>{const k=y.templateId?y.templateId.replace("tpl-","#"):y.id?`#${y.id.slice(-6)}`:`#${h+1}`,T=e(y.titleAr,y.titleEn),z=e(y.categoryAr,y.categoryEn)||e(y.typeAr,y.typeEn)||"—",N=M(y.status),F=y.progress||0,P=y.dueDate||"—";if(s)return`
+    </tr>`}),f+="</table>",ae(`DARC_Project_${s.code}_${new Date().toISOString().split("T")[0]}`,f),M(e("تم بدء تحميل تقرير المهام.","Report download started.")),B("/api/audit",{method:"POST",body:JSON.stringify({action:"export_report",entityType:"project",entityId:t,details:{title:e(`تقرير مهام مشروع: ${s.nameAr}`,`Project Tasks Report: ${s.nameEn||s.nameAr}`),taskCount:i.length}})}).catch(()=>{})}function nt(t,s=!1){const i=(l.data?.projects||[]).find(y=>y.id===t);if(!i)return;const n=(l.data?.tasks||[]).filter(y=>y.projectId===t);if(!n.length){M(e("لا توجد مهام لهذا المشروع لطباعة التقرير.","No tasks to print report."),!0);return}const r=W(),o=l.data?.users||[],c=new Map(o.map(y=>[y.id,y]));function p(y){if(!y)return"—";const $=c.get(y);return $?e($.name,$.nameEn||$.name):y}function d(y){if(!y?.dueDate||["done","completed","canceled"].includes(y.status))return!1;const $=te(y.dueDate);return $?$<new Date:!1}const f=n.length,m=n.filter(y=>["done","completed"].includes(y.status)).length,v=n.filter(y=>["review","approval"].includes(y.status)).length;n.filter(y=>y.status==="in_progress").length;const h=n.filter(y=>d(y)).length,b=new Date,D=Y(b),g=fe(b),w=new Map;n.forEach(y=>{const $=e(y.categoryAr,y.categoryEn)||e(y.typeAr,y.typeEn)||e("عام","General"),k=w.get($)||{total:0,completed:0,weight:0,progressSum:0},T=Number(y.weight||1);k.total++,["done","completed"].includes(y.status)&&k.completed++,k.weight+=T,k.progressSum+=(y.progress||0)*T,w.set($,k)});const z=Array.from(w.entries()).map(([y,$])=>({name:y,percent:$.weight?Math.round($.progressSum/$.weight):0,completed:$.completed,total:$.total})),C=s?e("تقرير تسليمات ومخرجات المشروع للمالك والعميل","Client Deliverables & Milestone Brief"):e("تقرير الإنجاز التنفيذي والمخرجات والاعتمادات الهندسية","Official Executive Engineering & Deliverables Audit");s?e("ملخص رسمي لمخرجات ومخططات المشروع المعتمدة وتواريخ التسليم التعاقدية.","Official summary of approved architectural drawings, milestones, and deliverables."):e("بيان تفصيلي بمسار التنفيذ ومسؤوليات المراجعة والاعتماد لكافة مخرجات المشروع.","Detailed execution readout with review and approval sign-offs for all project assets.");const R=n.map((y,$)=>{const k=y.templateId?y.templateId.replace("tpl-","#"):y.id?`#${y.id.slice(-6)}`:`#${$+1}`,T=e(y.titleAr,y.titleEn),A=e(y.categoryAr,y.categoryEn)||e(y.typeAr,y.typeEn)||"—",N=L(y.status),F=y.progress||0,P=y.dueDate||"—";if(s)return`
         <tr>
-          <td style="text-align:center;font-weight:bold;color:#475569;">${h+1}</td>
+          <td style="text-align:center;font-weight:bold;color:#475569;">${$+1}</td>
           <td style="text-align:center;font-weight:600;color:#0d6269;">${a(k)}</td>
           <td style="font-weight:600;">${a(T)}</td>
-          <td style="text-align:center;">${a(z)}</td>
+          <td style="text-align:center;">${a(A)}</td>
           <td style="text-align:center;"><span class="badge ${a(y.status)}">${a(N)}</span></td>
           <td style="text-align:center;direction:ltr;">${a(P)}</td>
           <td style="text-align:center;font-weight:bold;color:${F===100?"#0d6269":"#1e293b"};">${F}%</td>
         </tr>
-      `;const B=p(y.assigneeId||y.assignee_id),K=p(y.reviewerId||y.reviewer_id),Q=p(y.approverId||y.approver_id);return`
+      `;const q=p(y.assigneeId||y.assignee_id),K=p(y.reviewerId||y.reviewer_id),Q=p(y.approverId||y.approver_id);return`
       <tr>
-        <td style="text-align:center;font-weight:bold;color:#475569;">${h+1}</td>
+        <td style="text-align:center;font-weight:bold;color:#475569;">${$+1}</td>
         <td style="text-align:center;font-weight:600;color:#0d6269;">${a(k)}</td>
         <td style="font-weight:600;">${a(T)}</td>
-        <td style="text-align:center;">${a(z)}</td>
-        <td>${a(B)}</td>
+        <td style="text-align:center;">${a(A)}</td>
+        <td>${a(q)}</td>
         <td style="color:#0369a1;font-weight:600;">${a(K)}</td>
         <td style="color:#047857;font-weight:600;">${a(Q)}</td>
         <td style="text-align:center;"><span class="badge ${a(y.status)}">${a(N)}</span></td>
@@ -1480,7 +1480,7 @@ import{t as me}from"./rolldown-runtime-BQ-_32WO.js";import{$ as E,A as a,B as _e
           <div class="report-type-badge">${a(C)}</div>
           <div><strong>${e("كود المشروع:","Project Code:")}</strong> ${a(i.code)}</div>
           <div><strong>${e("تاريخ التقرير:","Report Date:")}</strong> ${a(D)} - ${a(g)}</div>
-          <div><strong>${e("حالة المشروع:","Project Status:")}</strong> ${a(M(i.lifecycle))} (${a(M(i.health))})</div>
+          <div><strong>${e("حالة المشروع:","Project Status:")}</strong> ${a(L(i.lifecycle))} (${a(L(i.health))})</div>
         </div>
       </header>
 
@@ -1509,24 +1509,24 @@ import{t as me}from"./rolldown-runtime-BQ-_32WO.js";import{$ as E,A as a,B as _e
           <div class="kpi-label">${e("نسبة الإنجاز الإجمالية","Overall Progress")}</div>
         </div>
         <div class="kpi-card">
-          <div class="kpi-val" style="color:#047857;">${m} / ${v}</div>
+          <div class="kpi-val" style="color:#047857;">${m} / ${f}</div>
           <div class="kpi-label">${e("المخرجات المعتمدة","Approved Deliverables")}</div>
         </div>
         <div class="kpi-card">
-          <div class="kpi-val" style="color:#b45309;">${f}</div>
+          <div class="kpi-val" style="color:#b45309;">${v}</div>
           <div class="kpi-label">${e("قيد المراجعة والاعتماد","Under Review")}</div>
         </div>
         <div class="kpi-card">
-          <div class="kpi-val" style="color:${$>0?"#b91c1c":"#64748b"};">${$}</div>
+          <div class="kpi-val" style="color:${h>0?"#b91c1c":"#64748b"};">${h}</div>
           <div class="kpi-label">${e("المخرجات المتأخرة","Overdue Deliverables")}</div>
         </div>
       </div>
 
-      ${A.length?`
+      ${z.length?`
         <div class="disc-section">
           <strong style="font-size:11px;color:#334155;">${e("مؤشرات الإنجاز بحسب التخصص الهندسي:","Engineering Discipline Progress Breakdown:")}</strong>
           <div class="disc-grid">
-            ${A.map(y=>`
+            ${z.map(y=>`
               <div class="disc-item">
                 <div style="display:flex;justify-content:space-between;font-weight:600;">
                   <span>${a(y.name)}</span>
@@ -1559,7 +1559,7 @@ import{t as me}from"./rolldown-runtime-BQ-_32WO.js";import{$ as E,A as a,B as _e
           </tr>
         </thead>
         <tbody>
-          ${U}
+          ${R}
         </tbody>
       </table>
 
@@ -1586,20 +1586,20 @@ import{t as me}from"./rolldown-runtime-BQ-_32WO.js";import{$ as E,A as a,B as _e
       </footer>
     </body>
     </html>
-  `,I=window.open("","_blank","width=1100,height=900");I?(I.document.open(),I.document.write(H),I.document.close()):ge(H),L(e("تم تجهيز التقرير الرسمي للطباعة والتصدير PDF.","Executive report ready for Print / PDF export.")),R("/api/audit",{method:"POST",body:JSON.stringify({action:"export_report",entityType:"project",entityId:t,details:{title:a(C),type:s?"client_pdf":"executive_pdf",taskCount:v}})}).catch(()=>{})}function nt(){const t=l.data?.projects||[];if(!t||!t.length){L(e("لا توجد مشاريع لتصدير التقرير.","No projects to export."),!0);return}const s=W(),i=new Date,n=Y(i),r=ue(i),o=t.length,c=t.filter(b=>b.health==="on_track").length,p=t.filter(b=>b.health==="at_risk").length,d=t.filter(b=>b.health==="off_track").length,v=t.map((b,D)=>{const g=b.manager?e(b.manager.name,b.manager.nameEn||b.manager.name):"—";return`
+  `,_=window.open("","_blank","width=1100,height=900");_?(_.document.open(),_.document.write(H),_.document.close()):ge(H),M(e("تم تجهيز التقرير الرسمي للطباعة والتصدير PDF.","Executive report ready for Print / PDF export.")),B("/api/audit",{method:"POST",body:JSON.stringify({action:"export_report",entityType:"project",entityId:t,details:{title:a(C),type:s?"client_pdf":"executive_pdf",taskCount:f}})}).catch(()=>{})}function st(){const t=l.data?.projects||[];if(!t||!t.length){M(e("لا توجد مشاريع لتصدير التقرير.","No projects to export."),!0);return}const s=W(),i=new Date,n=Y(i),r=fe(i),o=t.length,c=t.filter(b=>b.health==="on_track").length,p=t.filter(b=>b.health==="at_risk").length,d=t.filter(b=>b.health==="off_track").length,f=t.map((b,D)=>{const g=b.manager?e(b.manager.name,b.manager.nameEn||b.manager.name):"—";return`
       <tr>
         <td style="text-align:center;font-weight:bold;color:#475569;">${D+1}</td>
         <td style="text-align:center;font-weight:700;color:#0d6269;">${a(b.code)}</td>
         <td style="font-weight:700;">${a(e(b.nameAr,b.nameEn))}</td>
         <td>${a(e(b.clientAr,b.clientEn))||"—"}</td>
         <td>${a(g)}</td>
-        <td style="text-align:center;"><span class="badge ${a(b.lifecycle)}">${a(M(b.lifecycle))}</span></td>
-        <td style="text-align:center;"><span class="badge ${a(b.health)}">${a(M(b.health))}</span></td>
+        <td style="text-align:center;"><span class="badge ${a(b.lifecycle)}">${a(L(b.lifecycle))}</span></td>
+        <td style="text-align:center;"><span class="badge ${a(b.health)}">${a(L(b.health))}</span></td>
         <td style="text-align:center;direction:ltr;">${a(b.startDate||"—")}</td>
         <td style="text-align:center;direction:ltr;">${a(b.dueDate||"—")}</td>
         <td style="text-align:center;font-weight:bold;color:${b.progress===100?"#0d6269":"#0f172a"};">${b.progress||0}%</td>
       </tr>
-    `}).join(""),m=e("تقرير الأداء ومتابعة المشاريع للمحفظة الهندسية","Official Portfolio Projects Status & Operations Readout"),f=`
+    `}).join(""),m=e("تقرير الأداء ومتابعة المشاريع للمحفظة الهندسية","Official Portfolio Projects Status & Operations Readout"),v=`
     <!DOCTYPE html>
     <html lang="${l.lang}" dir="${l.lang==="ar"?"rtl":"ltr"}">
     <head>
@@ -1764,7 +1764,7 @@ import{t as me}from"./rolldown-runtime-BQ-_32WO.js";import{$ as E,A as a,B as _e
           </tr>
         </thead>
         <tbody>
-          ${v}
+          ${f}
         </tbody>
       </table>
 
@@ -1787,10 +1787,10 @@ import{t as me}from"./rolldown-runtime-BQ-_32WO.js";import{$ as E,A as a,B as _e
       </footer>
     </body>
     </html>
-  `,$=window.open("","_blank","width=1200,height=900");$?($.document.open(),$.document.write(f),$.document.close()):ge(f),L(e("تم تجهيز تقرير المحفظة للطباعة والتصدير PDF.","Portfolio report ready for Print / PDF export.")),R("/api/audit",{method:"POST",body:JSON.stringify({action:"export_report",entityType:"report",details:{title:a(m),type:"portfolio_pdf",count:o}})}).catch(()=>{})}function ge(t){let s=document.getElementById("print-modal-overlay");s||(s=document.createElement("div"),s.id="print-modal-overlay",s.style.position="fixed",s.style.inset="0",s.style.zIndex="1400",s.style.background="rgba(0, 0, 0, 0.75)",s.style.backdropFilter="blur(4px)",s.style.display="flex",s.style.flexDirection="column",s.style.alignItems="center",s.style.justifyContent="center",s.style.padding="15px",document.body.appendChild(s)),s.innerHTML=`
-    <div style="background:#fff;width:95%;max-width:1150px;height:92vh;border-radius:12px;box-shadow:0 25px 50px rgba(0,0,0,0.3);overflow:hidden;display:flex;flex-direction:column;">
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 20px;border-bottom:1px solid #e2e8f0;background:#f8fafc;flex-wrap:wrap;gap:8px;">
-        <strong style="color:#0d6269;font-size:14px;">${e("معاينة التقرير الرسمي المعتمد (PDF Preview)","Official Approved Report (PDF Preview)")}</strong>
+  `,h=window.open("","_blank","width=1200,height=900");h?(h.document.open(),h.document.write(v),h.document.close()):ge(v),M(e("تم تجهيز تقرير المحفظة للطباعة والتصدير PDF.","Portfolio report ready for Print / PDF export.")),B("/api/audit",{method:"POST",body:JSON.stringify({action:"export_report",entityType:"report",details:{title:a(m),type:"portfolio_pdf",count:o}})}).catch(()=>{})}function ge(t){let s=document.getElementById("print-modal-overlay");s||(s=document.createElement("div"),s.id="print-modal-overlay",s.style.position="fixed",s.style.inset="0",s.style.zIndex="1400",s.style.background="rgba(0, 0, 0, 0.75)",s.style.backdropFilter="blur(4px)",s.style.display="flex",s.style.flexDirection="column",s.style.alignItems="center",s.style.justifyContent="center",s.style.padding="15px",document.body.appendChild(s)),s.innerHTML=`
+    <div style="background:var(--surface, #ffffff);color:var(--ink);width:95%;max-width:1150px;height:92vh;border-radius:12px;box-shadow:0 25px 50px rgba(0,0,0,0.4);overflow:hidden;display:flex;flex-direction:column;border:1px solid var(--line);">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 20px;border-bottom:1px solid var(--line);background:var(--surface-soft);flex-wrap:wrap;gap:8px;">
+        <strong style="color:var(--brand-teal);font-size:14px;">${e("معاينة التقرير الرسمي المعتمد (PDF Preview)","Official Approved Report (PDF Preview)")}</strong>
         <div style="display:flex;gap:10px;">
           <button type="button" class="btn btn-primary btn-sm" id="btn-print-iframe" style="display:flex;align-items:center;gap:6px;">
             ${x("printer",14)} ${e("طباعة / حفظ كـ PDF","Print / Save as PDF")}
@@ -1798,8 +1798,8 @@ import{t as me}from"./rolldown-runtime-BQ-_32WO.js";import{$ as E,A as a,B as _e
           <button type="button" class="btn btn-ghost btn-sm" id="btn-close-print-modal">✕</button>
         </div>
       </div>
-      <div style="flex:1;overflow:hidden;position:relative;">
-        <iframe id="print-preview-iframe" style="width:100%;height:100%;border:none;" srcdoc="${a(t)}"></iframe>
+      <div style="flex:1;overflow:hidden;position:relative;background:#ffffff;">
+        <iframe id="print-preview-iframe" style="width:100%;height:100%;border:none;background:#ffffff;" srcdoc="${a(t)}"></iframe>
       </div>
     </div>
-  `,s.style.display="flex";const i=()=>{s.style.display="none",s.innerHTML="",window.removeEventListener("keydown",n)},n=r=>{r.key==="Escape"&&i()};window.addEventListener("keydown",n),document.getElementById("btn-close-print-modal")?.addEventListener("click",i),document.getElementById("btn-print-iframe")?.addEventListener("click",()=>{const r=document.getElementById("print-preview-iframe");r&&r.contentWindow&&(r.contentWindow.focus(),r.contentWindow.print())})}export{et as a,be as c,pe as d,Ae as f,at as i,Ve as l,tt as n,Ze as o,lt as p,it as r,pt as s,nt as t,Ye as u};
+  `,s.style.display="flex";const i=()=>{s.style.display="none",s.innerHTML="",window.removeEventListener("keydown",n)},n=r=>{r.key==="Escape"&&i()};window.addEventListener("keydown",n),document.getElementById("btn-close-print-modal")?.addEventListener("click",i),document.getElementById("btn-print-iframe")?.addEventListener("click",()=>{const r=document.getElementById("print-preview-iframe");r&&r.contentWindow&&(r.contentWindow.focus(),r.contentWindow.print())})}export{tt as a,ye as c,pe as d,ze as f,it as i,Ke as l,at as n,et as o,pt as p,nt as r,ct as s,st as t,Ve as u};

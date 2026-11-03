@@ -1189,19 +1189,25 @@ export { openDocumentPreviewModal, closeDocumentPreviewModal, downloadDocument, 
 export function STATUS_OPTIONS() { return [['not_started', t('notStarted')], ['in_progress', t('inProgress')], ['review', t('review')], ['approval', t('approval')], ['done', t('done')], ['blocked', t('blocked')], ['canceled', t('canceled')]]; }
 
 
+let _lastArrowsFingerprint = '';
+
 export function drawTimelineArrows() {
   const container = document.querySelector('.timeline-container > div');
   const svg = document.querySelector('.timeline-svg');
   if (!container || !svg) return;
 
+  const bars = Array.from(document.querySelectorAll('.timeline-bar'));
+  const containerRect = container.getBoundingClientRect();
+  const fingerprint = `${Math.round(containerRect.width)}_${bars.length}_${state.lang}_${(state.data?.tasks || []).length}`;
+  if (fingerprint === _lastArrowsFingerprint && svg.hasChildNodes()) {
+    return;
+  }
+  _lastArrowsFingerprint = fingerprint;
+
   // Clear existing lines
   svg.innerHTML = '';
 
-  const bars = Array.from(document.querySelectorAll('.timeline-bar'));
   const taskRects = {};
-
-  // Cache rects relative to container
-  const containerRect = container.getBoundingClientRect();
   bars.forEach(bar => {
     const rect = bar.getBoundingClientRect();
     taskRects[bar.dataset.taskId] = {
