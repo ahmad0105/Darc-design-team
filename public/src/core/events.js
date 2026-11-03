@@ -1214,7 +1214,7 @@ export async function handleClick(event) {
   }
   if (action === 'task-filter') {
     state.taskFilter = target.dataset.filter;
-    target.closest('.view-toolbar-start')?.querySelectorAll('.filter-tab').forEach(b => b.classList.toggle('active', b === target));
+    target.closest('.segmented-control, .view-toolbar-start')?.querySelectorAll('.segmented-tab, .filter-tab').forEach(b => b.classList.toggle('active', b === target));
     requestAnimationFrame(() => renderView());
     return;
   }
@@ -2328,6 +2328,10 @@ export async function uploadDirectFiles({ files, projectId = null, taskId = null
     return;
   }
   const task = taskId ? state.data?.tasks?.find(t => t.id === taskId) : null;
+  if (task && !canUserUploadToTask(task)) {
+    showToast(choose('ليس لديك صلاحية لرفع أو إرفاق ملفات في هذه المهمة.', 'You do not have permission to attach files to this task.'), true);
+    return;
+  }
   const targetProjectId = projectId || task?.projectId;
   const project = targetProjectId ? state.data?.projects?.find(p => p.id === targetProjectId) : null;
   const existingDocs = state.data?.documents ? state.data.documents.filter(d => (!d.deletedAt) && (taskId ? d.taskId === taskId : d.projectId === targetProjectId)) : [];
@@ -2770,6 +2774,11 @@ if (typeof window !== 'undefined' && !window._taskDropzoneListenersSet) {
       dropzone.style.borderColor = 'var(--border)';
       dropzone.style.background = 'var(--surface-soft)';
       const taskId = dropzone.dataset.taskId;
+      const task = taskId ? (state.data?.tasks || []).find(t => t.id === taskId) : null;
+      if (task && !canUserUploadToTask(task)) {
+        showToast(choose('ليس لديك صلاحية لإرفاق ملفات في هذه المهمة.', 'You do not have permission to attach files to this task.'), true);
+        return;
+      }
       const files = e.dataTransfer?.files;
       if (files && files.length) {
         uploadTaskFiles(files, taskId);

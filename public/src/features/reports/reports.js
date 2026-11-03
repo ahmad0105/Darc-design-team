@@ -76,11 +76,21 @@ export function computeDisciplinesBreakdown(tasks = []) {
 export function computeTeamWorkload(tasks = [], users = []) {
   const tasksByAssignee = new Map();
   tasks.forEach(task => {
-    if (task.assigneeId) {
-      const list = tasksByAssignee.get(task.assigneeId);
-      if (list) list.push(task);
-      else tasksByAssignee.set(task.assigneeId, [task]);
+    const assignedUserIds = new Set();
+    if (task.assigneeId) assignedUserIds.add(task.assigneeId);
+    if (task.assignee_id) assignedUserIds.add(task.assignee_id);
+    const additional = task.customFields?.additionalAssignees || 
+                       task.customFields?.additional_assignees || 
+                       task.custom_fields?.additionalAssignees || 
+                       task.custom_fields?.additional_assignees;
+    if (Array.isArray(additional)) {
+      additional.forEach(uid => { if (uid) assignedUserIds.add(uid); });
     }
+    assignedUserIds.forEach(uid => {
+      const list = tasksByAssignee.get(uid);
+      if (list) list.push(task);
+      else tasksByAssignee.set(uid, [task]);
+    });
   });
 
   const activeMembers = users.filter(u => u.status !== 'inactive');

@@ -444,8 +444,8 @@ export function renderProjectOverviewTab(project, tasks, members, externalMember
 }
 
 export function renderProjects() {
-  const query = state.searches.projects.trim().toLowerCase();
-  let projects = (state.data?.projects || []).filter((project) => `${project.nameAr || ''} ${project.nameEn || ''} ${project.code || ''} ${project.clientAr || ''} ${project.clientEn || ''}`.toLowerCase().includes(query));
+  const query = (state.searches?.projects || '').trim().toLowerCase();
+  let projects = (state.data?.projects || []).filter((project) => !query || `${project.nameAr || ''} ${project.nameEn || ''} ${project.code || ''} ${project.clientAr || ''} ${project.clientEn || ''}`.toLowerCase().includes(query));
 
   // User-defined sorting
   const sort = state.projectSort || 'default';

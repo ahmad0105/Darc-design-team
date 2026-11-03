@@ -547,7 +547,22 @@ export function can(permission) {
 }
 
 export function isAdmin() {
-  return state.data?.user?.roleId === 'admin';
+  return state.data?.user?.roleId === 'admin' || state.data?.user?.role_id === 'admin';
+}
+
+/**
+ * Checks if a task is assigned to a specific user (either as primary assignee or additional collaborator)
+ */
+export function isTaskAssignedToUser(task, userId) {
+  if (!task || !userId) return false;
+  const primaryId = task.assigneeId || task.assignee_id;
+  if (primaryId === userId) return true;
+  const additional = task.customFields?.additionalAssignees ||
+                     task.customFields?.additional_assignees ||
+                     task.custom_fields?.additionalAssignees ||
+                     task.custom_fields?.additional_assignees;
+  if (Array.isArray(additional) && additional.includes(userId)) return true;
+  return false;
 }
 
 export function canManageAccountPermissions() {

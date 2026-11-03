@@ -18,8 +18,8 @@ export const TEMPLATE_CATEGORIES = [
 ];
 
 export function renderTemplates() {
-  const query = state.searches.templates.trim().toLowerCase();
-  const sortedTemplates = [...(state.data.templates || [])].sort((a, b) => (parseInt(a.code, 10) || 0) - (parseInt(b.code, 10) || 0));
+  const query = (state.searches?.templates || '').trim().toLowerCase();
+  const sortedTemplates = [...(state.data?.templates || [])].sort((a, b) => (parseInt(a.code, 10) || 0) - (parseInt(b.code, 10) || 0));
 
   const categoryCounts = new Map();
   TEMPLATE_CATEGORIES.forEach(c => categoryCounts.set(c.id, 0));

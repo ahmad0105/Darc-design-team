@@ -1,7 +1,7 @@
 
 import { state } from '../../core/state.js';
 import { api } from '../../core/api.js';
-import { getTaskStatusStyle, esc, choose, avatar, icon, can, isAdmin, t, statusText, formatDateTime, getActiveCalendarSystem, isOverdue, isDueSoon, getTaskDueTier, priorityText, dateLabel } from '../../core/utils.js';
+import { getTaskStatusStyle, esc, choose, avatar, icon, can, isAdmin, t, statusText, formatDateTime, getActiveCalendarSystem, isOverdue, isDueSoon, getTaskDueTier, priorityText, dateLabel, isTaskAssignedToUser } from '../../core/utils.js';
 import { showToast, modalShell, closeModal } from '../../shared/ui.js';
 
 export function renderTaskAssignees(task) {
@@ -48,7 +48,8 @@ export function renderTaskAssignees(task) {
 
 export function canUserMoveTask(task) {
   if (!task) return false;
-  if (isAdmin() || can('edit_tasks')) return true;
+  if (isAdmin()) return true;
+  if (!can('edit_tasks')) return false;
   const userId = state.data?.user?.id;
   if (!userId) return false;
   const assignee = task.assigneeId || task.assignee_id;
@@ -69,6 +70,8 @@ export function canUserMoveTask(task) {
       const pm = proj.managerId || proj.manager_id;
       const owner = proj.ownerId || proj.owner_id || proj.leadId || proj.lead_id || proj.createdById || proj.created_by;
       if (pm === userId || owner === userId) return true;
+      if (Array.isArray(proj.members) && proj.members.some(m => (m.userId || m.id || m) === userId)) return true;
+      if (Array.isArray(proj.memberIds) && proj.memberIds.includes(userId)) return true;
     }
   }
   return false;
@@ -95,6 +98,7 @@ export function canUserUploadToTask(task) {
       const owner = proj.ownerId || proj.owner_id || proj.leadId || proj.lead_id || proj.createdById || proj.created_by;
       if (pm === userId || owner === userId) return true;
       if (Array.isArray(proj.members) && proj.members.some(m => (m.userId || m.id || m) === userId)) return true;
+      if (Array.isArray(proj.memberIds) && proj.memberIds.includes(userId)) return true;
     }
   }
 
@@ -168,7 +172,7 @@ export function taskCard(task) {
     })()}
     <div class="task-meta-row" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;font-size:10px;color:var(--ink-soft);">
       <span class="task-category">${esc(choose(task.categoryAr, task.categoryEn) || '')}</span>
-      ${task.dueDate ? `<span class="task-due-date" style="display:inline-flex;align-items:center;gap:3px;">${icon('calendar', 11)} ${dateLabel(task.dueDate)}</span>` : ''}
+      ${task.dueDate ? `<span class="task-due-date" style="display:inline-flex;align-items:center;gap:3px;color:${dueDateColor};font-weight:${overdue || dueTier ? '700' : '500'};">${icon('calendar', 11)} ${dateLabel(task.dueDate)}</span>` : ''}
     </div>
     <div class="task-card-foot">
       ${renderTaskAssignees(task)}
@@ -478,10 +482,10 @@ if (typeof window !== 'undefined') {
 }
 
 export function filterTasks(tasks) {
-  const query = state.searches.tasks.trim().toLowerCase();
+  const query = (state.searches?.tasks || '').trim().toLowerCase();
   return tasks.filter((task) => {
-    const matchesQuery = `${task.titleAr} ${task.titleEn} ${task.categoryAr} ${task.categoryEn}`.toLowerCase().includes(query);
-    const matchesFilter = state.taskFilter === 'all' || (state.taskFilter === 'mine' && task.assigneeId === state.data?.user?.id) || (state.taskFilter === 'due_soon' && isDueSoon(task)) || (state.taskFilter === 'overdue' && isOverdue(task)) || (state.taskFilter === 'blocked' && task.status === 'blocked');
+    const matchesQuery = !query || `${task.titleAr || ''} ${task.titleEn || ''} ${task.categoryAr || ''} ${task.categoryEn || ''}`.toLowerCase().includes(query);
+    const matchesFilter = state.taskFilter === 'all' || (state.taskFilter === 'mine' && isTaskAssignedToUser(task, state.data?.user?.id)) || (state.taskFilter === 'due_soon' && isDueSoon(task)) || (state.taskFilter === 'overdue' && isOverdue(task)) || (state.taskFilter === 'blocked' && task.status === 'blocked');
     const matchesProject = state.taskProjectFilter === 'all' || task.projectId === state.taskProjectFilter;
     const matchesPriority = !state.taskPriorityFilter || state.taskPriorityFilter === 'all' || task.priority === state.taskPriorityFilter;
     return matchesQuery && matchesFilter && matchesProject && matchesPriority;
@@ -772,6 +776,7 @@ export function openTaskModal(task = null, presetTemplateId = null, presetProjec
   let extraClass = '';
   if (task) {
     extraClass = 'modal-lg';
+    const canUpload = canUserUploadToTask(task);
     modalBody = `
       <div class="task-modal-layout">
         <div class="task-modal-col task-modal-main">
@@ -784,11 +789,14 @@ export function openTaskModal(task = null, presetTemplateId = null, presetProjec
               <h3 style="margin:0;font-size:14px;display:flex;align-items:center;gap:6px;">
                 ${choose('المخططات والملفات', 'Documents & Files')}
               </h3>
+              ${canUpload ? `
               <label class="btn btn-soft btn-sm" style="cursor:pointer;margin:0;" id="task-upload-btn">
                 ${icon('plus', 12)} ${choose('اختيار ملفات', 'Choose Files')}
                 <input type="file" multiple id="task-upload-input" data-task-id="${task.id}" style="display:none;" />
               </label>
+              ` : ''}
             </div>
+            ${canUpload ? `
             <div id="task-dropzone" data-action="trigger-upload" data-task-id="${task.id}" style="border:2px dashed var(--border);border-radius:10px;padding:16px 12px;text-align:center;background:var(--surface-soft);cursor:pointer;transition:all 0.2s ease;margin-bottom:12px;">
               <div style="display:flex;flex-direction:column;align-items:center;gap:4px;pointer-events:none;">
                 <span style="color:var(--brand-teal);">${icon('upload', 22)}</span>
@@ -805,6 +813,11 @@ export function openTaskModal(task = null, presetTemplateId = null, presetProjec
                 </div>
               </div>
             </div>
+            ` : `
+            <div style="padding:10px 12px;margin-bottom:12px;background:var(--surface-soft);border:1px dashed var(--line);border-radius:8px;font-size:11px;color:var(--muted);text-align:center;">
+              🔒 ${choose('إرفاق ورفع الملفات متاح لمدير المشروع والمسند إليهم المهمة فقط.', 'File attachments restricted to project managers and task assignees.')}
+            </div>
+            `}
             <div id="task-documents-list">${renderTaskDocuments(task)}</div>
           </div>
           <div class="task-comments-section" style="flex:1;display:flex;flex-direction:column;">

@@ -1,6 +1,6 @@
 
 import { state } from '../../core/state.js';
-import { getTimeBasedGreeting, can, isAdmin, esc, icon, t, choose, avatar, isOverdue, dueLabel, parseEndOfDay } from '../../core/utils.js';
+import { getTimeBasedGreeting, can, isAdmin, esc, icon, t, choose, avatar, isOverdue, dueLabel, parseEndOfDay, isTaskAssignedToUser } from '../../core/utils.js';
 
 export function metricCard(label, value, note, type, iconName, noteClass = '') {
   return `<article class="metric-card ${type}"><div class="metric-top"><span class="metric-label">${esc(label)}</span><span class="metric-icon">${icon(iconName, 15)}</span></div><div class="metric-value">${esc(value)}</div><span class="metric-note ${noteClass}">${esc(note)}</span></article>`;
@@ -23,7 +23,7 @@ export function attentionItem(task) {
 }
 
 export function teamMetrics(userId, tasks) {
-  const mine = tasks.filter((task) => task.assigneeId === userId);
+  const mine = tasks.filter((task) => isTaskAssignedToUser(task, userId));
   const weight = mine.reduce((sum, task) => sum + Number(task.weight || 1), 0);
   const progress = weight ? Math.round(mine.reduce((sum, task) => sum + task.progress * Number(task.weight || 1), 0) / weight) : 0;
   return { tasks: mine.length, progress, overdue: mine.filter(isOverdue).length };
@@ -67,7 +67,7 @@ export function renderDashboard() {
   }).slice(0, 5);
   const activeUsers = users.filter((member) => member.status !== 'inactive');
   const projectCount = stats.projectCount ?? projects.length;
-  const myTasksCount = stats.myTasks ?? tasks.filter(t => t.assigneeId === user.id).length;
+  const myTasksCount = stats.myTasks ?? tasks.filter(t => isTaskAssignedToUser(t, user.id)).length;
   const overdueTasksCount = stats.overdueTasks ?? tasks.filter(isOverdue).length;
   const dueSoonCount = stats.dueSoon ?? 0;
   const completedTasksCount = stats.completedTasks ?? tasks.filter(t => t.status === 'done').length;
