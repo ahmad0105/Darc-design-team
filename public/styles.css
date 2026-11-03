@@ -904,6 +904,11 @@ select, .filter-select, .select-compact {
   transform: translateY(-2px) scale(1.02) !important;
   transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
+[data-theme="dark"] .task-card.is-file-drag-over {
+  border-color: #14b8a6 !important;
+  background: rgba(20, 184, 166, 0.16) !important;
+  box-shadow: 0 0 0 4px rgba(20, 184, 166, 0.25), 0 10px 24px rgba(0, 0, 0, 0.4) !important;
+}
 .task-card.is-overdue {
   border-inline-start: 3px solid var(--red, #ef4444) !important;
 }
@@ -917,6 +922,75 @@ select, .filter-select, .select-compact {
 .task-card.is-due-72h {
   border-inline-start: 3px solid #0284c7 !important;
 }
+
+[data-theme="dark"] .task-card.is-overdue {
+  border-inline-start-color: #f87171 !important;
+}
+[data-theme="dark"] .task-card.is-due-24h {
+  border-inline-start-color: #fb923c !important;
+}
+[data-theme="dark"] .task-card.is-due-soon,
+[data-theme="dark"] .task-card.is-due-48h {
+  border-inline-start-color: #fbbf24 !important;
+}
+[data-theme="dark"] .task-card.is-due-72h {
+  border-inline-start-color: #38bdf8 !important;
+}
+
+.task-card .task-due-date {
+  color: var(--muted);
+  font-weight: 500;
+}
+.task-card.is-overdue .task-due-date {
+  color: var(--red);
+  font-weight: 700;
+}
+.task-card.is-due-24h .task-due-date {
+  color: #ea580c;
+  font-weight: 700;
+}
+.task-card.is-due-soon .task-due-date,
+.task-card.is-due-48h .task-due-date {
+  color: #d97706;
+  font-weight: 700;
+}
+.task-card.is-due-72h .task-due-date {
+  color: #0284c7;
+  font-weight: 700;
+}
+
+/* High-Contrast Luminous SLA Typography in Dark Mode (WCAG AAA) */
+[data-theme="dark"] .task-card.is-overdue .task-due-date {
+  color: #f87171 !important;
+}
+[data-theme="dark"] .task-card.is-due-24h .task-due-date {
+  color: #fb923c !important;
+}
+[data-theme="dark"] .task-card.is-due-soon .task-due-date,
+[data-theme="dark"] .task-card.is-due-48h .task-due-date {
+  color: #fcd34d !important;
+}
+[data-theme="dark"] .task-card.is-due-72h .task-due-date {
+  color: #38bdf8 !important;
+}
+
+.overdue-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: var(--red);
+  background: var(--red-soft);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+}
+[data-theme="dark"] .overdue-tag {
+  color: #fca5a5 !important;
+  background: rgba(239, 68, 68, 0.2) !important;
+  border: 1px solid rgba(239, 68, 68, 0.35) !important;
+}
+
 .due-soon-tag,
 .due-tag-48h {
   display: inline-flex;
@@ -932,8 +1006,9 @@ select, .filter-select, .select-compact {
 }
 [data-theme="dark"] .due-soon-tag,
 [data-theme="dark"] .due-tag-48h {
-  color: #fcd34d;
-  background: rgba(217, 119, 6, 0.22);
+  color: #fcd34d !important;
+  background: rgba(245, 158, 11, 0.22) !important;
+  border-color: rgba(245, 158, 11, 0.38) !important;
 }
 
 .due-tag-24h {
@@ -949,8 +1024,9 @@ select, .filter-select, .select-compact {
   border: 1px solid rgba(234, 88, 12, 0.28);
 }
 [data-theme="dark"] .due-tag-24h {
-  color: #fb923c;
-  background: rgba(234, 88, 12, 0.22);
+  color: #fb923c !important;
+  background: rgba(249, 115, 22, 0.22) !important;
+  border-color: rgba(249, 115, 22, 0.38) !important;
 }
 
 .due-tag-72h {
@@ -966,8 +1042,9 @@ select, .filter-select, .select-compact {
   border: 1px solid rgba(2, 132, 199, 0.28);
 }
 [data-theme="dark"] .due-tag-72h {
-  color: #38bdf8;
-  background: rgba(2, 132, 199, 0.22);
+  color: #38bdf8 !important;
+  background: rgba(56, 189, 248, 0.22) !important;
+  border-color: rgba(56, 189, 248, 0.38) !important;
 }
 .task-card.is-touch-charging {
   transform: scale(0.985) !important;

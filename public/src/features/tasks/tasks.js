@@ -168,7 +168,7 @@ export function taskCard(task) {
     })()}
     <div class="task-meta-row" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;font-size:10px;color:var(--ink-soft);">
       <span class="task-category">${esc(choose(task.categoryAr, task.categoryEn) || '')}</span>
-      ${task.dueDate ? `<span style="display:inline-flex;align-items:center;gap:3px;color:${dueDateColor};">${icon('calendar', 11)} ${dateLabel(task.dueDate)}</span>` : ''}
+      ${task.dueDate ? `<span class="task-due-date" style="display:inline-flex;align-items:center;gap:3px;">${icon('calendar', 11)} ${dateLabel(task.dueDate)}</span>` : ''}
     </div>
     <div class="task-card-foot">
       ${renderTaskAssignees(task)}
