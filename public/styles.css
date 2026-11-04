@@ -1133,7 +1133,7 @@ body.is-touch-dragging * {
   z-index: 10;
   position: relative;
 }
-#active-drag-ghost, #touch-drag-ghost {
+#active-drag-ghost {
   position: fixed !important;
   pointer-events: none !important;
   z-index: 10000 !important;
