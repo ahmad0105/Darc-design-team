@@ -7,8 +7,8 @@
   "scripts": {
     "dev": "vite",
     "lint": "eslint public/src/",
-    "test": "node test/task-card.test.js",
-    "build": "node test/task-card.test.js && eslint public/src/ && vite build",
+    "test": "node test/task-card.test.js && node test/demo-isolation.test.js && node test/document-viewer.test.js && node test/dragdrop.test.js",
+    "build": "node test/task-card.test.js && node test/demo-isolation.test.js && node test/document-viewer.test.js && node test/dragdrop.test.js && eslint public/src/ && vite build",
     "preview": "vite preview",
     "start": "vite preview",
     "deploy": "wrangler deploy",
