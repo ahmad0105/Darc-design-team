@@ -4,18 +4,18 @@ import { showToast } from '../../shared/ui.js';
 
 export { getDaysOverdue } from '../../core/utils.js';
 
-export function getDisciplineIcon(name = '') {
+export function getDisciplineIcon(name = '', size = 15) {
   const n = String(name).toLowerCase();
-  if (n.includes('معمار') || n.includes('arch')) return '🏛️';
-  if (n.includes('كهرب') || n.includes('elect')) return '⚡';
-  if (n.includes('سباك') || n.includes('صحي') || n.includes('plumb')) return '💧';
-  if (n.includes('تكييف') || n.includes('hvac') || n.includes('ميكانيك')) return '🌡️';
-  if (n.includes('إنشائ') || n.includes('انشائ') || n.includes('struct')) return '🏗️';
-  if (n.includes('ديكور') || n.includes('داخل') || n.includes('interior')) return '🛋️';
-  if (n.includes('3d') || n.includes('رندر') || n.includes('visual')) return '🎨';
-  if (n.includes('كميات') || n.includes('boq') || n.includes('quantity')) return '📊';
-  if (n.includes('حريق') || n.includes('fire')) return '🧯';
-  return '📐';
+  if (n.includes('معمار') || n.includes('arch')) return icon('building', size);
+  if (n.includes('كهرب') || n.includes('elect')) return icon('zap', size);
+  if (n.includes('سباك') || n.includes('صحي') || n.includes('plumb')) return icon('droplet', size);
+  if (n.includes('تكييف') || n.includes('hvac') || n.includes('ميكانيك')) return icon('thermometer', size);
+  if (n.includes('إنشائ') || n.includes('انشائ') || n.includes('struct')) return icon('layers', size);
+  if (n.includes('ديكور') || n.includes('داخل') || n.includes('interior')) return icon('armchair', size);
+  if (n.includes('3d') || n.includes('رندر') || n.includes('visual')) return icon('palette', size);
+  if (n.includes('كميات') || n.includes('boq') || n.includes('quantity')) return icon('chart', size);
+  if (n.includes('حريق') || n.includes('fire')) return icon('flame', size);
+  return icon('compass', size);
 }
 
 export function getReportFilteredTasks(tasks = [], projectFilter = 'all', timeframeFilter = 'all') {
@@ -181,36 +181,36 @@ export function renderReports() {
   const lowestProject = [...filteredProjects].filter(p => p.lifecycle === 'active').sort((a, b) => (a.progress || 0) - (b.progress || 0))[0];
 
   return `
-    <!-- 📄 Page Header with Actions -->
-    <div class="page-head">
+    <!-- Page Header with Actions -->
+    <div class="page-head report-page-head">
       <div>
         <p class="eyebrow">${choose('الرقابة والذكاء التنفيذي', 'EXECUTIVE INTELLIGENCE & AUDIT')}</p>
         <h1>${t('reports')}</h1>
         <p>${choose('تحليلات شاملة للمحفظة الهندسية: الإنجاز الموزون، كفاءة الأقسام، ضغط الفريق، ومؤشرات المخاطر.', 'Comprehensive engineering portfolio readout: weighted progress, discipline efficiency, team capacity, and risk indicators.')}</p>
       </div>
-      <div class="page-actions">
+      <div class="page-actions report-actions">
         ${canExport ? `
-          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-            <button class="btn btn-primary" data-action="print-portfolio-pdf">
-              ${icon('printer', 15)} ${choose('تقرير المحفظة الرسمي (PDF)', 'Official Portfolio Report (PDF)')}
+          <div class="report-action-buttons">
+            <button class="btn btn-primary btn-report-action" data-action="print-portfolio-pdf">
+              ${icon('printer', 15)} <span>${choose('تقرير المحفظة الرسمي (PDF)', 'Official Portfolio Report (PDF)')}</span>
             </button>
-            <button class="btn btn-soft" data-action="export-csv">
-              ${icon('document', 15)} ${choose('تصدير بيانات Excel', 'Export Excel Data')}
+            <button class="btn btn-soft btn-report-action" data-action="export-csv">
+              ${icon('document', 15)} <span>${choose('تصدير بيانات Excel', 'Export Excel Data')}</span>
             </button>
           </div>
         ` : ''}
       </div>
     </div>
 
-    <!-- 🎛️ Filter Toolbar & Horizon Selector -->
-    <div class="view-toolbar" style="margin-bottom:16px;">
-      <div class="view-toolbar-start" style="flex:1;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+    <!-- Filter Toolbar & Horizon Selector -->
+    <div class="view-toolbar report-toolbar" style="margin-bottom:16px;">
+      <div class="view-toolbar-start report-toolbar-start" style="flex:1;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
         <!-- Project Scope Dropdown -->
-        <div style="display:flex;align-items:center;gap:6px;min-width:0;flex:1 1 180px;">
-          <span style="font-size:12px;color:var(--ink-soft);font-weight:600;white-space:nowrap;">
+        <div class="report-filter-item" style="display:flex;align-items:center;gap:6px;min-width:0;flex:1 1 200px;">
+          <span style="font-size:12px;color:var(--ink-soft);font-weight:600;white-space:nowrap;display:inline-flex;align-items:center;gap:4px;">
             ${icon('building', 13)} ${choose('المشروع:', 'Project:')}
           </span>
-          <select class="select-compact" data-action="filter-report-project" style="width:100%;">
+          <select class="select-compact report-select" data-action="filter-report-project" style="width:100%;">
             <option value="all" ${projectFilter === 'all' ? 'selected' : ''}>${choose('— كافة مشاريع المحفظة —', '— All Portfolio Projects —')}</option>
             ${projects.map(p => `
               <option value="${esc(p.id)}" ${projectFilter === p.id ? 'selected' : ''}>
@@ -221,47 +221,47 @@ export function renderReports() {
         </div>
 
         <!-- Timeframe / Horizon Dropdown -->
-        <div style="display:flex;align-items:center;gap:6px;min-width:0;flex:1 1 160px;">
-          <span style="font-size:12px;color:var(--ink-soft);font-weight:600;white-space:nowrap;">
+        <div class="report-filter-item" style="display:flex;align-items:center;gap:6px;min-width:0;flex:1 1 180px;">
+          <span style="font-size:12px;color:var(--ink-soft);font-weight:600;white-space:nowrap;display:inline-flex;align-items:center;gap:4px;">
             ${icon('calendar', 13)} ${choose('الفترة:', 'Period:')}
           </span>
-          <select class="select-compact" data-action="filter-report-timeframe" style="width:100%;">
+          <select class="select-compact report-select" data-action="filter-report-timeframe" style="width:100%;">
             <option value="all" ${timeframeFilter === 'all' ? 'selected' : ''}>${choose('كافة الفترات والمراحل', 'All Milestones & Time')}</option>
             <option value="month" ${timeframeFilter === 'month' ? 'selected' : ''}>${choose('الشهر الحالي', 'Current Month')}</option>
             <option value="quarter" ${timeframeFilter === 'quarter' ? 'selected' : ''}>${choose('الربع السنوي الحالي (Q)', 'Current Quarter')}</option>
-            <option value="critical" ${timeframeFilter === 'critical' ? 'selected' : ''}>⚠️ ${choose('المهام والمشاريع الحرجة فقط', 'Critical Focus Only')}</option>
+            <option value="critical" ${timeframeFilter === 'critical' ? 'selected' : ''}>${choose('المهام والمشاريع الحرجة فقط', 'Critical Focus Only')}</option>
           </select>
         </div>
       </div>
 
-      <div class="view-toolbar-end">
-        <span class="mini-badge" style="padding:6px 10px;font-size:11px;font-weight:700;color:var(--brand-teal);background:rgba(20,184,166,0.1);">
-          ${filteredProjects.length} ${choose('مشاريع مشمولة', 'projects analyzed')} · ${filteredTasks.length} ${choose('مهمة', 'tasks')}
+      <div class="view-toolbar-end report-toolbar-end">
+        <span class="mini-badge report-badge-count" style="padding:6px 10px;font-size:11px;font-weight:700;color:var(--brand-teal);background:rgba(20,184,166,0.1);display:inline-flex;align-items:center;gap:4px;">
+          ${icon('target', 12)} ${filteredProjects.length} ${choose('مشاريع مشمولة', 'projects analyzed')} · ${filteredTasks.length} ${choose('مهمة', 'tasks')}
         </span>
       </div>
     </div>
 
-    <!-- 📑 Report Perspectives Navigation Tabs -->
-    <div class="detail-tabs" style="margin-bottom:20px;">
+    <!-- Report Perspectives Navigation Tabs -->
+    <div class="detail-tabs report-tabs" style="margin-bottom:20px;">
       <button class="detail-tab ${activeTab === 'overview' ? 'active' : ''}" data-action="report-tab" data-tab="overview">
-        📊 ${choose('النظرة التنفيذية ومؤشرات الأداء', 'Executive KPI Overview')}
+        ${icon('chart', 15)} <span>${choose('النظرة التنفيذية ومؤشرات الأداء', 'Executive KPI Overview')}</span>
       </button>
       <button class="detail-tab ${activeTab === 'disciplines' ? 'active' : ''}" data-action="report-tab" data-tab="disciplines">
-        📐 ${choose('تحليل الأقسام والتخصصات', 'Disciplines & Deliverables')}
+        ${icon('layers', 15)} <span>${choose('تحليل الأقسام والتخصصات', 'Disciplines & Deliverables')}</span>
       </button>
       <button class="detail-tab ${activeTab === 'team' ? 'active' : ''}" data-action="report-tab" data-tab="team">
-        👥 ${choose('أداء وحمولة فريق العمل', 'Team Workload & Capacity')}
+        ${icon('users', 15)} <span>${choose('أداء وحمولة فريق العمل', 'Team Workload & Capacity')}</span>
       </button>
       <button class="detail-tab ${activeTab === 'risks' ? 'active' : ''}" data-action="report-tab" data-tab="risks">
-        ⚠️ ${choose('مصفوفة المخاطر والانحراف', 'Risk & Delay Matrix')}
+        ${icon('alert', 15)} <span>${choose('مصفوفة المخاطر والانحراف', 'Risk & Delay Matrix')}</span>
         ${overdueTasksCount > 0 ? `<span class="badge badge-red" style="padding:1px 5px;font-size:10px;margin-inline-start:4px;">${overdueTasksCount}</span>` : ''}
       </button>
       <button class="detail-tab ${activeTab === 'drawings' ? 'active' : ''}" data-action="report-tab" data-tab="drawings">
-        📑 ${choose('المخططات والاعتمادات', 'Drawings & Submittals')}
+        ${icon('document', 15)} <span>${choose('المخططات والاعتمادات', 'Drawings & Submittals')}</span>
       </button>
     </div>
 
-    <!-- 📊 Tab Content Body -->
+    <!-- Tab Content Body -->
     ${activeTab === 'overview' ? renderOverviewTab({
       filteredProjects,
       filteredTasks,
@@ -331,7 +331,7 @@ function renderOverviewTab(data) {
             <span class="metric-icon">${icon('chart', 16)}</span>
           </div>
           <div class="metric-value">${weightedProgress}%</div>
-          <span class="metric-note up">🎯 ${completedTasksCount} ${choose('مهام مكتملة', 'tasks done')} (${filteredTasks.length} ${choose('إجمالي', 'total')})</span>
+          <span class="metric-note up" style="display:inline-flex;align-items:center;gap:4px;">${icon('check', 12)} ${completedTasksCount} ${choose('مهام مكتملة', 'tasks done')} (${filteredTasks.length} ${choose('إجمالي', 'total')})</span>
         </article>
 
         <article class="metric-card blue">
@@ -358,7 +358,7 @@ function renderOverviewTab(data) {
             <span class="metric-icon">${icon('document', 16)}</span>
           </div>
           <div class="metric-value">${approvedDocsCount}</div>
-          <span class="metric-note">📐 ${filteredDocs.length} ${choose('ملف ومخطط مرفوع', 'total uploaded documents')}</span>
+          <span class="metric-note" style="display:inline-flex;align-items:center;gap:4px;">${icon('document', 12)} ${filteredDocs.length} ${choose('ملف ومخطط مرفوع', 'total uploaded documents')}</span>
         </article>
       </div>
 
@@ -366,34 +366,35 @@ function renderOverviewTab(data) {
       <section class="panel" style="background:linear-gradient(135deg, var(--surface) 0%, var(--surface-soft) 100%);padding:20px;border:1px solid var(--line);">
         <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;">
           <div style="display:flex;align-items:center;gap:10px;">
-            <span style="font-size:24px;">💡</span>
+            <span class="report-kpi-icon-pill" style="width:36px;height:36px;border-radius:10px;background:var(--mint);color:var(--teal);display:grid;place-items:center;flex-shrink:0;">${icon('sparkles', 18)}</span>
             <div>
               <h3 style="margin:0;font-size:15px;color:var(--ink);">${choose('الملخص التحليلي التنفيذي', 'Executive Operations & Health Summary')}</h3>
               <p style="margin:2px 0 0;font-size:12px;color:var(--ink-soft);">${choose('قراءة ذكية لحركة المحفظة وجاهزية المخرجات ومكامن التباطؤ.', 'Automated synthesis of deliverable flow, velocity, and bottlenecks.')}</p>
             </div>
           </div>
           <div style="display:flex;align-items:center;gap:8px;">
-            <span class="badge ${weightedProgress >= 70 ? 'badge-teal' : weightedProgress >= 40 ? 'badge-amber' : 'badge-red'}" style="font-size:12px;font-weight:700;padding:4px 10px;">
-              ${weightedProgress >= 70 ? choose('حالة المحفظة: ممتازة ✅', 'Status: Excellent ✅') : weightedProgress >= 40 ? choose('حالة المحفظة: تحتاج متابعة ⚠️', 'Status: Needs Attention ⚠️') : choose('حالة المحفظة: حرجة 🚨', 'Status: Critical 🚨')}
+            <span class="badge ${weightedProgress >= 70 ? 'badge-teal' : weightedProgress >= 40 ? 'badge-amber' : 'badge-red'}" style="font-size:12px;font-weight:700;padding:4px 10px;display:inline-flex;align-items:center;gap:5px;">
+              <span class="report-status-dot" style="width:7px;height:7px;border-radius:50%;background:currentColor;"></span>
+              ${weightedProgress >= 70 ? choose('حالة المحفظة: ممتازة', 'Status: Excellent') : weightedProgress >= 40 ? choose('حالة المحفظة: تحتاج متابعة', 'Status: Needs Attention') : choose('حالة المحفظة: حرجة', 'Status: Critical')}
             </span>
           </div>
         </div>
 
         <div style="margin-top:16px;display:grid;grid-template-columns:repeat(auto-fit, minmax(min(100%, 250px), 1fr));gap:14px;">
           <div style="background:var(--surface);padding:12px 14px;border-radius:10px;border:1px solid var(--line);">
-            <span style="font-size:11px;color:var(--muted);font-weight:700;display:block;margin-bottom:4px;">🚀 ${choose('المشروع الأكثر تقدماً', 'Top Progressing Project')}</span>
+            <span style="font-size:11px;color:var(--muted);font-weight:700;display:flex;align-items:center;gap:5px;margin-bottom:4px;">${icon('trendingUp', 12)} ${choose('المشروع الأكثر تقدماً', 'Top Progressing Project')}</span>
             <strong style="font-size:13px;color:var(--ink);display:block;">${esc(highestProject ? choose(highestProject.nameAr, highestProject.nameEn) : '—')}</strong>
             <span style="font-size:11px;color:var(--brand-teal);font-weight:bold;">${highestProject ? `${highestProject.progress}% ${choose('إنجاز', 'completed')}` : ''}</span>
           </div>
 
           <div style="background:var(--surface);padding:12px 14px;border-radius:10px;border:1px solid var(--line);">
-            <span style="font-size:11px;color:var(--muted);font-weight:700;display:block;margin-bottom:4px;">📐 ${choose('التخصص الأكبر حجماً', 'Largest Active Discipline')}</span>
+            <span style="font-size:11px;color:var(--muted);font-weight:700;display:flex;align-items:center;gap:5px;margin-bottom:4px;">${icon('building', 12)} ${choose('التخصص الأكبر حجماً', 'Largest Active Discipline')}</span>
             <strong style="font-size:13px;color:var(--ink);display:block;">${esc(highestDiscipline)}</strong>
             <span style="font-size:11px;color:var(--ink-soft);">${disciplines[0] ? `${disciplines[0].total} ${choose('مهمة ومخرج مسجل', 'deliverables registered')}` : ''}</span>
           </div>
 
           <div style="background:var(--surface);padding:12px 14px;border-radius:10px;border:1px solid var(--line);">
-            <span style="font-size:11px;color:var(--muted);font-weight:700;display:block;margin-bottom:4px;">⚠️ ${choose('أولويات تحتاج انتباهك', 'Critical Attention Need')}</span>
+            <span style="font-size:11px;color:var(--muted);font-weight:700;display:flex;align-items:center;gap:5px;margin-bottom:4px;">${icon('alert', 12)} ${choose('أولويات تحتاج انتباهك', 'Critical Attention Need')}</span>
             <strong style="font-size:13px;color:${overdueTasksCount > 0 ? 'var(--red)' : 'var(--teal)'};display:block;">
               ${overdueTasksCount > 0 ? `${overdueTasksCount} ${choose('مهام تجاوزت موعد التسليم', 'tasks overdue')}` : choose('جميع المواعيد منتظمة ومستقرة', 'All schedules on track')}
             </strong>
@@ -493,20 +494,20 @@ function renderOverviewTab(data) {
             </div>
             <div class="report-stat-list">
               <div class="report-stat">
-                <span>⚡ ${choose('قيد التنفيذ النشط', 'In Progress')}</span>
+                <span style="display:flex;align-items:center;gap:7px;"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--blue);flex-shrink:0;"></span>${choose('قيد التنفيذ النشط', 'In Progress')}</span>
                 <strong style="color:var(--blue)">${inProgressTasksCount}</strong>
               </div>
               <div class="report-stat">
-                <span>🔍 ${choose('قيد المراجعة والاعتماد', 'Under Review & Approval')}</span>
+                <span style="display:flex;align-items:center;gap:7px;"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--amber);flex-shrink:0;"></span>${choose('قيد المراجعة والاعتماد', 'Under Review & Approval')}</span>
                 <strong style="color:var(--amber)">${inReviewTasksCount}</strong>
               </div>
               <div class="report-stat">
-                <span>✅ ${choose('مهام مكتملة', 'Completed')}</span>
+                <span style="display:flex;align-items:center;gap:7px;"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--mint-strong);flex-shrink:0;"></span>${choose('مهام مكتملة', 'Completed')}</span>
                 <strong style="color:var(--mint-strong)">${completedTasksCount}</strong>
               </div>
               ${blockedTasksCount > 0 ? `
                 <div class="report-stat">
-                  <span>⛔ ${choose('مهام متوقفة / محجوبة', 'Blocked Tasks')}</span>
+                  <span style="display:flex;align-items:center;gap:7px;"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--red);flex-shrink:0;"></span>${choose('مهام متوقفة / محجوبة', 'Blocked Tasks')}</span>
                   <strong style="color:var(--red)">${blockedTasksCount}</strong>
                 </div>
               ` : ''}
@@ -552,8 +553,10 @@ function renderDisciplinesTab(disciplines, totalTasksCount) {
               return `
                 <tr>
                   <td>
-                    <div style="display:flex;align-items:center;gap:8px;">
-                      <span style="font-size:18px;">${getDisciplineIcon(d.name)}</span>
+                    <div style="display:flex;align-items:center;gap:10px;">
+                      <span class="discipline-icon-badge" style="width:32px;height:32px;border-radius:8px;background:var(--mint);color:var(--teal);display:grid;place-items:center;flex-shrink:0;">
+                        ${getDisciplineIcon(d.name, 16)}
+                      </span>
                       <div>
                         <strong style="font-size:13px;color:var(--ink);display:block;">${esc(d.name)}</strong>
                         <span style="font-size:11px;color:var(--muted);">${d.total} ${choose('مخرج مسجل', 'deliverables')}</span>
@@ -572,8 +575,8 @@ function renderDisciplinesTab(disciplines, totalTasksCount) {
                   </td>
                   <td style="font-size:12px;color:var(--ink-soft);">${weightPercent}%</td>
                   <td>
-                    <span class="badge ${hasAlert ? 'badge-red' : isHealthy ? 'badge-teal' : 'badge-amber'}" style="font-size:11px;font-weight:700;">
-                      ${hasAlert ? `⚠️ ${d.overdue} ${choose('متأخرة', 'overdue')}` : isHealthy ? choose('ممتاز ✅', 'On Track ✅') : choose('جارٍ التنفيذ ⏳', 'Active ⏳')}
+                    <span class="badge ${hasAlert ? 'badge-red' : isHealthy ? 'badge-teal' : 'badge-amber'}" style="font-size:11px;font-weight:700;display:inline-flex;align-items:center;gap:4px;">
+                      ${hasAlert ? `${icon('alert', 12)} ${d.overdue} ${choose('متأخرة', 'overdue')}` : isHealthy ? `${icon('check', 12)} ${choose('ممتاز', 'On Track')}` : `${icon('clock', 12)} ${choose('جارٍ التنفيذ', 'Active')}`}
                     </span>
                   </td>
                 </tr>
@@ -620,12 +623,12 @@ function renderTeamWorkloadTab(teamWorkload, totalTasksCount) {
             ${teamWorkload.length ? teamWorkload.map(item => {
               const u = item.user;
               const capTag = item.capacity === 'idle'
-                ? `<span class="badge" style="background:var(--surface-soft);color:var(--ink-soft);border:1px solid var(--line);">🟢 ${choose('متاح للمهام', 'Available')}</span>`
+                ? `<span class="badge" style="background:var(--surface-soft);color:var(--ink-soft);border:1px solid var(--line);display:inline-flex;align-items:center;gap:5px;"><span class="report-status-dot" style="width:6px;height:6px;border-radius:50%;background:var(--mint-strong);"></span>${choose('متاح للمهام', 'Available')}</span>`
                 : item.capacity === 'optimal'
-                ? `<span class="badge badge-teal">🟢 ${choose('حمولة متزنة', 'Balanced')}</span>`
+                ? `<span class="badge badge-teal" style="display:inline-flex;align-items:center;gap:5px;"><span class="report-status-dot" style="width:6px;height:6px;border-radius:50%;background:var(--teal);"></span>${choose('حمولة متزنة', 'Balanced')}</span>`
                 : item.capacity === 'high'
-                ? `<span class="badge badge-amber">🟡 ${choose('حمولة مرتفعة', 'High Load')}</span>`
-                : `<span class="badge badge-red">🔴 ${choose('عبء حرج / تأخير', 'Overloaded')}</span>`;
+                ? `<span class="badge badge-amber" style="display:inline-flex;align-items:center;gap:5px;"><span class="report-status-dot" style="width:6px;height:6px;border-radius:50%;background:var(--amber);"></span>${choose('حمولة مرتفعة', 'High Load')}</span>`
+                : `<span class="badge badge-red" style="display:inline-flex;align-items:center;gap:5px;"><span class="report-status-dot" style="width:6px;height:6px;border-radius:50%;background:var(--red);"></span>${choose('عبء حرج / تأخير', 'Overloaded')}</span>`;
 
               return `
                 <tr>
@@ -721,8 +724,8 @@ function renderRisksTab(overdueTasks, filteredProjects, blockedTasksCount) {
                     </td>
                     <td style="font-size:12px;color:var(--ink);">${dateLabel(t.dueDate, true)}</td>
                     <td>
-                      <span class="badge badge-red" style="font-weight:700;font-size:11px;">
-                        ⏱️ ${days} ${choose('يوم تأخير', 'days late')}
+                      <span class="badge badge-red" style="font-weight:700;font-size:11px;display:inline-flex;align-items:center;gap:4px;">
+                        ${icon('clock', 12)} ${days} ${choose('يوم تأخير', 'days late')}
                       </span>
                     </td>
                     <td style="text-align:end;">
@@ -736,7 +739,7 @@ function renderRisksTab(overdueTasks, filteredProjects, blockedTasksCount) {
                 <tr>
                   <td colspan="7">
                     <div class="empty" style="padding:28px 10px;">
-                      <span style="font-size:28px;">🎉</span>
+                      <span style="width:44px;height:44px;border-radius:12px;background:var(--mint);color:var(--teal);display:grid;place-items:center;margin:0 auto 10px;">${icon('check', 22)}</span>
                       <strong style="color:var(--mint-strong);font-size:14px;margin-top:4px;">${choose('ممتاز! لا توجد أي مهام متأخرة في المحفظة حالياً.', 'Excellent! Zero overdue tasks in portfolio.')}</strong>
                       <span style="font-size:11px;color:var(--muted);">${choose('كافة مخرجات ومواعيد التسليم على المسار الصحيح.', 'All schedules and milestones are currently on track.')}</span>
                     </div>
@@ -781,8 +784,8 @@ function renderRisksTab(overdueTasks, filteredProjects, blockedTasksCount) {
                   <td><strong>${p.progress || 0}%</strong></td>
                   <td>${dateLabel(p.dueDate, true)}</td>
                   <td style="text-align:end;">
-                    <button class="btn btn-soft btn-xs" data-action="open-project" data-project-id="${esc(p.id)}">
-                      ${choose('عرض', 'View')} ➔
+                    <button class="btn btn-soft btn-xs" data-action="open-project" data-project-id="${esc(p.id)}" style="display:inline-flex;align-items:center;gap:4px;">
+                      <span>${choose('عرض', 'View')}</span> ${icon('chevron', 12)}
                     </button>
                   </td>
                 </tr>
@@ -810,22 +813,22 @@ function renderDrawingsSubmittalsTab(filteredDocs, filteredProjects) {
       <!-- Document Status Cards -->
       <div class="metrics-grid">
         <article class="metric-card teal">
-          <div class="metric-top"><span class="metric-label">${choose('مخططات معتمدة', 'Approved Drawings')}</span><span>✅</span></div>
+          <div class="metric-top"><span class="metric-label">${choose('مخططات معتمدة', 'Approved Drawings')}</span><span style="color:var(--teal);">${icon('check', 16)}</span></div>
           <div class="metric-value">${approved.length}</div>
           <span class="metric-note up">${choose('جاهزة للتنفيذ', 'Ready for construction')}</span>
         </article>
         <article class="metric-card amber">
-          <div class="metric-top"><span class="metric-label">${choose('قيد المراجعة الفنية', 'Under Review')}</span><span>🔍</span></div>
+          <div class="metric-top"><span class="metric-label">${choose('قيد المراجعة الفنية', 'Under Review')}</span><span style="color:var(--amber);">${icon('eye', 16)}</span></div>
           <div class="metric-value">${review.length}</div>
           <span class="metric-note alert">${choose('بانتظار موافقة المهندس', 'Awaiting engineer approval')}</span>
         </article>
         <article class="metric-card blue">
-          <div class="metric-top"><span class="metric-label">${choose('مسودات وتعديلات', 'Drafts / Revisions')}</span><span>✏️</span></div>
+          <div class="metric-top"><span class="metric-label">${choose('مسودات وتعديلات', 'Drafts / Revisions')}</span><span style="color:var(--blue);">${icon('edit', 16)}</span></div>
           <div class="metric-value">${drafts.length}</div>
           <span class="metric-note">${choose('عمل جارٍ', 'Work in progress')}</span>
         </article>
         <article class="metric-card red">
-          <div class="metric-top"><span class="metric-label">${choose('مخططات ملغاة / مستبدلة', 'Superseded')}</span><span>📦</span></div>
+          <div class="metric-top"><span class="metric-label">${choose('مخططات ملغاة / مستبدلة', 'Superseded')}</span><span style="color:var(--red);">${icon('archive', 16)}</span></div>
           <div class="metric-value">${superseded.length}</div>
           <span class="metric-note">${choose('إصدارات سابقة مؤرشفة', 'Archived previous revisions')}</span>
         </article>
@@ -961,7 +964,7 @@ export function exportDisciplinesExcel() {
   `;
 
   exportXLS(`DARC_Disciplines_${Date.now()}`, html);
-  showToast(choose('تم تصدير تقرير التخصصات بنجاح 📊', 'Disciplines report exported successfully 📊'));
+  showToast(choose('تم تصدير تقرير التخصصات بنجاح.', 'Disciplines report exported successfully.'));
 }
 
 export function exportTeamWorkloadExcel() {
@@ -1012,7 +1015,7 @@ export function exportTeamWorkloadExcel() {
   `;
 
   exportXLS(`DARC_Team_Workload_${Date.now()}`, html);
-  showToast(choose('تم تصدير تقرير حمولة الفريق بنجاح 👥', 'Team workload report exported successfully 👥'));
+  showToast(choose('تم تصدير تقرير حمولة الفريق بنجاح.', 'Team workload report exported successfully.'));
 }
 
 export function exportRisksExcel() {
@@ -1030,7 +1033,7 @@ export function exportRisksExcel() {
     .filter(p => p.health === 'at_risk' || p.health === 'off_track');
 
   if (!overdueTasks.length && !atRiskProjects.length) {
-    showToast(choose('لا توجد مهام أو مشاريع متأخرة حالياً لتصديرها 🎉', 'No overdue tasks or at-risk projects to export 🎉'));
+    showToast(choose('لا توجد مهام أو مشاريع متأخرة حالياً لتصديرها.', 'No overdue tasks or at-risk projects to export.'));
     return;
   }
 
@@ -1042,7 +1045,7 @@ export function exportRisksExcel() {
       <tr><td colspan="7" class="meta">${choose('تاريخ التصدير:', 'Export Date:')} ${formatReportDate(new Date())} ${formatReportTime(new Date())}</td></tr>
       
       <!-- Section 1: Overdue Tasks -->
-      <tr><th colspan="7" class="header" style="background:#fecaca;color:#991b1b;font-size:14px;">⚠️ ${choose('المهام والمخرجات المتأخرة عن موعدها', 'Overdue Deliverables & Tasks')} (${overdueTasks.length})</th></tr>
+      <tr><th colspan="7" class="header" style="background:#fecaca;color:#991b1b;font-size:14px;">${choose('المهام والمخرجات المتأخرة عن موعدها', 'Overdue Deliverables & Tasks')} (${overdueTasks.length})</th></tr>
       <tr>
         <th class="header">${choose('المهمة / المخرج', 'Deliverable')}</th>
         <th class="header">${choose('رمز المشروع', 'Project Code')}</th>
@@ -1071,7 +1074,7 @@ export function exportRisksExcel() {
 
       <!-- Section 2: At-Risk Projects -->
       <tr><td colspan="7" style="height:16px;"></td></tr>
-      <tr><th colspan="7" class="header" style="background:#fed7aa;color:#9a3412;font-size:14px;">⚡ ${choose('المشاريع ذات المخاطر والانحراف', 'Projects Requiring Management Escalation')} (${atRiskProjects.length})</th></tr>
+      <tr><th colspan="7" class="header" style="background:#fed7aa;color:#9a3412;font-size:14px;">${choose('المشاريع ذات المخاطر والانحراف', 'Projects Requiring Management Escalation')} (${atRiskProjects.length})</th></tr>
       <tr>
         <th class="header">${choose('رمز المشروع', 'Project Code')}</th>
         <th class="header" colspan="2">${choose('اسم المشروع', 'Project Name')}</th>
@@ -1094,7 +1097,7 @@ export function exportRisksExcel() {
   `;
 
   exportXLS(`DARC_Risks_Register_${Date.now()}`, html);
-  showToast(choose('تم تصدير سجل المخاطر بنجاح ⚠️', 'Risk register exported successfully ⚠️'));
+  showToast(choose('تم تصدير سجل المخاطر بنجاح.', 'Risk register exported successfully.'));
 }
 
 export function exportDrawingsExcel() {
@@ -1153,5 +1156,5 @@ export function exportDrawingsExcel() {
   `;
 
   exportXLS(`DARC_Drawings_Register_${Date.now()}`, html);
-  showToast(choose('تم تصدير سجل المخططات بنجاح 📑', 'Drawings register exported successfully 📑'));
+  showToast(choose('تم تصدير سجل المخططات بنجاح.', 'Drawings register exported successfully.'));
 }
