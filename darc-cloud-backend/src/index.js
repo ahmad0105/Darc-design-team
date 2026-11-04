@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
+import { compress } from 'hono/compress';
 import { setSessionCookie, clearSessionCookie, getSessionToken } from './core/cookie.js';
 import { sign, verify } from 'hono/jwt';
 import { createClient } from '@supabase/supabase-js';
@@ -73,6 +74,9 @@ app.use('*', edgeSentryMiddleware());
 
 // 3. Security Headers & Strict CSP (nosniff, DENY, HSTS, CSP)
 app.use('*', securityHeadersMiddleware());
+
+// High-Performance Payload Compression (Gzip / Deflate on Edge)
+app.use('*', compress());
 
 // 3. CORS Guard: Strictly allow only authorized domains
 const ALLOWED_ORIGINS = [
