@@ -16,11 +16,11 @@ export function renderDocuments() {
   const activeTaskIds = new Set(tasks.filter(t => !t.deletedAt).map(t => t.id));
   const activeProjectIds = new Set(projects.filter(p => !p.deletedAt).map(p => p.id));
 
-  // Filter out soft-deleted documents AND orphan documents from deleted tasks or deleted projects
+  // Filter out soft-deleted documents AND orphan documents from deleted projects
   const filteredDocs = documents.filter((doc) => {
     if (doc.deletedAt) return false;
-    if (doc.taskId && !activeTaskIds.has(doc.taskId)) return false;
     if (doc.projectId && !activeProjectIds.has(doc.projectId)) return false;
+    if (!doc.projectId && doc.taskId && !activeTaskIds.has(doc.taskId)) return false;
 
     if (projectFilter !== 'all' && doc.projectId !== projectFilter) return false;
     if (searchQuery) {

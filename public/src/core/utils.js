@@ -252,9 +252,9 @@ export function getFileFormatInfo(filename, mimeType = '') {
 
 export function extractDrawingVersion(filename) {
   if (!filename) return null;
-  const match = filename.match(/[_-\s]v(\d+)(\.|$)/i) || filename.match(/\bv(\d+)\b/i);
+  const match = filename.match(/[_-\s](?:rev|r|v)(\d+)([_.\s]|$)/i) || filename.match(/\b(?:rev|r|v)(\d+)\b/i);
   if (match) {
-    return `V${match[1]}`;
+    return `V${parseInt(match[1], 10)}`;
   }
   return null;
 }
