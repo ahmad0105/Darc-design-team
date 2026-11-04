@@ -6,6 +6,7 @@ import { isDemoSession } from '../../core/realtime.js';
 import { renderAnalyticsSection, fetchAnalyticsData } from './analytics.js';
 import { renderDiagnosticsSection, fetchDiagnosticsData } from './diagnostics.js';
 import { teamMetrics } from '../dashboard/dashboard.js';
+import { getNotificationPermission, isIOSDevice, isStandalonePWA } from '../notifications/notification-manager.js';
 
 export function renderTeam() {
   if (!isAdmin() && !can('manage_users')) {
@@ -855,16 +856,30 @@ export function renderSettings() {
 
   // NOTIFICATIONS SECTION (All users)
   if (state.settingsSection === 'notifications') {
-    const perm = typeof window !== 'undefined' && 'Notification' in window ? Notification.permission : 'unsupported';
+    const perm = getNotificationPermission();
+    const isIOSNonPwa = isIOSDevice() && !isStandalonePWA();
     const isGranted = perm === 'granted';
     const isDenied = perm === 'denied';
+
+    const statusBadgeHtml = isIOSNonPwa
+      ? `<span class="mini-badge" style="background:var(--mint);color:var(--teal);font-weight:700;">${choose('مدعومة عبر تطبيق الويب (PWA) 📱', 'Supported via Web App (PWA) 📱')}</span>`
+      : `<span class="mini-badge" style="background:${isGranted ? 'var(--mint)' : isDenied ? 'var(--red-soft)' : 'var(--surface-soft)'};color:${isGranted ? 'var(--teal)' : isDenied ? 'var(--red)' : 'var(--muted)'};font-weight:700;">
+          ${isGranted ? choose('مفعلة على هذا المتصفح ✅', 'Enabled on this browser ✅') : isDenied ? choose('محظورة من إعدادات المتصفح ❌', 'Blocked in browser settings ❌') : choose('بانتظار الموافقة ⚠️', 'Permission pending ⚠️')}
+        </span>`;
+
+    const actionButtonHtml = isIOSNonPwa
+      ? `<button type="button" class="btn btn-primary btn-sm" data-action="show-ios-notification-guide">${icon('bell', 14)} ${choose('طريقة التفعيل على iPhone', 'iPhone Setup Guide')}</button>`
+      : (isGranted
+          ? `<button type="button" class="btn btn-ghost btn-sm" data-action="test-browser-notification" style="color:var(--teal);">${icon('check', 14)} ${choose('فحص إشعار المتصفح', 'Test Browser Alert')}</button>`
+          : `<button type="button" class="btn btn-primary btn-sm" data-action="enable-browser-notifications">${icon('check', 14)} ${choose('تفعيل الإشعارات الآن', 'Enable Notifications')}</button>`
+        );
 
     content = `
       <section class="setting-section">
         <div class="panel-head">
           <div>
             <h2>${choose('الإشعارات والتنبيهات', 'Notifications & Alerts')}</h2>
-            <p>${choose('تخصيص قنوات وصول التنبيهات الفورية وإشعارات المتصفح لسطح المكتب.', 'Configure your real-time notification channels and desktop alerts.')}</p>
+            <p>${choose('تخصيص قنوات وصول التنبيهات الفورية وإشعارات المتصفح لسطح المكتب والهواتف الذكية.', 'Configure real-time notification channels and alerts for desktop and mobile.')}</p>
           </div>
           <button type="button" class="btn btn-primary btn-sm" data-action="send-test-notification">
             ${icon('bell', 14)} ${choose('إرسال إشعار تجريبي فوري', 'Send Test Notification')}
@@ -880,28 +895,18 @@ export function renderSettings() {
               </span>
               <div>
                 <strong style="display:block;font-size:13px;color:var(--ink);margin-bottom:3px;">
-                  ${choose('إشعارات سطح المكتب والمتصفح (Web Push Alerts)', 'Desktop & Browser Web Notifications')}
+                  ${choose('إشعارات سطح المكتب والمتصفح والجوال (Web Alerts)', 'Desktop & Mobile Web Notifications')}
                 </strong>
                 <p style="margin:0;font-size:11px;color:var(--muted);max-width:480px;line-height:1.5;">
-                  ${choose('تسمح للموقع بإرسال تنبيهات فورية للنظام حتى عندما يكون المتصفح في الخلفية أو تعمل على نافذة أخرى.', 'Allows the platform to deliver native desktop notifications even when you are in another tab or window.')}
+                  ${choose('تسمح للموقع بإرسال تنبيهات فورية للنظام حتى عندما يكون المتصفح في الخلفية أو شاشة الهاتف مغلقة.', 'Allows the platform to deliver native system notifications even when the browser is in the background or screen locked.')}
                 </p>
                 <div style="margin-top:6px;">
-                  <span class="mini-badge" style="background:${isGranted ? 'var(--mint)' : isDenied ? 'var(--red-soft)' : 'var(--surface-soft)'};color:${isGranted ? 'var(--teal)' : isDenied ? 'var(--red)' : 'var(--muted)'};font-weight:700;">
-                    ${isGranted ? choose('مفعلة على هذا المتصفح ✅', 'Enabled on this browser ✅') : isDenied ? choose('محظورة من إعدادات المتصفح ❌', 'Blocked in browser settings ❌') : choose('بانتظار الموافقة ⚠️', 'Permission pending ⚠️')}
-                  </span>
+                  ${statusBadgeHtml}
                 </div>
               </div>
             </div>
             <div>
-              ${!isGranted ? `
-                <button type="button" class="btn btn-primary btn-sm" data-action="enable-browser-notifications">
-                  ${icon('check', 14)} ${choose('تفعيل الإشعارات الآن', 'Enable Notifications')}
-                </button>
-              ` : `
-                <button type="button" class="btn btn-ghost btn-sm" data-action="test-browser-notification" style="color:var(--teal);">
-                  ${icon('check', 14)} ${choose('فحص إشعار المتصفح', 'Test Browser Alert')}
-                </button>
-              `}
+              ${actionButtonHtml}
             </div>
           </div>
 

@@ -18,6 +18,7 @@ import { playNotificationChime, isDemoSession } from './realtime.js';
 import { openTemplateModal, getNextAvailableTemplateCode, isTemplateCodeReserved } from '../features/templates/templates.js';
 import { exportDisciplinesExcel, exportTeamWorkloadExcel, exportRisksExcel, exportDrawingsExcel } from '../features/reports/reports.js';
 import { showNotifications } from '../features/notifications/notifications.js';
+import { requestUniversalNotificationPermission, dispatchUniversalNotification, showIOSNotificationGuide } from '../features/notifications/notification-manager.js';
 
 export async function handleSubmit(event) {
   const form = event.target;
@@ -718,24 +719,44 @@ export async function handleClick(event) {
   }
   if (action === 'enable-browser-notifications') {
     event.stopPropagation();
-    if (typeof window !== 'undefined' && 'Notification' in window) {
-      Notification.requestPermission().then(permission => {
-        if (permission === 'granted') {
-          showToast(choose('تم تفعيل إشعارات المتصفح بنجاح! 🔔', 'Desktop browser notifications enabled! 🔔'));
-          try {
-            new Notification(choose('DARC Design Team', 'DARC Design Team'), {
-              body: choose('إشعارات المتصفح الفورية تعمل بنجاح الآن على هذا الجهاز.', 'Browser notifications are now working on this device.'),
-              icon: '/favicon.ico'
-            });
-          } catch (e) {}
-        } else if (permission === 'denied') {
-          showToast(choose('تم رفض الإشعارات من إعدادات المتصفح.', 'Notifications are blocked in browser settings.'), true);
-        }
-        showNotifications();
-      });
-    } else {
-      showToast(choose('متصفحك لا يدعم إشعارات الويب المباشرة.', 'Your browser does not support web notifications.'), true);
-    }
+    requestUniversalNotificationPermission().then(res => {
+      if (res.status === 'granted') {
+        showToast(choose('تم تفعيل إشعارات المتصفح بنجاح! 🔔', 'Browser notifications enabled successfully! 🔔'));
+        dispatchUniversalNotification({
+          title: choose('فريق دارك للتصميم 📐', 'DARC Design Team 📐'),
+          body: choose('إشعارات المتصفح والنظام تعمل بنجاح الآن على هذا الجهاز.', 'Browser & system notifications are now active on this device.'),
+          icon: '/favicon.ico'
+        });
+      } else if (res.status === 'denied') {
+        showToast(choose('تم حظر الإشعارات في إعدادات المتصفح. يمكنك السماح بها من أيقونة إعدادات الموقع/القفل.', 'Notifications are blocked in browser settings. You can allow them via the lock icon beside the address bar.'), true);
+      } else if (res.status === 'ios_guide_shown') {
+        // iOS Safari guidance modal presented
+      } else {
+        // Universal in-app alerts active
+        showToast(choose('التنبيهات التفاعلية والصوتية مفعلة بنجاح على هذا المتصفح 🔔', 'Interactive in-app alerts and sounds are active on this browser 🔔'));
+        dispatchUniversalNotification({
+          title: choose('فريق دارك للتصميم 📐', 'DARC Design Team 📐'),
+          body: choose('تم تفعيل التنبيهات الصوتية والتفاعلية بنجاح على هذا الجهاز.', 'Interactive alerts & sound notifications active on this device.'),
+          icon: '/favicon.ico'
+        });
+      }
+      showNotifications();
+      renderApp();
+    });
+    return;
+  }
+  if (action === 'show-ios-notification-guide') {
+    event.stopPropagation();
+    showIOSNotificationGuide();
+    return;
+  }
+  if (action === 'test-in-app-notification') {
+    event.stopPropagation();
+    dispatchUniversalNotification({
+      title: choose('تنبيه فحص النظام الصوتي 🔔', 'Audio & Haptic System Test 🔔'),
+      body: choose('النغمة التنبيهية والاهتزاز يعملان بنجاح على هذا الهاتف! 🚀', 'Chime and haptic vibration operating smoothly on this phone! 🚀'),
+      icon: '/favicon.ico'
+    });
     return;
   }
   if (action === 'send-test-notification') {
@@ -749,7 +770,17 @@ export async function handleClick(event) {
       })
     }).then((res) => {
       showToast(choose('تم إرسال الإشعار من السيرفر بنجاح! 🔔', 'Test notification dispatched from server! 🔔'));
-      playNotificationChime();
+
+      const testTitle = res?.notification?.titleAr || choose('إشعار فحص النظام المباشر 🔔', 'Live System Test 🔔');
+      const testBody = res?.notification?.messageAr || choose('السيرفر والربط اللحظي يعملان بكفاءة على كافة الأجهزة!', 'Backend and realtime operating smoothly on all devices!');
+
+      // Universal Device Notification (Web Audio + Haptics + ServiceWorker / Notification API / Toast)
+      dispatchUniversalNotification({
+        title: testTitle,
+        body: testBody,
+        icon: '/favicon.ico'
+      });
+
       if (res && res.notification) {
         if (!state.data.notifications) state.data.notifications = [];
         state.data.notifications.unshift(res.notification);
@@ -770,19 +801,13 @@ export async function handleClick(event) {
   }
   if (action === 'test-browser-notification') {
     event.stopPropagation();
-    if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
-      try {
-        new Notification(choose('DARC Design Team', 'DARC Design Team'), {
-          body: choose('هذا اختبار لإشعار سطح المكتب والمتصفح — يعمل بنجاح! 🚀', 'This is a test desktop notification — working perfectly! 🚀'),
-          icon: '/favicon.ico'
-        });
-        showToast(choose('تم إرسال إشعار المتصفح لسطح المكتب!', 'Desktop notification dispatched!'));
-      } catch (e) {
-        showToast(e.message, true);
-      }
-    } else {
-      showToast(choose('إشعارات المتصفح غير مفعلة بعد.', 'Browser notifications not yet enabled.'), true);
-    }
+    dispatchUniversalNotification({
+      title: choose('فريق دارك للتصميم — فحص التنبيه 🔔', 'DARC Design Team — Alert Test 🔔'),
+      body: choose('هذا اختبار لإشعار المتصفح والجوال — يعمل بنجاح فائق! 🚀', 'This is a test notification for browser & mobile — working smoothly! 🚀'),
+      icon: '/favicon.ico'
+    }).then(() => {
+      showToast(choose('تم إرسال إشعار الفحص بنجاح على هذا الجهاز! 📱🔔', 'Test alert dispatched successfully on this device! 📱🔔'));
+    });
     return;
   }
   if (action === 'read-notification') {

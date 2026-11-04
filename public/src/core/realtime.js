@@ -8,6 +8,7 @@ import { invalidateBootstrapEtag } from './api.js';
 import { choose, isNotificationRead } from './utils.js';
 import { showToast } from '../shared/ui.js';
 import { showNotifications } from '../features/notifications/notifications.js';
+import { dispatchUniversalNotification } from '../features/notifications/notification-manager.js';
 
 const SUPABASE_WS_ENDPOINT = 'wss://yjfmrpwkjstxldnwegob.supabase.co/realtime/v1/websocket?apikey=sb_publishable_Zr7mRIWo5djcRpwq4Ihl0A_Eb3AA8gJ&vsn=1.0.0';
 
@@ -345,30 +346,20 @@ export function applyGranularDelta(tableName, actionType, rawRecord, rawOldRecor
         if (title) {
           showToast(`🔔 ${title}`, false);
         }
-        playNotificationChime();
+        // Universal Device Notification (Android ServiceWorker / iOS PWA / Desktop / In-App Chime & Haptics)
+        const bodyMsg = state.lang === 'ar'
+          ? (record.messageAr || record.bodyAr || record.content || '')
+          : (record.messageEn || record.bodyEn || record.content || '');
 
-        // Native Browser Web Notification (Desktop & Mobile PWA)
-        if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
-          try {
-            const bodyMsg = state.lang === 'ar'
-              ? (record.messageAr || record.bodyAr || record.content || '')
-              : (record.messageEn || record.bodyEn || record.content || '');
-            const desktopNotif = new Notification(title, {
-              body: bodyMsg,
-              icon: '/favicon.ico',
-              tag: record.id || 'darc-alert'
-            });
-            desktopNotif.onclick = () => {
-              window.focus();
-              if (typeof showNotifications === 'function') {
-                showNotifications();
-              }
-              desktopNotif.close();
-            };
-          } catch (e) {
-            console.warn('[WebNotification] Error:', e.message);
-          }
-        }
+        dispatchUniversalNotification({
+          title,
+          body: bodyMsg,
+          icon: '/favicon.ico',
+          tag: record.id || 'darc-alert',
+          url: record.taskId 
+            ? `${window.location.origin}/#workspace?task=${record.taskId}`
+            : (record.projectId ? `${window.location.origin}/#project-detail?id=${record.projectId}` : window.location.href)
+        }).catch(() => {});
 
         if (typeof showNotifications === 'function' && document.querySelector('.modal-notifications')) {
           showNotifications();

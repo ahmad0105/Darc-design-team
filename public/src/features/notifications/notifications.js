@@ -3,6 +3,7 @@ import { api } from '../../core/api.js';
 import { choose, esc, icon, dateLabel, t, isNotificationRead } from '../../core/utils.js';
 import { modalShell } from '../../shared/ui.js';
 import { getNotificationCatalogMeta } from './notifications.catalog.js';
+import { getNotificationPermission, isIOSDevice, isStandalonePWA } from './notification-manager.js';
 
 export function showNotifications() {
   const notifications = state.data?.notifications || [];
@@ -56,12 +57,25 @@ export function showNotifications() {
     </div>
   `;
 
-  const browserBanner = (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') ? `
-    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 12px;border-radius:8px;background:var(--surface-soft);border:1px dashed var(--blue);margin-bottom:12px;font-size:11px;">
-      <span style="color:var(--ink-soft);">${choose('تفعيل إشعارات سطح المكتب والمتصفح عند وصول مهام أو تنبيهات؟', 'Enable desktop browser alerts when new tasks or mentions arrive?')}</span>
-      <button type="button" class="btn btn-primary btn-sm" data-action="enable-browser-notifications" style="font-size:10px;padding:3px 8px;height:auto;flex-shrink:0;">${choose('تفعيل الآن', 'Enable')}</button>
-    </div>
-  ` : '';
+  const notifPerm = getNotificationPermission();
+  const isIOSNonPwa = isIOSDevice() && !isStandalonePWA();
+
+  let browserBanner = '';
+  if (isIOSNonPwa) {
+    browserBanner = `
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 12px;border-radius:8px;background:var(--surface-soft);border:1px dashed var(--blue);margin-bottom:12px;font-size:11px;">
+        <span style="color:var(--ink-soft);">${choose('تفعيل إشعارات نظام iOS الفورية على iPhone و iPad 📱', 'Enable native iOS push alerts on iPhone & iPad 📱')}</span>
+        <button type="button" class="btn btn-primary btn-sm" data-action="show-ios-notification-guide" style="font-size:10px;padding:3px 8px;height:auto;flex-shrink:0;">${choose('عرض الطريقة', 'View Setup')}</button>
+      </div>
+    `;
+  } else if (notifPerm === 'default') {
+    browserBanner = `
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 12px;border-radius:8px;background:var(--surface-soft);border:1px dashed var(--blue);margin-bottom:12px;font-size:11px;">
+        <span style="color:var(--ink-soft);">${choose('تفعيل إشعارات سطح المكتب والجوال عند وصول مهام أو تنبيهات؟', 'Enable desktop & mobile alerts when new tasks or mentions arrive?')}</span>
+        <button type="button" class="btn btn-primary btn-sm" data-action="enable-browser-notifications" style="font-size:10px;padding:3px 8px;height:auto;flex-shrink:0;">${choose('تفعيل الآن', 'Enable')}</button>
+      </div>
+    `;
+  }
 
   let listHtml = '';
 
