@@ -99,7 +99,7 @@ export function renderDiagnosticsSection() {
     activeIncidents: 0,
     resolvedIncidents: isDemo ? incidents.length : 3,
     totalUsersMonitored: users.length || 6,
-    alertEmailRecipient: isDemo ? 'demo-alerts@darc-design.bond (بيئة العرض التجريبية)' : 'admin@darc-design.bond'
+    alertEmailRecipient: isDemo ? 'demo-alerts@darc.demo (بيئة المحاكاة الآمنة)' : 'admin@darc-design.bond'
   };
 
   // Filter incidents
@@ -183,9 +183,9 @@ export function renderDiagnosticsSection() {
         <div style="background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px;">
           <div style="font-size:11px;color:var(--muted);font-weight:600;">${choose('نظام التنبيهات البريدية (Email Alerts)', 'Email Alert System')}</div>
           <div style="font-size:13px;font-weight:700;color:var(--mint-strong);margin:6px 0;display:flex;align-items:center;gap:6px;">
-            <span></span> ${choose('مفعّل ويرسل تلقائياً', 'Active & Auto-Dispatched')}
+            <span>${isDemo ? '🧪' : '📬'}</span> ${isDemo ? choose('محاكاة الساندبوكس (معزول)', 'Sandbox Simulation (Isolated)') : choose('مفعّل ويرسل تلقائياً', 'Active & Auto-Dispatched')}
           </div>
-          <div style="font-size:11px;color:var(--muted);font-family:monospace;">${stats.alertEmailRecipient || 'admin@darc-design.bond'}</div>
+          <div style="font-size:11px;color:var(--muted);font-family:monospace;">${esc(stats.alertEmailRecipient || (isDemo ? 'demo-alerts@darc.demo (بيئة المحاكاة الآمنة)' : 'admin@darc-design.bond'))}</div>
         </div>
       </div>
 
@@ -405,8 +405,8 @@ export function renderDiagnosticsSection() {
                 <div style="display:flex;align-items:center;gap:6px;">
                   <span>📧</span>
                   <span>${choose('حالة إرسال بريد التنبيه للإدارة:', 'Admin Alert Email:')}</span>
-                  <strong style="color:var(--teal);">${inc.emailAlert?.status === 'delivered' ? choose('تم التسليم للبريد بنجاح ✓', 'Delivered ✓') : choose('تم التحقق والتسجيل في السيرفر ✓', 'Dispatched to Sandbox ✓')}</strong>
-                  <span style="font-family:monospace;">(${esc(inc.emailAlert?.deliveredTo || 'admin@darc-design.bond')})</span>
+                  <strong style="color:var(--teal);">${isDemo ? choose('محاكاة الساندبوكس (معزول) ✓', 'Simulated Sandbox ✓') : (inc.emailAlert?.status === 'delivered' ? choose('تم التسليم للبريد بنجاح ✓', 'Delivered ✓') : choose('تم التحقق والتسجيل في السيرفر ✓', 'Dispatched to Sandbox ✓'))}</strong>
+                  <span style="font-family:monospace;">(${esc(isDemo ? 'demo-alerts@darc.demo' : (inc.emailAlert?.deliveredTo || 'admin@darc-design.bond'))})</span>
                 </div>
                 <div>
                   ${isResolved ? choose(`معالج بواسطة: ${esc(inc.resolvedBy || 'Admin')}`, `Resolved by: ${esc(inc.resolvedBy || 'Admin')}`) : choose('قيد التدخل البرمجي', 'Awaiting resolution')}

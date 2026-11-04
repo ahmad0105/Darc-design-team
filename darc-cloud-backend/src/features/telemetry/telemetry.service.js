@@ -137,10 +137,10 @@ const _telemetryStore = {
       ],
       suggestedSolution: 'تم حل المشكلة وتفعيل نظام التحسين التلقائي (Mesh Level-of-Detail / LOD) لملفات DWG و 3D مع معالج الاستعادة التلقائي لسياق WebGL وتقليص حجم الـ Buffer بنسبة 60% لمنع تجاوز ذاكرة الـ GPU.',
       emailAlert: {
-        sent: true,
-        deliveredTo: 'admin@darc-design.bond',
-        provider: 'resend',
-        status: 'delivered',
+        sent: false,
+        deliveredTo: 'demo-alerts@darc.demo',
+        provider: 'sandbox',
+        status: 'simulated_sandbox',
         deliveredAt: new Date(Date.now() - 25 * 60 * 1000).toISOString()
       }
     },
@@ -181,10 +181,10 @@ const _telemetryStore = {
       ],
       suggestedSolution: 'تم ضغط الصور تلقائياً (Auto Downscale to 1080p) قبل تضمينها داخل مستند الـ PDF لحماية أجهزة الآيباد من نفاد الذاكرة.',
       emailAlert: {
-        sent: true,
-        deliveredTo: 'admin@darc-design.bond',
-        provider: 'resend',
-        status: 'delivered',
+        sent: false,
+        deliveredTo: 'demo-alerts@darc.demo',
+        provider: 'sandbox',
+        status: 'simulated_sandbox',
         deliveredAt: new Date(Date.now() - 75 * 60 * 1000).toISOString()
       }
     },
@@ -224,10 +224,10 @@ const _telemetryStore = {
       ],
       suggestedSolution: 'تم تفعيل الرفع التجزئي السحابي (Cloudflare R2 Chunked Multipart) للملفات التي تتجاوز 100MB مع استئناف التحميل التلقائي.',
       emailAlert: {
-        sent: true,
-        deliveredTo: 'admin@darc-design.bond',
-        provider: 'resend',
-        status: 'delivered',
+        sent: false,
+        deliveredTo: 'demo-alerts@darc.demo',
+        provider: 'sandbox',
+        status: 'simulated_sandbox',
         deliveredAt: new Date(Date.now() - 4 * 3600 * 1000).toISOString()
       }
     }
@@ -292,6 +292,14 @@ export async function recordErrorIncident(env, report = {}) {
       }))
     : [];
 
+  // 1. Dispatch Email Alert immediately (Blocked from real email servers if demo user)
+  const isDemoUser = Boolean(
+    userId === 'usr_demo' ||
+    (userId && String(userId).startsWith('usr_demo')) ||
+    profile.isDemo ||
+    report.isDemo
+  );
+
   const incident = {
     id: 'inc_' + Date.now().toString(36) + '_' + Math.random().toString(36).substring(2, 6),
     timestamp: new Date().toISOString(),
@@ -320,24 +328,16 @@ export async function recordErrorIncident(env, report = {}) {
     suggestedSolution: String(suggestedSolution).slice(0, 500),
     emailAlert: {
       sent: false,
-      deliveredTo: env?.ALERT_EMAIL || 'admin@darc-design.bond',
-      status: 'pending'
+      deliveredTo: isDemoUser ? 'demo-alerts@darc.demo' : (env?.ALERT_EMAIL || 'admin@darc-design.bond'),
+      status: isDemoUser ? 'simulated_sandbox' : 'pending'
     }
   };
 
-  // 1. Dispatch Email Alert immediately (Blocked from real email servers if demo user)
-  const isDemoUser = Boolean(
-    userId === 'usr_demo' ||
-    (userId && String(userId).startsWith('usr_demo')) ||
-    profile.isDemo ||
-    report.isDemo
-  );
-
   if (isDemoUser) {
     incident.emailAlert = {
-      sent: true,
-      deliveredTo: 'demo-alerts@darc-design.bond (بيئة العرض التجريبية)',
-      provider: 'simulated_sandbox',
+      sent: false,
+      deliveredTo: 'demo-alerts@darc.demo',
+      provider: 'sandbox',
       status: 'simulated_sandbox',
       deliveredAt: new Date().toISOString()
     };
@@ -422,8 +422,19 @@ export async function getIncidentsPerUser(supabase = null, filterUserId = null, 
 
   let incidents = _telemetryStore.recentIncidents;
   if (isDemo) {
-    // Demo sandbox shield: strictly isolate demo incidents only
-    incidents = incidents.filter(inc => inc.userId && String(inc.userId).startsWith('usr_demo'));
+    // Demo sandbox shield: strictly isolate demo incidents only and sanitize alert emails
+    incidents = incidents
+      .filter(inc => inc.userId && String(inc.userId).startsWith('usr_demo'))
+      .map(inc => ({
+        ...inc,
+        emailAlert: {
+          sent: false,
+          deliveredTo: 'demo-alerts@darc.demo',
+          provider: 'sandbox',
+          status: 'simulated_sandbox',
+          deliveredAt: inc.emailAlert?.deliveredAt || inc.timestamp
+        }
+      }));
   }
   if (filterUserId && filterUserId !== 'all') {
     incidents = incidents.filter(inc => inc.userId === filterUserId);
@@ -547,7 +558,7 @@ export async function getIncidentsPerUser(supabase = null, filterUserId = null, 
       totalUsersMonitored: usersList.length,
       realUsersMonitored: isDemo ? 0 : usersList.filter(u => u.isRealAccount).length,
       emailAlertsConfigured: true,
-      alertEmailRecipient: isDemo ? 'demo-alerts@darc-design.bond (بيئة العرض التجريبية)' : 'admin@darc-design.bond'
+      alertEmailRecipient: isDemo ? 'demo-alerts@darc.demo (بيئة المحاكاة الآمنة)' : 'admin@darc-design.bond'
     },
     users: usersList,
     incidents

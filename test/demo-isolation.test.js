@@ -119,7 +119,10 @@ async function runTests() {
   assert.strictEqual(demoDiagnostics.isDemo, true, 'Must flag isDemo: true');
   assert.strictEqual(demoDiagnostics.stats.realUsersMonitored, 0, 'Real users monitored must be 0 in demo mode');
   assert.ok(demoDiagnostics.stats.alertEmailRecipient.includes('demo-alerts'), 'Alert email must be isolated demo simulation recipient');
+  assert.ok(!demoDiagnostics.stats.alertEmailRecipient.includes('admin@darc-design.bond'), 'Must never leak real admin email in demo stats');
   assert.ok(demoDiagnostics.users.every(u => u.userId.startsWith('usr_demo')), 'Every monitored user in demo must be a demo engineer');
+  assert.ok(demoDiagnostics.incidents.every(i => i.emailAlert?.deliveredTo !== 'admin@darc-design.bond'), 'Incident emailAlert must never leak real company admin email in demo mode');
+  assert.ok(demoDiagnostics.incidents.every(i => i.emailAlert?.status === 'simulated_sandbox'), 'Incident emailAlert status must be simulated_sandbox in demo mode');
   console.log('✓ Test 8: Error Logs & Diagnostics provides 100% fake showcase data with zero real user exposure');
 
   // Test 9: Telemetry Heartbeat from demo user is suppressed
