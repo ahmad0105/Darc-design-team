@@ -5,7 +5,7 @@ import { state } from './state.js';
 import { loadData, renderView, renderApp } from './router.js';
 import { syncPendingMutations } from './offline.js';
 import { invalidateBootstrapEtag } from './api.js';
-import { choose } from './utils.js';
+import { choose, isNotificationRead } from './utils.js';
 import { showToast } from '../shared/ui.js';
 import { showNotifications } from '../features/notifications/notifications.js';
 
@@ -161,7 +161,7 @@ function updateNotificationDotInDom() {
   const notifBtn = document.querySelector('[data-action="show-notifications"]');
   if (!notifBtn) return;
   const notifications = state.data?.notifications || [];
-  const unread = notifications.filter((n) => !n.read && !n.readAt).length;
+  const unread = notifications.filter((n) => !isNotificationRead(n)).length;
   let dot = notifBtn.querySelector('.notification-dot');
   if (unread > 0) {
     if (!dot) {
@@ -336,7 +336,7 @@ export function applyGranularDelta(tableName, actionType, rawRecord, rawOldRecor
     } else if (tableName === 'notifications') {
       const currentUserId = state.data?.user?.id;
       const targetUserId = record.userId || record.user_id;
-      const isRead = Boolean(record.read || record.readAt || record.read_at);
+      const isRead = isNotificationRead(record);
       if (currentUserId && targetUserId === currentUserId && !isRead) {
         updateNotificationDotInDom();
         const title = state.lang === 'ar'

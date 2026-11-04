@@ -435,8 +435,8 @@ app.use('/api/*', async (c, next) => {
   const path = c.req.path;
   const method = c.req.method;
 
-  // 1. Allow routes specifically wired for demo: /api/bootstrap, /api/demo/reset, /api/tasks, /api/telemetry, /api/audit, and document uploads
-  if (path === '/api/bootstrap' || path.startsWith('/api/demo') || path.startsWith('/api/tasks') || (path.startsWith('/api/documents') && method !== 'GET') || path.startsWith('/api/telemetry') || path.startsWith('/api/audit')) {
+  // 1. Allow routes specifically wired for demo: /api/bootstrap, /api/demo/reset, /api/tasks, /api/telemetry, /api/audit, /api/notifications, and document uploads
+  if (path === '/api/bootstrap' || path.startsWith('/api/demo') || path.startsWith('/api/tasks') || path.startsWith('/api/notifications') || (path.startsWith('/api/documents') && method !== 'GET') || path.startsWith('/api/telemetry') || path.startsWith('/api/audit')) {
     return next();
   }
 
@@ -761,13 +761,13 @@ app.use('*', async (c, next) => {
   const now = Date.now();
   if (now - _lastOpportunisticDrain > 5 * 60 * 1000) {
     _lastOpportunisticDrain = now;
-    if (c.executionCtx && typeof c.executionCtx.waitUntil === 'function') {
-      try {
+    try {
+      if (c.executionCtx && typeof c.executionCtx.waitUntil === 'function') {
         const supabase = getDB(c.env);
         c.executionCtx.waitUntil(processWhatsAppQueue(supabase));
         c.executionCtx.waitUntil(processDueReminders(supabase));
-      } catch (_) {}
-    }
+      }
+    } catch (_) {}
   }
 });
 

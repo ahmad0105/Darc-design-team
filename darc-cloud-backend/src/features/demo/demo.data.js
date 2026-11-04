@@ -534,6 +534,7 @@ export function createDemoDataset() {
       taskId: 'tsk_demo_02',
       projectId: 'prj_demo_villa',
       read: false,
+      readAt: null,
       createdAt: dateStr(-1)
     },
     {
@@ -548,7 +549,53 @@ export function createDemoDataset() {
       taskId: 'tsk_demo_01',
       projectId: 'prj_demo_villa',
       read: true,
+      readAt: dateStr(-4),
       createdAt: dateStr(-5)
+    },
+    {
+      id: 'notif_demo_03',
+      userId: 'usr_demo',
+      type: 'document_review',
+      titleAr: 'طلب مراجعة وتدقيق مخطط تنفيذي 📐',
+      titleEn: 'Executive Drawing Review Requested 📐',
+      messageAr: 'تم رفع الإصدار الجديد Rev-03 لمخططات واجهات برج لوسيل الإداري للمراجعة والتدقيق الفني.',
+      messageEn: 'New revision Rev-03 of Lusail Commercial Tower elevations submitted for technical review.',
+      content: 'تم رفع الإصدار الجديد Rev-03 لمخططات واجهات برج لوسيل الإداري للمراجعة والتدقيق الفني.',
+      documentId: 'doc_demo_01',
+      projectId: 'prj_demo_tower',
+      read: false,
+      readAt: null,
+      createdAt: dateStr(0)
+    },
+    {
+      id: 'notif_demo_04',
+      userId: 'usr_demo',
+      type: 'task_assigned',
+      titleAr: 'تم إسناد مهمة هندسية جديدة 📋',
+      titleEn: 'New Engineering Task Assigned 📋',
+      messageAr: 'تم إسناد مهمة "إعداد كراسة المواصفات الفنية وجداول الكميات (BOQ)" إليك لمشروع برج لوسيل.',
+      messageEn: 'Task "Preparation of Technical Specifications & BOQ" assigned to you for Lusail Tower.',
+      content: 'تم إسناد مهمة "إعداد كراسة المواصفات الفنية وجداول الكميات (BOQ)" إليك لمشروع برج لوسيل.',
+      taskId: 'tsk_demo_03',
+      projectId: 'prj_demo_tower',
+      read: false,
+      readAt: null,
+      createdAt: dateStr(-1)
+    },
+    {
+      id: 'notif_demo_05',
+      userId: 'usr_demo',
+      type: 'reminder',
+      titleAr: 'تذكير بموعد تسليم مرحلي ⏰',
+      titleEn: 'Milestone Deadline Reminder ⏰',
+      messageAr: 'تذكير باقتراب الموعد النهائي لاعتماد المخططات الإنشائية لمشروع منتجع جزيرة السعديات.',
+      messageEn: 'Reminder: Structural drawings milestone for Saadiyat Island Resort is approaching.',
+      content: 'تذكير باقتراب الموعد النهائي لاعتماد المخططات الإنشائية لمشروع منتجع جزيرة السعديات.',
+      taskId: 'tsk_demo_04',
+      projectId: 'prj_demo_resort',
+      read: true,
+      readAt: dateStr(-2),
+      createdAt: dateStr(-3)
     }
   ];
 

@@ -5,12 +5,23 @@ import { createDemoDataset } from './demo.data.js';
 export const DEMO_RESET_INTERVAL_MS = 15 * 60 * 1000;
 let _lastResetTime = Date.now();
 let _demoStore = createDemoDataset();
+let _demoVersion = 1;
+
+export function bumpDemoVersion() {
+  _demoVersion++;
+  return _demoVersion;
+}
+
+export function getDemoVersion() {
+  return _demoVersion;
+}
 
 export function checkAndAutoReset() {
   const now = Date.now();
   if (now - _lastResetTime >= DEMO_RESET_INTERVAL_MS) {
     _demoStore = createDemoDataset();
     _lastResetTime = now;
+    _demoVersion = 1;
     return true;
   }
   return false;
@@ -27,6 +38,7 @@ export function getDemoPayload() {
 export function resetDemoPayload() {
   _demoStore = createDemoDataset();
   _lastResetTime = Date.now();
+  _demoVersion = 1;
   const payload = JSON.parse(JSON.stringify(_demoStore));
   payload.isDemo = true;
   payload.demoExpiresIn = Math.floor(DEMO_RESET_INTERVAL_MS / 1000);
@@ -347,16 +359,21 @@ export function deleteDemoComment(commentId) {
   return false;
 }
 
-export function markDemoNotificationAsRead(id) {
+export function setDemoNotificationReadStatus(id, isRead = true) {
   checkAndAutoReset();
   if (!_demoStore.notifications) return false;
   const notif = _demoStore.notifications.find(n => n.id === id);
   if (notif) {
-    notif.read = true;
-    notif.readAt = new Date().toISOString();
-    return true;
+    notif.read = Boolean(isRead);
+    notif.readAt = isRead ? new Date().toISOString() : null;
+    bumpDemoVersion();
+    return notif;
   }
   return false;
+}
+
+export function markDemoNotificationAsRead(id) {
+  return Boolean(setDemoNotificationReadStatus(id, true));
 }
 
 export function markAllDemoNotificationsAsRead() {
@@ -367,13 +384,15 @@ export function markAllDemoNotificationsAsRead() {
     n.read = true;
     n.readAt = now;
   });
+  bumpDemoVersion();
   return true;
 }
 
 export function clearReadDemoNotifications() {
   checkAndAutoReset();
   if (!_demoStore.notifications) return true;
-  _demoStore.notifications = _demoStore.notifications.filter(n => !n.read);
+  _demoStore.notifications = _demoStore.notifications.filter(n => !(n.read || n.readAt));
+  bumpDemoVersion();
   return true;
 }
 
@@ -383,6 +402,7 @@ export function deleteDemoNotification(id) {
   const idx = _demoStore.notifications.findIndex(n => n.id === id);
   if (idx !== -1) {
     _demoStore.notifications.splice(idx, 1);
+    bumpDemoVersion();
     return true;
   }
   return false;
@@ -539,8 +559,10 @@ export function addDemoNotification(entry = {}) {
     taskId: entry.taskId || null,
     projectId: entry.projectId || null,
     read: false,
+    readAt: null,
     createdAt: new Date().toISOString()
   };
   _demoStore.notifications.unshift(newNotif);
+  bumpDemoVersion();
   return newNotif;
 }

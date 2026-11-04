@@ -502,6 +502,13 @@ export function priorityText(key) {
   }
 }
 
+export function isNotificationRead(n) {
+  if (!n) return false;
+  if (n.read === true) return true;
+  if (n.read === false) return false;
+  return Boolean(n.readAt || n.read_at);
+}
+
 export function roleFor(userOrId) {
   const user = typeof userOrId === 'string' ? state.data?.users?.find((item) => item.id === userOrId) : userOrId;
   if (!user) return null;

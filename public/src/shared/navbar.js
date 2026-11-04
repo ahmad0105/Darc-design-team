@@ -1,5 +1,5 @@
 import { state } from '../core/state.js';
-import { choose, esc, icon, avatar, roleName, t, currentViewTitle } from '../core/utils.js';
+import { choose, esc, icon, avatar, roleName, t, currentViewTitle, isNotificationRead } from '../core/utils.js';
 import { getPendingMutations, isOnline } from '../core/offline.js';
 
 export function renderSyncIndicator() {
@@ -41,7 +41,7 @@ export function initSyncIndicatorListener() {
 
 export function renderNavbar(customTitle = null) {
   const notifications = state.data?.notifications || [];
-  const unread = notifications.filter((notification) => !notification.read && !notification.readAt).length;
+  const unread = notifications.filter((notification) => !isNotificationRead(notification)).length;
   const user = state.data?.user || {};
   const title = customTitle || currentViewTitle();
 

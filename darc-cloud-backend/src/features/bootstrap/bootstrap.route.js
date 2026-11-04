@@ -38,7 +38,7 @@ const DEFAULT_PERMISSIONS_CATALOG = [
 import { Hono } from 'hono';
 import { getDB } from '../../core/db.js';
 import { getBootstrapCache, setBootstrapCache, fetchBootstrapWithCoalescing, getCachedRoles, getCachedTemplates, getCachedUsers, getCachedCompany, getCacheVersion } from '../../core/cache.js';
-import { getDemoPayload } from '../demo/demo.service.js';
+import { getDemoPayload, getDemoVersion } from '../demo/demo.service.js';
 import { toCamelCase, sanitizeUserCustomFields } from '../../utils/transformers.js';
 
 const app = new Hono();
@@ -47,7 +47,12 @@ export async function generateBootstrapPayloadForUser(env, userId, roleId) {
   // Isolated Showcase Demo Sandbox (100% Shielded from Production DB)
   if (userId === 'usr_demo') {
     const demoPayload = getDemoPayload();
-    const demoEtag = 'W/"demo-bootstrap-v2"';
+    const demoVer = getDemoVersion();
+    const notifCount = demoPayload.notifications?.length || 0;
+    const unreadNotifCount = (demoPayload.notifications || []).filter(n => !(n.read || n.readAt)).length;
+    const projCount = demoPayload.projects?.length || 0;
+    const taskCount = demoPayload.tasks?.length || 0;
+    const demoEtag = `W/"demo-v${demoVer}-n${notifCount}-u${unreadNotifCount}-p${projCount}-t${taskCount}"`;
     return { responsePayload: demoPayload, etag: demoEtag };
   }
 

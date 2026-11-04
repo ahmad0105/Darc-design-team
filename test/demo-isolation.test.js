@@ -2,8 +2,9 @@ import assert from 'node:assert';
 import { getIncidentsPerUser, getDemoTelemetryAnalytics, recordTelemetryHeartbeat, recordErrorIncident } from '../darc-cloud-backend/src/features/telemetry/telemetry.service.js';
 import { sendWhatsAppAlert, dispatchDirectNotificationAlert } from '../darc-cloud-backend/src/features/whatsapp/whatsapp.service.js';
 import { createNotification } from '../darc-cloud-backend/src/features/notifications/notifications.service.js';
-import { getDemoPayload, getDemoTrash, createDemoProject, updateDemoProject, deleteDemoProject, deleteDemoTask, restoreDemoItem, emptyDemoTrash } from '../darc-cloud-backend/src/features/demo/demo.service.js';
+import { getDemoPayload, getDemoTrash, createDemoProject, updateDemoProject, deleteDemoProject, deleteDemoTask, restoreDemoItem, emptyDemoTrash, setDemoNotificationReadStatus, markAllDemoNotificationsAsRead, clearReadDemoNotifications, addDemoNotification, deleteDemoNotification, getDemoVersion } from '../darc-cloud-backend/src/features/demo/demo.service.js';
 import { getDocumentShareableLink, GDRIVE_ROOT_FOLDER_ID } from '../public/src/features/documents/doc-viewer.js';
+import { isNotificationRead } from '../public/src/core/utils.js';
 
 console.log('--- Running Demo Isolation & Monitoring Verification Suite ---');
 
@@ -210,7 +211,58 @@ async function runTests() {
   assert.strictEqual(emptyCheck.trash.length, 0, 'Emptying trash must clear demo trash');
   console.log('✓ Test 17: Emptying demo trash operates safely and cleanly');
 
-  console.log('--- All Demo Isolation & Security Hardening Tests Passed Successfully (17/17) ---');
+  // Test 18: Demo notifications read/unread detection and segregation
+  const initialPayload = getDemoPayload();
+  const notifs = initialPayload.notifications;
+  assert.ok(Array.isArray(notifs), 'Demo payload must include notifications');
+  assert.ok(notifs.length >= 6, 'Demo must have at least 6 rich showcase notifications (5 initial + 1 from Test 5)');
+  const unreadCount = notifs.filter(n => !isNotificationRead(n)).length;
+  const readCount = notifs.filter(n => isNotificationRead(n)).length;
+  assert.strictEqual(unreadCount, 4, 'Demo must have exactly 4 unread notifications (3 initial + 1 from Test 5)');
+  assert.strictEqual(readCount, 2, 'Demo must start with exactly 2 read notifications');
+  console.log(`✓ Test 18: Demo notifications segregated accurately (${unreadCount} unread, ${readCount} read)`);
+
+  // Test 19: Notification read/unread toggle & mark-all-read & clear-read
+  const targetNotif = notifs.find(n => !isNotificationRead(n));
+  assert.ok(targetNotif, 'Must find an unread notification');
+  
+  // Toggle to read
+  const updatedRead = setDemoNotificationReadStatus(targetNotif.id, true);
+  assert.strictEqual(updatedRead.read, true, 'Setting read status to true must mark read: true');
+  assert.ok(updatedRead.readAt, 'Setting read status to true must record readAt timestamp');
+  assert.strictEqual(isNotificationRead(updatedRead), true, 'isNotificationRead must confirm notification is read');
+
+  // Toggle back to unread
+  const updatedUnread = setDemoNotificationReadStatus(targetNotif.id, false);
+  assert.strictEqual(updatedUnread.read, false, 'Setting read status to false must mark read: false');
+  assert.strictEqual(updatedUnread.readAt, null, 'Setting read status to false must nullify readAt');
+  assert.strictEqual(isNotificationRead(updatedUnread), false, 'isNotificationRead must confirm notification is unread');
+
+  // Mark all as read
+  markAllDemoNotificationsAsRead();
+  const allReadPayload = getDemoPayload();
+  assert.ok(allReadPayload.notifications.every(n => isNotificationRead(n)), 'All demo notifications must now be read');
+
+  // Clear read notifications
+  clearReadDemoNotifications();
+  const clearedPayload = getDemoPayload();
+  assert.strictEqual(clearedPayload.notifications.length, 0, 'Clearing read notifications when all are read must leave 0 notifications');
+  console.log('✓ Test 19: Demo notification toggle, mark-all-read, and clear-read operate flawlessly');
+
+  // Test 20: Demo test notification dispatch with dynamic ETag bump
+  const vBefore = getDemoVersion();
+  const newDispatched = addDemoNotification({
+    titleAr: 'إشعار اختبار ديناميكي',
+    messageAr: 'محتوى تجريبي للتأكد من المزامنة والـ ETag'
+  });
+  const vAfter = getDemoVersion();
+  assert.ok(newDispatched.id.startsWith('notif_demo_'), 'Dispatched notification must have demo ID prefix');
+  assert.strictEqual(newDispatched.read, false, 'Newly dispatched notification must be unread');
+  assert.strictEqual(isNotificationRead(newDispatched), false, 'isNotificationRead must evaluate newly dispatched notification as unread');
+  assert.ok(vAfter > vBefore, 'Dispatching demo notification must bump demo version for dynamic ETag freshness');
+  console.log('✓ Test 20: Demo test notification dispatch successfully enriches inbox and updates ETag version');
+
+  console.log('--- All Demo Isolation & Security Hardening Tests Passed Successfully (20/20) ---');
 }
 
 runTests().catch(err => {

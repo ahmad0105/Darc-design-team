@@ -3,7 +3,7 @@ import { state } from './state.js';
 import { api, API_BASE, invalidateBootstrapEtag } from './api.js';
 import { switchView, refreshView, renderView, renderApp, canAccessView, getFirstAllowedView, loadData } from './router.js';
 import { openOmnisearch, closeOmnisearch, openShortcutsCheatsheet } from '../features/dashboard/omnisearch.js';
-import { playSuccessChime, savePreferencesCookies, choose, esc, icon, t, can, isAdmin, avatar, roleName, statusText, initials, dateLabel } from './utils.js';
+import { playSuccessChime, savePreferencesCookies, choose, esc, icon, t, can, isAdmin, avatar, roleName, statusText, initials, dateLabel, isNotificationRead } from './utils.js';
 import { showToast, modalShell, closeModal, renderLoading } from '../shared/ui.js';
 import { setSavedTaskSort, openDocumentPreviewModal, renderTaskDocuments, canUserUploadToTask, openTaskModal, renderTaskComments, drawTimelineArrows } from '../features/tasks/tasks.js';
 import { downloadDocument, handleCopyDocLink, getDocumentShareableLink } from '../features/documents/doc-viewer.js';
@@ -674,16 +674,45 @@ export async function handleClick(event) {
   }
   if (action === 'clear-read-notifications') {
     event.stopPropagation();
-    const readCount = (state.data?.notifications || []).filter(n => n.read || n.readAt).length;
+    const readCount = (state.data?.notifications || []).filter(n => isNotificationRead(n)).length;
     if (!readCount) return;
     if (state.data?.notifications) {
-      state.data.notifications = state.data.notifications.filter(n => !n.read && !n.readAt);
+      state.data.notifications = state.data.notifications.filter(n => !isNotificationRead(n));
     }
     showNotifications();
     renderApp();
     showToast(choose('تم مسح التنبيهات المقروءة بنجاح.', 'Read notifications cleared successfully.'));
     api('/api/notifications/clear-read', { method: 'POST' }).catch((err) => {
       console.warn('[Notifications] Failed to clear read notifications:', err);
+    });
+    return;
+  }
+  if (action === 'filter-notifications') {
+    event.stopPropagation();
+    state.notificationTab = target.dataset.tab || target.closest('[data-tab]')?.dataset.tab || 'all';
+    showNotifications();
+    return;
+  }
+  if (action === 'toggle-notification-read') {
+    event.stopPropagation();
+    const notifId = target.dataset.notificationId || target.closest('[data-notification-id]')?.dataset.notificationId;
+    if (!notifId) return;
+    const notif = (state.data?.notifications || []).find(n => n.id === notifId);
+    if (!notif) return;
+
+    const currentRead = isNotificationRead(notif);
+    const newRead = !currentRead;
+    notif.read = newRead;
+    notif.readAt = newRead ? new Date().toISOString() : null;
+
+    showNotifications();
+    renderApp();
+
+    api(`/api/notifications/${encodeURIComponent(notifId)}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ read: newRead })
+    }).catch(err => {
+      console.warn('[Notifications] Failed to toggle read status in background:', err);
     });
     return;
   }
@@ -724,6 +753,7 @@ export async function handleClick(event) {
       if (res && res.notification) {
         if (!state.data.notifications) state.data.notifications = [];
         state.data.notifications.unshift(res.notification);
+        if (state.notificationTab === 'read') state.notificationTab = 'all';
         showNotifications();
         renderApp();
       }
@@ -757,31 +787,37 @@ export async function handleClick(event) {
   }
   if (action === 'read-notification') {
     if (target.dataset.action === 'delete-notification' || target.closest('[data-action="delete-notification"]')) return;
+    if (target.dataset.action === 'toggle-notification-read' || target.closest('[data-action="toggle-notification-read"]')) return;
     const notifId = target.dataset.notificationId || target.closest('[data-notification-id]')?.dataset.notificationId;
     const notif = (state.data?.notifications || []).find(n => n.id === notifId);
 
     // 1. التحديث الفوري المتفائل (Optimistic Instant Update)
-    if (notif) {
+    if (notif && !isNotificationRead(notif)) {
       notif.read = true;
       notif.readAt = new Date().toISOString();
+      renderApp();
+
+      if (notifId) {
+        api(`/api/notifications/${notifId}`, { method: 'PATCH', body: JSON.stringify({ read: true }) }).catch((err) => {
+          console.warn('[Notifications] Failed to patch read status in background:', err);
+        });
+      }
     }
-    renderApp();
 
-    // إرسال طلب التحديث في الخلفية دون تعطيل واجهة المستخدم
-    if (notifId) {
-      api(`/api/notifications/${notifId}`, { method: 'PATCH', body: JSON.stringify({}) }).catch((err) => {
-        console.warn('[Notifications] Failed to patch read status in background:', err);
-      });
-    }
-
-    // 2. إغلاق فوري نظيف لمودال الإشعارات بدون تأخير زمني
-    closeModal(true);
-
-    // 3. استخراج المعرفات المستهدفة (مهمة، مستند/مخطط، أو مشروع)
+    // 2. استخراج المعرفات المستهدفة (مهمة، مستند/مخطط، أو مشروع)
     const taskId = target.dataset.taskId || notif?.taskId;
     const docId = target.dataset.documentId || notif?.documentId;
     const projectId = target.dataset.projectId || notif?.projectId;
     const notifType = target.dataset.type || notif?.type;
+
+    // إذا كان الإشعار عاماً لا يرتبط بعنصر محدد، يتم تحديث واجهة الإشعارات للبقاء فيها دون إغلاق المودال
+    if (!taskId && !docId && !projectId) {
+      showNotifications();
+      return;
+    }
+
+    // إغلاق فوري نظيف لمودال الإشعارات عند التوجه للهدف
+    closeModal(true);
 
     // A. إذا كان الإشعار يشير لمستند/مخطط محدد
     if (docId) {

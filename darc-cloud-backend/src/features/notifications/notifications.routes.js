@@ -6,7 +6,13 @@ import { createNotification } from './notifications.service.js';
 const app = new Hono();
 
 app.use('*', async (c, next) => {
-  c.set('supabase', getDB(c.env));
+  if (c.env?.SUPABASE_URL && !c.get('isDemo')) {
+    try {
+      c.set('supabase', getDB(c.env));
+    } catch (e) {
+      // safe fallback
+    }
+  }
   await next();
 });
 
@@ -25,10 +31,9 @@ app.get('/', async (c) => {
 
 app.post('/read-all', async (c) => {
   if (c.get('isDemo')) {
-    const { getDemoPayload } = await import('../demo/demo.service.js');
-    const demo = getDemoPayload();
-    (demo.notifications || []).forEach(n => { n.read = true; n.readAt = new Date().toISOString(); });
-    return c.json({ ok: true });
+    const { markAllDemoNotificationsAsRead } = await import('../demo/demo.service.js');
+    markAllDemoNotificationsAsRead();
+    return c.json({ ok: true, isDemo: true });
   }
   const userId = c.get('userId');
   const supabase = c.get('supabase');
@@ -39,7 +44,9 @@ app.post('/read-all', async (c) => {
 
 app.post('/clear-read', async (c) => {
   if (c.get('isDemo')) {
-    return c.json({ ok: true });
+    const { clearReadDemoNotifications } = await import('../demo/demo.service.js');
+    clearReadDemoNotifications();
+    return c.json({ ok: true, isDemo: true });
   }
   const userId = c.get('userId');
   const supabase = c.get('supabase');
@@ -52,10 +59,17 @@ app.patch('/:id', async (c) => {
   if (!/^[a-zA-Z0-9_-]{3,64}$/.test(notificationId)) {
     return c.json({ error: 'معرف الإشعار غير صالح' }, 400);
   }
-  const userId = c.get('userId');
-  const supabase = c.get('supabase');
   const body = await c.req.json().catch(() => ({}));
   const isRead = body.read !== undefined ? Boolean(body.read) : true;
+
+  if (c.get('isDemo')) {
+    const { setDemoNotificationReadStatus } = await import('../demo/demo.service.js');
+    const updated = setDemoNotificationReadStatus(notificationId, isRead);
+    return c.json({ ok: true, isDemo: true, notification: toCamelCase(updated) });
+  }
+
+  const userId = c.get('userId');
+  const supabase = c.get('supabase');
   const now = new Date().toISOString();
   await supabase.from('notifications').update({ read: isRead, read_at: isRead ? now : null }).eq('id', notificationId).eq('user_id', userId);
   return c.json({ ok: true });
@@ -66,6 +80,12 @@ app.delete('/:id', async (c) => {
   if (!/^[a-zA-Z0-9_-]{3,64}$/.test(notificationId)) {
     return c.json({ error: 'معرف الإشعار غير صالح' }, 400);
   }
+  if (c.get('isDemo')) {
+    const { deleteDemoNotification } = await import('../demo/demo.service.js');
+    deleteDemoNotification(notificationId);
+    return c.json({ ok: true, isDemo: true });
+  }
+
   const userId = c.get('userId');
   const supabase = c.get('supabase');
   await supabase.from('notifications').delete().eq('id', notificationId).eq('user_id', userId);
