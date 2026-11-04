@@ -21,8 +21,8 @@ const COUNTRY_NAMES = {
 // Known user registry for enriching incidents
 const USER_PROFILES = {
   usr_demo: {
-    name: 'مدير التوظيف / زائر',
-    nameEn: 'Hiring Manager / Guest',
+    name: 'Demo',
+    nameEn: 'Demo',
     email: 'demo@darc-design.bond',
     role: 'مدير النظام (كامل الصلاحيات)',
     avatarColor: '#0d6269'
@@ -330,19 +330,22 @@ export async function recordErrorIncident(env, report = {}) {
     _telemetryStore.recentIncidents.pop();
   }
 
-  // 3. Dispatch in-app escalation notification
+  // 3. Dispatch in-app escalation notification for real accounts only
   try {
-    const supabase = getDB(env);
-    if (supabase) {
-      await createNotification(supabase, {
-        userId: 'usr_demo',
-        type: 'escalation',
-        titleAr: `🚨 ${incident.titleAr}`,
-        titleEn: `🚨 ${incident.titleEn}`,
-        messageAr: `المستخدم: ${profile.name} (${profile.email})\n${incident.errorMessage}\nتم إرسال بريد تنبيه للإدارة.`,
-        messageEn: `User: ${profile.name} (${profile.email})\n${incident.errorMessage}\nAlert email sent to admin.`,
-        content: incident.errorMessage
-      }).catch(() => {});
+    const isDemoUser = (userId === 'usr_demo' || (userId && String(userId).startsWith('usr_demo')) || profile.isDemo);
+    if (!isDemoUser) {
+      const supabase = getDB(env);
+      if (supabase) {
+        await createNotification(supabase, {
+          userId,
+          type: 'escalation',
+          titleAr: `🚨 ${incident.titleAr}`,
+          titleEn: `🚨 ${incident.titleEn}`,
+          messageAr: `المستخدم: ${profile.name} (${profile.email})\n${incident.errorMessage}\nتم إرسال بريد تنبيه للإدارة.`,
+          messageEn: `User: ${profile.name} (${profile.email})\n${incident.errorMessage}\nAlert email sent to admin.`,
+          content: incident.errorMessage
+        }).catch(() => {});
+      }
     }
   } catch (err) {
     console.warn('[Telemetry] Error creating in-app notification:', err);
@@ -360,7 +363,7 @@ export async function recordErrorIncident(env, report = {}) {
  * Returns incidents grouped per user and system-wide incident statistics,
  * integrating real active accounts from the database alongside active incidents.
  */
-export async function getIncidentsPerUser(supabase = null, filterUserId = null) {
+export async function getIncidentsPerUser(supabase = null, filterUserId = null, isDemo = false) {
   // Ensure seed timestamps are adjusted to real runtime (avoids Cloudflare Worker module-eval epoch 0 / 1969 bug)
   const now = Date.now();
   for (const inc of _telemetryStore.recentIncidents) {
@@ -381,14 +384,18 @@ export async function getIncidentsPerUser(supabase = null, filterUserId = null) 
   }
 
   let incidents = _telemetryStore.recentIncidents;
+  if (isDemo) {
+    // Demo sandbox shield: strictly isolate demo incidents only
+    incidents = incidents.filter(inc => inc.userId && String(inc.userId).startsWith('usr_demo'));
+  }
   if (filterUserId && filterUserId !== 'all') {
     incidents = incidents.filter(inc => inc.userId === filterUserId);
   }
 
-  // 1. Group by user, starting with real active database accounts
+  // 1. Group by user, starting with real active database accounts (for real admins only)
   const userMap = new Map();
 
-  if (supabase) {
+  if (supabase && !isDemo) {
     try {
       const { data: dbUsers, error } = await supabase
         .from('users')
@@ -422,6 +429,7 @@ export async function getIncidentsPerUser(supabase = null, filterUserId = null) 
 
   // 2. Also incorporate known workspace profiles (so simulated/demo testing continues smoothly)
   for (const [id, profile] of Object.entries(USER_PROFILES)) {
+    if (isDemo && !id.startsWith('usr_demo')) continue;
     if (!userMap.has(id)) {
       userMap.set(id, {
         userId: id,
@@ -442,9 +450,11 @@ export async function getIncidentsPerUser(supabase = null, filterUserId = null) 
   }
 
   // 3. Attach all recorded incidents to their matching user entry
-  for (const inc of _telemetryStore.recentIncidents) {
+  for (const inc of incidents) {
+    if (isDemo && (!inc.userId || !String(inc.userId).startsWith('usr_demo'))) continue;
     let entry = userMap.get(inc.userId);
     if (!entry) {
+      if (isDemo) continue; // Shield: Never leak real accounts in demo view
       entry = {
         userId: inc.userId,
         name: inc.userName || 'مستخدم مسجل',

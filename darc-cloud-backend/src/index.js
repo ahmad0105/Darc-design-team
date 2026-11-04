@@ -409,8 +409,8 @@ app.use('/api/*', async (c, next) => {
   const path = c.req.path;
   const method = c.req.method;
 
-  // 1. Allow routes specifically wired for demo: /api/bootstrap, /api/demo/reset, /api/tasks, /api/documents, /api/telemetry
-  if (path === '/api/bootstrap' || path.startsWith('/api/demo') || path.startsWith('/api/tasks') || path.startsWith('/api/documents') || path.startsWith('/api/telemetry')) {
+  // 1. Allow routes specifically wired for demo: /api/bootstrap, /api/demo/reset, /api/tasks, /api/documents, /api/telemetry, /api/audit
+  if (path === '/api/bootstrap' || path.startsWith('/api/demo') || path.startsWith('/api/tasks') || path.startsWith('/api/documents') || path.startsWith('/api/telemetry') || path.startsWith('/api/audit')) {
     return next();
   }
 
@@ -429,6 +429,26 @@ app.use('/api/*', async (c, next) => {
     if (path === '/api/templates' || path === '/api/templates/') return c.json({ templates: demoData.templates });
     if (path === '/api/company' || path === '/api/company/') return c.json({ company: demoData.company });
     if (path === '/api/notifications' || path === '/api/notifications/') return c.json({ notifications: demoData.notifications });
+    if (path === '/api/reminders' || path.startsWith('/api/reminders')) return c.json({ reminders: [] });
+    if (path.startsWith('/api/whatsapp')) {
+      return c.json({
+        ok: true,
+        isDemo: true,
+        config: {
+          enabled: false,
+          serverUrl: 'https://whatsapp.demo-gateway.local',
+          apiKey: '••••••••',
+          instanceName: 'darc-demo-instance',
+          recipient: '+971500000000',
+          notifyOnBlocked: true,
+          notifyOnApproval: true,
+          notifyOnDrawing: true,
+          notifyOnCollectiveMention: true,
+          sendGroupBroadcast: false,
+          provider: 'evolution'
+        }
+      });
+    }
     if (path === '/api/documents' || path === '/api/documents/') return c.json({ documents: demoData.documents });
     if (path.startsWith('/api/documents/')) {
       const id = path.split('/')[3];
@@ -458,12 +478,16 @@ app.use('/api/*', async (c, next) => {
       return c.json({ ok: true, document: d });
     }
     if (path === '/api/trash' || path === '/api/trash/') return c.json({ projects: [], tasks: [], documents: [] });
+
+    // Safety Shield: Any other GET route for demo account returns isolated safe response (Zero DB access)
+    return c.json({ ok: true, isDemo: true, data: [] });
   }
 
   // 3. State-changing requests (POST, PATCH, PUT, DELETE) -> Safe simulated responses (Zero DB writes)
   if (['POST', 'PATCH', 'PUT', 'DELETE'].includes(method)) {
     if (path.startsWith('/api/notifications')) return c.json({ ok: true });
     if (path.startsWith('/api/reminders')) return c.json({ ok: true, reminder: { id: 'rem_demo_simulated' } });
+    if (path.startsWith('/api/whatsapp')) return c.json({ ok: true, isDemo: true, message: 'تمت العملية بنجاح في بيئة العرض التجريبية' });
     
     // Simulate user / project / role / template / company mutations safely in demo mode
     return c.json({

@@ -1,4 +1,4 @@
-// DARC Design Team — Enterprise Showcase Demo Dataset (Engineered for Hiring Managers & VIP Visitors)
+// DARC Design Team — Enterprise Showcase Demo Dataset (Engineered for Demo Showcase & VIP Reviewers)
 // Completely isolated from production data. High-fidelity architectural & engineering projects.
 
 export function createDemoDataset() {
@@ -9,8 +9,8 @@ export function createDemoDataset() {
   const demoUsers = [
     {
       id: 'usr_demo',
-      name: 'مدير التوظيف / زائر',
-      nameEn: 'Hiring Manager / Guest',
+      name: 'Demo',
+      nameEn: 'Demo',
       email: 'demo@darc-design.bond',
       jobTitleAr: 'مستعرض تجريبي (كامل الصلاحيات)',
       jobTitleEn: 'Demo Reviewer (Full Access)',
@@ -102,7 +102,7 @@ export function createDemoDataset() {
       createdAt: dateStr(-45),
       updatedAt: dateStr(-1),
       memberCount: 5,
-      manager: { id: 'usr_demo', name: 'مدير التوظيف / زائر', nameEn: 'Hiring Manager / Guest' }
+      manager: { id: 'usr_demo', name: 'Demo', nameEn: 'Demo' }
     },
     {
       id: 'prj_demo_tower',
@@ -146,7 +146,7 @@ export function createDemoDataset() {
       createdAt: dateStr(-120),
       updatedAt: dateStr(-3),
       memberCount: 5,
-      manager: { id: 'usr_demo', name: 'مدير التوظيف / زائر', nameEn: 'Hiring Manager / Guest' }
+      manager: { id: 'usr_demo', name: 'Demo', nameEn: 'Demo' }
     },
     {
       id: 'prj_demo_hq',

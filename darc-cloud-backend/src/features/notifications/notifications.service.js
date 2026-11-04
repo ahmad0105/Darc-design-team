@@ -5,6 +5,12 @@ export { NOTIFICATION_CATALOG, buildStandardNotification };
 
 export async function createNotification(supabase, entry) {
   try {
+    const targetUserId = entry.userId || entry.user_id;
+    if (targetUserId === 'usr_demo' || (targetUserId && String(targetUserId).startsWith('usr_demo')) || entry.isDemo) {
+      const { addDemoNotification } = await import('../demo/demo.service.js');
+      return addDemoNotification(entry);
+    }
+
     const std = buildStandardNotification(entry);
     const id = 'notif_' + (crypto.randomUUID ? crypto.randomUUID() : crypto.randomBytes(8).toString('hex'));
 
@@ -27,7 +33,6 @@ export async function createNotification(supabase, entry) {
     }]);
 
     // Dispatch WhatsApp alert to the individual user if they have a real phone number configured
-    const targetUserId = entry.userId || entry.user_id;
     if (targetUserId) {
       import('../whatsapp/whatsapp.service.js').then(({ dispatchDirectNotificationAlert }) => {
         dispatchDirectNotificationAlert(supabase, targetUserId, {

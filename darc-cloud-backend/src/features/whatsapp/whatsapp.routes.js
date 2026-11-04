@@ -8,6 +8,27 @@ const app = new Hono();
 
 // GET /api/whatsapp/config
 app.get('/config', async (c) => {
+  const isDemo = c.get('isDemo') || c.get('userId') === 'usr_demo';
+  if (isDemo) {
+    return c.json({
+      ok: true,
+      isDemo: true,
+      config: {
+        enabled: false,
+        serverUrl: 'https://whatsapp.demo-gateway.local',
+        apiKey: '••••••••',
+        instanceName: 'darc-demo-instance',
+        recipient: '+971500000000',
+        notifyOnBlocked: true,
+        notifyOnApproval: true,
+        notifyOnDrawing: true,
+        notifyOnCollectiveMention: true,
+        sendGroupBroadcast: false,
+        provider: 'evolution'
+      }
+    });
+  }
+
   const roleId = c.get('roleId');
   const canManage = roleId === 'admin' || roleId === 'account_permissions_manager';
 
@@ -97,6 +118,15 @@ app.post('/config', async (c) => {
 
 // POST /api/whatsapp/test -> Send instant test message
 app.post('/test', async (c) => {
+  const isDemo = c.get('isDemo') || c.get('userId') === 'usr_demo';
+  if (isDemo) {
+    return c.json({
+      ok: true,
+      isDemo: true,
+      message: 'تمت محاكاة إرسال تنبيه واتساب التجريبي بنجاح في بيئة العرض.'
+    });
+  }
+
   const roleId = c.get('roleId');
   if (roleId !== 'admin' && roleId !== 'account_permissions_manager') {
     return c.json({ error: 'صلاحية غير كافية لإجراء اختبار التنبيهات' }, 403);

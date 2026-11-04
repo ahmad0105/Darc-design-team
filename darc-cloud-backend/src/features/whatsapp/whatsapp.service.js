@@ -320,6 +320,11 @@ export async function sendWhatsAppAlert(config, type, payload, supabase = null, 
     return { ok: false, skipped: true, reason: 'WhatsApp alerts not configured or disabled' };
   }
 
+  // Demo Sandbox Shield: Never dispatch real WhatsApp messages from demo session activity
+  if (config.isDemo || payload?.isDemo || payload?.userId === 'usr_demo' || (payload?.projectId && String(payload.projectId).startsWith('prj_demo'))) {
+    return { ok: true, isDemo: true, skipped: true, reason: 'Demo actions do not dispatch real WhatsApp alerts' };
+  }
+
   // SSRF Protection (CWE-918): Strictly ensure outbound serverUrl is public and safe
   const urlCheck = validateSafeExternalUrl(config.serverUrl);
   if (!urlCheck.ok) {
@@ -439,7 +444,9 @@ export async function sendWhatsAppAlert(config, type, payload, supabase = null, 
  * (retrieved strictly from user profile custom_fields.phone — NEVER mocked or fabricated).
  */
 export async function dispatchDirectNotificationAlert(supabase, userId, notificationData) {
-  if (!userId || !supabase) return { ok: false, skipped: true };
+  if (!userId || !supabase || userId === 'usr_demo' || String(userId).startsWith('usr_demo')) {
+    return { ok: false, skipped: true, reason: 'Demo accounts are isolated from WhatsApp alerts' };
+  }
 
   try {
     const config = await getWhatsAppConfig(supabase);

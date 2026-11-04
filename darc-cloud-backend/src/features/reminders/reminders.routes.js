@@ -14,6 +14,15 @@ app.use('*', async (c, next) => {
 
 // POST /api/reminders — Create a reminder
 app.post('/', async (c) => {
+  const isDemo = c.get('isDemo') || c.get('userId') === 'usr_demo';
+  if (isDemo) {
+    return c.json({
+      ok: true,
+      isDemo: true,
+      reminder: { id: 'rem_demo_simulated', noteAr: 'تذكير تجريبي', remindAt: new Date().toISOString() }
+    }, 201);
+  }
+
   const body = await c.req.json().catch(() => ({}));
   const userId = c.get('userId');
   const roleId = c.get('roleId');
@@ -100,6 +109,11 @@ app.post('/', async (c) => {
 
 // GET /api/reminders — Get reminders (supports ?taskId=...)
 app.get('/', async (c) => {
+  const isDemo = c.get('isDemo') || c.get('userId') === 'usr_demo';
+  if (isDemo) {
+    return c.json({ reminders: [] });
+  }
+
   const userId = c.get('userId');
   const roleId = c.get('roleId');
   const taskId = c.req.query('taskId');

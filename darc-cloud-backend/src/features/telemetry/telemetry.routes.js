@@ -189,9 +189,10 @@ app.get('/incidents', async (c) => {
   if (!(await canManageDiagnostics(c))) {
     return c.json({ error: 'غير مصرح لك بعرض تشخيصات وسجلات الأعطال' }, 403);
   }
+  const isDemo = c.get('isDemo') || c.get('userId') === 'usr_demo';
   const userIdFilter = c.req.query('userId') || null;
-  const supabase = c.get('supabase');
-  const result = await getIncidentsPerUser(supabase, userIdFilter);
+  const supabase = isDemo ? null : c.get('supabase');
+  const result = await getIncidentsPerUser(supabase, userIdFilter, isDemo);
   return c.json(result);
 });
 
@@ -211,8 +212,9 @@ app.post('/test-error', async (c) => {
   if (!(await canManageDiagnostics(c))) {
     return c.json({ error: 'غير مصرح لك بإجراء محاكاة للأعطال' }, 403);
   }
+  const isDemo = c.get('isDemo') || c.get('userId') === 'usr_demo';
   const body = await c.req.json().catch(() => ({}));
-  const userId = body.userId || c.get('userId') || 'usr_demo_arch';
+  const userId = isDemo ? 'usr_demo_arch' : (body.userId || c.get('userId') || 'usr_demo_arch');
   const result = await triggerManualIncidentTest(c.env, userId);
   return c.json({ ok: true, message: 'تم إطلاق فحص تجريبي للأخطاء وإرسال تنبيه بالبريد الإلكتروني للإدارة.', ...result });
 });
@@ -221,6 +223,10 @@ app.post('/test-error', async (c) => {
 app.post('/test-email', async (c) => {
   if (!(await canManageDiagnostics(c))) {
     return c.json({ error: 'غير مصرح لك باختبار التنبيهات البريدية' }, 403);
+  }
+  const isDemo = c.get('isDemo') || c.get('userId') === 'usr_demo';
+  if (isDemo) {
+    return c.json({ ok: true, isDemo: true, message: 'تمت محاكاة إرسال البريد التجريبي بنجاح في بيئة العرض (لن يتم إرسال بريد فعلي).' });
   }
   try {
     const body = await c.req.json().catch(() => ({}));

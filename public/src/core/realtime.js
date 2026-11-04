@@ -67,6 +67,20 @@ function isAuthenticated() {
 }
 
 /**
+ * Check if current session is isolated in Demo Showcase sandbox
+ */
+export function isDemoSession() {
+  if (typeof window === 'undefined') return false;
+  return Boolean(
+    state.data?.isDemo ||
+    state.currentUser?.isDemo ||
+    (state.data?.user && (state.data.user.id === 'usr_demo' || state.data.user.isDemo)) ||
+    (state.currentUser && (state.currentUser.id === 'usr_demo' || state.currentUser.isDemo)) ||
+    (typeof localStorage !== 'undefined' && localStorage.getItem('darc_user_id') === 'usr_demo')
+  );
+}
+
+/**
  * Guard sets to prevent Prototype Pollution attacks
  */
 const DANGEROUS_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
@@ -209,6 +223,10 @@ function scheduleBatchedViewUpdate() {
  */
 export function applyGranularDelta(tableName, actionType, rawRecord, rawOldRecord) {
   if (!state.data || !tableName) return false;
+  if (isDemoSession()) {
+    // Shielded Sandbox: Demo sessions NEVER mutate from production CDC events
+    return false;
+  }
 
   const validTables = ['tasks', 'projects', 'comments', 'documents', 'notifications'];
   if (!validTables.includes(tableName)) return false;
@@ -512,6 +530,10 @@ function connectSupabaseRealtime() {
   if (typeof navigator !== 'undefined' && !navigator.onLine) return;
   if (!isAuthenticated()) return;
   if (_isHibernating) return;
+  if (isDemoSession()) {
+    // Shielded Sandbox: Demo users are 100% isolated and NEVER connect to production WebSockets
+    return;
+  }
   if (_ws && (_ws.readyState === WebSocket.CONNECTING || _ws.readyState === WebSocket.OPEN)) return;
 
   _isExplicitlyDisconnected = false;
@@ -718,10 +740,15 @@ export function initRealtimeConnection() {
     });
   }
 
-  // 5. BroadcastChannel between local browser tabs (Zero-Network fast path)
+  // 5. BroadcastChannel between local browser tabs (Zero-Network fast path with Demo Sandboxing)
   if (typeof BroadcastChannel !== 'undefined') {
     const channel = new BroadcastChannel('darc_state_sync');
     channel.onmessage = (event) => {
+      const isDemoMsg = Boolean(event.data?.isDemo);
+      if (isDemoMsg !== isDemoSession()) {
+        // Cross-mode isolation: ignore messages across demo and production tabs
+        return;
+      }
       if (event.data?.type === 'GRANULAR_DELTA' && event.data.delta) {
         const { table, action, record, oldRecord } = event.data.delta;
         applyGranularDelta(table, action, record, oldRecord);
@@ -784,7 +811,8 @@ export function notifyStateMutation(delta = null) {
       window._darcBroadcastChannel.postMessage({
         type: delta ? 'GRANULAR_DELTA' : 'STATE_MUTATION',
         delta,
-        timestamp: Date.now()
+        timestamp: Date.now(),
+        isDemo: isDemoSession()
       });
     } catch (e) {}
   }
