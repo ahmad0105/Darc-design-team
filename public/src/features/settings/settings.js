@@ -2,6 +2,7 @@ import { state } from '../../core/state.js';
 import { api } from '../../core/api.js';
 import { getActiveCalendarSystem, esc, sanitizeForSpreadsheet, choose, icon, t, can, isAdmin, avatar, roleName, initials, statusText, formatDateTime, formatReportDate, formatReportTime, getCompanyBranding, exportXLS, PERMISSION_ALIASES, canManageAccountPermissions, dateLabel } from '../../core/utils.js';
 import { showToast, modalShell, closeModal } from '../../shared/ui.js';
+import { isDemoSession } from '../../core/realtime.js';
 import { renderAnalyticsSection, fetchAnalyticsData } from './analytics.js';
 import { renderDiagnosticsSection, fetchDiagnosticsData } from './diagnostics.js';
 import { teamMetrics } from '../dashboard/dashboard.js';
@@ -954,7 +955,7 @@ export function renderSettings() {
     const canSeeActivity = isAdmin() || can('view_user_activity');
     const canManageUsers = isAdmin() || can('manage_users');
     const canManageExisting = isAdmin() || can('manage_existing_account_permissions') || can('manage_users');
-    const canImpersonate = isAdmin();
+    const canImpersonate = isAdmin() && !isDemoSession();
     let accountsList = (state.data?.users || []);
     // Stealth Super Admin: Ahmad is completely invisible to any other user
     if (currentUserId !== 'usr_ahmad') {
@@ -1495,9 +1496,22 @@ export function renderSettings() {
 
   // WHATSAPP ALERTS SECTION
   if (state.settingsSection === 'whatsapp' && canAccessWhatsApp) {
+    const isDemo = isDemoSession();
     const wa = state.data?.company?.customFields?.whatsapp || state.data?.company?.custom_fields?.whatsapp || {};
     content = `
       <section class="setting-section">
+        ${isDemo ? `
+          <div class="demo-whatsapp-banner" style="background:rgba(13,98,105,0.08);border:1px solid rgba(13,98,105,0.25);border-radius:10px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;gap:12px;">
+            <span style="font-size:22px;">🛡️</span>
+            <div style="flex:1;">
+              <strong style="display:block;font-size:13px;color:var(--teal);margin-bottom:2px;">${choose('بيئة العرض التجريبية المعزولة (Demo Sandbox)', 'Isolated Demo Showcase Sandbox')}</strong>
+              <span style="font-size:11px;color:var(--muted);line-height:1.4;">${choose('إعدادات بوابات واتساب هنا معزولة تماماً للاستعراض؛ لن يتم استهلاك رصيد أو إرسال رسائل فعلية عبر الشبكة.', 'WhatsApp gateway configuration is an isolated simulation for demonstration only; no live external traffic is dispatched.')}</span>
+            </div>
+            <span class="badge" style="background:var(--teal);color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:6px;">
+              ${choose('محاكاة آمنة', 'Isolated Simulation')}
+            </span>
+          </div>
+        ` : ''}
         <div class="panel-head" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;">
           <div>
             <h2>${choose('تنبيهات واتساب الميدانية للمشاريع', 'Field WhatsApp Alerts')}</h2>

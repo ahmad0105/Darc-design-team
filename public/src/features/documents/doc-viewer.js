@@ -16,6 +16,18 @@ export const GDRIVE_ROOT_FOLDER_URL = `https://drive.google.com/drive/folders/${
  * Resolves the genuine Google Drive or Cloud Shareable Link for any document
  */
 export function getDocumentShareableLink(doc) {
+  const isDemo = isDemoSession() || (doc && (String(doc.id).startsWith('doc_demo') || doc.isDemo || String(doc.driveFileId || '').startsWith('demo_')));
+  if (isDemo) {
+    const filename = doc?.originalName;
+    if (filename && KNOWN_MASTER_ASSETS.has(filename)) {
+      return `/assets/${encodeURIComponent(filename)}`;
+    }
+    if (doc?.diskFilename && !doc.diskFilename.includes('drive.google.com')) {
+      return doc.diskFilename;
+    }
+    return `/assets/DARC-VILLA-ARCH-A101_Rev03.pdf`;
+  }
+
   if (!doc) return GDRIVE_ROOT_FOLDER_URL;
 
   // 1. Direct Google Drive file ID if present and valid (alphanumeric 25+ chars, no demo mock, non-folder)
@@ -27,6 +39,9 @@ export function getDocumentShareableLink(doc) {
   // 2. Extract Google Drive ID from diskFilename or viewLink
   const targetUrl = doc.diskFilename || doc.disk_filename || doc.viewLink || doc.webViewLink || '';
   if (targetUrl && targetUrl.includes('drive.google.com')) {
+    if (targetUrl.includes(GDRIVE_ROOT_FOLDER_ID)) {
+      return GDRIVE_ROOT_FOLDER_URL;
+    }
     if (targetUrl.includes('/folders/')) {
       return targetUrl;
     }
@@ -410,6 +425,7 @@ export async function openDocumentPreviewModal(docId) {
   const isImg = ['jpg', 'jpeg', 'png', 'webp', 'svg', 'heic'].includes(ext) || fmt.isImg;
   const isVideo = ['mp4', 'webm', 'mov', 'm4v'].includes(ext) || (doc.mimeType && doc.mimeType.startsWith('video/'));
 
+  const isDemo = isDemoSession() || (doc && (String(doc.id).startsWith('doc_demo') || doc.isDemo));
   const shareLink = getDocumentShareableLink(doc);
 
   let overlay = document.getElementById('preview-modal-overlay');
@@ -444,11 +460,11 @@ export async function openDocumentPreviewModal(docId) {
 
         <!-- Action Buttons (Responsive on Mobile) -->
         <div class="doc-modal-header-actions" style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
-          <button type="button" class="btn btn-soft btn-sm" id="modal-copy-link-btn" style="display:inline-flex;align-items:center;gap:6px;font-weight:700;color:var(--teal, #0d6269);" title="${choose('نسخ رابط Google Drive', 'Copy Drive Link')}">
+          <button type="button" class="btn btn-soft btn-sm" id="modal-copy-link-btn" style="display:inline-flex;align-items:center;gap:6px;font-weight:700;color:var(--teal, #0d6269);" title="${choose(isDemo ? 'نسخ رابط المستند' : 'نسخ رابط Google Drive', isDemo ? 'Copy Document Link' : 'Copy Drive Link')}">
             ${icon('link', 14)} <span class="btn-label">${choose('نسخ الرابط', 'Copy Link')}</span>
           </button>
-          <a href="${esc(shareLink)}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-sm" style="display:inline-flex;align-items:center;gap:6px;font-weight:700;" title="${choose('فتح في Google Drive', 'Open in Drive')}">
-            ${icon('external', 13)} <span class="btn-label">Google Drive</span>
+          <a href="${esc(shareLink)}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-sm" style="display:inline-flex;align-items:center;gap:6px;font-weight:700;" title="${choose(isDemo ? 'فتح المستند' : 'فتح في Google Drive', isDemo ? 'Open Document' : 'Open in Drive')}">
+            ${icon('external', 13)} <span class="btn-label">${isDemo ? choose('فتح الملف', 'Open File') : 'Google Drive'}</span>
           </a>
           <button type="button" class="btn btn-primary btn-sm" id="modal-download-btn" style="display:inline-flex;align-items:center;gap:6px;font-weight:700;background:var(--brand-teal, #0d6269);color:#ffffff;" title="${choose('تحميل المخطط', 'Download')}">
             ${icon('download', 14)} <span class="btn-label">${choose('تنزيل الملف', 'Download')}</span>

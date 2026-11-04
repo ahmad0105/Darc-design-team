@@ -409,8 +409,8 @@ app.use('/api/*', async (c, next) => {
   const path = c.req.path;
   const method = c.req.method;
 
-  // 1. Allow routes specifically wired for demo: /api/bootstrap, /api/demo/reset, /api/tasks, /api/documents, /api/telemetry, /api/audit
-  if (path === '/api/bootstrap' || path.startsWith('/api/demo') || path.startsWith('/api/tasks') || path.startsWith('/api/documents') || path.startsWith('/api/telemetry') || path.startsWith('/api/audit')) {
+  // 1. Allow routes specifically wired for demo: /api/bootstrap, /api/demo/reset, /api/tasks, /api/telemetry, /api/audit, and document uploads
+  if (path === '/api/bootstrap' || path.startsWith('/api/demo') || path.startsWith('/api/tasks') || (path.startsWith('/api/documents') && method !== 'GET') || path.startsWith('/api/telemetry') || path.startsWith('/api/audit')) {
     return next();
   }
 
@@ -459,8 +459,8 @@ app.use('/api/*', async (c, next) => {
       if (isDownload || isStream) {
         const filename = d.originalName || `document_${id}.pdf`;
         
-        // 1. Direct Google Drive file ID redirect if available
-        if (d.driveFileId && !String(d.driveFileId).startsWith('demo_') && String(d.driveFileId).length >= 25) {
+        // 1. Direct Google Drive file ID redirect if available (NEVER redirect to Google Drive Root Folder or demo ID)
+        if (d.driveFileId && !String(d.driveFileId).startsWith('demo_') && String(d.driveFileId).length >= 25 && d.driveFileId !== '1DsElwxs_mdPU16AsL4p5f2wB-a6V2LNH') {
           const driveUrl = isDownload 
             ? `https://drive.google.com/uc?export=download&id=${encodeURIComponent(d.driveFileId)}`
             : `https://drive.google.com/uc?export=view&id=${encodeURIComponent(d.driveFileId)}`;
@@ -485,6 +485,9 @@ app.use('/api/*', async (c, next) => {
 
   // 3. State-changing requests (POST, PATCH, PUT, DELETE) -> Safe simulated responses (Zero DB writes)
   if (['POST', 'PATCH', 'PUT', 'DELETE'].includes(method)) {
+    if (path.includes('/impersonate')) {
+      return c.json({ error: 'خاصية تقمص الحسابات معطلة في بيئة العرض التجريبية' }, 403);
+    }
     if (path.startsWith('/api/notifications')) return c.json({ ok: true });
     if (path.startsWith('/api/reminders')) return c.json({ ok: true, reminder: { id: 'rem_demo_simulated' } });
     if (path.startsWith('/api/whatsapp')) return c.json({ ok: true, isDemo: true, message: 'تمت العملية بنجاح في بيئة العرض التجريبية' });

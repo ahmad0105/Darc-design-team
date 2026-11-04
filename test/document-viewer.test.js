@@ -52,7 +52,14 @@ async function runTests() {
     driveFileId: GDRIVE_ROOT_FOLDER_ID
   };
   const demoShareLink = getDocumentShareableLink(mockDemoDoc);
-  assert.strictEqual(demoShareLink, GDRIVE_ROOT_FOLDER_URL, 'Demo root folder fallback link must resolve accurately');
+  assert.strictEqual(demoShareLink, '/assets/DARC-VILLA-BOQ-BILL-OF-QUANTITIES.xlsx', 'Demo doc must resolve to isolated safe local asset and NEVER expose GDRIVE_ROOT_FOLDER_URL');
+
+  const mockRealFallbackDoc = {
+    id: 'doc_real_fallback',
+    originalName: 'COMPANY-ARCH-DOC.pdf'
+  };
+  const realFallbackLink = getDocumentShareableLink(mockRealFallbackDoc);
+  assert.strictEqual(realFallbackLink, GDRIVE_ROOT_FOLDER_URL, 'Real production doc fallback link must resolve to deliverables folder');
 
   const mockRealDoc = {
     id: 'doc_real_99',

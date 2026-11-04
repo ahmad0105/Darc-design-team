@@ -14,7 +14,7 @@ import { exportAuditLogsXLS, printAuditReport, fetchFullAuditHistory, canAccessS
 import { fetchAnalyticsData } from '../features/settings/analytics.js';
 import { fetchDiagnosticsData, setDiagnosticsUserFilter, setDiagnosticsSeverityFilter, setDiagnosticsStatusFilter } from '../features/settings/diagnostics.js';
 import { renderActivation, renderLogin, renderResetPassword, openForcePasswordModal } from '../features/auth/auth.js';
-import { playNotificationChime } from './realtime.js';
+import { playNotificationChime, isDemoSession } from './realtime.js';
 import { openTemplateModal, getNextAvailableTemplateCode, isTemplateCodeReserved } from '../features/templates/templates.js';
 import { exportDisciplinesExcel, exportTeamWorkloadExcel, exportRisksExcel, exportDrawingsExcel } from '../features/reports/reports.js';
 import { showNotifications } from '../features/notifications/notifications.js';
@@ -1242,6 +1242,10 @@ export async function handleClick(event) {
     return;
   }
   if (action === 'impersonate-user') {
+    if (isDemoSession()) {
+      showToast(choose('خاصية تقمص الحسابات معطلة في بيئة العرض التجريبية لحماية الأمان.', 'Impersonation is disabled in demo sandbox mode.'), true);
+      return;
+    }
     if (!isAdmin()) {
       showToast(choose('هذه الصلاحية خاصة بمدير النظام فقط.', 'Impersonation is restricted to system admin only.'), true);
       return;

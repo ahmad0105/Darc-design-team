@@ -213,11 +213,37 @@ app.use('*', async (c, next) => {
   await next();
 });
 
+// GET /api/documents -> List documents
+app.get('/', async (c) => {
+  const isDemo = c.get('isDemo');
+  if (isDemo) {
+    const { getDemoPayload } = await import('../demo/demo.service.js');
+    const demoData = getDemoPayload();
+    return c.json({ documents: demoData.documents });
+  }
+  const supabase = c.get('supabase');
+  const { data: docs } = await supabase.from('documents').select('*').is('deleted_at', null);
+  return c.json({ documents: docs || [] });
+});
+
 // GET /api/documents/:id -> Redirect to view
 app.get('/:id', async (c) => {
   const docId = c.req.param('id');
   if (!/^[a-zA-Z0-9_-]{4,50}$/.test(docId)) {
     return c.json({ error: 'معرف المستند غير صالح' }, 400);
+  }
+  const isDemo = c.get('isDemo');
+  if (isDemo) {
+    const { getDemoPayload } = await import('../demo/demo.service.js');
+    const demoData = getDemoPayload();
+    const d = demoData.documents.find(x => x.id === docId) || demoData.documents.find(x => x.originalName === docId) || demoData.documents[0];
+    const isDownload = c.req.query('download') === '1' || c.req.query('export') === 'download';
+    const isStream = c.req.query('stream') === '1';
+    if (isDownload || isStream) {
+      const filename = d.originalName || `document_${docId}.pdf`;
+      return c.redirect(`/assets/${encodeURIComponent(filename)}`, 302);
+    }
+    return c.json({ ok: true, document: d });
   }
   const userId = c.get('userId');
   const roleId = c.get('roleId');

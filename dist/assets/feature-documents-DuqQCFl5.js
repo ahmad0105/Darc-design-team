@@ -1,4 +1,4 @@
-import{t as re}from"./rolldown-runtime-BQ-_32WO.js";import{B as Y,K as de,N as te,O as e,T as O,W as D,gt as z,it as q,j as r,k as se,l as le,lt as V,n as ie,ot as pe,rt as oe,st as ce}from"./core-realtime-CVTKMQ3h.js";var fe="1DsElwxs_mdPU16AsL4p5f2wB-a6V2LNH",ee=`https://drive.google.com/drive/folders/${fe}?usp=sharing`;function ne(a){if(!a)return ee;const i=a.driveFileId||a.drive_file_id;if(i&&!String(i).startsWith("demo_")&&String(i).length>=25&&i!=="1DsElwxs_mdPU16AsL4p5f2wB-a6V2LNH")return`https://drive.google.com/file/d/${encodeURIComponent(i)}/view?usp=sharing`;const c=a.diskFilename||a.disk_filename||a.viewLink||a.webViewLink||"";if(c&&c.includes("drive.google.com")){if(c.includes("/folders/"))return c;const o=c.match(/(?:file\/d\/|id=)([a-zA-Z0-9_-]{20,50})/);if(o&&o[1]&&!o[1].startsWith("demo_")&&o[1].length>=25&&o[1]!=="1DsElwxs_mdPU16AsL4p5f2wB-a6V2LNH")return`https://drive.google.com/file/d/${o[1]}/view?usp=sharing`}return c&&(c.startsWith("https://")||c.startsWith("http://"))&&!c.includes("localhost")&&!c.includes("127.0.0.1")&&!c.includes("demo_sample")?c:ee}var ge=new Set(["DARC-VILLA-ARCH-A101_Rev03.pdf","SKYLINE-CW-SECTION-DETAILS-DWG.pdf","RED-SEA-RESORT-MASTERPLAN-APPROVED.pdf","DARC-VILLA-BOQ-BILL-OF-QUANTITIES.xlsx","DARC-PALM-VILLA-TECHNICAL-SPECIFICATIONS.docx","DARC-ARCHITECTURAL-CONCEPT-PRESENTATION.pptx","DARC-VILLA-SITE-PROGRESS-WALKTHROUGH.mp4","PALM_VILLA_MAJLIS_3D_RENDER_4K.jpg","DARC-STRUCTURAL-LAYOUT-V2.dwg"]);function X(a){if(!a)return"";if(a.blobUrl&&typeof a.blobUrl=="string"&&a.blobUrl.startsWith("blob:"))return a.blobUrl;if(a._blobUrl&&typeof a._blobUrl=="string"&&a._blobUrl.startsWith("blob:"))return a._blobUrl;if(typeof window<"u"&&window.__docBlobCache){const g=window.__docBlobCache.get(a.id)||window.__docBlobCache.get(a.originalName);if(g&&typeof g=="string"&&g.startsWith("blob:"))return g}const i=!!(a.id?.startsWith("doc_demo_")||a.projectId?.startsWith("prj_demo_")||le()),c=(a.originalName||"").trim();if(i){if(c==="darc-walkthrough.mp4")return"/assets/DARC-VILLA-SITE-PROGRESS-WALKTHROUGH.mp4";if(c&&ge.has(c))return`/assets/${encodeURIComponent(c)}`}const o=(a.diskFilename||a.disk_filename||a.url||"").trim();if(o&&(o.startsWith("https://")||o.startsWith("http://")))try{const g=new URL(o);if(["http:","https:"].includes(g.protocol)&&!g.hostname.includes("drive.google.com")&&!g.hostname.includes("docs.google.com"))return o}catch{}if(a.id)return`/api/documents/${encodeURIComponent(a.id)}?stream=1`;const x=c.replace(/[/\\:*?"<>|\x00-\x1f]/g,"_");return x?`/assets/${encodeURIComponent(x)}`:""}async function xe(a,i=null){if(!a)return;const c=ne(a);let o=!1;try{if(navigator.clipboard&&navigator.clipboard.writeText)await navigator.clipboard.writeText(c),o=!0;else{const x=document.createElement("textarea");x.value=c,x.style.position="fixed",x.style.opacity="0",document.body.appendChild(x),x.select(),o=document.execCommand("copy"),x.remove()}}catch(x){console.warn("[DocViewer] Clipboard writeText failed:",x),window.prompt(e("انسخ رابط Google Drive من هنا:","Copy Google Drive link:"),c),o=!0}if(o){if(i){const x=i.innerHTML;i.innerHTML=`${D("check",14)} <span style="font-size:11px;font-weight:700;">${e("تم النسخ","Copied")}</span>`,i.style.color="var(--mint-strong, #10b981)",i.style.transition="all 0.2s ease",setTimeout(()=>{i.innerHTML=x,i.style.color=""},2200)}V(e("تم نسخ رابط المخرج الهندسي في Google Drive بنجاح ✅","Google Drive deliverable link copied ✅"))}}async function M(a){if(!a)return;let i=(z.data?.documents||[]).find(o=>o.id===a);if(!i)try{const o=await ie(`/api/documents/${a}`);o&&o.document&&(i=o.document)}catch{}if(!i){V(e("المستند غير موجود أو تم نقله لسلة المهملات.","Document not found."),!0);return}V(e(`جاري بدء تحميل "${i.originalName}"...`,`Starting download of "${i.originalName}"...`));const c=i.diskFilename||i.disk_filename||"";if(c&&c.includes("drive.google.com")){const o=c.match(/(?:file\/d\/|id=)([a-zA-Z0-9_-]{20,50})/);if(o&&o[1]&&!o[1].startsWith("demo_")&&o[1]!=="1DsElwxs_mdPU16AsL4p5f2wB-a6V2LNH"){const x=`https://drive.google.com/uc?export=download&id=${o[1]}`,g=(i.originalName||"document").replace(/[/\\:*?"<>|\x00-\x1f]/g,"_"),f=document.createElement("a");f.href=x,f.target="_blank",f.rel="noopener noreferrer",f.download=g,document.body.appendChild(f),f.click(),f.remove(),V(e(`تم بدء تنزيل "${i.originalName}" من Google Drive بنجاح.`,`Downloaded "${i.originalName}" from Google Drive.`));return}}try{let o=null;const x=X(i);if(x&&!x.startsWith("http://drive.google.com")&&!x.startsWith("https://drive.google.com"))try{const g=await fetch(x);g.ok&&(o=await g.blob())}catch(g){console.warn("[DocViewer] Real asset fetch error:",g)}if(o){const g=URL.createObjectURL(o),f=(i.originalName||"document").replace(/[/\\:*?"<>|\x00-\x1f]/g,"_"),C=document.createElement("a");C.href=g,C.download=f,document.body.appendChild(C),C.click(),C.remove(),setTimeout(()=>URL.revokeObjectURL(g),3e4),V(e(`تم تنزيل المستند الأصلي "${i.originalName}" بنجاح ✅`,`Downloaded "${i.originalName}" successfully ✅`));return}window.open(`/api/documents/${encodeURIComponent(i.id)}?download=1`,"_blank"),V(e(`تم بدء تنزيل "${i.originalName}" بنجاح.`,`Downloaded "${i.originalName}" successfully.`))}catch(o){console.error("[DocViewer] Local download creation failed:",o),window.open(`/api/documents/${encodeURIComponent(i.id)}?download=1`,"_blank")}}function K(){const a=document.getElementById("preview-modal-overlay");if(!a)return;const i=a.querySelector("video");if(i)try{i.pause(),i.removeAttribute("src"),i.load()}catch{}window.__docPreviewKeyHandler&&(window.removeEventListener("keydown",window.__docPreviewKeyHandler),window.__docPreviewKeyHandler=null),document.body.style.overflow="",a.style.display="none",a.innerHTML=""}function ue(){if(document.getElementById("darc-doc-viewer-responsive-styles"))return;const a=document.createElement("style");a.id="darc-doc-viewer-responsive-styles",a.textContent=`
+import{t as le}from"./rolldown-runtime-BQ-_32WO.js";import{B as Q,K as pe,N as oe,O as e,T as X,W as D,gt as E,it as K,j as r,k as ce,l as J,lt as W,n as ne,ot as fe,rt as ae,st as ge}from"./core-realtime-CVTKMQ3h.js";var xe="1DsElwxs_mdPU16AsL4p5f2wB-a6V2LNH",Y=`https://drive.google.com/drive/folders/${xe}?usp=sharing`;function re(n){if(J()||n&&(String(n.id).startsWith("doc_demo")||n.isDemo||String(n.driveFileId||"").startsWith("demo_"))){const o=n?.originalName;return o&&de.has(o)?`/assets/${encodeURIComponent(o)}`:n?.diskFilename&&!n.diskFilename.includes("drive.google.com")?n.diskFilename:"/assets/DARC-VILLA-ARCH-A101_Rev03.pdf"}if(!n)return Y;const i=n.driveFileId||n.drive_file_id;if(i&&!String(i).startsWith("demo_")&&String(i).length>=25&&i!=="1DsElwxs_mdPU16AsL4p5f2wB-a6V2LNH")return`https://drive.google.com/file/d/${encodeURIComponent(i)}/view?usp=sharing`;const c=n.diskFilename||n.disk_filename||n.viewLink||n.webViewLink||"";if(c&&c.includes("drive.google.com")){if(c.includes("1DsElwxs_mdPU16AsL4p5f2wB-a6V2LNH"))return Y;if(c.includes("/folders/"))return c;const o=c.match(/(?:file\/d\/|id=)([a-zA-Z0-9_-]{20,50})/);if(o&&o[1]&&!o[1].startsWith("demo_")&&o[1].length>=25&&o[1]!=="1DsElwxs_mdPU16AsL4p5f2wB-a6V2LNH")return`https://drive.google.com/file/d/${o[1]}/view?usp=sharing`}return c&&(c.startsWith("https://")||c.startsWith("http://"))&&!c.includes("localhost")&&!c.includes("127.0.0.1")&&!c.includes("demo_sample")?c:Y}var de=new Set(["DARC-VILLA-ARCH-A101_Rev03.pdf","SKYLINE-CW-SECTION-DETAILS-DWG.pdf","RED-SEA-RESORT-MASTERPLAN-APPROVED.pdf","DARC-VILLA-BOQ-BILL-OF-QUANTITIES.xlsx","DARC-PALM-VILLA-TECHNICAL-SPECIFICATIONS.docx","DARC-ARCHITECTURAL-CONCEPT-PRESENTATION.pptx","DARC-VILLA-SITE-PROGRESS-WALKTHROUGH.mp4","PALM_VILLA_MAJLIS_3D_RENDER_4K.jpg","DARC-STRUCTURAL-LAYOUT-V2.dwg"]);function q(n){if(!n)return"";if(n.blobUrl&&typeof n.blobUrl=="string"&&n.blobUrl.startsWith("blob:"))return n.blobUrl;if(n._blobUrl&&typeof n._blobUrl=="string"&&n._blobUrl.startsWith("blob:"))return n._blobUrl;if(typeof window<"u"&&window.__docBlobCache){const g=window.__docBlobCache.get(n.id)||window.__docBlobCache.get(n.originalName);if(g&&typeof g=="string"&&g.startsWith("blob:"))return g}const i=!!(n.id?.startsWith("doc_demo_")||n.projectId?.startsWith("prj_demo_")||J()),c=(n.originalName||"").trim();if(i){if(c==="darc-walkthrough.mp4")return"/assets/DARC-VILLA-SITE-PROGRESS-WALKTHROUGH.mp4";if(c&&de.has(c))return`/assets/${encodeURIComponent(c)}`}const o=(n.diskFilename||n.disk_filename||n.url||"").trim();if(o&&(o.startsWith("https://")||o.startsWith("http://")))try{const g=new URL(o);if(["http:","https:"].includes(g.protocol)&&!g.hostname.includes("drive.google.com")&&!g.hostname.includes("docs.google.com"))return o}catch{}if(n.id)return`/api/documents/${encodeURIComponent(n.id)}?stream=1`;const u=c.replace(/[/\\:*?"<>|\x00-\x1f]/g,"_");return u?`/assets/${encodeURIComponent(u)}`:""}async function ue(n,i=null){if(!n)return;const c=re(n);let o=!1;try{if(navigator.clipboard&&navigator.clipboard.writeText)await navigator.clipboard.writeText(c),o=!0;else{const u=document.createElement("textarea");u.value=c,u.style.position="fixed",u.style.opacity="0",document.body.appendChild(u),u.select(),o=document.execCommand("copy"),u.remove()}}catch(u){console.warn("[DocViewer] Clipboard writeText failed:",u),window.prompt(e("انسخ رابط Google Drive من هنا:","Copy Google Drive link:"),c),o=!0}if(o){if(i){const u=i.innerHTML;i.innerHTML=`${D("check",14)} <span style="font-size:11px;font-weight:700;">${e("تم النسخ","Copied")}</span>`,i.style.color="var(--mint-strong, #10b981)",i.style.transition="all 0.2s ease",setTimeout(()=>{i.innerHTML=u,i.style.color=""},2200)}W(e("تم نسخ رابط المخرج الهندسي في Google Drive بنجاح ✅","Google Drive deliverable link copied ✅"))}}async function F(n){if(!n)return;let i=(E.data?.documents||[]).find(o=>o.id===n);if(!i)try{const o=await ne(`/api/documents/${n}`);o&&o.document&&(i=o.document)}catch{}if(!i){W(e("المستند غير موجود أو تم نقله لسلة المهملات.","Document not found."),!0);return}W(e(`جاري بدء تحميل "${i.originalName}"...`,`Starting download of "${i.originalName}"...`));const c=i.diskFilename||i.disk_filename||"";if(c&&c.includes("drive.google.com")){const o=c.match(/(?:file\/d\/|id=)([a-zA-Z0-9_-]{20,50})/);if(o&&o[1]&&!o[1].startsWith("demo_")&&o[1]!=="1DsElwxs_mdPU16AsL4p5f2wB-a6V2LNH"){const u=`https://drive.google.com/uc?export=download&id=${o[1]}`,g=(i.originalName||"document").replace(/[/\\:*?"<>|\x00-\x1f]/g,"_"),f=document.createElement("a");f.href=u,f.target="_blank",f.rel="noopener noreferrer",f.download=g,document.body.appendChild(f),f.click(),f.remove(),W(e(`تم بدء تنزيل "${i.originalName}" من Google Drive بنجاح.`,`Downloaded "${i.originalName}" from Google Drive.`));return}}try{let o=null;const u=q(i);if(u&&!u.startsWith("http://drive.google.com")&&!u.startsWith("https://drive.google.com"))try{const g=await fetch(u);g.ok&&(o=await g.blob())}catch(g){console.warn("[DocViewer] Real asset fetch error:",g)}if(o){const g=URL.createObjectURL(o),f=(i.originalName||"document").replace(/[/\\:*?"<>|\x00-\x1f]/g,"_"),I=document.createElement("a");I.href=g,I.download=f,document.body.appendChild(I),I.click(),I.remove(),setTimeout(()=>URL.revokeObjectURL(g),3e4),W(e(`تم تنزيل المستند الأصلي "${i.originalName}" بنجاح ✅`,`Downloaded "${i.originalName}" successfully ✅`));return}window.open(`/api/documents/${encodeURIComponent(i.id)}?download=1`,"_blank"),W(e(`تم بدء تنزيل "${i.originalName}" بنجاح.`,`Downloaded "${i.originalName}" successfully.`))}catch(o){console.error("[DocViewer] Local download creation failed:",o),window.open(`/api/documents/${encodeURIComponent(i.id)}?download=1`,"_blank")}}function Z(){const n=document.getElementById("preview-modal-overlay");if(!n)return;const i=n.querySelector("video");if(i)try{i.pause(),i.removeAttribute("src"),i.load()}catch{}window.__docPreviewKeyHandler&&(window.removeEventListener("keydown",window.__docPreviewKeyHandler),window.__docPreviewKeyHandler=null),document.body.style.overflow="",n.style.display="none",n.innerHTML=""}function be(){if(document.getElementById("darc-doc-viewer-responsive-styles"))return;const n=document.createElement("style");n.id="darc-doc-viewer-responsive-styles",n.textContent=`
     #preview-modal-overlay {
       position: fixed;
       inset: 0;
@@ -71,7 +71,7 @@ import{t as re}from"./rolldown-runtime-BQ-_32WO.js";import{B as Y,K as de,N as t
     .doc-custom-scrollbar::-webkit-scrollbar-thumb:hover {
       background: rgba(13, 98, 105, 0.6);
     }
-  `,document.head.appendChild(a)}async function ve(a){if(!a)return;ue();let i=(z.data?.documents||[]).find(s=>s.id===a);if(!i)try{const s=await ie(`/api/documents/${a}`);s&&(s.id||s.document?.id)&&(i=s.document||s,z.data&&!z.data.documents&&(z.data.documents=[]),z.data?.documents&&z.data.documents.push(i))}catch(s){console.warn("[DocViewer] Failed to fetch doc on demand:",s)}if(!i){V(e("المستند غير موجود أو تم نقله لسلة المهملات.","Document not found."),!0);return}const c=(i.originalName||"").split(".").pop()?.toLowerCase()||"",o=Y(i.originalName,i.mimeType),x=te(i.originalName)||"V1",g=i.size>1048576?(i.size/1048576).toFixed(1)+" MB":Math.round((i.size||0)/1024)+" KB",f=c==="pdf"||o.isPdf,C=["dwg","dxf"].includes(c)||o.isCad,I=["rvt","rfa","ifc","skp"].includes(c)||o.isBim,_=["xlsx","xls","csv"].includes(c)||o.isExcel,B=["docx","doc","rtf","odt"].includes(c)||o.isWord,F=["pptx","ppt","key"].includes(c)||o.isPpt,R=["zip","rar","7z","tar"].includes(c)||o.isZip,n=["jpg","jpeg","png","webp","svg","heic"].includes(c)||o.isImg,A=["mp4","webm","mov","m4v"].includes(c)||i.mimeType&&i.mimeType.startsWith("video/"),y=ne(i);let v=document.getElementById("preview-modal-overlay");v||(v=document.createElement("div"),v.id="preview-modal-overlay",document.body.appendChild(v)),v.innerHTML=`
+  `,document.head.appendChild(n)}async function we(n){if(!n)return;be();let i=(E.data?.documents||[]).find(p=>p.id===n);if(!i)try{const p=await ne(`/api/documents/${n}`);p&&(p.id||p.document?.id)&&(i=p.document||p,E.data&&!E.data.documents&&(E.data.documents=[]),E.data?.documents&&E.data.documents.push(i))}catch(p){console.warn("[DocViewer] Failed to fetch doc on demand:",p)}if(!i){W(e("المستند غير موجود أو تم نقله لسلة المهملات.","Document not found."),!0);return}const c=(i.originalName||"").split(".").pop()?.toLowerCase()||"",o=Q(i.originalName,i.mimeType),u=oe(i.originalName)||"V1",g=i.size>1048576?(i.size/1048576).toFixed(1)+" MB":Math.round((i.size||0)/1024)+" KB",f=c==="pdf"||o.isPdf,I=["dwg","dxf"].includes(c)||o.isCad,A=["rvt","rfa","ifc","skp"].includes(c)||o.isBim,N=["xlsx","xls","csv"].includes(c)||o.isExcel,R=["docx","doc","rtf","odt"].includes(c)||o.isWord,_=["pptx","ppt","key"].includes(c)||o.isPpt,j=["zip","rar","7z","tar"].includes(c)||o.isZip,a=["jpg","jpeg","png","webp","svg","heic"].includes(c)||o.isImg,P=["mp4","webm","mov","m4v"].includes(c)||i.mimeType&&i.mimeType.startsWith("video/"),x=J()||i&&(String(i.id).startsWith("doc_demo")||i.isDemo),L=re(i);let m=document.getElementById("preview-modal-overlay");m||(m=document.createElement("div"),m.id="preview-modal-overlay",document.body.appendChild(m)),m.innerHTML=`
     <div class="doc-modal-container">
       <!-- Universal Responsive Modal Header -->
       <div class="doc-modal-header" style="display:flex;justify-content:space-between;align-items:center;padding:12px 20px;border-bottom:1px solid var(--line, #e2e8f0);background:var(--surface, #ffffff);flex-wrap:wrap;gap:10px;z-index:20;">
@@ -84,22 +84,22 @@ import{t as re}from"./rolldown-runtime-BQ-_32WO.js";import{B as Y,K as de,N as t
               ${r(i.originalName)}
             </h3>
             <div style="display:flex;align-items:center;gap:8px;margin-top:2px;font-size:11px;color:var(--muted, #64748b);flex-wrap:wrap;">
-              <span class="version-badge" style="background:rgba(13,98,105,0.08);color:var(--teal, #0d6269);padding:1px 6px;border-radius:4px;font-weight:800;">${x}</span>
+              <span class="version-badge" style="background:rgba(13,98,105,0.08);color:var(--teal, #0d6269);padding:1px 6px;border-radius:4px;font-weight:800;">${u}</span>
               <span>•</span>
               <span>${g}</span>
               <span>•</span>
-              <span class="status-badge ${r(i.status||"approved")}" style="font-size:10px;padding:2px 7px;">${r(oe(i.status||"approved"))}</span>
+              <span class="status-badge ${r(i.status||"approved")}" style="font-size:10px;padding:2px 7px;">${r(ae(i.status||"approved"))}</span>
             </div>
           </div>
         </div>
 
         <!-- Action Buttons (Responsive on Mobile) -->
         <div class="doc-modal-header-actions" style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
-          <button type="button" class="btn btn-soft btn-sm" id="modal-copy-link-btn" style="display:inline-flex;align-items:center;gap:6px;font-weight:700;color:var(--teal, #0d6269);" title="${e("نسخ رابط Google Drive","Copy Drive Link")}">
+          <button type="button" class="btn btn-soft btn-sm" id="modal-copy-link-btn" style="display:inline-flex;align-items:center;gap:6px;font-weight:700;color:var(--teal, #0d6269);" title="${e(x?"نسخ رابط المستند":"نسخ رابط Google Drive",x?"Copy Document Link":"Copy Drive Link")}">
             ${D("link",14)} <span class="btn-label">${e("نسخ الرابط","Copy Link")}</span>
           </button>
-          <a href="${r(y)}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-sm" style="display:inline-flex;align-items:center;gap:6px;font-weight:700;" title="${e("فتح في Google Drive","Open in Drive")}">
-            ${D("external",13)} <span class="btn-label">Google Drive</span>
+          <a href="${r(L)}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-sm" style="display:inline-flex;align-items:center;gap:6px;font-weight:700;" title="${e(x?"فتح المستند":"فتح في Google Drive",x?"Open Document":"Open in Drive")}">
+            ${D("external",13)} <span class="btn-label">${x?e("فتح الملف","Open File"):"Google Drive"}</span>
           </a>
           <button type="button" class="btn btn-primary btn-sm" id="modal-download-btn" style="display:inline-flex;align-items:center;gap:6px;font-weight:700;background:var(--brand-teal, #0d6269);color:#ffffff;" title="${e("تحميل المخطط","Download")}">
             ${D("download",14)} <span class="btn-label">${e("تنزيل الملف","Download")}</span>
@@ -115,7 +115,7 @@ import{t as re}from"./rolldown-runtime-BQ-_32WO.js";import{B as Y,K as de,N as t
         <!-- Injected format viewer below -->
       </div>
     </div>
-  `,v.style.display="flex",document.body.style.overflow="hidden",window.__docPreviewKeyHandler&&window.removeEventListener("keydown",window.__docPreviewKeyHandler),window.__docPreviewKeyHandler=s=>{s.key==="Escape"&&K()},window.addEventListener("keydown",window.__docPreviewKeyHandler),document.getElementById("modal-copy-link-btn")?.addEventListener("click",s=>{xe(i,s.currentTarget)}),document.getElementById("modal-download-btn")?.addEventListener("click",()=>{M(i.id)}),document.getElementById("close-doc-preview-btn")?.addEventListener("click",K),v.onclick=s=>{s.target===v&&K()};const u=document.getElementById("doc-viewer-viewport");if(u){if(f){const s=X(i);u.innerHTML=`
+  `,m.style.display="flex",document.body.style.overflow="hidden",window.__docPreviewKeyHandler&&window.removeEventListener("keydown",window.__docPreviewKeyHandler),window.__docPreviewKeyHandler=p=>{p.key==="Escape"&&Z()},window.addEventListener("keydown",window.__docPreviewKeyHandler),document.getElementById("modal-copy-link-btn")?.addEventListener("click",p=>{ue(i,p.currentTarget)}),document.getElementById("modal-download-btn")?.addEventListener("click",()=>{F(i.id)}),document.getElementById("close-doc-preview-btn")?.addEventListener("click",Z),m.onclick=p=>{p.target===m&&Z()};const z=document.getElementById("doc-viewer-viewport");if(z){if(f){const p=q(i);z.innerHTML=`
       <div style="width:100%;height:100%;display:flex;flex-direction:column;position:relative;background:#1e242c;">
         <!-- Inspection Bar -->
         <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:rgba(15,23,42,0.95);border-bottom:1px solid #334155;color:#e2e8f0;font-size:12px;z-index:10;flex-wrap:wrap;gap:8px;">
@@ -139,13 +139,13 @@ import{t as re}from"./rolldown-runtime-BQ-_32WO.js";import{B as Y,K as de,N as t
         <div id="pdf-frame-container" style="flex:1;width:100%;height:100%;background:#525659;position:relative;overflow:hidden;">
           <object 
             id="pdf-native-object"
-            data="${r(s)}#toolbar=1&navpanes=1&scrollbar=1" 
+            data="${r(p)}#toolbar=1&navpanes=1&scrollbar=1" 
             type="application/pdf"
             style="width:100%;height:100%;border:none;display:block;"
           >
             <iframe 
               id="pdf-native-frame"
-              src="${r(s)}#toolbar=1&navpanes=1&scrollbar=1" 
+              src="${r(p)}#toolbar=1&navpanes=1&scrollbar=1" 
               type="application/pdf"
               style="width:100%;height:100%;border:none;display:block;"
               title="${r(i.originalName)}"
@@ -153,7 +153,7 @@ import{t as re}from"./rolldown-runtime-BQ-_32WO.js";import{B as Y,K as de,N as t
             >
               <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:#fff;text-align:center;padding:24px;">
                 <p style="margin-bottom:12px;font-size:14px;color:#cbd5e1;">${e("متصفحك يحتاج لفتح مستند PDF في نافذة جديدة أو تنزيله مباشرة.","Your browser requires opening this PDF in a new window or downloading it.")}</p>
-                <a href="${r(s)}" target="_blank" rel="noopener noreferrer" class="btn btn-primary" style="padding:8px 18px;font-weight:700;">
+                <a href="${r(p)}" target="_blank" rel="noopener noreferrer" class="btn btn-primary" style="padding:8px 18px;font-weight:700;">
                   ↗ ${e("فتح مستند PDF الأصلي","Open PDF in New Window")}
                 </a>
               </div>
@@ -161,7 +161,7 @@ import{t as re}from"./rolldown-runtime-BQ-_32WO.js";import{B as Y,K as de,N as t
           </object>
         </div>
       </div>
-    `,document.getElementById("pdf-open-newtab")?.addEventListener("click",()=>{window.open(s,"_blank")}),document.getElementById("pdf-download-btn")?.addEventListener("click",()=>{M(i.id)});return}if(n){let m=function(){S&&(S.style.transform=`translate(${t}px, ${l}px) scale(${d}) rotate(${h}deg)`),L&&(L.textContent=`${Math.round(d*100)}%`)};const s=X(i);u.innerHTML=`
+    `,document.getElementById("pdf-open-newtab")?.addEventListener("click",()=>{window.open(p,"_blank")}),document.getElementById("pdf-download-btn")?.addEventListener("click",()=>{F(i.id)});return}if(a){let y=function(){S&&(S.style.transform=`translate(${t}px, ${s}px) scale(${d}) rotate(${h}deg)`),C&&(C.textContent=`${Math.round(d*100)}%`)};const p=q(i);z.innerHTML=`
       <div style="width:100%;height:100%;position:relative;display:flex;flex-direction:column;background:#0a0e14;user-select:none;">
         <!-- Inspection Toolbar -->
         <div style="position:absolute;top:16px;left:50%;transform:translateX(-50%);background:rgba(15,23,42,0.88);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,0.15);padding:6px 14px;border-radius:30px;display:flex;align-items:center;gap:10px;z-index:20;box-shadow:0 10px 25px rgba(0,0,0,0.5);color:#fff;font-size:12px;">
@@ -176,13 +176,13 @@ import{t as re}from"./rolldown-runtime-BQ-_32WO.js";import{B as Y,K as de,N as t
         <div id="img-pan-viewport" style="flex:1;width:100%;height:100%;overflow:hidden;display:flex;align-items:center;justify-content:center;cursor:grab;position:relative;touch-action:none;">
           <img 
             id="active-preview-img" 
-            src="${s}" 
+            src="${p}" 
             alt="${r(i.originalName)}" 
             style="max-width:92%;max-height:88%;object-fit:contain;border-radius:8px;box-shadow:0 20px 50px rgba(0,0,0,0.7);transition:transform 0.1s ease;transform-origin:center center;pointer-events:none;" 
           />
         </div>
       </div>
-    `;let d=1,h=0,t=0,l=0,b=!1,E=0,k=0;const S=document.getElementById("active-preview-img"),L=document.getElementById("img-zoom-level"),$=document.getElementById("img-pan-viewport");if(document.getElementById("img-zoom-in")?.addEventListener("click",()=>{d=Math.min(5,d+.25),m()}),document.getElementById("img-zoom-out")?.addEventListener("click",()=>{d=Math.max(.4,d-.25),m()}),document.getElementById("img-rotate-btn")?.addEventListener("click",()=>{h=(h+90)%360,m()}),document.getElementById("img-reset-btn")?.addEventListener("click",()=>{d=1,h=0,t=0,l=0,m()}),$){$.addEventListener("wheel",T=>{T.preventDefault();const W=T.deltaY<0?.15:-.15;d=Math.max(.4,Math.min(5,d+W)),m()},{passive:!1}),$.addEventListener("pointerdown",T=>{b=!0;try{$.setPointerCapture(T.pointerId)}catch{}E=T.clientX-t,k=T.clientY-l,$.style.cursor="grabbing"}),$.addEventListener("pointermove",T=>{b&&(t=T.clientX-E,l=T.clientY-k,m())});const P=()=>{b=!1,$.style.cursor="grab"};$.addEventListener("pointerup",P),$.addEventListener("pointercancel",P),$.addEventListener("dblclick",()=>{d=d===1?2:1,t=0,l=0,m()})}return}if(A){const s=X(i);u.innerHTML=`
+    `;let d=1,h=0,t=0,s=0,b=!1,k=0,$=0;const S=document.getElementById("active-preview-img"),C=document.getElementById("img-zoom-level"),w=document.getElementById("img-pan-viewport");if(document.getElementById("img-zoom-in")?.addEventListener("click",()=>{d=Math.min(5,d+.25),y()}),document.getElementById("img-zoom-out")?.addEventListener("click",()=>{d=Math.max(.4,d-.25),y()}),document.getElementById("img-rotate-btn")?.addEventListener("click",()=>{h=(h+90)%360,y()}),document.getElementById("img-reset-btn")?.addEventListener("click",()=>{d=1,h=0,t=0,s=0,y()}),w){w.addEventListener("wheel",B=>{B.preventDefault();const G=B.deltaY<0?.15:-.15;d=Math.max(.4,Math.min(5,d+G)),y()},{passive:!1}),w.addEventListener("pointerdown",B=>{b=!0;try{w.setPointerCapture(B.pointerId)}catch{}k=B.clientX-t,$=B.clientY-s,w.style.cursor="grabbing"}),w.addEventListener("pointermove",B=>{b&&(t=B.clientX-k,s=B.clientY-$,y())});const T=()=>{b=!1,w.style.cursor="grab"};w.addEventListener("pointerup",T),w.addEventListener("pointercancel",T),w.addEventListener("dblclick",()=>{d=d===1?2:1,t=0,s=0,y()})}return}if(P){const p=q(i);z.innerHTML=`
       <div style="width:100%;height:100%;display:flex;flex-direction:column;position:relative;background:#06090e;">
         <!-- Video Header -->
         <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:rgba(15,23,42,0.95);border-bottom:1px solid #1e293b;color:#e2e8f0;font-size:12px;z-index:10;flex-wrap:wrap;gap:8px;">
@@ -219,9 +219,9 @@ import{t as re}from"./rolldown-runtime-BQ-_32WO.js";import{B as Y,K as de,N as t
             webkit-playsinline
             preload="metadata"
             style="max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain;outline:none;"
-            src="${r(s)}"
+            src="${r(p)}"
           >
-            <source src="${r(s)}" type="video/mp4" />
+            <source src="${r(p)}" type="video/mp4" />
           </video>
         </div>
 
@@ -239,7 +239,7 @@ import{t as re}from"./rolldown-runtime-BQ-_32WO.js";import{B as Y,K as de,N as t
           </button>
         </div>
       </div>
-    `;const d=document.getElementById("darc-main-video-player");d&&(document.querySelectorAll(".video-jump-btn").forEach(h=>{h.addEventListener("click",()=>{const t=parseFloat(h.dataset.sec||"0");d.currentTime=t,d.play().catch(()=>{})})}),document.getElementById("video-playback-rate")?.addEventListener("change",h=>{d.playbackRate=parseFloat(h.target.value||"1")}),document.getElementById("video-pip-btn")?.addEventListener("click",async()=>{try{document.pictureInPictureElement?await document.exitPictureInPicture():d.requestPictureInPicture&&await d.requestPictureInPicture()}catch{}})),document.getElementById("video-download-btn")?.addEventListener("click",()=>M(i.id));return}if(C||I){u.innerHTML=`
+    `;const d=document.getElementById("darc-main-video-player");d&&(document.querySelectorAll(".video-jump-btn").forEach(h=>{h.addEventListener("click",()=>{const t=parseFloat(h.dataset.sec||"0");d.currentTime=t,d.play().catch(()=>{})})}),document.getElementById("video-playback-rate")?.addEventListener("change",h=>{d.playbackRate=parseFloat(h.target.value||"1")}),document.getElementById("video-pip-btn")?.addEventListener("click",async()=>{try{document.pictureInPictureElement?await document.exitPictureInPicture():d.requestPictureInPicture&&await d.requestPictureInPicture()}catch{}})),document.getElementById("video-download-btn")?.addEventListener("click",()=>F(i.id));return}if(I||A){z.innerHTML=`
       <div style="width:100%;height:100%;position:relative;display:flex;flex-direction:column;background:#0c1015;user-select:none;">
         <!-- CAD Inspection Top Bar -->
         <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:rgba(16,20,24,0.95);border-bottom:1px solid #1e293b;color:#e2e8f0;font-size:12px;z-index:20;flex-wrap:wrap;gap:8px;">
@@ -283,19 +283,19 @@ import{t as re}from"./rolldown-runtime-BQ-_32WO.js";import{B as Y,K as de,N as t
           <canvas id="cad-canvas" style="display:block;width:100%;height:100%;"></canvas>
         </div>
       </div>
-    `;const s=document.getElementById("cad-canvas"),d=document.getElementById("cad-canvas-box"),h=document.getElementById("cad-coords");if(s&&d){let W=function(){const w=Math.min(window.devicePixelRatio||1,2);s.width=d.clientWidth*w,s.height=d.clientHeight*w,N()},N=function(){if(!t)return;const w=Math.min(window.devicePixelRatio||1,2),j=s.width/w,G=s.height/w;t.save(),t.scale(w,w),t.clearRect(0,0,j,G),t.fillStyle="#0b1016",t.fillRect(0,0,j,G),t.translate(j/2+b,G/2+E),t.scale(l,l),t.lineWidth=1/l,t.strokeStyle="rgba(255, 255, 255, 0.04)";for(let p=-400;p<=400;p+=20)t.beginPath(),t.moveTo(p,-300),t.lineTo(p,300),t.stroke();for(let p=-300;p<=300;p+=20)t.beginPath(),t.moveTo(-400,p),t.lineTo(400,p),t.stroke();t.strokeStyle="rgba(2, 132, 199, 0.12)";for(let p=-400;p<=400;p+=100)t.beginPath(),t.moveTo(p,-300),t.lineTo(p,300),t.stroke();for(let p=-300;p<=300;p+=100)t.beginPath(),t.moveTo(-400,p),t.lineTo(400,p),t.stroke();const U=[{label:"1",x:-240},{label:"2",x:-120},{label:"3",x:0},{label:"4",x:120},{label:"5",x:240}],Q=[{label:"A",y:-160},{label:"B",y:-60},{label:"C",y:60},{label:"D",y:160}];if($?.checked&&(t.strokeStyle="rgba(56, 189, 248, 0.55)",t.setLineDash([8/l,4/l,2/l,4/l]),t.lineWidth=1.2/l,U.forEach(p=>{t.beginPath(),t.moveTo(p.x,-210),t.lineTo(p.x,210),t.stroke(),t.setLineDash([]),t.fillStyle="#0284c7",t.beginPath(),t.arc(p.x,-225,12,0,Math.PI*2),t.arc(p.x,225,12,0,Math.PI*2),t.fill(),t.fillStyle="#ffffff",t.font="bold 11px sans-serif",t.textAlign="center",t.textBaseline="middle",t.fillText(p.label,p.x,-225),t.fillText(p.label,p.x,225),t.setLineDash([8/l,4/l,2/l,4/l])}),Q.forEach(p=>{t.beginPath(),t.moveTo(-290,p.y),t.lineTo(290,p.y),t.stroke(),t.setLineDash([]),t.fillStyle="#0284c7",t.beginPath(),t.arc(-305,p.y,12,0,Math.PI*2),t.arc(305,p.y,12,0,Math.PI*2),t.fill(),t.fillStyle="#ffffff",t.font="bold 11px sans-serif",t.textAlign="center",t.textBaseline="middle",t.fillText(p.label,-305,p.y),t.fillText(p.label,305,p.y),t.setLineDash([8/l,4/l,2/l,4/l])}),t.setLineDash([])),P?.checked&&(t.strokeStyle="#facc15",t.lineWidth=2.5/l,t.strokeRect(-240,-160,480,320),t.strokeRect(-120,-160,240,100),t.strokeRect(-240,60,240,100),t.strokeStyle="#38bdf8",t.strokeRect(120,60,140,100)),m?.checked&&(t.fillStyle="#4ade80",t.strokeStyle="#ffffff",t.lineWidth=1/l,U.forEach(p=>{Q.forEach(H=>{t.fillRect(p.x-9,H.y-9,18,18),t.strokeRect(p.x-9,H.y-9,18,18),t.beginPath(),t.moveTo(p.x-9,H.y-9),t.lineTo(p.x+9,H.y+9),t.stroke()})})),T?.checked){t.strokeStyle="#f472b6",t.fillStyle="#f472b6",t.lineWidth=1.2/l,t.font="bold 10px monospace",t.textAlign="center";for(let p=0;p<U.length-1;p++){const H=U[p].x,J=U[p+1].x,ae=(H+J)/2;t.beginPath(),t.moveTo(H,-190),t.lineTo(J,-190),t.stroke(),t.fillText("6.00m",ae,-196)}}t.restore()};const t=s.getContext("2d");let l=1,b=0,E=0,k=!1,S=0,L=0;const $=document.getElementById("layer-axes"),m=document.getElementById("layer-columns"),P=document.getElementById("layer-walls"),T=document.getElementById("layer-dims");window.addEventListener("resize",W),setTimeout(W,50),[$,m,P,T].forEach(w=>{w?.addEventListener("change",N)}),document.getElementById("cad-zoom-in")?.addEventListener("click",()=>{l=Math.min(4,l*1.25),N()}),document.getElementById("cad-zoom-out")?.addEventListener("click",()=>{l=Math.max(.3,l*.8),N()}),document.getElementById("cad-reset")?.addEventListener("click",()=>{l=1,b=0,E=0,N()}),d.addEventListener("wheel",w=>{w.preventDefault();const j=w.deltaY<0?1.15:.87;l=Math.max(.3,Math.min(4,l*j)),N()},{passive:!1}),d.addEventListener("pointerdown",w=>{k=!0;try{d.setPointerCapture(w.pointerId)}catch{}S=w.clientX-b,L=w.clientY-E,d.style.cursor="grabbing"}),d.addEventListener("pointermove",w=>{const j=d.getBoundingClientRect(),G=((w.clientX-j.left-j.width/2-b)/l/20).toFixed(2),U=((w.clientY-j.top-j.height/2-E)/l/20).toFixed(2);h&&(h.textContent=`X: ${G}m | Y: ${U}m`),k&&(b=w.clientX-S,E=w.clientY-L,N())});const Z=()=>{k=!1,d.style.cursor="crosshair"};d.addEventListener("pointerup",Z),d.addEventListener("pointercancel",Z)}document.getElementById("cad-download-btn")?.addEventListener("click",()=>M(i.id));return}if(_){let t=function(){const l=s[d],b=h.toLowerCase().trim(),E=l.rows.filter(m=>b?m.code.toLowerCase().includes(b)||m.desc.toLowerCase().includes(b)||m.unit.toLowerCase().includes(b):!0),k=E.reduce((m,P)=>m+P.total,0),S=document.getElementById("excel-interactive-table-body"),L=document.getElementById("excel-sheet-subtotal"),$=document.getElementById("excel-filtered-count");$&&($.textContent=`${E.length} ${e("بند","items")}`),L&&(L.textContent=`${k.toLocaleString()} ${e("ر.س","SAR")}`),S&&(S.innerHTML=E.map(m=>`
+    `;const p=document.getElementById("cad-canvas"),d=document.getElementById("cad-canvas-box"),h=document.getElementById("cad-coords");if(p&&d){let G=function(){const v=Math.min(window.devicePixelRatio||1,2);p.width=d.clientWidth*v,p.height=d.clientHeight*v,U()},U=function(){if(!t)return;const v=Math.min(window.devicePixelRatio||1,2),M=p.width/v,O=p.height/v;t.save(),t.scale(v,v),t.clearRect(0,0,M,O),t.fillStyle="#0b1016",t.fillRect(0,0,M,O),t.translate(M/2+b,O/2+k),t.scale(s,s),t.lineWidth=1/s,t.strokeStyle="rgba(255, 255, 255, 0.04)";for(let l=-400;l<=400;l+=20)t.beginPath(),t.moveTo(l,-300),t.lineTo(l,300),t.stroke();for(let l=-300;l<=300;l+=20)t.beginPath(),t.moveTo(-400,l),t.lineTo(400,l),t.stroke();t.strokeStyle="rgba(2, 132, 199, 0.12)";for(let l=-400;l<=400;l+=100)t.beginPath(),t.moveTo(l,-300),t.lineTo(l,300),t.stroke();for(let l=-300;l<=300;l+=100)t.beginPath(),t.moveTo(-400,l),t.lineTo(400,l),t.stroke();const H=[{label:"1",x:-240},{label:"2",x:-120},{label:"3",x:0},{label:"4",x:120},{label:"5",x:240}],te=[{label:"A",y:-160},{label:"B",y:-60},{label:"C",y:60},{label:"D",y:160}];if(w?.checked&&(t.strokeStyle="rgba(56, 189, 248, 0.55)",t.setLineDash([8/s,4/s,2/s,4/s]),t.lineWidth=1.2/s,H.forEach(l=>{t.beginPath(),t.moveTo(l.x,-210),t.lineTo(l.x,210),t.stroke(),t.setLineDash([]),t.fillStyle="#0284c7",t.beginPath(),t.arc(l.x,-225,12,0,Math.PI*2),t.arc(l.x,225,12,0,Math.PI*2),t.fill(),t.fillStyle="#ffffff",t.font="bold 11px sans-serif",t.textAlign="center",t.textBaseline="middle",t.fillText(l.label,l.x,-225),t.fillText(l.label,l.x,225),t.setLineDash([8/s,4/s,2/s,4/s])}),te.forEach(l=>{t.beginPath(),t.moveTo(-290,l.y),t.lineTo(290,l.y),t.stroke(),t.setLineDash([]),t.fillStyle="#0284c7",t.beginPath(),t.arc(-305,l.y,12,0,Math.PI*2),t.arc(305,l.y,12,0,Math.PI*2),t.fill(),t.fillStyle="#ffffff",t.font="bold 11px sans-serif",t.textAlign="center",t.textBaseline="middle",t.fillText(l.label,-305,l.y),t.fillText(l.label,305,l.y),t.setLineDash([8/s,4/s,2/s,4/s])}),t.setLineDash([])),T?.checked&&(t.strokeStyle="#facc15",t.lineWidth=2.5/s,t.strokeRect(-240,-160,480,320),t.strokeRect(-120,-160,240,100),t.strokeRect(-240,60,240,100),t.strokeStyle="#38bdf8",t.strokeRect(120,60,140,100)),y?.checked&&(t.fillStyle="#4ade80",t.strokeStyle="#ffffff",t.lineWidth=1/s,H.forEach(l=>{te.forEach(V=>{t.fillRect(l.x-9,V.y-9,18,18),t.strokeRect(l.x-9,V.y-9,18,18),t.beginPath(),t.moveTo(l.x-9,V.y-9),t.lineTo(l.x+9,V.y+9),t.stroke()})})),B?.checked){t.strokeStyle="#f472b6",t.fillStyle="#f472b6",t.lineWidth=1.2/s,t.font="bold 10px monospace",t.textAlign="center";for(let l=0;l<H.length-1;l++){const V=H[l].x,ie=H[l+1].x,se=(V+ie)/2;t.beginPath(),t.moveTo(V,-190),t.lineTo(ie,-190),t.stroke(),t.fillText("6.00m",se,-196)}}t.restore()};const t=p.getContext("2d");let s=1,b=0,k=0,$=!1,S=0,C=0;const w=document.getElementById("layer-axes"),y=document.getElementById("layer-columns"),T=document.getElementById("layer-walls"),B=document.getElementById("layer-dims");window.addEventListener("resize",G),setTimeout(G,50),[w,y,T,B].forEach(v=>{v?.addEventListener("change",U)}),document.getElementById("cad-zoom-in")?.addEventListener("click",()=>{s=Math.min(4,s*1.25),U()}),document.getElementById("cad-zoom-out")?.addEventListener("click",()=>{s=Math.max(.3,s*.8),U()}),document.getElementById("cad-reset")?.addEventListener("click",()=>{s=1,b=0,k=0,U()}),d.addEventListener("wheel",v=>{v.preventDefault();const M=v.deltaY<0?1.15:.87;s=Math.max(.3,Math.min(4,s*M)),U()},{passive:!1}),d.addEventListener("pointerdown",v=>{$=!0;try{d.setPointerCapture(v.pointerId)}catch{}S=v.clientX-b,C=v.clientY-k,d.style.cursor="grabbing"}),d.addEventListener("pointermove",v=>{const M=d.getBoundingClientRect(),O=((v.clientX-M.left-M.width/2-b)/s/20).toFixed(2),H=((v.clientY-M.top-M.height/2-k)/s/20).toFixed(2);h&&(h.textContent=`X: ${O}m | Y: ${H}m`),$&&(b=v.clientX-S,k=v.clientY-C,U())});const ee=()=>{$=!1,d.style.cursor="crosshair"};d.addEventListener("pointerup",ee),d.addEventListener("pointercancel",ee)}document.getElementById("cad-download-btn")?.addEventListener("click",()=>F(i.id));return}if(N){let t=function(){const s=p[d],b=h.toLowerCase().trim(),k=s.rows.filter(y=>b?y.code.toLowerCase().includes(b)||y.desc.toLowerCase().includes(b)||y.unit.toLowerCase().includes(b):!0),$=k.reduce((y,T)=>y+T.total,0),S=document.getElementById("excel-interactive-table-body"),C=document.getElementById("excel-sheet-subtotal"),w=document.getElementById("excel-filtered-count");w&&(w.textContent=`${k.length} ${e("بند","items")}`),C&&(C.textContent=`${$.toLocaleString()} ${e("ر.س","SAR")}`),S&&(S.innerHTML=k.map(y=>`
           <tr style="border-bottom:1px solid var(--line, #e2e8f0);transition:background 0.15s ease;">
-            <td style="padding:10px 14px;font-weight:800;font-family:monospace;color:var(--brand-teal, #0d6269);white-space:nowrap;">${r(m.code)}</td>
-            <td style="padding:10px 14px;color:var(--ink, #0f172a);font-weight:600;min-width:240px;line-height:1.5;">${r(m.desc)}</td>
-            <td style="padding:10px 14px;text-align:center;color:var(--ink-soft, #475569);font-weight:700;">${r(m.unit)}</td>
-            <td style="padding:10px 14px;text-align:center;font-weight:800;font-variant-numeric:tabular-nums;">${m.qty.toLocaleString()}</td>
-            <td style="padding:10px 14px;text-align:end;font-weight:700;font-variant-numeric:tabular-nums;">${m.rate.toLocaleString()}</td>
-            <td style="padding:10px 14px;text-align:end;font-weight:900;color:#107c41;font-variant-numeric:tabular-nums;">${m.total.toLocaleString()}</td>
+            <td style="padding:10px 14px;font-weight:800;font-family:monospace;color:var(--brand-teal, #0d6269);white-space:nowrap;">${r(y.code)}</td>
+            <td style="padding:10px 14px;color:var(--ink, #0f172a);font-weight:600;min-width:240px;line-height:1.5;">${r(y.desc)}</td>
+            <td style="padding:10px 14px;text-align:center;color:var(--ink-soft, #475569);font-weight:700;">${r(y.unit)}</td>
+            <td style="padding:10px 14px;text-align:center;font-weight:800;font-variant-numeric:tabular-nums;">${y.qty.toLocaleString()}</td>
+            <td style="padding:10px 14px;text-align:end;font-weight:700;font-variant-numeric:tabular-nums;">${y.rate.toLocaleString()}</td>
+            <td style="padding:10px 14px;text-align:end;font-weight:900;color:#107c41;font-variant-numeric:tabular-nums;">${y.total.toLocaleString()}</td>
             <td style="padding:10px 14px;text-align:center;">
               <span class="status-badge approved" style="font-size:10px;padding:2px 8px;font-weight:800;">✅ ${e("معتمد","Approved")}</span>
             </td>
           </tr>
-        `).join(""))};const s=[{id:"structural",title:e("أعمال الهيكل الإنشائي والعظم","Structural & Concrete Works"),rows:[{code:"01.01",desc:e("حفر وتجهيز الموقع وترحيل المخلفات لعمق التأسيس","Excavation & site prep to foundation depth"),unit:"م3",qty:1200,rate:45,total:54e3,status:"approved"},{code:"01.02",desc:e("خرسانة عادية للنظافة C20 سمك 10سم أسفل القواعد","Plain blinding concrete C20 (100mm) under footings"),unit:"م3",qty:180,rate:280,total:50400,status:"approved"},{code:"01.03",desc:e("خرسانة مسلحة للقواعد والرقاب C35 مقاوم للأملاح والكلوريدات","Reinforced concrete C35 SRC for footings and column necks"),unit:"م3",qty:420,rate:390,total:163800,status:"approved"},{code:"01.04",desc:e("حديد تسليح عالي المقاومة مشوه Grade 60 (ASTM A615)","Deformed high-strength rebar Grade 60 (ASTM A615)"),unit:"طن",qty:48,rate:3250,total:156e3,status:"approved"},{code:"01.05",desc:e("خرسانة مسلحة للأعمدة والجدران الاستنادية C40","Reinforced concrete C40 for columns and retaining walls"),unit:"م3",qty:260,rate:420,total:109200,status:"approved"},{code:"01.06",desc:e("عوازل مائية للقواعد ورقاب الأعمدة دهان بيتوميني وممبرين 4مم","Waterproofing bituminous primer + 4mm modified bitumen membrane"),unit:"م2",qty:850,rate:65,total:55250,status:"approved"},{code:"01.07",desc:e("أسقف خرسانية هوردي ولاكمرية Flat Slab مع كمرات ساقطة","Hollow-block and flat slab concrete with drop beams"),unit:"م3",qty:520,rate:410,total:213200,status:"approved"}]},{id:"finishes",title:e("التشطيبات المعمارية الفاخرة","Architectural Finishes"),rows:[{code:"02.01",desc:e("تكسيات حجر ترافنتينو إيطالي نخب أول للواجهات الخارجية","Italian Travertine stone cladding for exterior facades"),unit:"م2",qty:640,rate:480,total:307200,status:"approved"},{code:"02.02",desc:e("واجهات زجاجية مزدوجة معزولة حرارياً كيرتن وول قطاع Schüco","Double-glazed thermally broken curtain walls (Schüco profile)"),unit:"م2",qty:220,rate:1150,total:253e3,status:"approved"},{code:"02.03",desc:e("أرضيات رخام ستاتوريو إيطالي للمجالس والصالات الرئيسية","Statuario Italian marble flooring for main majlis & halls"),unit:"م2",qty:380,rate:620,total:235600,status:"approved"},{code:"02.04",desc:e("أسقف معلقة جبسية مقاومة للرطوبة مع مسارات إنارة مغناطيسية","Moisture-resistant gypsum ceilings with magnetic track lighting"),unit:"م2",qty:580,rate:195,total:113100,status:"approved"},{code:"02.05",desc:e("أبواب خشب جوز طبيعي بارتفاع 3.20م مع أقفال ذكية وكوالين خفية","Natural walnut flush doors (3.2m height) with concealed hinges"),unit:"عدد",qty:18,rate:4800,total:86400,status:"approved"},{code:"02.06",desc:e("دهانات داخلية ميكرو سمنت ديكوري فاخر للممرات والصالات","Luxury decorative microcement internal wall finishes"),unit:"م2",qty:1200,rate:85,total:102e3,status:"approved"}]},{id:"mep",title:e("الأنظمة الكهروميكانيكية والتكييف","MEP & HVAC Systems"),rows:[{code:"03.01",desc:e("نظام تكييف مركزي مخفي VRF إنفرتر مع تحكم ذكي غرفي","Inverter VRF central concealed AC system with smart zone thermostats"),unit:"نظام",qty:1,rate:28e4,total:28e4,status:"approved"},{code:"03.02",desc:e("شبكة التغذية والصرف الصحي أنابيب بولي بروبلين ألماني عازل للصوت","Acoustic PPR plumbing & drainage networks with booster pumps"),unit:"مقطوعية",qty:1,rate:95e3,total:95e3,status:"approved"},{code:"03.03",desc:e("نظام سمارت هوم للتحكم بالإنارة والتكييف والستائر بروتوكول KNX","KNX Smart Home automation for lighting, climate and shading"),unit:"نظام",qty:1,rate:145e3,total:145e3,status:"approved"},{code:"03.04",desc:e("لوحات التوزيع الكهربائية والقواطع الذكية شنايدر إلكتريك","Schneider Electric main electrical distribution boards & RCBOs"),unit:"لوحة",qty:6,rate:14e3,total:84e3,status:"approved"},{code:"03.05",desc:e("أنظمة إنذار ومكافحة الحريق وكواشف الدخان المتطورة","Advanced addressable fire alarm, smoke detectors & clean agent extinguishers"),unit:"نظام",qty:1,rate:48e3,total:48e3,status:"approved"}]}];let d=0,h="";u.innerHTML=`
+        `).join(""))};const p=[{id:"structural",title:e("أعمال الهيكل الإنشائي والعظم","Structural & Concrete Works"),rows:[{code:"01.01",desc:e("حفر وتجهيز الموقع وترحيل المخلفات لعمق التأسيس","Excavation & site prep to foundation depth"),unit:"م3",qty:1200,rate:45,total:54e3,status:"approved"},{code:"01.02",desc:e("خرسانة عادية للنظافة C20 سمك 10سم أسفل القواعد","Plain blinding concrete C20 (100mm) under footings"),unit:"م3",qty:180,rate:280,total:50400,status:"approved"},{code:"01.03",desc:e("خرسانة مسلحة للقواعد والرقاب C35 مقاوم للأملاح والكلوريدات","Reinforced concrete C35 SRC for footings and column necks"),unit:"م3",qty:420,rate:390,total:163800,status:"approved"},{code:"01.04",desc:e("حديد تسليح عالي المقاومة مشوه Grade 60 (ASTM A615)","Deformed high-strength rebar Grade 60 (ASTM A615)"),unit:"طن",qty:48,rate:3250,total:156e3,status:"approved"},{code:"01.05",desc:e("خرسانة مسلحة للأعمدة والجدران الاستنادية C40","Reinforced concrete C40 for columns and retaining walls"),unit:"م3",qty:260,rate:420,total:109200,status:"approved"},{code:"01.06",desc:e("عوازل مائية للقواعد ورقاب الأعمدة دهان بيتوميني وممبرين 4مم","Waterproofing bituminous primer + 4mm modified bitumen membrane"),unit:"م2",qty:850,rate:65,total:55250,status:"approved"},{code:"01.07",desc:e("أسقف خرسانية هوردي ولاكمرية Flat Slab مع كمرات ساقطة","Hollow-block and flat slab concrete with drop beams"),unit:"م3",qty:520,rate:410,total:213200,status:"approved"}]},{id:"finishes",title:e("التشطيبات المعمارية الفاخرة","Architectural Finishes"),rows:[{code:"02.01",desc:e("تكسيات حجر ترافنتينو إيطالي نخب أول للواجهات الخارجية","Italian Travertine stone cladding for exterior facades"),unit:"م2",qty:640,rate:480,total:307200,status:"approved"},{code:"02.02",desc:e("واجهات زجاجية مزدوجة معزولة حرارياً كيرتن وول قطاع Schüco","Double-glazed thermally broken curtain walls (Schüco profile)"),unit:"م2",qty:220,rate:1150,total:253e3,status:"approved"},{code:"02.03",desc:e("أرضيات رخام ستاتوريو إيطالي للمجالس والصالات الرئيسية","Statuario Italian marble flooring for main majlis & halls"),unit:"م2",qty:380,rate:620,total:235600,status:"approved"},{code:"02.04",desc:e("أسقف معلقة جبسية مقاومة للرطوبة مع مسارات إنارة مغناطيسية","Moisture-resistant gypsum ceilings with magnetic track lighting"),unit:"م2",qty:580,rate:195,total:113100,status:"approved"},{code:"02.05",desc:e("أبواب خشب جوز طبيعي بارتفاع 3.20م مع أقفال ذكية وكوالين خفية","Natural walnut flush doors (3.2m height) with concealed hinges"),unit:"عدد",qty:18,rate:4800,total:86400,status:"approved"},{code:"02.06",desc:e("دهانات داخلية ميكرو سمنت ديكوري فاخر للممرات والصالات","Luxury decorative microcement internal wall finishes"),unit:"م2",qty:1200,rate:85,total:102e3,status:"approved"}]},{id:"mep",title:e("الأنظمة الكهروميكانيكية والتكييف","MEP & HVAC Systems"),rows:[{code:"03.01",desc:e("نظام تكييف مركزي مخفي VRF إنفرتر مع تحكم ذكي غرفي","Inverter VRF central concealed AC system with smart zone thermostats"),unit:"نظام",qty:1,rate:28e4,total:28e4,status:"approved"},{code:"03.02",desc:e("شبكة التغذية والصرف الصحي أنابيب بولي بروبلين ألماني عازل للصوت","Acoustic PPR plumbing & drainage networks with booster pumps"),unit:"مقطوعية",qty:1,rate:95e3,total:95e3,status:"approved"},{code:"03.03",desc:e("نظام سمارت هوم للتحكم بالإنارة والتكييف والستائر بروتوكول KNX","KNX Smart Home automation for lighting, climate and shading"),unit:"نظام",qty:1,rate:145e3,total:145e3,status:"approved"},{code:"03.04",desc:e("لوحات التوزيع الكهربائية والقواطع الذكية شنايدر إلكتريك","Schneider Electric main electrical distribution boards & RCBOs"),unit:"لوحة",qty:6,rate:14e3,total:84e3,status:"approved"},{code:"03.05",desc:e("أنظمة إنذار ومكافحة الحريق وكواشف الدخان المتطورة","Advanced addressable fire alarm, smoke detectors & clean agent extinguishers"),unit:"نظام",qty:1,rate:48e3,total:48e3,status:"approved"}]}];let d=0,h="";z.innerHTML=`
       <div style="width:100%;height:100%;display:flex;flex-direction:column;background:var(--surface, #ffffff);overflow:hidden;">
         <!-- Excel Green Header -->
         <div style="background:#107c41;color:#ffffff;padding:12px 18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;box-shadow:0 2px 8px rgba(16,124,65,0.25);">
@@ -320,9 +320,9 @@ import{t as re}from"./rolldown-runtime-BQ-_32WO.js";import{B as Y,K as de,N as t
         <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 18px;background:var(--surface-soft, #f8fafc);border-bottom:1px solid var(--line, #e2e8f0);flex-wrap:wrap;gap:10px;">
           <!-- Sheet Tabs -->
           <div style="display:flex;align-items:center;gap:6px;overflow-x:auto;" class="touch-scroll">
-            ${s.map((l,b)=>`
+            ${p.map((s,b)=>`
               <button type="button" class="excel-sheet-tab-btn" data-sheet-idx="${b}" style="padding:6px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid ${b===0?"#107c41":"var(--line, #e2e8f0)"};background:${b===0?"#107c41":"var(--surface, #ffffff)"};color:${b===0?"#ffffff":"var(--ink, #0f172a)"};white-space:nowrap;transition:all 0.15s ease;">
-                ${r(l.title)}
+                ${r(s.title)}
               </button>
             `).join("")}
           </div>
@@ -371,7 +371,7 @@ import{t as re}from"./rolldown-runtime-BQ-_32WO.js";import{B as Y,K as de,N as t
           </div>
         </div>
       </div>
-    `,t(),document.querySelectorAll(".excel-sheet-tab-btn").forEach(l=>{l.addEventListener("click",()=>{d=parseInt(l.dataset.sheetIdx,10)||0,document.querySelectorAll(".excel-sheet-tab-btn").forEach((b,E)=>{E===d?(b.style.background="#107c41",b.style.borderColor="#107c41",b.style.color="#ffffff"):(b.style.background="var(--surface, #ffffff)",b.style.borderColor="var(--line, #e2e8f0)",b.style.color="var(--ink, #0f172a)")}),t()})}),document.getElementById("excel-live-search")?.addEventListener("input",l=>{h=l.target.value||"",t()}),document.getElementById("excel-print-btn")?.addEventListener("click",()=>window.print()),document.getElementById("excel-direct-download")?.addEventListener("click",()=>M(i.id));return}if(B){u.innerHTML=`
+    `,t(),document.querySelectorAll(".excel-sheet-tab-btn").forEach(s=>{s.addEventListener("click",()=>{d=parseInt(s.dataset.sheetIdx,10)||0,document.querySelectorAll(".excel-sheet-tab-btn").forEach((b,k)=>{k===d?(b.style.background="#107c41",b.style.borderColor="#107c41",b.style.color="#ffffff"):(b.style.background="var(--surface, #ffffff)",b.style.borderColor="var(--line, #e2e8f0)",b.style.color="var(--ink, #0f172a)")}),t()})}),document.getElementById("excel-live-search")?.addEventListener("input",s=>{h=s.target.value||"",t()}),document.getElementById("excel-print-btn")?.addEventListener("click",()=>window.print()),document.getElementById("excel-direct-download")?.addEventListener("click",()=>F(i.id));return}if(R){z.innerHTML=`
       <div style="width:100%;height:100%;display:flex;flex-direction:column;background:#1e242c;overflow:hidden;">
         <!-- Word Header -->
         <div style="background:#2b579a;color:#ffffff;padding:12px 18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;box-shadow:0 2px 10px rgba(43,87,154,0.3);z-index:5;">
@@ -486,9 +486,9 @@ import{t as re}from"./rolldown-runtime-BQ-_32WO.js";import{B as Y,K as de,N as t
           </div>
         </div>
       </div>
-    `,document.getElementById("word-print-btn")?.addEventListener("click",()=>window.print()),document.getElementById("word-download-btn")?.addEventListener("click",()=>M(i.id));return}if(F){let h=function(){const k=s[d],S=document.getElementById("ppt-slide-canvas-viewport"),L=document.getElementById("ppt-slide-counter"),$=document.getElementById("ppt-slide-dots-container");L&&(L.textContent=`${e("شريحة","Slide")} ${d+1} / ${s.length}`),$&&($.innerHTML=s.map((m,P)=>`
-          <button type="button" class="ppt-dot" data-dot-idx="${P}" style="width:${P===d?"24px":"8px"};height:8px;border-radius:4px;border:none;background:${P===d?"#d24726":"rgba(255,255,255,0.3)"};cursor:pointer;transition:all 0.2s ease;padding:0;" title="${e("انتقال للشريحة","Go to slide")} ${P+1}"></button>
-        `).join(""),$.querySelectorAll(".ppt-dot").forEach(m=>{m.addEventListener("click",()=>{d=parseInt(m.dataset.dotIdx,10)||0,h()})})),S&&(S.style.backgroundColor=k.theme,S.innerHTML=k.html,document.getElementById("ppt-slide-download-btn")?.addEventListener("click",()=>M(i.id)))};const s=[{number:1,title:e("فلسفة التصميم والمفهوم المعماري","Design Philosophy & Architectural Concept"),subtitle:e("فيلا النخيل الفاخرة — مخرجات مرحلة المفهوم الأولي Concept Phase","Palm Villa Luxury Residence — Concept Deliverables"),theme:"#090d13",accent:"#d24726",html:`
+    `,document.getElementById("word-print-btn")?.addEventListener("click",()=>window.print()),document.getElementById("word-download-btn")?.addEventListener("click",()=>F(i.id));return}if(_){let h=function(){const $=p[d],S=document.getElementById("ppt-slide-canvas-viewport"),C=document.getElementById("ppt-slide-counter"),w=document.getElementById("ppt-slide-dots-container");C&&(C.textContent=`${e("شريحة","Slide")} ${d+1} / ${p.length}`),w&&(w.innerHTML=p.map((y,T)=>`
+          <button type="button" class="ppt-dot" data-dot-idx="${T}" style="width:${T===d?"24px":"8px"};height:8px;border-radius:4px;border:none;background:${T===d?"#d24726":"rgba(255,255,255,0.3)"};cursor:pointer;transition:all 0.2s ease;padding:0;" title="${e("انتقال للشريحة","Go to slide")} ${T+1}"></button>
+        `).join(""),w.querySelectorAll(".ppt-dot").forEach(y=>{y.addEventListener("click",()=>{d=parseInt(y.dataset.dotIdx,10)||0,h()})})),S&&(S.style.backgroundColor=$.theme,S.innerHTML=$.html,document.getElementById("ppt-slide-download-btn")?.addEventListener("click",()=>F(i.id)))};const p=[{number:1,title:e("فلسفة التصميم والمفهوم المعماري","Design Philosophy & Architectural Concept"),subtitle:e("فيلا النخيل الفاخرة — مخرجات مرحلة المفهوم الأولي Concept Phase","Palm Villa Luxury Residence — Concept Deliverables"),theme:"#090d13",accent:"#d24726",html:`
           <div style="height:100%;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:clamp(16px, 4vw, 40px);box-sizing:border-box;">
             <span style="font-size:12px;font-weight:900;color:#d24726;background:rgba(210,71,38,0.18);padding:4px 14px;border-radius:20px;letter-spacing:1px;margin-bottom:16px;">
               DARC ARCHITECTURAL PORTFOLIO 2026
@@ -590,7 +590,7 @@ import{t as re}from"./rolldown-runtime-BQ-_32WO.js";import{B as Y,K as de,N as t
               </button>
             </div>
           </div>
-        `}];let d=0;u.innerHTML=`
+        `}];let d=0;z.innerHTML=`
       <div style="width:100%;height:100%;display:flex;flex-direction:column;background:#090d13;color:#f0f6fc;overflow:hidden;user-select:none;">
         <!-- PPT Header -->
         <div style="background:#d24726;color:#ffffff;padding:12px 18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;box-shadow:0 2px 10px rgba(210,71,38,0.3);z-index:5;">
@@ -635,7 +635,7 @@ import{t as re}from"./rolldown-runtime-BQ-_32WO.js";import{B as Y,K as de,N as t
           </div>
         </div>
       </div>
-    `,h();const t=()=>{d=(d+1)%s.length,h()},l=()=>{d=(d-1+s.length)%s.length,h()};document.getElementById("ppt-next-btn")?.addEventListener("click",t),document.getElementById("ppt-prev-btn")?.addEventListener("click",l);const b=k=>{(k.key==="ArrowRight"||k.key==="ArrowDown")&&t(),(k.key==="ArrowLeft"||k.key==="ArrowUp")&&l()};window.addEventListener("keydown",b);const E=document.getElementById("ppt-touch-wrapper");if(E){let k=0;E.addEventListener("touchstart",S=>{k=S.changedTouches[0].screenX},{passive:!0}),E.addEventListener("touchend",S=>{const L=S.changedTouches[0].screenX-k;Math.abs(L)>40&&(L<0?t():l())},{passive:!0})}document.getElementById("ppt-download-btn")?.addEventListener("click",()=>M(i.id));return}if(R){u.innerHTML=`
+    `,h();const t=()=>{d=(d+1)%p.length,h()},s=()=>{d=(d-1+p.length)%p.length,h()};document.getElementById("ppt-next-btn")?.addEventListener("click",t),document.getElementById("ppt-prev-btn")?.addEventListener("click",s);const b=$=>{($.key==="ArrowRight"||$.key==="ArrowDown")&&t(),($.key==="ArrowLeft"||$.key==="ArrowUp")&&s()};window.addEventListener("keydown",b);const k=document.getElementById("ppt-touch-wrapper");if(k){let $=0;k.addEventListener("touchstart",S=>{$=S.changedTouches[0].screenX},{passive:!0}),k.addEventListener("touchend",S=>{const C=S.changedTouches[0].screenX-$;Math.abs(C)>40&&(C<0?t():s())},{passive:!0})}document.getElementById("ppt-download-btn")?.addEventListener("click",()=>F(i.id));return}if(j){z.innerHTML=`
       <div style="width:100%;height:100%;display:flex;flex-direction:column;background:var(--surface, #ffffff);color:var(--text, #0f172a);overflow:hidden;">
         <!-- Zip Header -->
         <div style="background:#d97706;color:#ffffff;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
@@ -665,7 +665,7 @@ import{t as re}from"./rolldown-runtime-BQ-_32WO.js";import{B as Y,K as de,N as t
           </div>
         </div>
       </div>
-    `,document.getElementById("zip-download-btn")?.addEventListener("click",()=>M(i.id)),document.getElementById("zip-cta-download")?.addEventListener("click",()=>M(i.id));return}u.innerHTML=`
+    `,document.getElementById("zip-download-btn")?.addEventListener("click",()=>F(i.id)),document.getElementById("zip-cta-download")?.addEventListener("click",()=>F(i.id));return}z.innerHTML=`
     <div style="width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px;text-align:center;background:var(--surface, #ffffff);">
       <div style="width:80px;height:80px;border-radius:20px;background:${o.bg};color:${o.color};display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:900;margin-bottom:20px;border:2px solid ${o.border};">
         ${o.ext}
@@ -680,15 +680,15 @@ import{t as re}from"./rolldown-runtime-BQ-_32WO.js";import{B as Y,K as de,N as t
         </button>
       </div>
     </div>
-  `,document.getElementById("fallback-download-btn")?.addEventListener("click",()=>M(i.id))}}var we=re({openUploadDrawingModal:()=>me,renderDocuments:()=>be});function be(){const a=z.data?.documents||[],i=z.data?.projects||[],c=z.data?.tasks||[],o=(z.searches?.documents||"").trim().toLowerCase(),x=z.docProjectFilter||"all",g=z.data?.user?.id,f=de(),C=f||O("review_tasks")||O("approve_tasks")||O("edit_tasks"),I=new Set(c.filter(n=>!n.deletedAt).map(n=>n.id)),_=new Set(i.filter(n=>!n.deletedAt).map(n=>n.id)),B=a.filter(n=>!(n.deletedAt||n.projectId&&!_.has(n.projectId)||!n.projectId&&n.taskId&&!I.has(n.taskId)||x!=="all"&&n.projectId!==x||o&&!(n.originalName||"").toLowerCase().includes(o))).sort((n,A)=>new Date(A.createdAt||0)-new Date(n.createdAt||0)),F=B.reduce((n,A)=>n+(A.size||0),0),R=F>1073741824?(F/1073741824).toFixed(1)+" GB":F>1048576?(F/1048576).toFixed(1)+" MB":Math.round(F/1024)+" KB";return`
+  `,document.getElementById("fallback-download-btn")?.addEventListener("click",()=>F(i.id))}}var $e=le({openUploadDrawingModal:()=>ye,renderDocuments:()=>me});function me(){const n=E.data?.documents||[],i=E.data?.projects||[],c=E.data?.tasks||[],o=(E.searches?.documents||"").trim().toLowerCase(),u=E.docProjectFilter||"all",g=E.data?.user?.id,f=pe(),I=f||X("review_tasks")||X("approve_tasks")||X("edit_tasks"),A=new Set(c.filter(a=>!a.deletedAt).map(a=>a.id)),N=new Set(i.filter(a=>!a.deletedAt).map(a=>a.id)),R=n.filter(a=>!(a.deletedAt||a.projectId&&!N.has(a.projectId)||!a.projectId&&a.taskId&&!A.has(a.taskId)||u!=="all"&&a.projectId!==u||o&&!(a.originalName||"").toLowerCase().includes(o))).sort((a,P)=>new Date(P.createdAt||0)-new Date(a.createdAt||0)),_=R.reduce((a,P)=>a+(P.size||0),0),j=_>1073741824?(_/1073741824).toFixed(1)+" GB":_>1048576?(_/1048576).toFixed(1)+" MB":Math.round(_/1024)+" KB";return`
     <div class="page-head" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;">
       <div>
         <p class="eyebrow">${e("مركز المخرجات والمخططات الهندسية","DELIVERABLES & BLUEPRINTS CENTER")}</p>
-        <h2>${q("documents")}</h2>
+        <h2>${K("documents")}</h2>
         <p class="intro">${e("إدارة وتحميل ومعاينة المخططات المعمارية والإنشائية، ومتابعة إصدارات المخرجات (V1, V2, V3) واعتماداتها.","Manage, upload, and preview architectural drawings, track revisions (V1, V2, V3), and engineering approvals.")}</p>
       </div>
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-        ${O("upload_documents")||f?`
+        ${X("upload_documents")||f?`
           <button class="btn btn-primary btn-sm" data-action="open-upload-drawing-modal" style="display:inline-flex;align-items:center;gap:7px;font-weight:700;box-shadow:0 2px 8px rgba(13,98,105,0.25);">
             ${D("upload",14)}
             <span>${e("رفع مخطط / ملف جديد","Upload Drawing / File")}</span>
@@ -699,7 +699,7 @@ import{t as re}from"./rolldown-runtime-BQ-_32WO.js";import{B as Y,K as de,N as t
           <span>${e("سلة المهملات","Trash")}</span>
         </button>
         <span class="mini-badge badge-pulse" style="padding:6px 12px;font-weight:700;font-size:12px;">
-          ${B.length} ${e("مخطط / ملف","drawings")} (${R})
+          ${R.length} ${e("مخطط / ملف","drawings")} (${j})
         </span>
       </div>
     </div>
@@ -712,7 +712,7 @@ import{t as re}from"./rolldown-runtime-BQ-_32WO.js";import{B as Y,K as de,N as t
           <input 
             type="search" 
             placeholder="${e("بحث برقم المخطط أو الاسم أو الامتداد (DWG, PDF, RVT)...","Search by drawing name, code, or format (DWG, PDF, RVT)...")}" 
-            value="${r(z.searches?.documents||"")}" 
+            value="${r(E.searches?.documents||"")}" 
             data-search="documents" 
             data-action="search-documents" 
           />
@@ -721,15 +721,15 @@ import{t as re}from"./rolldown-runtime-BQ-_32WO.js";import{B as Y,K as de,N as t
         <div class="sort-box">
           <span>${e("المشروع:","Project:")}</span>
           <select data-action="doc-project-filter" class="filter-select select-compact" style="min-width:180px;">
-            <option value="all" ${x==="all"?"selected":""}>${e("— جميع المشاريع —","— All Projects —")}</option>
-            ${i.map(n=>`<option value="${r(n.id)}" ${x===n.id?"selected":""}>${r(n.code)} - ${r(e(n.nameAr,n.nameEn))}</option>`).join("")}
+            <option value="all" ${u==="all"?"selected":""}>${e("— جميع المشاريع —","— All Projects —")}</option>
+            ${i.map(a=>`<option value="${r(a.id)}" ${u===a.id?"selected":""}>${r(a.code)} - ${r(e(a.nameAr,a.nameEn))}</option>`).join("")}
           </select>
         </div>
       </div>
 
       <div class="view-toolbar-end">
         <span class="mini-badge" style="padding:8px 10px;color:var(--ink-soft);background:var(--surface-soft)">
-          ${B.length} ${e("مخرجات","deliverables")}
+          ${R.length} ${e("مخرجات","deliverables")}
         </span>
       </div>
     </div>
@@ -741,8 +741,8 @@ import{t as re}from"./rolldown-runtime-BQ-_32WO.js";import{B as Y,K as de,N as t
           <thead>
             <tr>
               <th>${e("المخطط / المخرج الهندسي","Drawing / Deliverable")}</th>
-              <th>${q("projects")}</th>
-              <th>${q("tasks")}</th>
+              <th>${K("projects")}</th>
+              <th>${K("tasks")}</th>
               <th>${e("الإصدار","Revision")}</th>
               <th>${e("الحالة الهندسية","Status")}</th>
               <th>${e("الحجم","Size")}</th>
@@ -751,65 +751,65 @@ import{t as re}from"./rolldown-runtime-BQ-_32WO.js";import{B as Y,K as de,N as t
             </tr>
           </thead>
           <tbody>
-            ${B.length>0?B.map(n=>{const A=i.find(h=>h.id===n.projectId),y=c.find(h=>h.id===n.taskId),v=Y(n.originalName,n.mimeType),u=te(n.originalName),s=n.size>1048576?(n.size/1048576).toFixed(1)+" MB":Math.round((n.size||0)/1024)+" KB",d=f||O("delete_documents")||n.uploaderId===g;return`
-                <tr data-doc-id="${r(n.id)}">
+            ${R.length>0?R.map(a=>{const P=i.find(d=>d.id===a.projectId),x=c.find(d=>d.id===a.taskId),L=Q(a.originalName,a.mimeType),m=oe(a.originalName),z=a.size>1048576?(a.size/1048576).toFixed(1)+" MB":Math.round((a.size||0)/1024)+" KB",p=f||X("delete_documents")||a.uploaderId===g;return`
+                <tr data-doc-id="${r(a.id)}">
                   <td>
-                    <div style="display:flex;align-items:center;gap:10px;cursor:pointer;" data-action="preview-doc" data-doc-id="${r(n.id)}">
-                      <span class="file-format-badge" style="background:${v.bg};color:${v.color};border:1px solid ${v.border};font-size:10px;font-weight:900;padding:4px 7px;border-radius:6px;flex-shrink:0;letter-spacing:0.5px;">
-                        ${v.ext}
+                    <div style="display:flex;align-items:center;gap:10px;cursor:pointer;" data-action="preview-doc" data-doc-id="${r(a.id)}">
+                      <span class="file-format-badge" style="background:${L.bg};color:${L.color};border:1px solid ${L.border};font-size:10px;font-weight:900;padding:4px 7px;border-radius:6px;flex-shrink:0;letter-spacing:0.5px;">
+                        ${L.ext}
                       </span>
                       <div style="min-width:0;">
-                        <strong style="display:block;font-size:13px;color:var(--ink);max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${r(n.originalName)}">
-                          ${r(n.originalName)}
+                        <strong style="display:block;font-size:13px;color:var(--ink);max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${r(a.originalName)}">
+                          ${r(a.originalName)}
                         </strong>
-                        <span style="font-size:11px;color:var(--muted);">${v.label}</span>
+                        <span style="font-size:11px;color:var(--muted);">${L.label}</span>
                       </div>
                     </div>
                   </td>
                   <td>
-                    ${A?`<span class="badge badge-neutral" style="font-size:11px;cursor:pointer;" data-action="open-project" data-project-id="${r(A.id)}">${r(A.code)}</span>`:"—"}
+                    ${P?`<span class="badge badge-neutral" style="font-size:11px;cursor:pointer;" data-action="open-project" data-project-id="${r(P.id)}">${r(P.code)}</span>`:"—"}
                   </td>
                   <td>
-                    ${y?`<span style="font-size:12px;color:var(--ink);cursor:pointer;" data-action="open-task" data-task-id="${r(y.id)}">${r(e(y.titleAr,y.titleEn))}</span>`:'<span style="color:var(--muted);font-size:11px;">مخطط عام</span>'}
+                    ${x?`<span style="font-size:12px;color:var(--ink);cursor:pointer;" data-action="open-task" data-task-id="${r(x.id)}">${r(e(x.titleAr,x.titleEn))}</span>`:'<span style="color:var(--muted);font-size:11px;">مخطط عام</span>'}
                   </td>
                   <td>
-                    ${u?`
+                    ${m?`
                       <span class="version-badge" style="display:inline-block;padding:2px 7px;border-radius:6px;font-size:10px;font-weight:800;background:rgba(13,98,105,0.08);color:var(--teal);border:1px solid rgba(13,98,105,0.2);">
-                        ${u}
+                        ${m}
                       </span>
                     `:'<span style="font-size:11px;color:var(--muted);">V1</span>'}
                   </td>
                   <td>
                     <div class="doc-status-cell">
-                      ${C?`
-                        <select class="select-compact doc-status-select" data-action="change-doc-status" data-doc-id="${r(n.id)}" style="font-size:11px;font-weight:700;padding:4px 8px;border-radius:8px;border:1px solid var(--line);background:var(--surface);cursor:pointer;">
-                          <option value="draft" ${n.status==="draft"?"selected":""}>📝 ${e("مسودة عمل","Draft")}</option>
-                          <option value="review" ${n.status==="review"?"selected":""}>🔍 ${e("قيد المراجعة","Review")}</option>
-                          <option value="approved" ${n.status==="approved"?"selected":""}>✅ ${e("معتمد للتنفيذ","Approved")}</option>
-                          <option value="superseded" ${n.status==="superseded"?"selected":""}>⏳ ${e("مستبدل بنسخة أحدث","Superseded")}</option>
+                      ${I?`
+                        <select class="select-compact doc-status-select" data-action="change-doc-status" data-doc-id="${r(a.id)}" style="font-size:11px;font-weight:700;padding:4px 8px;border-radius:8px;border:1px solid var(--line);background:var(--surface);cursor:pointer;">
+                          <option value="draft" ${a.status==="draft"?"selected":""}>📝 ${e("مسودة عمل","Draft")}</option>
+                          <option value="review" ${a.status==="review"?"selected":""}>🔍 ${e("قيد المراجعة","Review")}</option>
+                          <option value="approved" ${a.status==="approved"?"selected":""}>✅ ${e("معتمد للتنفيذ","Approved")}</option>
+                          <option value="superseded" ${a.status==="superseded"?"selected":""}>⏳ ${e("مستبدل بنسخة أحدث","Superseded")}</option>
                         </select>
                       `:`
-                        <span class="status-badge ${r(n.status||"draft")}" style="font-size:11px;">
-                          ${r(oe(n.status||"draft"))}
+                        <span class="status-badge ${r(a.status||"draft")}" style="font-size:11px;">
+                          ${r(ae(a.status||"draft"))}
                         </span>
                       `}
                     </div>
                   </td>
-                  <td style="font-size:12px;color:var(--ink-soft);">${s}</td>
-                  <td style="font-size:12px;color:var(--ink-soft);">${se(n.createdAt,!0)}</td>
+                  <td style="font-size:12px;color:var(--ink-soft);">${z}</td>
+                  <td style="font-size:12px;color:var(--ink-soft);">${ce(a.createdAt,!0)}</td>
                   <td style="text-align:end;">
                     <div style="display:inline-flex;align-items:center;gap:4px;">
-                      <button class="btn btn-ghost btn-sm" data-action="preview-doc" data-doc-id="${r(n.id)}" style="padding:5px;" title="${e("معاينة","Preview")}">
+                      <button class="btn btn-ghost btn-sm" data-action="preview-doc" data-doc-id="${r(a.id)}" style="padding:5px;" title="${e("معاينة","Preview")}">
                         ${D("eye",14)}
                       </button>
-                      <button class="btn btn-ghost btn-sm" data-action="copy-doc-link" data-doc-id="${r(n.id)}" style="padding:5px;color:var(--teal);" title="${e("نسخ رابط Google Drive","Copy Drive Link")}">
+                      <button class="btn btn-ghost btn-sm" data-action="copy-doc-link" data-doc-id="${r(a.id)}" style="padding:5px;color:var(--teal);" title="${e("نسخ رابط Google Drive","Copy Drive Link")}">
                         ${D("link",14)}
                       </button>
-                      <button class="btn btn-ghost btn-sm" data-action="download-doc" data-doc-id="${r(n.id)}" style="padding:5px;color:var(--blue);" title="${e("تحميل المخطط","Download")}">
+                      <button class="btn btn-ghost btn-sm" data-action="download-doc" data-doc-id="${r(a.id)}" style="padding:5px;color:var(--blue);" title="${e("تحميل المخطط","Download")}">
                         ${D("download",14)}
                       </button>
-                      ${d?`
-                        <button class="btn btn-ghost btn-sm" data-action="delete-doc" data-doc-id="${r(n.id)}" style="padding:5px;color:var(--red);" title="${e("نقل لسلة المهملات","Move to trash")}">
+                      ${p?`
+                        <button class="btn btn-ghost btn-sm" data-action="delete-doc" data-doc-id="${r(a.id)}" style="padding:5px;color:var(--red);" title="${e("نقل لسلة المهملات","Move to trash")}">
                           ${D("trash",14)}
                         </button>
                       `:""}
@@ -830,7 +830,7 @@ import{t as re}from"./rolldown-runtime-BQ-_32WO.js";import{B as Y,K as de,N as t
         </table>
       </div>
     </div>
-  `}function me(a=null){const i=z.data?.projects||[],c=a||i[0]?.id||"",o=z.data?.tasks?.filter(f=>f.projectId===c&&!f.deletedAt)||[],x=`
+  `}function ye(n=null){const i=E.data?.projects||[],c=n||i[0]?.id||"",o=E.data?.tasks?.filter(f=>f.projectId===c&&!f.deletedAt)||[],u=`
     <form id="upload-drawing-form" style="padding:16px 20px 20px;display:grid;gap:16px;">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
         <div class="field">
@@ -892,13 +892,13 @@ import{t as re}from"./rolldown-runtime-BQ-_32WO.js";import{B as Y,K as de,N as t
         </button>
       </div>
     </form>
-  `,g=document.getElementById("modal-root");if(g){g.innerHTML=ce(e("رفع مخطط أو مخرج هندسي جديد","Upload Architectural Deliverable / Drawing"),e("رفع ملفات CAD و BIM و PDF مع توثيق الإصدارات والتخصص الهندسي.","Upload CAD, BIM, and PDF files with revision numbering and discipline tagging."),x,"upload-drawing","modal-lg");const f=document.getElementById("drawing-upload-project"),C=document.getElementById("drawing-upload-task");f&&C&&f.addEventListener("change",()=>{const y=f.value,v=z.data?.tasks?.filter(u=>u.projectId===y&&!u.deletedAt)||[];C.innerHTML=`<option value="">${e("— مخطط عام لكامل المشروع —","— General Project Drawing —")}</option>`+v.map(u=>`<option value="${r(u.id)}">${r(e(u.titleAr,u.titleEn))}</option>`).join("")});const I=document.getElementById("drawing-dropzone"),_=document.getElementById("drawing-file-input"),B=document.getElementById("drawing-selected-files-list"),F=document.getElementById("start-drawing-upload-btn");let R=[];const n=()=>{if(!R.length){B.innerHTML="",F.disabled=!0;return}F.disabled=!1,B.innerHTML=R.map((y,v)=>{const u=Y(y.name,y.type),s=y.size>1048576?(y.size/1048576).toFixed(1)+" MB":Math.round(y.size/1024)+" KB";return`
+  `,g=document.getElementById("modal-root");if(g){g.innerHTML=ge(e("رفع مخطط أو مخرج هندسي جديد","Upload Architectural Deliverable / Drawing"),e("رفع ملفات CAD و BIM و PDF مع توثيق الإصدارات والتخصص الهندسي.","Upload CAD, BIM, and PDF files with revision numbering and discipline tagging."),u,"upload-drawing","modal-lg");const f=document.getElementById("drawing-upload-project"),I=document.getElementById("drawing-upload-task");f&&I&&f.addEventListener("change",()=>{const x=f.value,L=E.data?.tasks?.filter(m=>m.projectId===x&&!m.deletedAt)||[];I.innerHTML=`<option value="">${e("— مخطط عام لكامل المشروع —","— General Project Drawing —")}</option>`+L.map(m=>`<option value="${r(m.id)}">${r(e(m.titleAr,m.titleEn))}</option>`).join("")});const A=document.getElementById("drawing-dropzone"),N=document.getElementById("drawing-file-input"),R=document.getElementById("drawing-selected-files-list"),_=document.getElementById("start-drawing-upload-btn");let j=[];const a=()=>{if(!j.length){R.innerHTML="",_.disabled=!0;return}_.disabled=!1,R.innerHTML=j.map((x,L)=>{const m=Q(x.name,x.type),z=x.size>1048576?(x.size/1048576).toFixed(1)+" MB":Math.round(x.size/1024)+" KB";return`
           <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--surface);border:1px solid var(--line);border-radius:8px;font-size:12px;">
             <div style="display:flex;align-items:center;gap:8px;min-width:0;">
-              <span class="file-format-badge" style="background:${u.bg};color:${u.color};border:1px solid ${u.border};font-size:9px;font-weight:800;padding:2px 6px;border-radius:4px;">${u.ext}</span>
-              <span style="font-weight:600;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:280px;">${r(y.name)}</span>
-              <span style="color:var(--muted);font-size:11px;">(${s})</span>
+              <span class="file-format-badge" style="background:${m.bg};color:${m.color};border:1px solid ${m.border};font-size:9px;font-weight:800;padding:2px 6px;border-radius:4px;">${m.ext}</span>
+              <span style="font-weight:600;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:280px;">${r(x.name)}</span>
+              <span style="color:var(--muted);font-size:11px;">(${z})</span>
             </div>
-            <button type="button" data-file-remove="${v}" style="background:transparent;border:0;color:var(--red);cursor:pointer;font-size:16px;">&times;</button>
+            <button type="button" data-file-remove="${L}" style="background:transparent;border:0;color:var(--red);cursor:pointer;font-size:16px;">&times;</button>
           </div>
-        `}).join(""),B.querySelectorAll("[data-file-remove]").forEach(y=>{y.addEventListener("click",v=>{const u=parseInt(y.dataset.fileRemove);R.splice(u,1),n()})})};I&&_&&(I.addEventListener("click",()=>_.click()),_.addEventListener("change",()=>{_.files?.length&&(R=Array.from(_.files),n())}),I.addEventListener("dragover",y=>{y.preventDefault(),I.style.borderColor="var(--teal)"}),I.addEventListener("dragleave",()=>{I.style.borderColor="var(--line)"}),I.addEventListener("drop",y=>{y.preventDefault(),I.style.borderColor="var(--line)",y.dataTransfer?.files?.length&&(R=Array.from(y.dataTransfer.files),n())}));const A=document.getElementById("upload-drawing-form");A&&A.addEventListener("submit",async y=>{if(y.preventDefault(),!R.length)return;const v=f.value,u=C.value||null,s=document.getElementById("drawing-upload-discipline")?.value||"عام",d=document.getElementById("drawing-upload-status")?.value||"draft";pe(),typeof window.uploadDirectFiles=="function"&&window.uploadDirectFiles({files:R,projectId:v,taskId:u,discipline:s,status:d})})}}export{ne as a,M as i,me as n,xe as o,K as r,ve as s,we as t};
+        `}).join(""),R.querySelectorAll("[data-file-remove]").forEach(x=>{x.addEventListener("click",L=>{const m=parseInt(x.dataset.fileRemove);j.splice(m,1),a()})})};A&&N&&(A.addEventListener("click",()=>N.click()),N.addEventListener("change",()=>{N.files?.length&&(j=Array.from(N.files),a())}),A.addEventListener("dragover",x=>{x.preventDefault(),A.style.borderColor="var(--teal)"}),A.addEventListener("dragleave",()=>{A.style.borderColor="var(--line)"}),A.addEventListener("drop",x=>{x.preventDefault(),A.style.borderColor="var(--line)",x.dataTransfer?.files?.length&&(j=Array.from(x.dataTransfer.files),a())}));const P=document.getElementById("upload-drawing-form");P&&P.addEventListener("submit",async x=>{if(x.preventDefault(),!j.length)return;const L=f.value,m=I.value||null,z=document.getElementById("drawing-upload-discipline")?.value||"عام",p=document.getElementById("drawing-upload-status")?.value||"draft";fe(),typeof window.uploadDirectFiles=="function"&&window.uploadDirectFiles({files:j,projectId:L,taskId:m,discipline:z,status:p})})}}export{re as a,F as i,ye as n,ue as o,Z as r,we as s,$e as t};

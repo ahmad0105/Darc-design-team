@@ -506,6 +506,9 @@ app.post('/:id/invite', requireManageUsers, async (c) => {
 });
 
 app.post('/:id/impersonate', requireAdmin, async (c) => {
+  if (c.get('isDemo')) {
+    return c.json({ error: 'محظور: خاصية تقمص الحسابات معطلة تماماً في بيئة العرض التجريبية.' }, 403);
+  }
   const targetId = c.req.param('id');
   if (!isValidEntityId(targetId)) return c.json({ error: 'معرف غير صالح' }, 400);
   const currentUserId = c.get('userId');

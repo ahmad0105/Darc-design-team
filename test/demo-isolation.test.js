@@ -3,6 +3,7 @@ import { getIncidentsPerUser, getDemoTelemetryAnalytics, recordTelemetryHeartbea
 import { sendWhatsAppAlert, dispatchDirectNotificationAlert } from '../darc-cloud-backend/src/features/whatsapp/whatsapp.service.js';
 import { createNotification } from '../darc-cloud-backend/src/features/notifications/notifications.service.js';
 import { getDemoPayload } from '../darc-cloud-backend/src/features/demo/demo.service.js';
+import { getDocumentShareableLink, GDRIVE_ROOT_FOLDER_ID } from '../public/src/features/documents/doc-viewer.js';
 
 console.log('--- Running Demo Isolation & Monitoring Verification Suite ---');
 
@@ -145,7 +146,34 @@ async function runTests() {
   assert.ok(incidentRes.incident.stackTrace.length <= 4000, 'Stack trace must be bounded <= 4000 chars');
   console.log('✓ Test 10: Error reporting enforces input size bounding & sandbox email containment');
 
-  console.log('--- All Demo Isolation & Security Hardening Tests Passed Successfully (10/10) ---');
+  // Test 11: Demo documents must NEVER have real Google Drive root folder ID or URL in demoData
+  const demoDocs = demoData.documents;
+  assert.ok(demoDocs && demoDocs.length > 0, 'Demo documents must exist');
+  for (const doc of demoDocs) {
+    assert.notStrictEqual(doc.driveFileId, GDRIVE_ROOT_FOLDER_ID, `Demo doc ${doc.id} must not leak production Google Drive Root Folder ID`);
+    assert.ok(!String(doc.driveFileId || '').includes(GDRIVE_ROOT_FOLDER_ID), `Demo doc ${doc.id} driveFileId must not contain production Google Drive Root Folder ID`);
+    assert.ok(!String(doc.diskFilename || '').includes(GDRIVE_ROOT_FOLDER_ID), `Demo doc ${doc.id} diskFilename must not contain production Google Drive Root Folder ID`);
+    assert.ok(!String(doc.viewLink || '').includes(GDRIVE_ROOT_FOLDER_ID), `Demo doc ${doc.id} viewLink must not contain production Google Drive Root Folder ID`);
+    assert.ok(doc.diskFilename.startsWith('/assets/'), `Demo doc ${doc.id} diskFilename must point to pre-bundled local asset`);
+  }
+  console.log('✓ Test 11: Demo documents dataset is 100% sanitized and contains ZERO production Google Drive folder references');
+
+  // Test 12: getDocumentShareableLink in demo session must NEVER return the real Google Drive folder URL or ID
+  for (const doc of demoDocs) {
+    const shareLink = getDocumentShareableLink(doc);
+    assert.ok(!shareLink.includes(GDRIVE_ROOT_FOLDER_ID), `Share link for ${doc.id} must NOT expose production Google Drive Root Folder ID`);
+    assert.ok(shareLink.startsWith('/assets/'), `Share link for ${doc.id} must resolve to safe local asset`);
+  }
+  console.log('✓ Test 12: getDocumentShareableLink enforces complete demo containment with zero Google Drive leaks');
+
+  // Test 13: Demo company customFields contains safe simulated WhatsApp configuration
+  assert.ok(demoData.company, 'Demo data must include company');
+  assert.ok(demoData.company.customFields?.whatsapp, 'Demo company must provide isolated mock WhatsApp configuration');
+  assert.strictEqual(demoData.company.customFields.whatsapp.serverUrl, 'https://whatsapp.demo-gateway.local', 'Demo WhatsApp must point to simulated gateway');
+  assert.strictEqual(demoData.company.customFields.whatsapp.recipient, '+971500000000', 'Demo WhatsApp recipient must be fake number');
+  console.log('✓ Test 13: Demo company configuration is securely mock-isolated with zero real WhatsApp credentials');
+
+  console.log('--- All Demo Isolation & Security Hardening Tests Passed Successfully (13/13) ---');
 }
 
 runTests().catch(err => {
