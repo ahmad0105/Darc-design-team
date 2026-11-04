@@ -1725,10 +1725,10 @@ export function exportProjectPDF(projectId, isClientFacing = false) {
         </div>
         <div style="display:flex;gap:8px;">
           <button class="btn-toolbar" onclick="window.print()">
-            🖨️ ${choose('طباعة / حفظ كـ PDF', 'Print / Save as PDF')}
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-inline-end:4px;"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>${choose('طباعة / حفظ كـ PDF', 'Print / Save as PDF')}
           </button>
           <button class="btn-toolbar-ghost" onclick="window.location.search = (window.location.search.includes('client=1') ? '' : '?client=1')">
-            🔄 ${isClientFacing ? choose('التبديل للتقرير الفني الشامل', 'Switch to Technical Report') : choose('التبديل لتقرير المالك والعميل', 'Switch to Client Report')}
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-inline-end:4px;"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 21h5v-5"/></svg>${isClientFacing ? choose('التبديل للتقرير الفني الشامل', 'Switch to Technical Report') : choose('التبديل لتقرير المالك والعميل', 'Switch to Client Report')}
           </button>
           <button class="btn-toolbar-ghost" onclick="window.close()">
             ✕ ${choose('إغلاق', 'Close')}

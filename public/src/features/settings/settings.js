@@ -1654,7 +1654,7 @@ export const FULL_PERMISSIONS_CATALOG = [
   { id: 'delete_documents', category: 'documents', categoryAr: 'المخططات والمكتبة القياسية', categoryEn: 'Drawings & Deliverables Library', nameAr: 'حذف المخططات والمستندات', nameEn: 'Delete Documents' },
   { id: 'manage_templates', category: 'documents', categoryAr: 'المخططات والمكتبة القياسية', categoryEn: 'Drawings & Deliverables Library', nameAr: 'إدارة مكتبة القوالب والمخرجات القياسية', nameEn: 'Manage Templates Library' },
 
-  // 📊 المؤشرات والتقارير (Analytics & Reports)
+  // المؤشرات والتقارير (Analytics & Reports)
   { id: 'view_dashboard', category: 'reports', categoryAr: 'المؤشرات والتقارير', categoryEn: 'Analytics & Reports', nameAr: 'عرض لوحة التحكم والمؤشرات', nameEn: 'View Dashboard' },
   { id: 'view_reports', category: 'reports', categoryAr: 'المؤشرات والتقارير', categoryEn: 'Analytics & Reports', nameAr: 'عرض صفحة التقارير والمؤشرات', nameEn: 'View Reports' },
   { id: 'export_reports', category: 'reports', categoryAr: 'المؤشرات والتقارير', categoryEn: 'Analytics & Reports', nameAr: 'تصدير التقارير (Excel)', nameEn: 'Export Reports (Excel)' },

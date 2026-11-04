@@ -1544,7 +1544,7 @@ export async function handleClick(event) {
     const bundle = target.dataset.bundle;
     if (bundle && typeof navigator !== 'undefined' && navigator.clipboard) {
       navigator.clipboard.writeText(bundle).then(() => {
-        showToast(choose('تم نسخ تقرير المشكلة الفني بالكامل للحافظة 📋', 'Full debug bundle copied to clipboard 📋'));
+        showToast(choose('تم نسخ تقرير المشكلة الفني بالكامل للحافظة.', 'Full debug bundle copied to clipboard.'));
       }).catch(() => {
         showToast(choose('فشل النسخ التلقائي للحافظة', 'Failed to copy to clipboard'), true);
       });
