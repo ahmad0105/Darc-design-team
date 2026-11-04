@@ -102,6 +102,8 @@ export function createDemoDataset() {
       createdAt: dateStr(-45),
       updatedAt: dateStr(-1),
       memberCount: 5,
+      memberIds: ['usr_demo', 'usr_demo_arch', 'usr_demo_int', 'usr_demo_struct', 'usr_demo_mep'],
+      members: ['usr_demo', 'usr_demo_arch', 'usr_demo_int', 'usr_demo_struct', 'usr_demo_mep'],
       manager: { id: 'usr_demo', name: 'Demo', nameEn: 'Demo' }
     },
     {
@@ -124,6 +126,8 @@ export function createDemoDataset() {
       createdAt: dateStr(-90),
       updatedAt: dateStr(-2),
       memberCount: 6,
+      memberIds: ['usr_demo', 'usr_demo_arch', 'usr_demo_struct', 'usr_demo_mep', 'usr_demo_3d', 'usr_demo_int'],
+      members: ['usr_demo', 'usr_demo_arch', 'usr_demo_struct', 'usr_demo_mep', 'usr_demo_3d', 'usr_demo_int'],
       manager: { id: 'usr_demo_arch', name: 'م. فهد القحطاني', nameEn: 'Eng. Fahad Al-Qahtani' }
     },
     {
@@ -146,6 +150,8 @@ export function createDemoDataset() {
       createdAt: dateStr(-120),
       updatedAt: dateStr(-3),
       memberCount: 5,
+      memberIds: ['usr_demo', 'usr_demo_arch', 'usr_demo_int', 'usr_demo_struct', 'usr_demo_mep'],
+      members: ['usr_demo', 'usr_demo_arch', 'usr_demo_int', 'usr_demo_struct', 'usr_demo_mep'],
       manager: { id: 'usr_demo', name: 'Demo', nameEn: 'Demo' }
     },
     {
@@ -168,6 +174,8 @@ export function createDemoDataset() {
       createdAt: dateStr(-180),
       updatedAt: dateStr(-10),
       memberCount: 4,
+      memberIds: ['usr_demo', 'usr_demo_arch', 'usr_demo_int', 'usr_demo_mep'],
+      members: ['usr_demo', 'usr_demo_arch', 'usr_demo_int', 'usr_demo_mep'],
       manager: { id: 'usr_demo_int', name: 'نورة المنصور', nameEn: 'Noura Al-Mansoor' }
     }
   ];

@@ -131,6 +131,64 @@ function getRtlScrollType() {
 let leftEdgeHotzone = null;
 let rightEdgeHotzone = null;
 
+// Interactive Mobile & Tablet Quick-Column Drag Dock
+let columnDock = null;
+let activeDockStatus = null;
+
+function showColumnDock() {
+  if (typeof document === 'undefined') return;
+  const isMobileOrTouch = window.innerWidth <= 860 || currentPointerType === 'touch';
+  if (!isMobileOrTouch) return;
+  if (columnDock && columnDock.parentNode) return;
+
+  const boardCols = Array.from(document.querySelectorAll('.board-column'));
+  if (!boardCols.length) return;
+
+  columnDock = document.createElement('div');
+  columnDock.id = 'dnd-column-dock';
+  columnDock.className = 'dnd-column-dock';
+  columnDock.setAttribute('role', 'toolbar');
+  columnDock.setAttribute('aria-label', choose('التنقل السريع بين الأعمدة', 'Quick column navigator'));
+
+  let pillsHtml = '';
+  boardCols.forEach(col => {
+    const status = col.dataset.status;
+    const titleEl = col.querySelector('.board-column-title');
+    const dotEl = col.querySelector('.column-dot');
+    const dotClass = dotEl ? dotEl.className : 'column-dot';
+    const countEl = col.querySelector('.board-count');
+    const title = titleEl ? titleEl.innerText.trim() : status;
+    const count = countEl ? countEl.innerText.trim() : '0';
+
+    pillsHtml += `
+      <div class="dock-column-pill" data-dock-status="${status}">
+        <span class="${dotClass}" style="width:8px;height:8px;border-radius:50%;display:inline-block;flex-shrink:0;"></span>
+        <span class="dock-pill-title" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:85px;">${title}</span>
+        <span class="dock-pill-count" style="font-size:10px;font-weight:700;opacity:0.85;padding:1px 5px;border-radius:10px;background:rgba(0,0,0,0.06);">${count}</span>
+      </div>
+    `;
+  });
+
+  columnDock.innerHTML = pillsHtml;
+  document.body.appendChild(columnDock);
+
+  requestAnimationFrame(() => {
+    columnDock?.classList.add('is-visible');
+  });
+}
+
+function hideColumnDock() {
+  activeDockStatus = null;
+  if (columnDock) {
+    columnDock.classList.remove('is-visible');
+    const el = columnDock;
+    columnDock = null;
+    setTimeout(() => {
+      if (el && el.parentNode) el.parentNode.removeChild(el);
+    }, 220);
+  }
+}
+
 function showEdgeHotzones() {
   if (typeof document === 'undefined') return;
   if (!leftEdgeHotzone) {
@@ -738,6 +796,7 @@ function cleanDragState() {
   leftEdgeHotzone?.classList.remove('is-active');
   rightEdgeHotzone?.classList.remove('is-active');
 
+  hideColumnDock();
   hideEdgeHotzones();
   stopContinuousAutoScroll();
   document.querySelectorAll('.board-column').forEach(col => col.classList.remove('drag-over'));
@@ -812,8 +871,8 @@ function initiateDrag(clientX, clientY, pointerType = currentPointerType) {
   if (isNaN(dragOffsetX) || dragOffsetX <= 0 || dragOffsetX > safeWidth) dragOffsetX = safeWidth / 2;
   if (isNaN(dragOffsetY) || dragOffsetY <= 0 || dragOffsetY > (rect.height || 120)) dragOffsetY = (rect.height || 120) / 2;
 
-  // Finger Occlusion Lift Offset on Touch: lifts floating clone 28px above finger for 100% visibility
-  const touchLift = (pointerType === 'touch') ? 28 : 0;
+  // Finger Occlusion Lift Offset on Touch: lifts floating clone 32px above finger for 100% visibility
+  const touchLift = (pointerType === 'touch') ? 32 : 0;
   // Integer positioning eliminates subpixel text shimmering on macOS Safari
   const startGx = Math.round(clientX - dragOffsetX);
   const startGy = Math.round(clientY - dragOffsetY - touchLift);
@@ -854,6 +913,11 @@ function initiateDrag(clientX, clientY, pointerType = currentPointerType) {
   `;
   document.body.appendChild(dragGhost);
 
+  // Release capture safely before modifying source card styles to avoid WebKit coordinate dropping
+  if (activePointerId != null && dragCard) {
+    try { dragCard.releasePointerCapture(activePointerId); } catch (e) {}
+  }
+
   // Dim source card & make it transparent to elementFromPoint hit-testing
   dragCard.classList.remove('is-touch-charging');
   dragCard.classList.remove('is-touch-holding');
@@ -867,6 +931,7 @@ function initiateDrag(clientX, clientY, pointerType = currentPointerType) {
   document.body.style.cursor = 'grabbing';
 
   showEdgeHotzones();
+  showColumnDock();
 
   // Highlight initial column
   const column = dragCard.closest('.board-column');
@@ -911,14 +976,42 @@ function updateDragMovement(clientX, clientY, pointerType = currentPointerType) 
   }
   prevMouseX = clientX;
 
-  // Finger Occlusion Lift Offset on Touch: lifts floating clone 28px above finger for 100% visibility
-  const touchLift = (pointerType === 'touch') ? 28 : 0;
+  // Finger Occlusion Lift Offset on Touch: lifts floating clone 32px above finger for 100% visibility
+  const touchLift = (pointerType === 'touch') ? 32 : 0;
   // Integer positioning eliminates subpixel rasterization shimmering on Retina displays
   const gx = Math.round(clientX - dragOffsetX);
   const gy = Math.round(clientY - dragOffsetY - touchLift);
   if (Number.isFinite(gx) && Number.isFinite(gy)) {
     const tiltStr = currentTilt !== 0 ? ` rotate(${currentTilt.toFixed(1)}deg)` : '';
     dragGhost.style.transform = `translate3d(${gx}px, ${gy}px, 0) scale(1.025)${tiltStr}`;
+  }
+
+  // Interactive Quick Column Dock Hit-Testing
+  if (columnDock) {
+    const dockRect = columnDock.getBoundingClientRect();
+    const isOverDock = (clientY >= dockRect.top - 15 && clientY <= dockRect.bottom + 18 && clientX >= dockRect.left - 10 && clientX <= dockRect.right + 10);
+    const pills = columnDock.querySelectorAll('.dock-column-pill');
+    let currentHoveredStatus = null;
+
+    if (isOverDock) {
+      pills.forEach(pill => {
+        const pRect = pill.getBoundingClientRect();
+        const isInside = (clientX >= pRect.left && clientX <= pRect.right && clientY >= pRect.top - 15 && clientY <= pRect.bottom + 15);
+        pill.classList.toggle('is-hovered', isInside);
+        if (isInside) currentHoveredStatus = pill.dataset.dockStatus;
+      });
+    } else {
+      pills.forEach(p => p.classList.remove('is-hovered'));
+    }
+
+    if (currentHoveredStatus && currentHoveredStatus !== activeDockStatus) {
+      activeDockStatus = currentHoveredStatus;
+      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+        try { navigator.vibrate(14); } catch (e) {}
+      }
+    } else if (!currentHoveredStatus) {
+      activeDockStatus = null;
+    }
   }
 
   // Update target column and placeholder position with spatial deadband hysteresis
@@ -939,6 +1032,20 @@ async function finalizeDragDrop(clientX, clientY) {
   if (!isPointerDragging && !activeDraggedTaskId) {
     cleanDragState();
     return;
+  }
+
+  // Quick Drop Target on Mobile Column Dock
+  if (activeDockStatus && activeDraggedTaskId) {
+    const targetCol = document.querySelector(`.board-column[data-status="${activeDockStatus}"]`);
+    const draggedId = activeDraggedTaskId;
+    activeDraggedTaskId = null;
+    if (dragGhost && dragGhost.parentNode) dragGhost.parentNode.removeChild(dragGhost);
+    dragGhost = null;
+    hideColumnDock();
+    if (targetCol && draggedId) {
+      await handleTaskDrop(targetCol, 0, draggedId);
+      return;
+    }
   }
 
   const moveDist = Math.hypot(clientX - dragStartX, clientY - dragStartY);
@@ -997,7 +1104,7 @@ async function finalizeDragDrop(clientX, clientY) {
 
 // ── UNIFIED POINTER ENGINE (Mouse, Stylus & Touch with Slop Box & Decoupled Capture) ──
 
-const TOUCH_SLOP = 8;
+const TOUCH_SLOP = 14; // W3C mobile slop box preventing human finger tremor on glass from aborting hold
 let isTouchCharging = false;
 let isScrollingGesture = false;
 let isDragStartedFromGrip = false;
@@ -1037,10 +1144,10 @@ document.addEventListener('pointerdown', (e) => {
     currentPointerType = 'touch';
     window._isTouchHoldingTask = true;
     if (isDragStartedFromGrip) {
-      // Grip handle dragged: Immediate capture for fluid drag
-      try { card.setPointerCapture(e.pointerId); } catch (err) {}
+      // Grip handle dragged: Immediate pickup for fluid zero-latency drag
+      initiateDrag(e.clientX, e.clientY, 'touch');
     } else {
-      // Card body touched: Allow native scrolling! Require deliberate 280ms hold
+      // Card body touched: Allow native scrolling! Require deliberate 260ms hold
       isTouchCharging = true;
       card.classList.add('is-touch-charging');
       touchHoldTimer = setTimeout(() => {
@@ -1051,9 +1158,9 @@ document.addEventListener('pointerdown', (e) => {
           if (typeof navigator !== 'undefined' && navigator.vibrate) {
             try { navigator.vibrate(28); } catch (e) {}
           }
-          initiateDrag(currentMouseX, currentMouseY, 'touch');
+          initiateDrag(currentMouseX >= 0 ? currentMouseX : dragStartX, currentMouseY >= 0 ? currentMouseY : dragStartY, 'touch');
         }
-      }, 280);
+      }, 260);
     }
   } else {
     currentPointerType = e.pointerType || 'mouse';
@@ -1080,7 +1187,7 @@ document.addEventListener('pointermove', (e) => {
         }
       } else {
         if (dist > TOUCH_SLOP) {
-          // Moved before 280ms expired -> Treat as pure scroll gesture!
+          // Moved before 260ms expired -> Treat as pure scroll gesture!
           isScrollingGesture = true;
           window._isTouchHoldingTask = false;
           if (touchHoldTimer) {
@@ -1156,16 +1263,30 @@ window.addEventListener('resize', () => {
 // ── DEDICATED NATIVE TOUCH INTERCEPTORS (iOS Safari, Android Chrome, iPadOS) ──
 
 window.addEventListener('touchmove', (e) => {
-  if (isPointerDragging && e.cancelable) {
-    e.preventDefault();
+  if (isPointerDragging) {
+    if (e.cancelable) e.preventDefault();
+    if (e.touches && e.touches.length > 0) {
+      const touch = e.touches[0];
+      if (touch && touch.clientX > 0 && touch.clientY > 0) {
+        currentMouseX = touch.clientX;
+        currentMouseY = touch.clientY;
+        updateDragMovement(touch.clientX, touch.clientY, 'touch');
+      }
+    }
   }
 }, { passive: false });
 
-window.addEventListener('touchend', () => {
+window.addEventListener('touchend', async (e) => {
   window._isTouchHoldingTask = false;
   if (touchHoldTimer) {
     clearTimeout(touchHoldTimer);
     touchHoldTimer = null;
+  }
+  if (isPointerDragging) {
+    const touch = (e.changedTouches && e.changedTouches[0]) ? e.changedTouches[0] : null;
+    const finalX = touch ? touch.clientX : (currentMouseX >= 0 ? currentMouseX : dragStartX);
+    const finalY = touch ? touch.clientY : (currentMouseY >= 0 ? currentMouseY : dragStartY);
+    await finalizeDragDrop(finalX, finalY);
   }
 }, { passive: true });
 

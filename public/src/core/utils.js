@@ -728,9 +728,15 @@ export function exportXLS(filename, htmlTable) {
 export function canUserMoveTask(task) {
   if (!task) return false;
   if (isAdmin()) return true;
+  if (state.data?.isDemo || state.data?.user?.id === 'usr_demo' || (typeof localStorage !== 'undefined' && localStorage.getItem('darc_user_id') === 'usr_demo')) {
+    return true; // Full exploration in showcase sandbox
+  }
   if (!can('edit_tasks')) return false;
   const userId = state.data?.user?.id;
   if (!userId) return false;
+  const userRole = state.data?.user?.roleId || state.data?.user?.role_id;
+  if (userRole === 'discipline_lead' || userRole === 'admin') return true;
+
   const assignee = task.assigneeId || task.assignee_id;
   if (assignee === userId) return true;
   const creator = task.creatorId || task.createdById || task.created_by_id || task.created_by;
@@ -749,7 +755,7 @@ export function canUserMoveTask(task) {
       const pm = proj.managerId || proj.manager_id;
       const owner = proj.ownerId || proj.owner_id || proj.leadId || proj.lead_id || proj.createdById || proj.created_by;
       if (pm === userId || owner === userId) return true;
-      if (Array.isArray(proj.members) && proj.members.some(m => (m.userId || m.id || m) === userId)) return true;
+      if (Array.isArray(proj.members) && proj.members.some(m => (m.userId || m.id || m.user_id || m) === userId)) return true;
       if (Array.isArray(proj.memberIds) && proj.memberIds.includes(userId)) return true;
     }
   }

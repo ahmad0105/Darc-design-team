@@ -160,8 +160,12 @@ export async function generateBootstrapPayloadForUser(env, userId, roleId) {
     for (const u of activeUsers) userMap.set(u.id, u);
 
     const memberCountMap = new Map();
+    const projectMembersMap = new Map();
     for (const m of members) {
       memberCountMap.set(m.project_id, (memberCountMap.get(m.project_id) || 0) + 1);
+      let mList = projectMembersMap.get(m.project_id);
+      if (!mList) { mList = []; projectMembersMap.set(m.project_id, mList); }
+      mList.push(m);
     }
 
     const projectTasksMap = new Map();
@@ -205,6 +209,9 @@ export async function generateBootstrapPayloadForUser(env, userId, roleId) {
         lifecycle = 'active';
       }
 
+      const pMembers = projectMembersMap.get(p.id) || [];
+      const pMemberIds = pMembers.map(m => m.user_id);
+
       return {
         ...p,
         lifecycle,
@@ -212,7 +219,9 @@ export async function generateBootstrapPayloadForUser(env, userId, roleId) {
         progress,
         totalWeight,
         memberCount: memberCountMap.get(p.id) || 0,
-        manager: managerInfo
+        manager: managerInfo,
+        members: pMembers.map(m => toCamelCase(m)),
+        memberIds: pMemberIds
       };
     });
 

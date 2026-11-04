@@ -41,6 +41,7 @@ export function applyDemoTaskUpdate(taskId, updates) {
     delete cleanUpdates.__proto__;
     delete cleanUpdates.constructor;
     delete cleanUpdates.prototype;
+    const oldStatus = task.status;
     Object.assign(task, cleanUpdates, { updatedAt: new Date().toISOString() });
     if (cleanUpdates.status) {
       if (task.status === 'done') {
@@ -51,6 +52,23 @@ export function applyDemoTaskUpdate(taskId, updates) {
         task.progress = 50;
       } else if (['review', 'approval'].includes(task.status) && (task.progress || 0) < 80) {
         task.progress = 80;
+      }
+
+      // Record simulated audit log for status change
+      if (oldStatus !== cleanUpdates.status && Array.isArray(_demoStore.auditLogs)) {
+        _demoStore.auditLogs.unshift({
+          id: 'aud_demo_' + Math.random().toString(36).substring(2, 8),
+          userId: 'usr_demo',
+          action: 'status_change',
+          entityType: 'task',
+          entityId: task.id,
+          details: {
+            title: task.titleAr || task.titleEn || task.title || 'Demo Task',
+            oldStatus,
+            newStatus: cleanUpdates.status
+          },
+          createdAt: new Date().toISOString()
+        });
       }
     }
     // Recalculate demo project progress

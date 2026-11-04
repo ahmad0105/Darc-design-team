@@ -125,7 +125,7 @@ export function taskCard(task) {
   return `<article class="task-card ${dueClass} ${!canEditTask ? 'not-draggable' : ''}" draggable="false" tabindex="0" role="button" aria-roledescription="sortable task card" aria-label="${esc(taskTitle)}" data-action="open-task" data-task-id="${esc(task.id)}">
     <div class="task-card-top">
       <div style="display:flex;align-items:center;gap:6px;">
-        <span class="task-drag-handle" title="${choose('اسحب لتحريك المهمة', 'Drag to reorder')}" style="cursor:grab;touch-action:none;padding:1px 4px;border-radius:4px;color:var(--muted);font-size:12px;opacity:0.65;user-select:none;transition:opacity 0.15s ease;">⋮⋮</span>
+        <span class="task-drag-handle" title="${choose('اسحب لتحريك المهمة', 'Drag to reorder')}" aria-label="${choose('مقبض السحب', 'Drag handle')}" role="button" tabindex="0"><span class="drag-handle-dots" aria-hidden="true">⋮⋮</span></span>
         <span class="task-code">${esc(task.templateId ? task.templateId.replace('tpl-', '#') : '#CUSTOM')}</span>
       </div>
       <div style="display:flex;align-items:center;gap:6px;">
