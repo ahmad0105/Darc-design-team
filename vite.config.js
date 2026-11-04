@@ -49,10 +49,9 @@ export default defineConfig({
           if (id.includes('/features/documents/')) return 'feature-documents';
           if (id.includes('/features/auth/')) return 'feature-auth';
           if (id.includes('/core/realtime')) return 'core-realtime';
+          if (id.includes('/core/dragdrop')) return 'core-dragdrop';
           if (id.includes('/features/settings/')) return 'feature-settings';
-          if (id.includes('/features/projects/') || id.includes('/features/tasks/')) {
-            return 'feature-workspace';
-          }
+          if (id.includes('/features/projects/') || id.includes('/features/tasks/')) return 'feature-workspace';
         }
       }
     }

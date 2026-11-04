@@ -185,14 +185,18 @@
         });
       })();
     </script>
-    <script type="module" crossorigin src="/assets/main-D0H05yVF.js"></script>
+    <!-- Prefetch heavy feature chunks so they're in cache when user logs in -->
+    <link rel="prefetch" href="/assets/dashboard-8OLblrNc.js" as="script" />
+    <link rel="prefetch" href="/assets/projects-DtPtIhlP.js" as="script" />
+    <link rel="prefetch" href="/assets/realtime-CWcgdXEC.js" as="script" />
+    <script type="module" crossorigin src="/assets/main-ClInyPpZ.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/rolldown-runtime-BQ-_32WO.js">
-    <link rel="modulepreload" crossorigin href="/assets/core-realtime-DAO0EHOT.js">
-    <link rel="modulepreload" crossorigin href="/assets/feature-auth-P-DVBdro.js">
-    <link rel="modulepreload" crossorigin href="/assets/feature-settings-5B6WA9QG.js">
-    <link rel="modulepreload" crossorigin href="/assets/feature-documents-OOhXbe1N.js">
-    <link rel="modulepreload" crossorigin href="/assets/feature-workspace-D9F8TBIR.js">
-    <link rel="modulepreload" crossorigin href="/assets/feature-reports-D2NCSXxf.js">
+    <link rel="modulepreload" crossorigin href="/assets/core-dragdrop-B8Zn12as.js">
+    <link rel="modulepreload" crossorigin href="/assets/feature-auth-DjrNOXKq.js">
+    <link rel="modulepreload" crossorigin href="/assets/feature-settings-BA3Qo8zE.js">
+    <link rel="modulepreload" crossorigin href="/assets/feature-documents-CWnRDQem.js">
+    <link rel="modulepreload" crossorigin href="/assets/feature-workspace-DXfPIvfV.js">
+    <link rel="modulepreload" crossorigin href="/assets/feature-reports-EPsgvkYb.js">
     <link rel="stylesheet" crossorigin href="/assets/main-B1s9kVkn.css">
   </head>
   <body>
@@ -232,16 +236,17 @@
       </div>
     </noscript>
 
-    <div id="app">
-      <div id="darc-splash-screen" role="status" aria-label="Loading DARC Workspace">
-        <div class="darc-splash-box">
-          <div class="darc-splash-logo">D</div>
-          <div>
-            <div class="darc-splash-title">DARC Design Team</div>
-            <div class="darc-splash-sub">Architecture &amp; Workspace</div>
-          </div>
-          <div class="darc-splash-bar"><div class="darc-splash-progress"></div></div>
+    <div id="app"></div>
+
+    <!-- Splash screen: lives OUTSIDE #app so it persists until JS explicitly hides it -->
+    <div id="darc-splash-screen" role="status" aria-label="Loading DARC Workspace">
+      <div class="darc-splash-box">
+        <div class="darc-splash-logo">D</div>
+        <div>
+          <div class="darc-splash-title">DARC Design Team</div>
+          <div class="darc-splash-sub">Architecture &amp; Workspace</div>
         </div>
+        <div class="darc-splash-bar"><div class="darc-splash-progress"></div></div>
       </div>
     </div>
   </body>

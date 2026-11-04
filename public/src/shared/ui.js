@@ -1,7 +1,21 @@
 import { state } from '../core/state.js';
 import { choose, esc, icon } from '../core/utils.js';
 
+// Removes the full-screen splash screen with a quick fade.
+// Called once — the very first time the app renders login or the workspace.
+let _splashRemoved = false;
+export function hideSplashScreen() {
+  if (_splashRemoved) return;
+  _splashRemoved = true;
+  const splash = document.getElementById('darc-splash-screen');
+  if (!splash) return;
+  splash.style.transition = 'opacity 0.18s ease';
+  splash.style.opacity = '0';
+  setTimeout(() => { splash.style.display = 'none'; }, 190);
+}
+
 export function renderLoading() {
+  hideSplashScreen();
   document.getElementById('app').innerHTML = `<div class="loading"><div class="loading-mark"><div class="loading-spinner"></div><span>${choose('جاري تجهيز مساحة العمل...', 'Preparing your workspace...')}</span></div></div>`;
 }
 

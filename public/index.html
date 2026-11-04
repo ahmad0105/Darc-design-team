@@ -220,6 +220,10 @@
     </script>
     <link rel="stylesheet" href="/styles.css" />
     <script type="module" src="/app.js"></script>
+    <!-- Prefetch heavy feature chunks so they're in cache when user logs in -->
+    <link rel="prefetch" href="/src/features/dashboard/dashboard.js" as="script" />
+    <link rel="prefetch" href="/src/features/projects/projects.js" as="script" />
+    <link rel="prefetch" href="/src/core/realtime.js" as="script" />
   </head>
   <body>
     <!-- Fallback Screen when JavaScript is Blocked / Disabled -->
@@ -258,16 +262,17 @@
       </div>
     </noscript>
 
-    <div id="app">
-      <div id="darc-splash-screen" role="status" aria-label="Loading DARC Workspace">
-        <div class="darc-splash-box">
-          <div class="darc-splash-logo">D</div>
-          <div>
-            <div class="darc-splash-title">DARC Design Team</div>
-            <div class="darc-splash-sub">Architecture &amp; Workspace</div>
-          </div>
-          <div class="darc-splash-bar"><div class="darc-splash-progress"></div></div>
+    <div id="app"></div>
+
+    <!-- Splash screen: lives OUTSIDE #app so it persists until JS explicitly hides it -->
+    <div id="darc-splash-screen" role="status" aria-label="Loading DARC Workspace">
+      <div class="darc-splash-box">
+        <div class="darc-splash-logo">D</div>
+        <div>
+          <div class="darc-splash-title">DARC Design Team</div>
+          <div class="darc-splash-sub">Architecture &amp; Workspace</div>
         </div>
+        <div class="darc-splash-bar"><div class="darc-splash-progress"></div></div>
       </div>
     </div>
   </body>

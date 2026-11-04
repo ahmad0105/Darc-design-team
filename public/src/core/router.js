@@ -2,7 +2,7 @@ import { state } from './state.js';
 import { api, invalidateBootstrapEtag } from './api.js';
 import { can, isAdmin, choose, t, esc, icon, avatar, roleName, currentViewTitle, hasSessionIndicator } from './utils.js';
 import { saveOfflineBootstrap, getOfflineBootstrap, getOfflineBootstrapAsync, clearOfflineBootstrap, getPendingMutations, isOnline } from './offline.js';
-import { showToast } from '../shared/ui.js';
+import { showToast, hideSplashScreen } from '../shared/ui.js';
 import { recordBreadcrumb } from './telemetry.js';
 import { renderNavbar, renderSyncIndicator, initSyncIndicatorListener, updateNavbarTitle } from '../shared/navbar.js';
 import { renderSidebar, renderSidebarBackdrop } from '../shared/sidebar.js';
@@ -59,6 +59,7 @@ export function renderApp() {
   document.documentElement.lang = state.lang;
   document.documentElement.dir = state.lang === 'ar' ? 'rtl' : 'ltr';
 
+  hideSplashScreen();
   document.getElementById('app').innerHTML = `
     <div class="app-shell ${state.lang === 'en' ? 'is-ltr' : ''}">
       ${renderSidebarBackdrop()}

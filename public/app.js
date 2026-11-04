@@ -113,40 +113,25 @@ window.addEventListener('resize', () => {
 });
 
 // Global runtime error boundaries with automated reporting & email alert trigger
+const _noisePatterns = [
+  'Turnstile', 'turnstile', 'Script error',
+  'challenges.cloudflare.com', 'SafariExtensionMessageEvent',
+  'Blocked a frame with origin', 'No available adapters', 'ResizeObserver loop',
+];
+const _isNoise = (msg) => _noisePatterns.some((p) => String(msg).includes(p));
+
 window.addEventListener('error', (event) => {
-  const msg = String(event?.message || event?.error?.message || '');
-  if (
-    msg.includes('Turnstile') || 
-    msg.includes('turnstile') || 
-    msg.includes('Script error') ||
-    msg.includes('challenges.cloudflare.com') ||
-    msg.includes('SafariExtensionMessageEvent') ||
-    msg.includes('Blocked a frame with origin') ||
-    msg.includes('No available adapters') ||
-    msg.includes('ResizeObserver loop')
-  ) {
-    return;
-  }
-  console.error("Runtime Error:", event.error);
+  const msg = event?.message || event?.error?.message || '';
+  if (_isNoise(msg)) return;
+  console.error('Runtime Error:', event.error);
   reportClientError(event.error || { message: msg }, { source: 'window.onerror' });
   if (typeof showToast === 'function') showToast(`خطأ برمجي: ${event.message}`, true);
 });
 
 window.addEventListener('unhandledrejection', (event) => {
-  const msg = String(event?.reason?.message || event?.reason || '');
-  if (
-    msg.includes('Turnstile') || 
-    msg.includes('turnstile') || 
-    msg.includes('Script error') ||
-    msg.includes('challenges.cloudflare.com') ||
-    msg.includes('SafariExtensionMessageEvent') ||
-    msg.includes('Blocked a frame with origin') ||
-    msg.includes('No available adapters') ||
-    msg.includes('ResizeObserver loop')
-  ) {
-    return;
-  }
-  console.error("Unhandled Rejection:", event.reason);
+  const msg = event?.reason?.message || event?.reason || '';
+  if (_isNoise(msg)) return;
+  console.error('Unhandled Rejection:', event.reason);
   reportClientError(event.reason || { message: msg }, { source: 'unhandledrejection', errorType: 'UnhandledRejection' });
 });
 
@@ -173,4 +158,3 @@ if ('serviceWorker' in navigator && window.location.protocol.startsWith('http'))
 initRealtimeConnection();
 initTelemetryEngine();
 init();
-

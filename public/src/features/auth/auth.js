@@ -1,7 +1,7 @@
 import { state } from '../../core/state.js';
 import { api, invalidateBootstrapEtag } from '../../core/api.js';
 import { choose, esc, icon, t, savePreferencesCookies, setSessionIndicator } from '../../core/utils.js';
-import { modalShell, renderLoading, showToast } from '../../shared/ui.js';
+import { modalShell, renderLoading, showToast, hideSplashScreen } from '../../shared/ui.js';
 import { loadData, renderApp } from '../../core/router.js';
 import { getOfflineBootstrap, saveOfflineBootstrap } from '../../core/offline.js';
 
@@ -344,6 +344,7 @@ function startRateLimitCountdown(buttonEl, seconds = 60) {
 
 export function renderLogin(errorMessage = '', mode = 'login', isSuccess = false) {
   state.view = 'login';
+  hideSplashScreen();
   
   // Instantly synchronize browser URL address bar to #login or #forgot
   if (typeof window !== 'undefined') {
@@ -523,6 +524,7 @@ export function renderLogin(errorMessage = '', mode = 'login', isSuccess = false
         state.data = loginRes.bootstrap;
         saveOfflineBootstrap(loginRes.bootstrap);
         renderApp();
+        if (typeof window._scheduleFeatureLoad === 'function') window._scheduleFeatureLoad();
         loadData(true).catch(() => {});
         return;
       }
@@ -533,6 +535,7 @@ export function renderLogin(errorMessage = '', mode = 'login', isSuccess = false
         cached.user = loginRes.user || cached.user;
         state.data = cached;
         renderApp(); // Instant 0ms Paint!
+        if (typeof window._scheduleFeatureLoad === 'function') window._scheduleFeatureLoad();
         loadData(true).catch(() => {});
         return;
       }
@@ -542,6 +545,7 @@ export function renderLogin(errorMessage = '', mode = 'login', isSuccess = false
       renderLoading();
       await loadData();
       renderApp();
+      if (typeof window._scheduleFeatureLoad === 'function') window._scheduleFeatureLoad();
     } catch (error) {
       console.error("Login Error:", error);
       if (typeof window !== 'undefined' && window.turnstile && _turnstileWidgetId !== null) {
@@ -632,6 +636,7 @@ export function renderLogin(errorMessage = '', mode = 'login', isSuccess = false
 }
 
 export function renderActivation(token, errorMessage = '') {
+  hideSplashScreen();
   document.body.classList.remove('in-app');
   document.body.classList.toggle('is-ltr', state.lang === 'en');
   document.documentElement.lang = state.lang;
@@ -692,6 +697,7 @@ export function renderActivation(token, errorMessage = '') {
 }
 
 export function renderResetPassword(token, errorMessage = '') {
+  hideSplashScreen();
   document.body.classList.remove('in-app');
   document.body.classList.toggle('is-ltr', state.lang === 'en');
   document.documentElement.lang = state.lang;
