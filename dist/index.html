@@ -107,6 +107,19 @@
                 sessionStorage.removeItem('darc_last_route');
               }
             } catch (e) {}
+          } else {
+            // D. Validate offline bootstrap integrity (heal corrupted records without user)
+            try {
+              var rawBootstrap = localStorage.getItem('darc_offline_bootstrap');
+              if (rawBootstrap) {
+                var parsedBootstrap = JSON.parse(rawBootstrap);
+                if (!parsedBootstrap || !parsedBootstrap.data || !parsedBootstrap.data.user) {
+                  localStorage.removeItem('darc_offline_bootstrap');
+                }
+              }
+            } catch (e) {
+              try { localStorage.removeItem('darc_offline_bootstrap'); } catch (err) {}
+            }
           }
         } catch (e) {}
 
@@ -172,14 +185,14 @@
         });
       })();
     </script>
-    <script type="module" crossorigin src="/assets/main-a29qMLw-.js"></script>
+    <script type="module" crossorigin src="/assets/main-D0H05yVF.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/rolldown-runtime-BQ-_32WO.js">
-    <link rel="modulepreload" crossorigin href="/assets/core-realtime-B9bsh5Re.js">
-    <link rel="modulepreload" crossorigin href="/assets/feature-auth-yiqveTlj.js">
-    <link rel="modulepreload" crossorigin href="/assets/feature-settings-CAPuZj3u.js">
-    <link rel="modulepreload" crossorigin href="/assets/feature-documents-Dzj698Mk.js">
-    <link rel="modulepreload" crossorigin href="/assets/feature-workspace-BpMPMINS.js">
-    <link rel="modulepreload" crossorigin href="/assets/feature-reports-BcjC5QOr.js">
+    <link rel="modulepreload" crossorigin href="/assets/core-realtime-DAO0EHOT.js">
+    <link rel="modulepreload" crossorigin href="/assets/feature-auth-P-DVBdro.js">
+    <link rel="modulepreload" crossorigin href="/assets/feature-settings-5B6WA9QG.js">
+    <link rel="modulepreload" crossorigin href="/assets/feature-documents-OOhXbe1N.js">
+    <link rel="modulepreload" crossorigin href="/assets/feature-workspace-D9F8TBIR.js">
+    <link rel="modulepreload" crossorigin href="/assets/feature-reports-D2NCSXxf.js">
     <link rel="stylesheet" crossorigin href="/assets/main-B1s9kVkn.css">
   </head>
   <body>

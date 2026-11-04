@@ -140,6 +140,19 @@
                 sessionStorage.removeItem('darc_last_route');
               }
             } catch (e) {}
+          } else {
+            // D. Validate offline bootstrap integrity (heal corrupted records without user)
+            try {
+              var rawBootstrap = localStorage.getItem('darc_offline_bootstrap');
+              if (rawBootstrap) {
+                var parsedBootstrap = JSON.parse(rawBootstrap);
+                if (!parsedBootstrap || !parsedBootstrap.data || !parsedBootstrap.data.user) {
+                  localStorage.removeItem('darc_offline_bootstrap');
+                }
+              }
+            } catch (e) {
+              try { localStorage.removeItem('darc_offline_bootstrap'); } catch (err) {}
+            }
           }
         } catch (e) {}
 

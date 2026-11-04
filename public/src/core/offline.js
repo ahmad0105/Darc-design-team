@@ -94,7 +94,7 @@ export function isOnline() {
  * Persists bootstrap payload into IndexedDB (primary) and localStorage (fast synchronous fallback).
  */
 export function saveOfflineBootstrap(data) {
-  if (!data) return;
+  if (!data || !data.user) return;
   const record = {
     timestamp: Date.now(),
     data
@@ -130,7 +130,7 @@ export function getOfflineBootstrap() {
       const raw = localStorage.getItem(STORAGE_BOOTSTRAP_KEY);
       if (raw) {
         const record = JSON.parse(raw);
-        if (record?.data) return record.data;
+        if (record?.data && record.data.user) return record.data;
       }
     } catch (e) {}
   }
@@ -142,7 +142,7 @@ export function getOfflineBootstrap() {
  */
 export async function getOfflineBootstrapAsync() {
   const idbRecord = await idbGet(STORAGE_BOOTSTRAP_KEY);
-  if (idbRecord?.data) return idbRecord.data;
+  if (idbRecord?.data && idbRecord.data.user) return idbRecord.data;
   return getOfflineBootstrap();
 }
 

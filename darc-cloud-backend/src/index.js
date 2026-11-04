@@ -1,6 +1,5 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
-import { compress } from 'hono/compress';
 import { setSessionCookie, clearSessionCookie, getSessionToken } from './core/cookie.js';
 import { sign, verify } from 'hono/jwt';
 import { createClient } from '@supabase/supabase-js';
@@ -74,9 +73,6 @@ app.use('*', edgeSentryMiddleware());
 
 // 3. Security Headers & Strict CSP (nosniff, DENY, HSTS, CSP)
 app.use('*', securityHeadersMiddleware());
-
-// High-Performance Payload Compression (Gzip / Deflate on Edge)
-app.use('*', compress());
 
 // 3. CORS Guard: Strictly allow only authorized domains
 const ALLOWED_ORIGINS = [
@@ -440,7 +436,7 @@ app.use('/api/*', async (c, next) => {
   const method = c.req.method;
 
   // 1. Allow routes specifically wired for demo: /api/bootstrap, /api/demo/reset, /api/tasks, /api/telemetry, /api/audit, /api/notifications, and document uploads
-  if (path === '/api/bootstrap' || path.startsWith('/api/demo') || path.startsWith('/api/tasks') || path.startsWith('/api/notifications') || (path.startsWith('/api/documents') && method !== 'GET') || path.startsWith('/api/telemetry') || path.startsWith('/api/audit')) {
+  if (path.startsWith('/api/bootstrap') || path.startsWith('/api/demo') || path.startsWith('/api/tasks') || path.startsWith('/api/notifications') || (path.startsWith('/api/documents') && method !== 'GET') || path.startsWith('/api/telemetry') || path.startsWith('/api/audit')) {
     return next();
   }
 

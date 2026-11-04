@@ -204,7 +204,17 @@ export async function api(path, options = {}) {
     } catch (e) {}
   }
   
-  const result = await response.json().catch(() => ({ ok: true }));
+  let result;
+  try {
+    const rawText = await response.text();
+    result = rawText ? JSON.parse(rawText) : { ok: true };
+  } catch (parseError) {
+    if (path.startsWith('/api/bootstrap') || (!isMutation && !isAuth)) {
+      console.error(`[API] JSON parse failed on ${path}:`, parseError.message);
+      throw new Error(choose('فشل استلام بيانات النظام بشكل صحيح من الخادم.', 'Failed to parse workspace data from server.'));
+    }
+    result = { ok: true };
+  }
 
   // On successful mutations, invalidate local ETag and broadcast to other open tabs to trigger immediate sync
   if (['POST', 'PATCH', 'PUT', 'DELETE'].includes(options.method)) {

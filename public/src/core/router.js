@@ -248,7 +248,7 @@ export async function loadData(silent = false) {
         invalidateBootstrapEtag();
         payload = await api('/api/bootstrap', { silent: false, headers: { 'Cache-Control': 'no-cache, no-store' } });
       }
-      if (!payload) return;
+      if (!payload || !payload.user) return;
     }
     
     // Save to offline storage non-blockingly for instant access when offline
@@ -363,7 +363,9 @@ export async function loadData(silent = false) {
       state.data.notifications?.length !== payload.notifications?.length;
     
     if (isDataChanged || state.view === 'login') {
-      state.data = payload;
+      if (payload && payload.user) {
+        state.data = payload;
+      }
       if (state.view === 'login' || !canAccessView(state.view)) {
         state.view = getFirstAllowedView();
       }
@@ -394,7 +396,9 @@ export async function loadData(silent = false) {
       }
     } else {
       // Just update state silently without re-rendering the DOM
-      state.data = payload; 
+      if (payload && payload.user) {
+        state.data = payload; 
+      } 
       if (!canAccessView(state.view)) {
         state.view = getFirstAllowedView();
         requestAnimationFrame(() => renderView());
