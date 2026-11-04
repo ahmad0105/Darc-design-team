@@ -1,5 +1,5 @@
 import assert from 'node:assert';
-import { getIncidentsPerUser } from '../darc-cloud-backend/src/features/telemetry/telemetry.service.js';
+import { getIncidentsPerUser, getDemoTelemetryAnalytics, recordTelemetryHeartbeat } from '../darc-cloud-backend/src/features/telemetry/telemetry.service.js';
 import { sendWhatsAppAlert, dispatchDirectNotificationAlert } from '../darc-cloud-backend/src/features/whatsapp/whatsapp.service.js';
 import { createNotification } from '../darc-cloud-backend/src/features/notifications/notifications.service.js';
 import { getDemoPayload } from '../darc-cloud-backend/src/features/demo/demo.service.js';
@@ -105,7 +105,29 @@ async function runTests() {
   assert.ok(!isolatedDocsForRealAccount.some(d => d.original_name.includes('DARC-VILLA')), 'Demo blueprint MUST NOT be present in real account');
   console.log('✓ Test 6: Production account documents are 100% shielded from demo blueprints & mock assets');
 
-  console.log('--- All Demo Isolation & Monitoring Verification Tests Passed Successfully (6/6) ---');
+  // Test 7: Observability & Analytics Showcase Isolation
+  const demoAnalytics = getDemoTelemetryAnalytics();
+  assert.strictEqual(demoAnalytics.isDemo, true, 'Demo telemetry analytics must flag isDemo: true');
+  assert.strictEqual(demoAnalytics.stats.totalVisits, 1482, 'Must provide realistic showcase visit numbers');
+  assert.strictEqual(demoAnalytics.stats.uniqueVisitors, 628, 'Must provide realistic showcase unique numbers');
+  assert.ok(Array.isArray(demoAnalytics.countries), 'Must provide showcase countries');
+  assert.ok(demoAnalytics.countries.some(c => c.code === 'AE' && c.visits === 652), 'Must contain simulated GCC country stats');
+  console.log('✓ Test 7: Observability & Analytics provides 100% fake showcase metrics in demo mode');
+
+  // Test 8: Diagnostics & Error Logs Showcase Isolation
+  const demoDiagnostics = await getIncidentsPerUser(mockRealDB, null, true);
+  assert.strictEqual(demoDiagnostics.isDemo, true, 'Must flag isDemo: true');
+  assert.strictEqual(demoDiagnostics.stats.realUsersMonitored, 0, 'Real users monitored must be 0 in demo mode');
+  assert.ok(demoDiagnostics.stats.alertEmailRecipient.includes('demo-alerts'), 'Alert email must be isolated demo simulation recipient');
+  assert.ok(demoDiagnostics.users.every(u => u.userId.startsWith('usr_demo')), 'Every monitored user in demo must be a demo engineer');
+  console.log('✓ Test 8: Error Logs & Diagnostics provides 100% fake showcase data with zero real user exposure');
+
+  // Test 9: Telemetry Heartbeat from demo user is suppressed
+  const demoHeartbeatRes = recordTelemetryHeartbeat({}, { userId: 'usr_demo', isDemo: true });
+  assert.strictEqual(demoHeartbeatRes.skipped, true, 'Demo heartbeat must be skipped to avoid mutating real production stats');
+  console.log('✓ Test 9: Telemetry heartbeat from demo sessions is suppressed from mutating live production stats');
+
+  console.log('--- All Demo Isolation & Monitoring Verification Tests Passed Successfully (9/9) ---');
 }
 
 runTests().catch(err => {

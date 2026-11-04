@@ -1,5 +1,6 @@
 import { state } from './state.js';
 import { api, API_BASE } from './api.js';
+import { isDemoSession } from './realtime.js';
 
 let _sessionStartTime = Date.now();
 let _activeSeconds = 0;
@@ -126,8 +127,10 @@ export async function reportClientError(error, context = {}) {
   recordBreadcrumb('error', `${errorType}: ${errorMessage}`);
 
   const user = state.data?.user || {};
+  const isDemo = isDemoSession();
   const payload = {
     userId: user.id || 'usr_demo',
+    isDemo,
     userName: user.name || 'Demo',
     userEmail: user.email || 'demo@darc-design.bond',
     userRole: user.jobTitleAr || state.data?.role?.nameAr || 'مهندس مساحة العمل',
@@ -194,9 +197,11 @@ export async function sendHeartbeat(isPriority = false, useBeacon = false) {
 
   const { os, browser } = getClientPlatform();
   const deviceType = getDeviceType();
+  const isDemo = isDemoSession();
 
   const payload = {
     userId: state.data?.user?.id || 'anonymous',
+    isDemo,
     sessionId,
     visitorId,
     isNewVisit,

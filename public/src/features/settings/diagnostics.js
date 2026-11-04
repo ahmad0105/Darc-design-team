@@ -3,6 +3,7 @@ import { api } from '../../core/api.js';
 import { choose, esc, icon, t } from '../../core/utils.js';
 import { showToast } from '../../shared/ui.js';
 import { getClientTelemetrySnapshot } from '../../core/telemetry.js';
+import { isDemoSession } from '../../core/realtime.js';
 
 let _cachedDiagnostics = null;
 let _isLoading = false;
@@ -39,6 +40,7 @@ export function setDiagnosticsStatusFilter(status) {
 }
 
 export function renderDiagnosticsSection() {
+  const isDemo = isDemoSession();
   const data = _cachedDiagnostics;
   const clientSnapshot = getClientTelemetrySnapshot();
 
@@ -51,9 +53,27 @@ export function renderDiagnosticsSection() {
     });
   }
 
-  // Merge real active users from workspace state with diagnostics data
+  // Merge active users: in demo session, strictly restrict to demo identities
   let users = data?.users || [];
-  if (!users.length && state.data?.users && state.data.users.length) {
+  if (isDemo) {
+    users = users.filter(u => u.userId && String(u.userId).startsWith('usr_demo'));
+    if (!users.length && state.data?.users) {
+      users = state.data.users.filter(u => u.id && String(u.id).startsWith('usr_demo')).map(u => ({
+        userId: u.id,
+        name: u.name,
+        nameEn: u.nameEn || u.name,
+        email: u.email,
+        role: u.jobTitleAr || (u.roleId === 'admin' ? 'مدير النظام (عرض تجريبي)' : (u.roleId || 'عضو فريق')),
+        avatarColor: u.avatarColor || '#0d6269',
+        isRealAccount: false,
+        status: u.status || 'active',
+        totalIncidents: 0,
+        activeIncidents: 0,
+        resolvedIncidents: 0,
+        incidents: []
+      }));
+    }
+  } else if (!users.length && state.data?.users && state.data.users.length) {
     users = state.data.users.map(u => ({
       userId: u.id,
       name: u.name,
@@ -71,12 +91,15 @@ export function renderDiagnosticsSection() {
   }
 
   let incidents = data?.incidents || [];
+  if (isDemo) {
+    incidents = incidents.filter(i => i.userId && String(i.userId).startsWith('usr_demo'));
+  }
   const stats = data?.stats || {
-    totalIncidents: 3,
+    totalIncidents: isDemo ? incidents.length : 3,
     activeIncidents: 0,
-    resolvedIncidents: 3,
+    resolvedIncidents: isDemo ? incidents.length : 3,
     totalUsersMonitored: users.length || 6,
-    alertEmailRecipient: 'admin@darc-design.bond'
+    alertEmailRecipient: isDemo ? 'demo-alerts@darc-design.bond (بيئة العرض التجريبية)' : 'admin@darc-design.bond'
   };
 
   // Filter incidents
@@ -94,6 +117,22 @@ export function renderDiagnosticsSection() {
 
   return `
     <section class="setting-section" id="diagnostics-dashboard">
+      ${isDemo ? `
+        <div class="demo-diagnostics-banner" style="background:linear-gradient(90deg, rgba(13,98,105,0.08), rgba(74,199,209,0.12));border:1.5px solid var(--border);border-radius:12px;padding:12px 18px;margin-bottom:20px;display:flex;align-items:center;gap:12px;font-size:12px;color:var(--ink);">
+          <span style="font-size:22px;">🛠️</span>
+          <div style="flex:1;">
+            <div style="font-weight:800;color:var(--teal);margin-bottom:2px;">
+              ${choose('بيئة العرض التجريبية — سجل أعطال وتشخيصات محاكاة (Showcase Diagnostics)', 'Demo Showcase Sandbox — Simulated Diagnostics & Logs')}
+            </div>
+            <div style="color:var(--muted);font-size:11px;line-height:1.4;">
+              ${choose('هذه السجلات وفحوصات الذاكرة وتقارير التتبع هي نماذج محاكاة مخصصة للاستعراض، ولا تتضمن أي بيانات أو أخطاء من بيئة الإنتاج الحقيقية.', 'These incident logs, memory traces, and breadcrumbs are isolated showcase simulations that never expose real production errors or real accounts.')}
+            </div>
+          </div>
+          <span class="badge" style="background:var(--teal);color:#fff;font-size:10px;font-weight:700;padding:4px 8px;border-radius:6px;white-space:nowrap;">
+            ${choose('بيانات محاكاة 100%', '100% Mock Data')}
+          </span>
+        </div>
+      ` : ''}
       <!-- 1. Header & Actions Bar -->
       <div class="panel-head" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:14px;margin-bottom:20px;">
         <div>

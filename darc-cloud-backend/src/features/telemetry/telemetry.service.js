@@ -492,19 +492,25 @@ export async function getIncidentsPerUser(supabase = null, filterUserId = null, 
     return b.totalIncidents - a.totalIncidents;
   });
 
-  const activeTotal = _telemetryStore.recentIncidents.filter(i => i.status === 'active').length;
-  const resolvedTotal = _telemetryStore.recentIncidents.filter(i => i.status === 'resolved').length;
+  const activeTotal = isDemo
+    ? incidents.filter(i => i.status === 'active').length
+    : _telemetryStore.recentIncidents.filter(i => i.status === 'active').length;
+  const resolvedTotal = isDemo
+    ? incidents.filter(i => i.status === 'resolved').length
+    : _telemetryStore.recentIncidents.filter(i => i.status === 'resolved').length;
+  const totalCount = isDemo ? incidents.length : _telemetryStore.recentIncidents.length;
 
   return {
     ok: true,
+    isDemo: Boolean(isDemo),
     stats: {
-      totalIncidents: _telemetryStore.recentIncidents.length,
+      totalIncidents: totalCount,
       activeIncidents: activeTotal,
       resolvedIncidents: resolvedTotal,
       totalUsersMonitored: usersList.length,
-      realUsersMonitored: usersList.filter(u => u.isRealAccount).length,
+      realUsersMonitored: isDemo ? 0 : usersList.filter(u => u.isRealAccount).length,
       emailAlertsConfigured: true,
-      alertEmailRecipient: 'admin@darc-design.bond'
+      alertEmailRecipient: isDemo ? 'demo-alerts@darc-design.bond (بيئة العرض التجريبية)' : 'admin@darc-design.bond'
     },
     users: usersList,
     incidents
@@ -587,8 +593,13 @@ export function recordTelemetryHeartbeat(env, {
   memoryMb = 0,
   errorCount = 0,
   longTaskCount = 0,
-  currentView = 'dashboard'
+  currentView = 'dashboard',
+  isDemo = false
 }) {
+  // Shield: Demo sessions do not mutate production live visits, IP logs, or active visitor maps
+  if (isDemo || userId === 'usr_demo' || (userId && String(userId).startsWith('usr_demo'))) {
+    return { ok: true, isDemo: true, skipped: true, reason: 'Demo telemetry heartbeats are strictly isolated from production stats' };
+  }
   const normCountry = (country && country.toUpperCase()) || 'AE';
   const normCity = city || (normCountry === 'AE' ? 'Dubai' : normCountry === 'SA' ? 'Riyadh' : 'Cairo');
   const safeDuration = Math.min(Math.max(Number(durationSeconds) || 30, 5), 3600);
@@ -853,6 +864,120 @@ export function getTelemetryAnalytics() {
     recentSessions: _telemetryStore.recentSessions.slice(0, 15),
     recentAnomalies: _telemetryStore.recentAnomalies.slice(0, 10),
     recentIncidents: _telemetryStore.recentIncidents.slice(0, 5)
+  };
+}
+
+/**
+ * High-Fidelity Demo Showcase Telemetry & Observability
+ * Returns realistic mock data completely isolated from real platform traffic.
+ */
+export function getDemoTelemetryAnalytics() {
+  const now = Date.now();
+  return {
+    isDemo: true,
+    stats: {
+      totalVisits: 1482,
+      uniqueVisitors: 628,
+      activeSessions: 14,
+      avgTimeSpentMinutes: 9.25,
+      avgTimeSpentFormattedAr: '9 دقائق و 15 ثانية',
+      avgTimeSpentFormattedEn: '9m 15s',
+      healthScore: '100%',
+      crashFreeRate: '99.9%',
+      bounceRate: '11.8%',
+      returnRate: '72.4%',
+      edgeLatency: '24ms',
+      activeAnomaliesCount: 0,
+      activeIncidentsCount: 0,
+      totalIncidentsLogged: 3,
+      totalAnomaliesLogged: 1
+    },
+    countries: [
+      { code: 'AE', nameAr: 'الإمارات العربية المتحدة', nameEn: 'United Arab Emirates', flag: '🇦🇪', visits: 652, percent: 44.0 },
+      { code: 'SA', nameAr: 'المملكة العربية السعودية', nameEn: 'Saudi Arabia', flag: '🇸🇦', visits: 485, percent: 32.7 },
+      { code: 'QA', nameAr: 'دولة قطر', nameEn: 'Qatar', flag: '🇶🇦', visits: 148, percent: 10.0 },
+      { code: 'KW', nameAr: 'دولة الكويت', nameEn: 'Kuwait', flag: '🇰🇼', visits: 95, percent: 6.4 },
+      { code: 'BH', nameAr: 'مملكة البحرين', nameEn: 'Bahrain', flag: '🇧🇭', visits: 58, percent: 3.9 },
+      { code: 'OM', nameAr: 'سلطنة عمان', nameEn: 'Oman', flag: '🇴🇲', visits: 44, percent: 3.0 }
+    ],
+    cities: [
+      { name: 'Dubai', visits: 420 },
+      { name: 'Riyadh', visits: 310 },
+      { name: 'Abu Dhabi', visits: 232 },
+      { name: 'Doha', visits: 148 },
+      { name: 'Jeddah', visits: 125 },
+      { name: 'Kuwait City', visits: 95 },
+      { name: 'Manama', visits: 58 },
+      { name: 'Muscat', visits: 44 }
+    ],
+    devices: { desktop: 934, mobile: 474, tablet: 74 },
+    browsers: { Chrome: 889, Safari: 385, Edge: 154, Firefox: 54 },
+    os: { macOS: 680, Windows: 490, iOS: 212, Android: 100 },
+    durations: {
+      under1m: 110,
+      from1to5m: 340,
+      from5to15m: 680,
+      over15m: 352
+    },
+    recentSessions: [
+      {
+        id: 'sess_demo_01',
+        userName: 'م. فهد القحطاني',
+        userRole: 'رئيس قسم التصميم المعماري',
+        deviceType: 'desktop',
+        browser: 'Chrome',
+        os: 'macOS',
+        durationSeconds: 540,
+        city: 'Riyadh',
+        country: 'SA',
+        timestamp: new Date(now - 12 * 60 * 1000).toISOString()
+      },
+      {
+        id: 'sess_demo_02',
+        userName: 'نورة المنصور',
+        userRole: 'كبيرة مهندسي الديكور والتأثيث',
+        deviceType: 'desktop',
+        browser: 'Safari',
+        os: 'macOS',
+        durationSeconds: 420,
+        city: 'Dubai',
+        country: 'AE',
+        timestamp: new Date(now - 28 * 60 * 1000).toISOString()
+      },
+      {
+        id: 'sess_demo_03',
+        userName: 'م. طارق العلي',
+        userRole: 'رئيس قسم الهندسة الإنشائية',
+        deviceType: 'desktop',
+        browser: 'Chrome',
+        os: 'Windows',
+        durationSeconds: 310,
+        city: 'Doha',
+        country: 'QA',
+        timestamp: new Date(now - 45 * 60 * 1000).toISOString()
+      }
+    ],
+    recentAnomalies: [
+      {
+        id: 'anom_demo_01',
+        type: 'HighMemorySpike',
+        severity: 'medium',
+        status: 'resolved',
+        descriptionAr: 'ارتفاع مؤقت في استهلاك الذاكرة (142MB) أثناء معالجة ملف DWG ثلاثي الأبعاد - تم تقطيع العناصر تلقائياً (LOD) وتفريغ الذاكرة بنجاح.',
+        descriptionEn: 'Transient memory spike (142MB) during 3D DWG parsing - elements automatically LOD decimated and memory purged.',
+        timestamp: new Date(now - 2 * 3600 * 1000).toISOString()
+      }
+    ],
+    recentIncidents: [
+      {
+        id: 'inc_darc_01',
+        titleAr: 'فقدان سياق العرض الرسومي (WebGL Context Lost) أثناء استعراض مخطط DWG ثلاثي الأبعاد',
+        titleEn: 'WebGL Context Lost Rendering 3D DWG Section',
+        severity: 'high',
+        status: 'resolved',
+        timestamp: new Date(now - 25 * 60 * 1000).toISOString()
+      }
+    ]
   };
 }
 

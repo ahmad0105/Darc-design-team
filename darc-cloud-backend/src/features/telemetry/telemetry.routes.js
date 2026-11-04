@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import {
   recordTelemetryHeartbeat,
   getTelemetryAnalytics,
+  getDemoTelemetryAnalytics,
   triggerManualAnomalyTest,
   recordErrorIncident,
   getIncidentsPerUser,
@@ -62,6 +63,11 @@ app.get('/analytics', async (c) => {
   if (!(await canViewAnalytics(c))) {
     return c.json({ error: 'غير مصرح لك بعرض لوحة التحليلات والمراقبة' }, 403);
   }
+  const isDemo = c.get('isDemo') || c.get('userId') === 'usr_demo';
+  if (isDemo) {
+    const demoAnalytics = getDemoTelemetryAnalytics();
+    return c.json({ ok: true, isDemo: true, data: demoAnalytics });
+  }
   const analytics = getTelemetryAnalytics();
   return c.json({ ok: true, data: analytics });
 });
@@ -69,8 +75,14 @@ app.get('/analytics', async (c) => {
 // 2. Client Telemetry Heartbeat (Receives active session ping & resource stats)
 app.post('/heartbeat', async (c) => {
   try {
+    const isDemo = c.get('isDemo') || c.get('userId') === 'usr_demo';
     const body = await c.req.json().catch(() => ({}));
     const userId = c.get('userId') || body.userId || 'anonymous';
+
+    // Shield: Demo heartbeats must never pollute real production visitors or live sessions
+    if (isDemo || userId === 'usr_demo' || body.isDemo) {
+      return c.json({ ok: true, isDemo: true, skipped: true, message: 'Demo heartbeat does not mutate production analytics' });
+    }
     
     // Cloudflare Edge Geolocation detection
     const country = c.req.header('cf-ipcountry') || c.req.raw?.cf?.country || body.country || 'AE';
@@ -213,8 +225,22 @@ app.post('/test-error', async (c) => {
     return c.json({ error: 'غير مصرح لك بإجراء محاكاة للأعطال' }, 403);
   }
   const isDemo = c.get('isDemo') || c.get('userId') === 'usr_demo';
+  if (isDemo) {
+    return c.json({
+      ok: true,
+      isDemo: true,
+      message: 'تم إطلاق فحص تجريبي للأخطاء في بيئة العرض (محاكاة معزولة تماماً عن الإنتاج).',
+      incident: {
+        id: 'inc_demo_simulated_' + Math.random().toString(36).substring(2, 7),
+        userId: 'usr_demo_arch',
+        userName: 'م. فهد القحطاني',
+        severity: 'high',
+        status: 'active'
+      }
+    });
+  }
   const body = await c.req.json().catch(() => ({}));
-  const userId = isDemo ? 'usr_demo_arch' : (body.userId || c.get('userId') || 'usr_demo_arch');
+  const userId = body.userId || c.get('userId') || 'usr_demo_arch';
   const result = await triggerManualIncidentTest(c.env, userId);
   return c.json({ ok: true, message: 'تم إطلاق فحص تجريبي للأخطاء وإرسال تنبيه بالبريد الإلكتروني للإدارة.', ...result });
 });
@@ -261,6 +287,14 @@ app.post('/test-email', async (c) => {
 app.post('/test-anomaly', async (c) => {
   if (!(await canManageDiagnostics(c))) {
     return c.json({ error: 'غير مصرح لك بإجراء محاكاة التنبيهات' }, 403);
+  }
+  const isDemo = c.get('isDemo') || c.get('userId') === 'usr_demo';
+  if (isDemo) {
+    return c.json({
+      ok: true,
+      isDemo: true,
+      message: 'تمت محاكاة فحص استهلاك الموارد بنجاح في بيئة العرض التجريبية.'
+    });
   }
   const userId = c.get('userId') || 'usr_demo';
   const result = triggerManualAnomalyTest(c.env, userId);

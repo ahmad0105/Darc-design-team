@@ -3,9 +3,58 @@ import { api } from '../../core/api.js';
 import { choose, esc, icon, t } from '../../core/utils.js';
 import { showToast } from '../../shared/ui.js';
 import { getClientTelemetrySnapshot } from '../../core/telemetry.js';
+import { isDemoSession } from '../../core/realtime.js';
 
 let _cachedAnalytics = null;
 let _isLoading = false;
+
+export function getDemoAnalyticsFallback() {
+  return {
+    isDemo: true,
+    stats: {
+      totalVisits: 1482,
+      uniqueVisitors: 628,
+      activeSessions: 14,
+      avgTimeSpentFormattedAr: '9 دقائق و 15 ثانية',
+      avgTimeSpentFormattedEn: '9m 15s',
+      healthScore: '100%',
+      crashFreeRate: '99.9%',
+      bounceRate: '11.8%',
+      returnRate: '72.4%',
+      edgeLatency: '24ms',
+      activeAnomaliesCount: 0,
+      totalAnomaliesLogged: 1
+    },
+    countries: [
+      { code: 'AE', nameAr: 'الإمارات العربية المتحدة', nameEn: 'United Arab Emirates', flag: '🇦🇪', visits: 652, percent: 44.0 },
+      { code: 'SA', nameAr: 'المملكة العربية السعودية', nameEn: 'Saudi Arabia', flag: '🇸🇦', visits: 485, percent: 32.7 },
+      { code: 'QA', nameAr: 'دولة قطر', nameEn: 'Qatar', flag: '🇶🇦', visits: 148, percent: 10.0 },
+      { code: 'KW', nameAr: 'دولة الكويت', nameEn: 'Kuwait', flag: '🇰🇼', visits: 95, percent: 6.4 },
+      { code: 'BH', nameAr: 'مملكة البحرين', nameEn: 'Bahrain', flag: '🇧🇭', visits: 58, percent: 3.9 },
+      { code: 'OM', nameAr: 'سلطنة عمان', nameEn: 'Oman', flag: '🇴🇲', visits: 44, percent: 3.0 }
+    ],
+    cities: [
+      { name: 'Dubai', visits: 420 },
+      { name: 'Riyadh', visits: 310 },
+      { name: 'Abu Dhabi', visits: 232 },
+      { name: 'Doha', visits: 148 },
+      { name: 'Jeddah', visits: 125 },
+      { name: 'Kuwait City', visits: 95 }
+    ],
+    os: { macOS: 680, Windows: 490, iOS: 212, Android: 100 },
+    recentAnomalies: [
+      {
+        id: 'anom_demo_01',
+        type: 'HighMemorySpike',
+        severity: 'medium',
+        status: 'resolved',
+        descriptionAr: 'ارتفاع مؤقت في استهلاك الذاكرة (142MB) أثناء معالجة ملف DWG ثلاثي الأبعاد - تم تقطيع العناصر تلقائياً وتفريغ الذاكرة بنجاح.',
+        descriptionEn: 'Transient memory spike (142MB) during 3D DWG parsing - elements automatically LOD decimated and memory purged.',
+        timestamp: new Date(Date.now() - 2 * 3600 * 1000).toISOString()
+      }
+    ]
+  };
+}
 
 export async function fetchAnalyticsData(force = false) {
   if (_cachedAnalytics && !force) return _cachedAnalytics;
@@ -17,6 +66,9 @@ export async function fetchAnalyticsData(force = false) {
     }
   } catch (err) {
     console.warn('[Analytics] Failed to fetch remote analytics:', err);
+    if (isDemoSession()) {
+      _cachedAnalytics = getDemoAnalyticsFallback();
+    }
   } finally {
     _isLoading = false;
   }
@@ -24,7 +76,10 @@ export async function fetchAnalyticsData(force = false) {
 }
 
 export function renderAnalyticsSection() {
-  const data = _cachedAnalytics;
+  const isDemo = isDemoSession();
+  const data = (isDemo && (!_cachedAnalytics || !_cachedAnalytics.isDemo))
+    ? getDemoAnalyticsFallback()
+    : _cachedAnalytics;
   const clientSnapshot = getClientTelemetrySnapshot();
 
   // If data is still loading for first time, show placeholder and trigger fetch
@@ -77,6 +132,22 @@ export function renderAnalyticsSection() {
 
   return `
     <section class="setting-section">
+      ${isDemo ? `
+        <div class="demo-analytics-banner" style="background:linear-gradient(90deg, rgba(13,98,105,0.08), rgba(74,199,209,0.12));border:1.5px solid var(--border);border-radius:12px;padding:12px 18px;margin-bottom:20px;display:flex;align-items:center;gap:12px;font-size:12px;color:var(--ink);">
+          <span style="font-size:22px;">📊</span>
+          <div style="flex:1;">
+            <div style="font-weight:800;color:var(--teal);margin-bottom:2px;">
+              ${choose('بيئة العرض التجريبية — مؤشرات ورسوم بيانية محاكاة (Showcase Telemetry)', 'Demo Showcase Sandbox — Simulated Telemetry & Metrics')}
+            </div>
+            <div style="color:var(--muted);font-size:11px;line-height:1.4;">
+              ${choose('الأرقام والإحصائيات المعروضة في هذا القسم هي نماذج محاكاة توضيحية لبيئة العرض ومفصولة تماماً عن الزيارات والبيانات الحقيقية للمنصة.', 'The metrics and statistics displayed here are high-fidelity showcase simulations completely isolated from real production traffic.')}
+            </div>
+          </div>
+          <span class="badge" style="background:var(--teal);color:#fff;font-size:10px;font-weight:700;padding:4px 8px;border-radius:6px;white-space:nowrap;">
+            ${choose('بيانات محاكاة 100%', '100% Mock Data')}
+          </span>
+        </div>
+      ` : ''}
       <div class="panel-head" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;">
         <div>
           <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px;">
