@@ -271,6 +271,27 @@ export async function recordErrorIncident(env, report = {}) {
     }
   }
 
+  const cleanTitleAr = String(report.titleAr || `خطأ تشغيلي لدى المستخدم: ${profile.name}`).slice(0, 200);
+  const cleanTitleEn = String(report.titleEn || `Runtime Incident for: ${profile.nameEn || profile.name}`).slice(0, 200);
+  const cleanSeverity = ['critical', 'high', 'medium', 'low'].includes(String(report.severity).toLowerCase())
+    ? String(report.severity).toLowerCase()
+    : 'high';
+  const cleanErrorType = String(report.errorType || report.errorName || 'ClientRuntimeError').replace(/[^\w.-]/g, '').slice(0, 80) || 'ClientRuntimeError';
+  const cleanErrorMessage = String(report.errorMessage || report.message || 'Unknown runtime error occurred in user session.').slice(0, 1000);
+  const cleanStackTrace = String(report.stackTrace || 'No stack trace provided by browser.').slice(0, 4000);
+  const cleanDeviceType = String(report.deviceType || 'desktop').slice(0, 30);
+  const cleanBrowser = String(report.browser || 'Chrome').slice(0, 50);
+  const cleanOs = String(report.os || 'macOS').slice(0, 50);
+  const cleanScreenResolution = String(report.screenResolution || '1920 x 1080').slice(0, 40);
+  const cleanCurrentView = String(report.currentView || '#dashboard').slice(0, 80);
+  const cleanBreadcrumbs = Array.isArray(report.breadcrumbs)
+    ? report.breadcrumbs.slice(-12).map(b => ({
+        time: String(b?.time || '').slice(0, 30),
+        category: String(b?.category || 'action').replace(/[^\w.-]/g, '').slice(0, 40),
+        message: String(b?.message || '').slice(0, 200)
+      }))
+    : [];
+
   const incident = {
     id: 'inc_' + Date.now().toString(36) + '_' + Math.random().toString(36).substring(2, 6),
     timestamp: new Date().toISOString(),
@@ -279,24 +300,24 @@ export async function recordErrorIncident(env, report = {}) {
     userEmail: profile.email,
     userRole: profile.role,
     avatarColor: profile.avatarColor,
-    titleAr: report.titleAr || `خطأ تشغيلي لدى المستخدم: ${profile.name}`,
-    titleEn: report.titleEn || `Runtime Incident for: ${profile.nameEn || profile.name}`,
-    severity: report.severity || 'high',
+    titleAr: cleanTitleAr,
+    titleEn: cleanTitleEn,
+    severity: cleanSeverity,
     status: 'active',
-    errorType: report.errorType || report.errorName || 'ClientRuntimeError',
-    errorMessage: report.errorMessage || report.message || 'Unknown runtime error occurred in user session.',
-    stackTrace: report.stackTrace || 'No stack trace provided by browser.',
-    deviceType: report.deviceType || 'desktop',
-    browser: report.browser || 'Chrome',
-    os: report.os || 'macOS',
-    screenResolution: report.screenResolution || '1920 x 1080',
-    memoryMb: Math.round(report.memoryMb || 48),
+    errorType: cleanErrorType,
+    errorMessage: cleanErrorMessage,
+    stackTrace: cleanStackTrace,
+    deviceType: cleanDeviceType,
+    browser: cleanBrowser,
+    os: cleanOs,
+    screenResolution: cleanScreenResolution,
+    memoryMb: Math.round(Math.min(Number(report.memoryMb) || 48, 4096)),
     ip: safeIp,
     country: normCountry,
     city: normCity,
-    currentView: report.currentView || '#dashboard',
-    breadcrumbs: Array.isArray(report.breadcrumbs) ? report.breadcrumbs.slice(-12) : [],
-    suggestedSolution,
+    currentView: cleanCurrentView,
+    breadcrumbs: cleanBreadcrumbs,
+    suggestedSolution: String(suggestedSolution).slice(0, 500),
     emailAlert: {
       sent: false,
       deliveredTo: env?.ALERT_EMAIL || 'admin@darc-design.bond',
@@ -304,24 +325,41 @@ export async function recordErrorIncident(env, report = {}) {
     }
   };
 
-  // 1. Dispatch Email Alert immediately
-  try {
-    const emailRes = await sendIncidentAlertEmail(env, incident);
+  // 1. Dispatch Email Alert immediately (Blocked from real email servers if demo user)
+  const isDemoUser = Boolean(
+    userId === 'usr_demo' ||
+    (userId && String(userId).startsWith('usr_demo')) ||
+    profile.isDemo ||
+    report.isDemo
+  );
+
+  if (isDemoUser) {
     incident.emailAlert = {
-      sent: emailRes.success,
-      deliveredTo: emailRes.recipient,
-      provider: emailRes.provider,
-      status: emailRes.simulated ? 'simulated_sandbox' : (emailRes.success ? 'delivered' : 'failed'),
-      deliveredAt: emailRes.deliveredAt,
-      error: emailRes.error
+      sent: true,
+      deliveredTo: 'demo-alerts@darc-design.bond (بيئة العرض التجريبية)',
+      provider: 'simulated_sandbox',
+      status: 'simulated_sandbox',
+      deliveredAt: new Date().toISOString()
     };
-  } catch (err) {
-    console.warn('[Telemetry] Error sending incident alert email:', err);
-    incident.emailAlert = {
-      sent: false,
-      status: 'failed',
-      error: err.message
-    };
+  } else {
+    try {
+      const emailRes = await sendIncidentAlertEmail(env, incident);
+      incident.emailAlert = {
+        sent: emailRes.success,
+        deliveredTo: emailRes.recipient,
+        provider: emailRes.provider,
+        status: emailRes.simulated ? 'simulated_sandbox' : (emailRes.success ? 'delivered' : 'failed'),
+        deliveredAt: emailRes.deliveredAt,
+        error: emailRes.error
+      };
+    } catch (err) {
+      console.warn('[Telemetry] Error sending incident alert email:', err);
+      incident.emailAlert = {
+        sent: false,
+        status: 'failed',
+        error: err.message
+      };
+    }
   }
 
   // 2. Add to rolling incidents memory (capped at 40)
@@ -332,7 +370,6 @@ export async function recordErrorIncident(env, report = {}) {
 
   // 3. Dispatch in-app escalation notification for real accounts only
   try {
-    const isDemoUser = (userId === 'usr_demo' || (userId && String(userId).startsWith('usr_demo')) || profile.isDemo);
     if (!isDemoUser) {
       const supabase = getDB(env);
       if (supabase) {

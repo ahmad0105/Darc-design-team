@@ -231,12 +231,12 @@ export function renderDiagnosticsSection() {
               >
                 <div style="display:flex;align-items:center;gap:10px;">
                   <div style="width:34px;height:34px;border-radius:50%;background:${esc(u.avatarColor || '#0d6269')};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;flex-shrink:0;">
-                    ${esc(u.name.slice(0, 2))}
+                    ${esc((u.name || 'US').slice(0, 2))}
                   </div>
                   <div style="flex:1;min-width:0;">
                     <div style="display:flex;align-items:center;gap:6px;justify-content:space-between;">
                       <div style="font-size:12px;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-                        ${esc(choose(u.name, u.nameEn || u.name))}
+                        ${esc(choose(u.name || '', u.nameEn || u.name || ''))}
                       </div>
                       ${u.isRealAccount ? `
                         <span style="background:rgba(16,185,129,0.12);color:#059669;border:1px solid rgba(16,185,129,0.25);font-size:9px;font-weight:700;padding:1px 5px;border-radius:4px;flex-shrink:0;">
@@ -244,7 +244,7 @@ export function renderDiagnosticsSection() {
                         </span>
                       ` : ''}
                     </div>
-                    <div style="font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(u.email)}</div>
+                    <div style="font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(u.email || '')}</div>
                     <div style="display:flex;align-items:center;gap:6px;margin-top:4px;">
                       <span class="status-badge ${hasActive ? 'urgent' : 'done'}" style="font-size:9px;padding:1px 6px;">
                         ${hasActive ? choose(`${u.activeIncidents} خطأ نشط ⚠️`, `${u.activeIncidents} Active ⚠️`) : choose('مستقر ✓ (0 أعطال)', 'Healthy ✓ (0 errors)')}
@@ -308,13 +308,13 @@ export function renderDiagnosticsSection() {
                   <div>
                     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
                       <h4 style="margin:0;font-size:15px;font-weight:700;color:${isResolved ? 'var(--ink)' : (isCritical ? 'var(--red)' : 'var(--amber-strong)')};">
-                        ${choose(inc.titleAr, inc.titleEn)}
+                        ${esc(choose(inc.titleAr || '', inc.titleEn || ''))}
                       </h4>
                       <span class="status-badge ${isCritical ? 'urgent' : (inc.severity === 'high' ? 'in-review' : 'done')}" style="font-size:10px;">
-                        ${inc.severity.toUpperCase()}
+                        ${esc(String(inc.severity || 'high').toUpperCase())}
                       </span>
                       <span style="font-size:11px;font-family:monospace;background:var(--surface-soft);border:1px solid var(--line);padding:2px 8px;border-radius:4px;color:var(--muted);">
-                        ${inc.id}
+                        ${esc(inc.id || '')}
                       </span>
                     </div>
 
@@ -409,7 +409,7 @@ export function renderDiagnosticsSection() {
                   <span style="font-family:monospace;">(${esc(inc.emailAlert?.deliveredTo || 'admin@darc-design.bond')})</span>
                 </div>
                 <div>
-                  ${isResolved ? choose(`معالج بواسطة: ${inc.resolvedBy || 'Admin'}`, `Resolved by: ${inc.resolvedBy || 'Admin'}`) : choose('قيد التدخل البرمجي', 'Awaiting resolution')}
+                  ${isResolved ? choose(`معالج بواسطة: ${esc(inc.resolvedBy || 'Admin')}`, `Resolved by: ${esc(inc.resolvedBy || 'Admin')}`) : choose('قيد التدخل البرمجي', 'Awaiting resolution')}
                 </div>
               </div>
 

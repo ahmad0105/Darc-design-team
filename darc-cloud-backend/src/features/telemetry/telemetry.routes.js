@@ -58,6 +58,18 @@ function parseClientInfo(userAgent = '') {
   return { deviceType, browser, os };
 }
 
+// Trusted Client IP extraction with Cloudflare Edge precedence and IP validation
+function getClientIp(c) {
+  const cfIp = c.req.header('cf-connecting-ip');
+  if (cfIp) return cfIp.trim();
+  const xff = c.req.header('x-forwarded-for');
+  if (xff) {
+    const first = xff.split(',')[0].trim();
+    if (/^[0-9a-fA-F:.]+$/.test(first)) return first;
+  }
+  return '127.0.0.1';
+}
+
 // 1. Analytics & Telemetry Overview for Admins & Performance Monitoring
 app.get('/analytics', async (c) => {
   if (!(await canViewAnalytics(c))) {
@@ -87,7 +99,7 @@ app.post('/heartbeat', async (c) => {
     // Cloudflare Edge Geolocation detection
     const country = c.req.header('cf-ipcountry') || c.req.raw?.cf?.country || body.country || 'AE';
     const city = c.req.header('cf-ipcity') || c.req.raw?.cf?.city || body.city || (country === 'AE' ? 'Dubai' : 'Riyadh');
-    const ip = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || '127.0.0.1';
+    const ip = getClientIp(c);
     const userAgent = c.req.header('user-agent') || '';
     const parsedClient = parseClientInfo(userAgent);
     const deviceType = body.deviceType || parsedClient.deviceType;
@@ -154,7 +166,7 @@ function isDuplicateErrorReport(ip, errorKey) {
 // 3. Report Client Error / Incident (Captures rich details and triggers email & in-app alerts)
 app.post('/report-error', async (c) => {
   try {
-    const ip = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || '127.0.0.1';
+    const ip = getClientIp(c);
 
     // Anti-Abuse Guard: Prevent Denial-of-Service / Email Flood
     if (isErrorReportRateLimited(ip)) {
@@ -213,8 +225,22 @@ app.patch('/incidents/:id/resolve', async (c) => {
   if (!(await canManageDiagnostics(c))) {
     return c.json({ error: 'غير مصرح لك بمعالجة بلاغات الأعطال' }, 403);
   }
+  const isDemo = c.get('isDemo') || c.get('userId') === 'usr_demo';
   const incidentId = c.req.param('id');
   const userId = c.get('userId') || 'Admin';
+  if (isDemo) {
+    return c.json({
+      ok: true,
+      isDemo: true,
+      message: 'تم تحديث حالة البلاغ كمعالج في بيئة العرض التجريبية بنجاح.',
+      incident: {
+        id: incidentId,
+        status: 'resolved',
+        resolvedAt: new Date().toISOString(),
+        resolvedBy: 'Demo Reviewer (Admin)'
+      }
+    });
+  }
   const result = resolveIncident(incidentId, userId);
   return c.json(result);
 });
@@ -260,8 +286,9 @@ app.post('/test-email', async (c) => {
     if (body.to) {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       const cleanEmail = String(body.to).trim().toLowerCase();
-      if (!emailRegex.test(cleanEmail)) {
-        return c.json({ error: 'صيغة البريد الإلكتروني المدخلة غير صالحة.' }, 400);
+      const isAllowedDomain = cleanEmail.endsWith('@darc-design.bond') || cleanEmail.endsWith('@darc.local') || cleanEmail === (c.env?.ALERT_EMAIL || '').toLowerCase();
+      if (!emailRegex.test(cleanEmail) || !isAllowedDomain) {
+        return c.json({ error: 'عذراً، يُسمح بإرسال رسائل الفحص فقط للنطاق الداخلي المعتمد (@darc-design.bond).' }, 400);
       }
       recipient = cleanEmail;
     }
@@ -296,7 +323,7 @@ app.post('/test-anomaly', async (c) => {
       message: 'تمت محاكاة فحص استهلاك الموارد بنجاح في بيئة العرض التجريبية.'
     });
   }
-  const userId = c.get('userId') || 'usr_demo';
+  const userId = c.get('userId') || 'usr_admin';
   const result = triggerManualAnomalyTest(c.env, userId);
   return c.json({ ok: true, message: 'تم إطلاق فحص استهلاك الموارد بنجاح وإرسال التنبيه للإشعارات والبريد.', ...result });
 });

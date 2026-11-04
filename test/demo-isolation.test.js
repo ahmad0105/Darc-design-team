@@ -1,5 +1,5 @@
 import assert from 'node:assert';
-import { getIncidentsPerUser, getDemoTelemetryAnalytics, recordTelemetryHeartbeat } from '../darc-cloud-backend/src/features/telemetry/telemetry.service.js';
+import { getIncidentsPerUser, getDemoTelemetryAnalytics, recordTelemetryHeartbeat, recordErrorIncident } from '../darc-cloud-backend/src/features/telemetry/telemetry.service.js';
 import { sendWhatsAppAlert, dispatchDirectNotificationAlert } from '../darc-cloud-backend/src/features/whatsapp/whatsapp.service.js';
 import { createNotification } from '../darc-cloud-backend/src/features/notifications/notifications.service.js';
 import { getDemoPayload } from '../darc-cloud-backend/src/features/demo/demo.service.js';
@@ -127,7 +127,22 @@ async function runTests() {
   assert.strictEqual(demoHeartbeatRes.skipped, true, 'Demo heartbeat must be skipped to avoid mutating real production stats');
   console.log('✓ Test 9: Telemetry heartbeat from demo sessions is suppressed from mutating live production stats');
 
-  console.log('--- All Demo Isolation & Monitoring Verification Tests Passed Successfully (9/9) ---');
+  // Test 10: Input size bounding & zero email leak on demo error reporting
+  const oversizedError = 'ERR_MEM_OVERFLOW_TEST_'.repeat(200); // 4400 chars
+  const oversizedStack = 'at testFunction (app.js:10:20)\n'.repeat(300); // 9300 chars
+  const incidentRes = await recordErrorIncident({}, {
+    userId: 'usr_demo',
+    errorMessage: oversizedError,
+    stackTrace: oversizedStack,
+    isDemo: true
+  });
+  assert.ok(incidentRes.incidentId && incidentRes.incidentId.startsWith('inc_'), 'Must generate incident ID');
+  assert.strictEqual(incidentRes.emailAlert.status, 'simulated_sandbox', 'Demo incident must NEVER dispatch real emails');
+  assert.ok(incidentRes.incident.errorMessage.length <= 1000, 'Error message must be bounded <= 1000 chars');
+  assert.ok(incidentRes.incident.stackTrace.length <= 4000, 'Stack trace must be bounded <= 4000 chars');
+  console.log('✓ Test 10: Error reporting enforces input size bounding & sandbox email containment');
+
+  console.log('--- All Demo Isolation & Security Hardening Tests Passed Successfully (10/10) ---');
 }
 
 runTests().catch(err => {

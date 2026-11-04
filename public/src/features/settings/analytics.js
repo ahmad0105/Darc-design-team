@@ -238,13 +238,13 @@ export function renderAnalyticsSection() {
               <div style="display:flex;flex-direction:column;gap:4px;">
                 <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;">
                   <span style="display:flex;align-items:center;gap:8px;font-weight:600;color:var(--ink);">
-                    <span style="font-size:16px;">${c.flag}</span>
-                    <span>${choose(c.nameAr, c.nameEn)}</span>
+                    <span style="font-size:16px;">${esc(c.flag || '🌐')}</span>
+                    <span>${esc(choose(c.nameAr || '', c.nameEn || ''))}</span>
                   </span>
-                  <span style="font-weight:700;color:var(--teal);">${c.visits.toLocaleString()} <span style="font-weight:400;font-size:11px;color:var(--muted);">(${c.percent}%)</span></span>
+                  <span style="font-weight:700;color:var(--teal);">${Number(c.visits || 0).toLocaleString()} <span style="font-weight:400;font-size:11px;color:var(--muted);">(${Number(c.percent || 0)}%)</span></span>
                 </div>
                 <div style="height:6px;width:100%;background:var(--surface-soft);border-radius:999px;overflow:hidden;border:1px solid var(--line);">
-                  <div style="height:100%;width:${c.percent}%;background:linear-gradient(90deg, var(--teal), var(--mint-strong));border-radius:999px;"></div>
+                  <div style="height:100%;width:${Number(c.percent || 0)}%;background:linear-gradient(90deg, var(--teal), var(--mint-strong));border-radius:999px;"></div>
                 </div>
               </div>
             `).join('')}
@@ -257,7 +257,7 @@ export function renderAnalyticsSection() {
               <div style="display:flex;flex-wrap:wrap;gap:6px;">
                 ${cities.map(ct => `
                   <span style="background:var(--surface);border:1px solid var(--line);padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;color:var(--ink);display:inline-flex;align-items:center;gap:6px;">
-                    📍 ${ct.name} <span style="font-size:10px;color:var(--teal);font-weight:700;">${ct.visits}</span>
+                    📍 ${esc(ct.name || '')} <span style="font-size:10px;color:var(--teal);font-weight:700;">${Number(ct.visits || 0)}</span>
                   </span>
                 `).join('')}
               </div>
@@ -335,16 +335,16 @@ export function renderAnalyticsSection() {
               <span style="font-size:18px;margin-top:2px;">${a.status === 'active' ? '🚨' : '✅'}</span>
               <div style="flex:1;">
                 <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;">
-                  <strong style="font-size:13px;color:${a.status === 'active' ? 'var(--red)' : 'var(--ink)'};">${choose(a.titleAr, a.titleEn)}</strong>
+                  <strong style="font-size:13px;color:${a.status === 'active' ? 'var(--red)' : 'var(--ink)'};">${esc(choose(a.titleAr || '', a.titleEn || ''))}</strong>
                   <div style="display:flex;align-items:center;gap:6px;">
-                    <span style="font-size:10px;background:var(--surface);border:1px solid var(--line);padding:2px 8px;border-radius:999px;font-family:monospace;">${a.ip}</span>
+                    <span style="font-size:10px;background:var(--surface);border:1px solid var(--line);padding:2px 8px;border-radius:999px;font-family:monospace;">${esc(a.ip || '')}</span>
                     <span style="font-size:11px;color:var(--muted);">${new Date(a.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                   </div>
                 </div>
-                <p style="margin:4px 0 0;font-size:12px;color:var(--ink-soft);line-height:1.5;">${choose(a.detailAr, a.detailEn)}</p>
+                <p style="margin:4px 0 0;font-size:12px;color:var(--ink-soft);line-height:1.5;">${esc(choose(a.detailAr || '', a.detailEn || ''))}</p>
                 <div style="display:flex;align-items:center;gap:10px;margin-top:6px;font-size:11px;color:var(--muted);">
-                  <span>📍 ${a.city}, ${a.countryCode}</span>
-                  <span>💻 ${a.deviceType}</span>
+                  <span>📍 ${esc(a.city || '')}, ${esc(a.countryCode || '')}</span>
+                  <span>💻 ${esc(a.deviceType || '')}</span>
                   <span style="font-weight:600;color:${a.status === 'active' ? 'var(--red)' : 'var(--mint-strong)'};">${a.status === 'active' ? choose('قيد التدخل الوقائي', 'Mitigating') : choose('تمت المعالجة وحماية الاستقرار', 'Resolved & Protected')}</span>
                 </div>
               </div>
