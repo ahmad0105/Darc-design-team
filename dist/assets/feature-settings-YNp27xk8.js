@@ -108,13 +108,13 @@ import{t as ce}from"./rolldown-runtime-BQ-_32WO.js";import{$ as O,A as ze,C as a
               <div style="display:flex;flex-direction:column;gap:4px;">
                 <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;">
                   <span style="display:flex;align-items:center;gap:8px;font-weight:600;color:var(--ink);">
-                    <span style="font-size:16px;">${m.flag}</span>
-                    <span>${e(m.nameAr,m.nameEn)}</span>
+                    <span style="font-size:16px;">${t(m.flag||"🌐")}</span>
+                    <span>${t(e(m.nameAr||"",m.nameEn||""))}</span>
                   </span>
-                  <span style="font-weight:700;color:var(--teal);">${m.visits.toLocaleString()} <span style="font-weight:400;font-size:11px;color:var(--muted);">(${m.percent}%)</span></span>
+                  <span style="font-weight:700;color:var(--teal);">${Number(m.visits||0).toLocaleString()} <span style="font-weight:400;font-size:11px;color:var(--muted);">(${Number(m.percent||0)}%)</span></span>
                 </div>
                 <div style="height:6px;width:100%;background:var(--surface-soft);border-radius:999px;overflow:hidden;border:1px solid var(--line);">
-                  <div style="height:100%;width:${m.percent}%;background:linear-gradient(90deg, var(--teal), var(--mint-strong));border-radius:999px;"></div>
+                  <div style="height:100%;width:${Number(m.percent||0)}%;background:linear-gradient(90deg, var(--teal), var(--mint-strong));border-radius:999px;"></div>
                 </div>
               </div>
             `).join("")}
@@ -127,7 +127,7 @@ import{t as ce}from"./rolldown-runtime-BQ-_32WO.js";import{$ as O,A as ze,C as a
               <div style="display:flex;flex-wrap:wrap;gap:6px;">
                 ${f.map(m=>`
                   <span style="background:var(--surface);border:1px solid var(--line);padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;color:var(--ink);display:inline-flex;align-items:center;gap:6px;">
-                    📍 ${m.name} <span style="font-size:10px;color:var(--teal);font-weight:700;">${m.visits}</span>
+                    📍 ${t(m.name||"")} <span style="font-size:10px;color:var(--teal);font-weight:700;">${Number(m.visits||0)}</span>
                   </span>
                 `).join("")}
               </div>
@@ -205,16 +205,16 @@ import{t as ce}from"./rolldown-runtime-BQ-_32WO.js";import{$ as O,A as ze,C as a
               <span style="font-size:18px;margin-top:2px;">${m.status==="active"?"🚨":"✅"}</span>
               <div style="flex:1;">
                 <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;">
-                  <strong style="font-size:13px;color:${m.status==="active"?"var(--red)":"var(--ink)"};">${e(m.titleAr,m.titleEn)}</strong>
+                  <strong style="font-size:13px;color:${m.status==="active"?"var(--red)":"var(--ink)"};">${t(e(m.titleAr||"",m.titleEn||""))}</strong>
                   <div style="display:flex;align-items:center;gap:6px;">
-                    <span style="font-size:10px;background:var(--surface);border:1px solid var(--line);padding:2px 8px;border-radius:999px;font-family:monospace;">${m.ip}</span>
+                    <span style="font-size:10px;background:var(--surface);border:1px solid var(--line);padding:2px 8px;border-radius:999px;font-family:monospace;">${t(m.ip||"")}</span>
                     <span style="font-size:11px;color:var(--muted);">${new Date(m.timestamp).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}</span>
                   </div>
                 </div>
-                <p style="margin:4px 0 0;font-size:12px;color:var(--ink-soft);line-height:1.5;">${e(m.detailAr,m.detailEn)}</p>
+                <p style="margin:4px 0 0;font-size:12px;color:var(--ink-soft);line-height:1.5;">${t(e(m.detailAr||"",m.detailEn||""))}</p>
                 <div style="display:flex;align-items:center;gap:10px;margin-top:6px;font-size:11px;color:var(--muted);">
-                  <span>📍 ${m.city}, ${m.countryCode}</span>
-                  <span>💻 ${m.deviceType}</span>
+                  <span>📍 ${t(m.city||"")}, ${t(m.countryCode||"")}</span>
+                  <span>💻 ${t(m.deviceType||"")}</span>
                   <span style="font-weight:600;color:${m.status==="active"?"var(--red)":"var(--mint-strong)"};">${m.status==="active"?e("قيد التدخل الوقائي","Mitigating"):e("تمت المعالجة وحماية الاستقرار","Resolved & Protected")}</span>
                 </div>
               </div>
@@ -340,12 +340,12 @@ import{t as ce}from"./rolldown-runtime-BQ-_32WO.js";import{$ as O,A as ze,C as a
               >
                 <div style="display:flex;align-items:center;gap:10px;">
                   <div style="width:34px;height:34px;border-radius:50%;background:${t(s.avatarColor||"#0d6269")};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;flex-shrink:0;">
-                    ${t(s.name.slice(0,2))}
+                    ${t((s.name||"US").slice(0,2))}
                   </div>
                   <div style="flex:1;min-width:0;">
                     <div style="display:flex;align-items:center;gap:6px;justify-content:space-between;">
                       <div style="font-size:12px;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-                        ${t(e(s.name,s.nameEn||s.name))}
+                        ${t(e(s.name||"",s.nameEn||s.name||""))}
                       </div>
                       ${s.isRealAccount?`
                         <span style="background:rgba(16,185,129,0.12);color:#059669;border:1px solid rgba(16,185,129,0.25);font-size:9px;font-weight:700;padding:1px 5px;border-radius:4px;flex-shrink:0;">
@@ -353,7 +353,7 @@ import{t as ce}from"./rolldown-runtime-BQ-_32WO.js";import{$ as O,A as ze,C as a
                         </span>
                       `:""}
                     </div>
-                    <div style="font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${t(s.email)}</div>
+                    <div style="font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${t(s.email||"")}</div>
                     <div style="display:flex;align-items:center;gap:6px;margin-top:4px;">
                       <span class="status-badge ${m?"urgent":"done"}" style="font-size:9px;padding:1px 6px;">
                         ${m?e(`${s.activeIncidents} خطأ نشط ⚠️`,`${s.activeIncidents} Active ⚠️`):e("مستقر ✓ (0 أعطال)","Healthy ✓ (0 errors)")}
@@ -403,13 +403,13 @@ import{t as ce}from"./rolldown-runtime-BQ-_32WO.js";import{$ as O,A as ze,C as a
                   <div>
                     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
                       <h4 style="margin:0;font-size:15px;font-weight:700;color:${m?"var(--ink)":h?"var(--red)":"var(--amber-strong)"};">
-                        ${e(s.titleAr,s.titleEn)}
+                        ${t(e(s.titleAr||"",s.titleEn||""))}
                       </h4>
                       <span class="status-badge ${h?"urgent":s.severity==="high"?"in-review":"done"}" style="font-size:10px;">
-                        ${s.severity.toUpperCase()}
+                        ${t(String(s.severity||"high").toUpperCase())}
                       </span>
                       <span style="font-size:11px;font-family:monospace;background:var(--surface-soft);border:1px solid var(--line);padding:2px 8px;border-radius:4px;color:var(--muted);">
-                        ${s.id}
+                        ${t(s.id||"")}
                       </span>
                     </div>
 
@@ -504,7 +504,7 @@ import{t as ce}from"./rolldown-runtime-BQ-_32WO.js";import{$ as O,A as ze,C as a
                   <span style="font-family:monospace;">(${t(s.emailAlert?.deliveredTo||"admin@darc-design.bond")})</span>
                 </div>
                 <div>
-                  ${m?e(`معالج بواسطة: ${s.resolvedBy||"Admin"}`,`Resolved by: ${s.resolvedBy||"Admin"}`):e("قيد التدخل البرمجي","Awaiting resolution")}
+                  ${m?e(`معالج بواسطة: ${t(s.resolvedBy||"Admin")}`,`Resolved by: ${t(s.resolvedBy||"Admin")}`):e("قيد التدخل البرمجي","Awaiting resolution")}
                 </div>
               </div>
 
