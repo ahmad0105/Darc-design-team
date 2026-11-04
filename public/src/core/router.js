@@ -1,7 +1,7 @@
 import { state } from './state.js';
 import { api, invalidateBootstrapEtag } from './api.js';
-import { can, isAdmin, choose, t, esc, icon, avatar, roleName, currentViewTitle } from './utils.js';
-import { saveOfflineBootstrap, getOfflineBootstrap, getOfflineBootstrapAsync, getPendingMutations, isOnline } from './offline.js';
+import { can, isAdmin, choose, t, esc, icon, avatar, roleName, currentViewTitle, hasSessionIndicator } from './utils.js';
+import { saveOfflineBootstrap, getOfflineBootstrap, getOfflineBootstrapAsync, clearOfflineBootstrap, getPendingMutations, isOnline } from './offline.js';
 import { showToast } from '../shared/ui.js';
 import { recordBreadcrumb } from './telemetry.js';
 import { renderNavbar, renderSyncIndicator, initSyncIndicatorListener, updateNavbarTitle } from '../shared/navbar.js';
@@ -202,6 +202,20 @@ export async function refreshView(silent = false) { try { await loadData(silent)
 
 export async function loadData(silent = false) {
   try {
+    const hasSession = hasSessionIndicator();
+    if (!hasSession) {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.removeItem('darc_token');
+        localStorage.removeItem('darc_user_id');
+      }
+      try { clearOfflineBootstrap(); } catch (e) {}
+      state.data = null;
+      state.view = 'login';
+      const unauthErr = new Error('No session');
+      unauthErr.status = 401;
+      throw unauthErr;
+    }
+
     // SWR (Stale-While-Revalidate): If initial memory state is empty, hydrate immediately from cache in 0ms
     if (!state.data) {
       const cached = getOfflineBootstrap();

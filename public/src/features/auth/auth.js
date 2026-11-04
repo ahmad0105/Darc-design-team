@@ -1,6 +1,6 @@
 import { state } from '../../core/state.js';
 import { api, invalidateBootstrapEtag } from '../../core/api.js';
-import { choose, esc, icon, t, savePreferencesCookies } from '../../core/utils.js';
+import { choose, esc, icon, t, savePreferencesCookies, setSessionIndicator } from '../../core/utils.js';
 import { modalShell, renderLoading, showToast } from '../../shared/ui.js';
 import { loadData, renderApp } from '../../core/router.js';
 import { getOfflineBootstrap, saveOfflineBootstrap } from '../../core/offline.js';
@@ -514,6 +514,7 @@ export function renderLogin(errorMessage = '', mode = 'login', isSuccess = false
           localStorage.removeItem('darc_last_email');
         }
       }
+      setSessionIndicator(true);
       savePreferencesCookies({ theme: state.theme, lang: state.lang });
       state.view = 'dashboard';
 

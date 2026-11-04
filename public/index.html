@@ -124,6 +124,23 @@
             }
           }
           document.documentElement.dataset.theme = effectiveTheme;
+
+          // C. Zero-Trust Session Pre-flight: If session cookie indicator is absent, wipe stale tokens & offline caches
+          var loggedInIndicator = getCookieVal('darc_logged_in');
+          if (loggedInIndicator !== '1') {
+            try {
+              localStorage.removeItem('darc_token');
+              localStorage.removeItem('darc_user_id');
+              localStorage.removeItem('darc_offline_bootstrap');
+              localStorage.removeItem('darc_offline_queue');
+              localStorage.removeItem('darc_offline_mutations_queue');
+              if (typeof sessionStorage !== 'undefined') {
+                sessionStorage.removeItem('darc_bootstrap_etag');
+                sessionStorage.removeItem('darc_trash_cache');
+                sessionStorage.removeItem('darc_last_route');
+              }
+            } catch (e) {}
+          }
         } catch (e) {}
 
         // 2. Silent Auto-Healing Boundary for Stale Module Cache

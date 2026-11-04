@@ -19,12 +19,13 @@ const ALLOWED_ORIGINS = [
  */
 export function securityHeadersMiddleware() {
   const CSP_POLICY = [
-    "default-src 'self' https://api.darc-design.bond https://*.darc-design.bond",
-    "script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com",
+    "default-src 'self' https://*.darc-design.bond https://darc-design.bond",
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.darc-design.bond https://darc-design.bond https://challenges.cloudflare.com https://static.cloudflareinsights.com",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' https://fonts.gstatic.com data:",
     "img-src 'self' data: blob: https: http:",
-    "connect-src 'self' https://api.darc-design.bond https://darc-cloud-backend.ahmad-hashmi-c.workers.dev https://*.supabase.co wss://*.supabase.co https://challenges.cloudflare.com https://www.googleapis.com data:",
+    "connect-src 'self' https://*.darc-design.bond https://darc-design.bond https://darc-cloud-backend.ahmad-hashmi-c.workers.dev https://*.supabase.co wss://*.supabase.co https://challenges.cloudflare.com https://static.cloudflareinsights.com https://www.googleapis.com data: blob:",
+    "worker-src 'self' blob: https://*.darc-design.bond https://darc-design.bond",
     "frame-src 'self' https://challenges.cloudflare.com",
     "frame-ancestors 'none'",
     "object-src 'none'",

@@ -5,7 +5,7 @@ import { state } from './state.js';
 import { loadData, renderView, renderApp } from './router.js';
 import { syncPendingMutations } from './offline.js';
 import { invalidateBootstrapEtag } from './api.js';
-import { choose, isNotificationRead } from './utils.js';
+import { choose, isNotificationRead, hasSessionIndicator } from './utils.js';
 import { showToast } from '../shared/ui.js';
 import { showNotifications } from '../features/notifications/notifications.js';
 import { dispatchUniversalNotification } from '../features/notifications/notification-manager.js';
@@ -64,7 +64,7 @@ export function recordRecentLocalMutation(id) {
  */
 function isAuthenticated() {
   if (typeof localStorage === 'undefined') return false;
-  return Boolean(localStorage.getItem('darc_token'));
+  return hasSessionIndicator() && Boolean(localStorage.getItem('darc_token'));
 }
 
 /**
@@ -72,6 +72,7 @@ function isAuthenticated() {
  */
 export function isDemoSession() {
   if (typeof window === 'undefined') return false;
+  if (!hasSessionIndicator()) return false;
   return Boolean(
     state.data?.isDemo ||
     state.currentUser?.isDemo ||

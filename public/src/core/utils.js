@@ -28,6 +28,32 @@ export function getCookieVal(key) {
   return null;
 }
 
+export function hasSessionIndicator() {
+  if (typeof document === 'undefined') return false;
+  return getCookieVal('darc_logged_in') === '1';
+}
+
+export function setSessionIndicator(active = true) {
+  if (typeof document === 'undefined') return;
+  const secure = (typeof window !== 'undefined' && window.location.protocol === 'https:') ? '; Secure' : '';
+  let domainPart = '';
+  if (typeof window !== 'undefined') {
+    const host = window.location.hostname;
+    if (host === 'darc-design.bond' || host.endsWith('.darc-design.bond')) {
+      domainPart = '; Domain=.darc-design.bond';
+    }
+  }
+
+  if (active) {
+    document.cookie = `darc_logged_in=1; Path=/; Max-Age=604800; SameSite=Lax${secure}${domainPart}`;
+  } else {
+    document.cookie = `darc_logged_in=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax${secure}`;
+    if (domainPart) {
+      document.cookie = `darc_logged_in=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax${secure}${domainPart}`;
+    }
+  }
+}
+
 export function savePreferencesCookies({ theme, lang } = {}) {
   if (typeof document === 'undefined') return;
   const maxAge = 31536000; // 1 year

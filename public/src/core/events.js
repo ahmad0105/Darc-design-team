@@ -3,7 +3,7 @@ import { state } from './state.js';
 import { api, API_BASE, invalidateBootstrapEtag } from './api.js';
 import { switchView, refreshView, renderView, renderApp, canAccessView, getFirstAllowedView, loadData } from './router.js';
 import { openOmnisearch, closeOmnisearch, openShortcutsCheatsheet } from '../features/dashboard/omnisearch.js';
-import { playSuccessChime, savePreferencesCookies, choose, esc, icon, t, can, isAdmin, avatar, roleName, statusText, initials, dateLabel, isNotificationRead } from './utils.js';
+import { playSuccessChime, savePreferencesCookies, choose, esc, icon, t, can, isAdmin, avatar, roleName, statusText, initials, dateLabel, isNotificationRead, hasSessionIndicator, setSessionIndicator } from './utils.js';
 import { showToast, modalShell, closeModal, renderLoading } from '../shared/ui.js';
 import { setSavedTaskSort, openDocumentPreviewModal, renderTaskDocuments, canUserUploadToTask, openTaskModal, renderTaskComments, drawTimelineArrows } from '../features/tasks/tasks.js';
 import { downloadDocument, handleCopyDocLink, getDocumentShareableLink } from '../features/documents/doc-viewer.js';
@@ -593,7 +593,11 @@ export async function handleClick(event) {
     return;
   }
   if (action === 'logout') {
-    if (typeof localStorage !== 'undefined') localStorage.removeItem('darc_token');
+    setSessionIndicator(false);
+    if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem('darc_token');
+      localStorage.removeItem('darc_user_id');
+    }
     if (typeof window !== 'undefined' && typeof window.disconnectSupabaseRealtime === 'function') {
       window.disconnectSupabaseRealtime('logout');
     }
@@ -619,7 +623,11 @@ export async function handleClick(event) {
     return;
   }
   if (action === 'logout-all') {
-    if (typeof localStorage !== 'undefined') localStorage.removeItem('darc_token');
+    setSessionIndicator(false);
+    if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem('darc_token');
+      localStorage.removeItem('darc_user_id');
+    }
     if (typeof window !== 'undefined' && typeof window.disconnectSupabaseRealtime === 'function') {
       window.disconnectSupabaseRealtime('logout_all');
     }
@@ -2936,6 +2944,26 @@ export async function init() {
   if (rawHash === 'forgot') return renderLogin('', 'forgot');
   if (rawHash === 'login') return renderLogin();
 
+  // Zero-Trust Session Verification: If session cookie indicator is absent (cookies deleted or expired),
+  // immediately purge stale offline tokens, state, or ghost caches and render login.
+  const hasSession = hasSessionIndicator();
+  if (!hasSession) {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem('darc_token');
+      localStorage.removeItem('darc_user_id');
+    }
+    try { clearOfflineBootstrap(); } catch (e) {}
+    state.data = null;
+    state.view = 'login';
+    if (typeof history !== 'undefined' && history.replaceState) {
+      history.replaceState(null, '', '#login');
+    } else if (typeof window !== 'undefined') {
+      window.location.hash = '#login';
+    }
+    renderLogin();
+    return;
+  }
+
   // Restore route from hash or session storage on refresh BEFORE initial paint
   try {
     if (rawHash) {
@@ -3043,6 +3071,27 @@ export async function init() {
           scheduleNextPoll();
           return;
         }
+        if (!hasSessionIndicator()) {
+          if (state.data?.user) {
+            if (typeof localStorage !== 'undefined') {
+              localStorage.removeItem('darc_token');
+              localStorage.removeItem('darc_user_id');
+            }
+            try { clearOfflineBootstrap(); } catch (e) {}
+            state.data = null;
+            state.view = 'login';
+            if (typeof window !== 'undefined' && typeof window.disconnectSupabaseRealtime === 'function') {
+              window.disconnectSupabaseRealtime('cookie_deleted_poll');
+            }
+            if (typeof window !== 'undefined') {
+              window.location.hash = '#login';
+            }
+            renderLogin();
+            return;
+          }
+          scheduleNextPoll();
+          return;
+        }
         if (_isPollInFlight) {
           scheduleNextPoll();
           return;
@@ -3071,6 +3120,33 @@ export async function init() {
             runPoll();
           }
         });
+      }
+
+      // Real-time zero-latency cookie deletion detection via CookieStore API
+      if (typeof window !== 'undefined' && typeof window.cookieStore !== 'undefined' && typeof window.cookieStore.addEventListener === 'function' && !window._darcCookieListenerBound) {
+        window._darcCookieListenerBound = true;
+        try {
+          window.cookieStore.addEventListener('change', (event) => {
+            const deleted = event.deleted || [];
+            const isSessionCleared = deleted.some(c => c.name === 'darc_logged_in' || c.name === 'darc_session');
+            if (isSessionCleared || !hasSessionIndicator()) {
+              if (state.data?.user) {
+                if (typeof localStorage !== 'undefined') {
+                  localStorage.removeItem('darc_token');
+                  localStorage.removeItem('darc_user_id');
+                }
+                try { clearOfflineBootstrap(); } catch (e) {}
+                state.data = null;
+                state.view = 'login';
+                if (typeof window.disconnectSupabaseRealtime === 'function') {
+                  window.disconnectSupabaseRealtime('cookie_deleted_event');
+                }
+                window.location.hash = '#login';
+                renderLogin();
+              }
+            }
+          });
+        } catch (e) {}
       }
     }
   } catch (e) { 
@@ -3118,6 +3194,15 @@ if (typeof window !== 'undefined' && !window._hashChangeListenerSet) {
     }
     const validViews = ['dashboard', 'projects', 'tasks', 'documents', 'templates', 'team', 'reports', 'settings', 'project-detail'];
     if (validViews.includes(viewPart)) {
+      if (!hasSessionIndicator() || !state.data?.user) {
+        if (typeof history !== 'undefined' && history.replaceState) {
+          history.replaceState(null, '', '#login');
+        } else if (typeof window !== 'undefined') {
+          window.location.hash = '#login';
+        }
+        renderLogin();
+        return;
+      }
       if (state.data && !canAccessView(viewPart)) {
         switchView(getFirstAllowedView());
         return;

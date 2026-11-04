@@ -1,6 +1,6 @@
 import { state } from './state.js';
-import { generatePrefixedId, enqueueOfflineMutation, simulateOfflineMutation } from './offline.js';
-import { choose } from './utils.js';
+import { generatePrefixedId, enqueueOfflineMutation, simulateOfflineMutation, clearOfflineBootstrap } from './offline.js';
+import { choose, hasSessionIndicator, setSessionIndicator } from './utils.js';
 import { showToast } from '../shared/ui.js';
 import { recordBreadcrumb } from './telemetry.js';
 
@@ -29,7 +29,7 @@ if (typeof document !== 'undefined') {
 
 export async function api(path, options = {}) {
   const isMutation = ['POST', 'PATCH', 'PUT', 'DELETE'].includes(options.method);
-  const isAuth = path.startsWith('/api/auth');
+  const isAuth = path.startsWith('/api/auth') || path.startsWith('/api/telemetry') || path === '/api/health';
   const isReplay = Boolean(options.headers && (options.headers['X-Offline-Replay'] === 'true' || options.headers['X-Offline-Replay'] === true));
 
   let parsedBody = null;
@@ -78,7 +78,35 @@ export async function api(path, options = {}) {
     return { ok: true, queued: true, offline: true, id: item?.id, ...simResult };
   }
 
-  const token = (typeof localStorage !== 'undefined') ? localStorage.getItem('darc_token') : null;
+  const hasSession = hasSessionIndicator();
+
+  // Zero-Trust Session Guard: If cookies were deleted and route is not a public auth route, reject immediately
+  if (!isAuth && !hasSession) {
+    invalidateBootstrapEtag();
+    if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem('darc_token');
+      localStorage.removeItem('darc_user_id');
+    }
+    clearOfflineBootstrap();
+    state.data = null;
+    state.view = 'login';
+    if (typeof window !== 'undefined') {
+      if (typeof window.disconnectSupabaseRealtime === 'function') {
+        window.disconnectSupabaseRealtime('cookie_deleted');
+      }
+      if (window.location.hash !== '#login') {
+        window.location.hash = '#login';
+      }
+      if (typeof window.renderLogin === 'function') {
+        window.renderLogin();
+      }
+    }
+    const unauthErr = new Error(choose('تم إنهاء الجلسة أو حذف ملفات تعريف الارتباط.', 'Session ended or cookies cleared.'));
+    unauthErr.status = 401;
+    throw unauthErr;
+  }
+
+  const token = (hasSession && typeof localStorage !== 'undefined') ? localStorage.getItem('darc_token') : null;
   const isSilent = Boolean(options.silent || (options.headers && options.headers['X-Silent']));
   const hasOfflineData = (typeof localStorage !== 'undefined') && Boolean(localStorage.getItem('darc_offline_bootstrap'));
   const shouldSendEtag = Boolean(_lastBootstrapEtag) && (isSilent || Boolean(state.data) || hasOfflineData);
@@ -137,17 +165,24 @@ export async function api(path, options = {}) {
     
     if (response.status === 401) {
       invalidateBootstrapEtag();
+      setSessionIndicator(false);
       if (typeof window !== 'undefined' && typeof window.disconnectSupabaseRealtime === 'function') {
         window.disconnectSupabaseRealtime('unauthorized_401');
       }
       if (path !== '/api/auth/login') {
         if (typeof localStorage !== 'undefined') {
           localStorage.removeItem('darc_token');
+          localStorage.removeItem('darc_user_id');
         }
-        if (state.data) state.data.user = null;
+        try { clearOfflineBootstrap(); } catch (e) {}
+        state.data = null;
+        state.view = 'login';
         if (typeof window !== 'undefined') {
           if (window.location.hash !== '#login') {
             window.location.hash = '#login';
+          }
+          if (typeof window.renderLogin === 'function') {
+            window.renderLogin();
           }
         }
       }

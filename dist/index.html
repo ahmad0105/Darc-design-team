@@ -91,6 +91,23 @@
             }
           }
           document.documentElement.dataset.theme = effectiveTheme;
+
+          // C. Zero-Trust Session Pre-flight: If session cookie indicator is absent, wipe stale tokens & offline caches
+          var loggedInIndicator = getCookieVal('darc_logged_in');
+          if (loggedInIndicator !== '1') {
+            try {
+              localStorage.removeItem('darc_token');
+              localStorage.removeItem('darc_user_id');
+              localStorage.removeItem('darc_offline_bootstrap');
+              localStorage.removeItem('darc_offline_queue');
+              localStorage.removeItem('darc_offline_mutations_queue');
+              if (typeof sessionStorage !== 'undefined') {
+                sessionStorage.removeItem('darc_bootstrap_etag');
+                sessionStorage.removeItem('darc_trash_cache');
+                sessionStorage.removeItem('darc_last_route');
+              }
+            } catch (e) {}
+          }
         } catch (e) {}
 
         // 2. Silent Auto-Healing Boundary for Stale Module Cache
@@ -155,14 +172,14 @@
         });
       })();
     </script>
-    <script type="module" crossorigin src="/assets/main-Dq1fIzJN.js"></script>
+    <script type="module" crossorigin src="/assets/main-a29qMLw-.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/rolldown-runtime-BQ-_32WO.js">
-    <link rel="modulepreload" crossorigin href="/assets/core-realtime-B8eq5UKf.js">
-    <link rel="modulepreload" crossorigin href="/assets/feature-auth-DjWmq9sr.js">
-    <link rel="modulepreload" crossorigin href="/assets/feature-settings-Dt6cOagG.js">
-    <link rel="modulepreload" crossorigin href="/assets/feature-documents-C3Q19Tlm.js">
-    <link rel="modulepreload" crossorigin href="/assets/feature-workspace-B8GKUpAX.js">
-    <link rel="modulepreload" crossorigin href="/assets/feature-reports-CrLJ2-B3.js">
+    <link rel="modulepreload" crossorigin href="/assets/core-realtime-B9bsh5Re.js">
+    <link rel="modulepreload" crossorigin href="/assets/feature-auth-yiqveTlj.js">
+    <link rel="modulepreload" crossorigin href="/assets/feature-settings-CAPuZj3u.js">
+    <link rel="modulepreload" crossorigin href="/assets/feature-documents-Dzj698Mk.js">
+    <link rel="modulepreload" crossorigin href="/assets/feature-workspace-BpMPMINS.js">
+    <link rel="modulepreload" crossorigin href="/assets/feature-reports-BcjC5QOr.js">
     <link rel="stylesheet" crossorigin href="/assets/main-B1s9kVkn.css">
   </head>
   <body>
