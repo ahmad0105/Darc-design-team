@@ -213,6 +213,22 @@ export function payloadLimitMiddleware(maxBytes = 2.5 * 1024 * 1024) {
   };
 }
 
+// Allowed frontend origins for CORS and CSRF protection
+const ALLOWED_ORIGINS = [
+  'http://localhost:4318',
+  'http://127.0.0.1:4318',
+  'http://localhost:8787',
+  'http://127.0.0.1:8787',
+  'https://darc-design-team.netlify.app',
+  'https://darc-design-team.workers.dev',
+  'https://darc-design-team.ahmad-hashmi-c.workers.dev',
+  'https://darc-cloud-backend.ahmad-hashmi-c.workers.dev',
+  'https://darc-design.bond',
+  'https://panel.darc-design.bond',
+  'https://api.darc-design.bond',
+  'https://wa.darc-design.bond'
+];
+
 function isAllowedOrigin(originStr) {
   if (!originStr || typeof originStr !== 'string') return false;
   try {

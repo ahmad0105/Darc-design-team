@@ -16,7 +16,7 @@ const SUPABASE_WS_ENDPOINT = 'wss://yjfmrpwkjstxldnwegob.supabase.co/realtime/v1
 const isDataSaver = typeof navigator !== 'undefined' && Boolean(navigator.connection?.saveData);
 const INACTIVITY_IDLE_TIMEOUT_MS = 5 * 60 * 1000;           // 5 minutes without user activity -> Hibernate
 const TAB_HIDDEN_STANDBY_MS = isDataSaver ? 10 * 1000 : 30 * 1000; // 10s (Data Saver) or 30s in background -> Hibernate
-const SYNC_DEBOUNCE_MS = isDataSaver ? 600 : 300;           // Window to batch multi-event mutations
+const SYNC_DEBOUNCE_MS = isDataSaver ? 2000 : 1200;         // Window to batch multi-event mutations & prevent flood
 const HEARTBEAT_INTERVAL_MS = 25 * 1000;                     // 25s keepalive ping while actively working
 const MAX_LOCAL_MUTATIONS = 150;
 
