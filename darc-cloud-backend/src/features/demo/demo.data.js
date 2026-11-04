@@ -618,6 +618,43 @@ export function createDemoDataset() {
     }
   ];
 
+  const demoTrash = [
+    {
+      id: 'prj_demo_trashed',
+      type: 'project',
+      code: 'DARC-04',
+      nameAr: 'مجمع واحة الأعمال والابتكار (Oasis Business Center)',
+      nameEn: 'Oasis Business & Innovation Center',
+      clientAr: 'شركة الابتكار للاستثمار العقاري',
+      clientEn: 'Innovation Real Estate Investment',
+      lifecycle: 'planning',
+      managerId: 'usr_demo',
+      deletedAt: dateStr(-8),
+      createdAt: dateStr(-40)
+    },
+    {
+      id: 'tsk_demo_trashed',
+      type: 'task',
+      projectId: 'prj_demo_villa',
+      titleAr: 'مراجعة تقرير فحص التربة الأولي للفيلا',
+      titleEn: 'Review Initial Soil Investigation Report',
+      priority: 'medium',
+      status: 'not_started',
+      deletedAt: dateStr(-3),
+      createdAt: dateStr(-20)
+    },
+    {
+      id: 'doc_demo_trashed',
+      type: 'document',
+      projectId: 'prj_demo_villa',
+      originalName: 'OASIS-SOIL-INVESTIGATION-DRAFT.pdf',
+      mimeType: 'application/pdf',
+      size: 2.4 * 1024 * 1024,
+      deletedAt: dateStr(-5),
+      createdAt: dateStr(-18)
+    }
+  ];
+
   return {
     updatedAt: new Date().toISOString(),
     isDemo: true,
@@ -669,6 +706,7 @@ export function createDemoDataset() {
     ],
     notifications: demoNotifications,
     reminders: [],
+    trash: demoTrash,
     emailConfigured: false,
     stats: {
       activeProjects: 3,

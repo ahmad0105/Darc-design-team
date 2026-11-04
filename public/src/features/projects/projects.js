@@ -53,17 +53,20 @@ export function getNextAvailableProjectCode() {
   const allProjects = [...activeProjects, ...trashedProjects];
 
   let maxNum = 0;
+  let maxDigits = 2;
   for (const p of allProjects) {
     if (!p.code) continue;
     const matches = String(p.code).match(/\d+/g);
     if (matches && matches.length > 0) {
-      const lastNum = parseInt(matches[matches.length - 1], 10);
+      const lastMatch = matches[matches.length - 1];
+      if (lastMatch.length > maxDigits) maxDigits = lastMatch.length;
+      const lastNum = parseInt(lastMatch, 10);
       if (!isNaN(lastNum) && lastNum > maxNum) {
         maxNum = lastNum;
       }
     }
   }
-  return `DARC-${String(maxNum + 1).padStart(3, '0')}`;
+  return `DARC-${String(maxNum + 1).padStart(maxDigits, '0')}`;
 }
 
 /**
@@ -817,6 +820,18 @@ export function buildProjectMemberChipsHtml(memberIds = []) {
 }
 
 export function openProjectModal(project = null) {
+  if (!state.trashLoaded && typeof window !== 'undefined') {
+    api('/api/trash', { silent: true }).then(data => {
+      if (data) {
+        state.trash = Array.isArray(data) ? data : (data.trash || [
+          ...(data.projects || []).map(p => ({ ...p, type: 'project' })),
+          ...(data.tasks || []).map(t => ({ ...t, type: 'task' })),
+          ...(data.documents || []).map(d => ({ ...d, type: 'document' }))
+        ]);
+        state.trashLoaded = true;
+      }
+    }).catch(() => {});
+  }
   const defaultCode = project?.code || getNextAvailableProjectCode();
   const existingTeam = project ? getProjectTeamData(project).internalMembers.map(m => m.id) : [];
   const currentMemberIds = existingTeam.length > 0 ? existingTeam : [state.data?.user?.id].filter(Boolean);

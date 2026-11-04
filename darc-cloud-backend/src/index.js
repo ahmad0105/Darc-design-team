@@ -32,7 +32,33 @@ import { securityHeadersMiddleware, csrfGuardMiddleware, correlationIdMiddleware
 import { authRateLimiter, recordAuthFailure, clearAuthFailure, getClientIp, mutationRateLimiter } from './core/rate-limit.js';
 import { getDB } from './core/db.js';
 import { getUserTokenRecord, invalidateBootstrapCache } from './core/cache.js';
-import { getDemoPayload, resetDemoPayload } from './features/demo/demo.service.js';
+import { 
+  getDemoPayload, 
+  resetDemoPayload,
+  getDemoTrash,
+  createDemoProject,
+  updateDemoProject,
+  deleteDemoProject,
+  deleteDemoTask,
+  deleteDemoDocument,
+  updateDemoDocument,
+  restoreDemoItem,
+  purgeDemoTrashItem,
+  emptyDemoTrash,
+  updateDemoCompany,
+  updateDemoSelfProfile,
+  createDemoUser,
+  updateDemoUser,
+  createDemoTemplate,
+  updateDemoTemplate,
+  deleteDemoTemplate,
+  createDemoRole,
+  updateDemoRole,
+  markDemoNotificationAsRead,
+  markAllDemoNotificationsAsRead,
+  clearReadDemoNotifications,
+  deleteDemoNotification
+} from './features/demo/demo.service.js';
 import { toCamelCase } from './utils/transformers.js';
 export { toCamelCase };
 
@@ -477,22 +503,167 @@ app.use('/api/*', async (c, next) => {
       }
       return c.json({ ok: true, document: d });
     }
-    if (path === '/api/trash' || path === '/api/trash/') return c.json({ projects: [], tasks: [], documents: [] });
+    if (path === '/api/trash' || path === '/api/trash/') return c.json(getDemoTrash());
 
     // Safety Shield: Any other GET route for demo account returns isolated safe response (Zero DB access)
     return c.json({ ok: true, isDemo: true, data: [] });
   }
 
-  // 3. State-changing requests (POST, PATCH, PUT, DELETE) -> Safe simulated responses (Zero DB writes)
+  // 3. State-changing requests (POST, PATCH, PUT, DELETE) -> Safe in-memory simulated responses (Zero DB writes)
   if (['POST', 'PATCH', 'PUT', 'DELETE'].includes(method)) {
     if (path.includes('/impersonate')) {
       return c.json({ error: 'خاصية تقمص الحسابات معطلة في بيئة العرض التجريبية' }, 403);
     }
-    if (path.startsWith('/api/notifications')) return c.json({ ok: true });
+
+    // Projects mutations
+    if (path === '/api/projects' || path === '/api/projects/') {
+      if (method === 'POST') {
+        const body = await c.req.json().catch(() => ({}));
+        const created = createDemoProject(body);
+        return c.json({ project: created }, 201);
+      }
+    }
+    if (path.startsWith('/api/projects/')) {
+      const parts = path.split('/');
+      const id = parts[3];
+      if (method === 'PATCH') {
+        const body = await c.req.json().catch(() => ({}));
+        const updated = updateDemoProject(id, body);
+        return c.json({ project: updated });
+      }
+      if (method === 'DELETE') {
+        deleteDemoProject(id);
+        return c.json({ ok: true, isDemo: true, message: 'تم نقل المشروع لسلة المهملات في بيئة العرض' });
+      }
+    }
+
+    // Tasks deletion
+    if (path.startsWith('/api/tasks/') && method === 'DELETE') {
+      const id = path.split('/')[3];
+      deleteDemoTask(id);
+      return c.json({ ok: true, isDemo: true, message: 'تم نقل المهمة لسلة المهملات في بيئة العرض' });
+    }
+
+    // Documents status & deletion
+    if (path.startsWith('/api/documents/')) {
+      const id = path.split('/')[3];
+      if (method === 'PATCH') {
+        const body = await c.req.json().catch(() => ({}));
+        const updated = updateDemoDocument(id, body);
+        return c.json({ ok: true, isDemo: true, document: updated });
+      }
+      if (method === 'DELETE') {
+        deleteDemoDocument(id);
+        return c.json({ ok: true, isDemo: true, message: 'تم نقل المستند لسلة المهملات في بيئة العرض' });
+      }
+    }
+
+    // Trash & Restore
+    if (path.startsWith('/api/restore/')) {
+      const parts = path.split('/');
+      const type = parts[3];
+      const id = parts[4];
+      restoreDemoItem(type, id);
+      return c.json({ ok: true, isDemo: true, message: 'تمت الاستعادة بنجاح في بيئة العرض التجريبية' });
+    }
+    if (path === '/api/trash/empty' && method === 'DELETE') {
+      emptyDemoTrash();
+      return c.json({ ok: true, isDemo: true });
+    }
+    if (path.startsWith('/api/trash/') && method === 'DELETE') {
+      const parts = path.split('/');
+      const type = parts[3];
+      const id = parts[4];
+      purgeDemoTrashItem(type, id);
+      return c.json({ ok: true, isDemo: true });
+    }
+
+    // Notifications
+    if (path === '/api/notifications/read-all') {
+      markAllDemoNotificationsAsRead();
+      return c.json({ ok: true, isDemo: true });
+    }
+    if (path === '/api/notifications/clear-read') {
+      clearReadDemoNotifications();
+      return c.json({ ok: true, isDemo: true });
+    }
+    if (path.startsWith('/api/notifications/')) {
+      const id = path.split('/')[3];
+      if (method === 'PATCH') {
+        markDemoNotificationAsRead(id);
+        return c.json({ ok: true, isDemo: true });
+      }
+      if (method === 'DELETE') {
+        deleteDemoNotification(id);
+        return c.json({ ok: true, isDemo: true });
+      }
+    }
+
+    // Company & User Profile
+    if (path === '/api/company' && method === 'PATCH') {
+      const body = await c.req.json().catch(() => ({}));
+      const updated = updateDemoCompany(body);
+      return c.json({ ok: true, isDemo: true, company: updated });
+    }
+    if (path === '/api/users/me' && method === 'PATCH') {
+      const body = await c.req.json().catch(() => ({}));
+      const updated = updateDemoSelfProfile(body);
+      return c.json({ ok: true, isDemo: true, user: updated });
+    }
+
+    // Templates
+    if (path === '/api/templates' && method === 'POST') {
+      const body = await c.req.json().catch(() => ({}));
+      const created = createDemoTemplate(body);
+      return c.json({ ok: true, isDemo: true, template: created }, 201);
+    }
+    if (path.startsWith('/api/templates/')) {
+      const id = path.split('/')[3];
+      if (method === 'PATCH') {
+        const body = await c.req.json().catch(() => ({}));
+        const updated = updateDemoTemplate(id, body);
+        return c.json({ ok: true, isDemo: true, template: updated });
+      }
+      if (method === 'DELETE') {
+        deleteDemoTemplate(id);
+        return c.json({ ok: true, isDemo: true });
+      }
+    }
+
+    // Roles
+    if (path === '/api/roles' && method === 'POST') {
+      const body = await c.req.json().catch(() => ({}));
+      const created = createDemoRole(body);
+      return c.json({ ok: true, isDemo: true, role: created }, 201);
+    }
+    if (path.startsWith('/api/roles/')) {
+      const id = path.split('/')[3];
+      if (method === 'PATCH') {
+        const body = await c.req.json().catch(() => ({}));
+        const updated = updateDemoRole(id, body);
+        return c.json({ ok: true, isDemo: true, role: updated });
+      }
+    }
+
+    // Users
+    if (path === '/api/users' && method === 'POST') {
+      const body = await c.req.json().catch(() => ({}));
+      const created = createDemoUser(body);
+      return c.json({ ok: true, isDemo: true, user: created }, 201);
+    }
+    if (path.startsWith('/api/users/')) {
+      const id = path.split('/')[3];
+      if (method === 'PATCH') {
+        const body = await c.req.json().catch(() => ({}));
+        const updated = updateDemoUser(id, body);
+        return c.json({ ok: true, isDemo: true, user: updated });
+      }
+    }
+
     if (path.startsWith('/api/reminders')) return c.json({ ok: true, reminder: { id: 'rem_demo_simulated' } });
     if (path.startsWith('/api/whatsapp')) return c.json({ ok: true, isDemo: true, message: 'تمت العملية بنجاح في بيئة العرض التجريبية' });
     
-    // Simulate user / project / role / template / company mutations safely in demo mode
+    // Simulate other mutations safely in demo mode
     return c.json({
       ok: true,
       isDemo: true,

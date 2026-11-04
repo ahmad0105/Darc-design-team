@@ -174,7 +174,11 @@ export async function handleCopyDocLink(doc, btnElement = null) {
         btnElement.style.color = '';
       }, 2200);
     }
-    showToast(choose(`تم نسخ رابط المخرج الهندسي في Google Drive بنجاح ✅`, `Google Drive deliverable link copied ✅`));
+    const isDemo = isDemoSession() || (doc && (String(doc.id).startsWith('doc_demo') || doc.isDemo || String(doc.driveFileId || '').startsWith('demo_')));
+    showToast(choose(
+      isDemo ? `تم نسخ رابط المستند بنجاح ✅` : `تم نسخ رابط المخرج الهندسي في Google Drive بنجاح ✅`,
+      isDemo ? `Document link copied successfully ✅` : `Google Drive deliverable link copied ✅`
+    ));
   }
 }
 

@@ -114,13 +114,16 @@ export function createDemoTask(taskData) {
 
 export function addDemoDocument(docData) {
   checkAndAutoReset();
+  const originalName = docData.originalName || docData.compiledName || docData.name || 'DARC-VILLA-ARCH-A101_Rev03.pdf';
   const newDoc = {
     id: 'doc_demo_' + Math.random().toString(36).substr(2, 6),
     projectId: docData.projectId || 'prj_demo_villa',
     taskId: docData.taskId || null,
     uploaderId: 'usr_demo',
-    originalName: docData.originalName || docData.compiledName || docData.name || 'مخطط معماري تجريبي.pdf',
-    diskFilename: 'https://demo-mock-files.darc-design.bond/samples/drawing_sample.pdf',
+    originalName,
+    diskFilename: `/assets/${encodeURIComponent(originalName)}`,
+    viewLink: `/assets/${encodeURIComponent(originalName)}`,
+    driveFileId: 'demo_file_' + Math.random().toString(36).substring(2, 6),
     mimeType: docData.mimeType || 'application/pdf',
     size: Number(docData.size) || 1024 * 512,
     status: 'review',
@@ -128,6 +131,372 @@ export function addDemoDocument(docData) {
   };
   _demoStore.documents.unshift(newDoc);
   return newDoc;
+}
+
+export function updateDemoDocument(docId, updates = {}) {
+  checkAndAutoReset();
+  const doc = _demoStore.documents.find(d => d.id === docId);
+  if (doc) {
+    if (updates.status) doc.status = updates.status;
+    if (updates.originalName) {
+      doc.originalName = updates.originalName;
+      doc.diskFilename = `/assets/${encodeURIComponent(updates.originalName)}`;
+      doc.viewLink = doc.diskFilename;
+    }
+    doc.updatedAt = new Date().toISOString();
+    return doc;
+  }
+  return null;
+}
+
+export function deleteDemoDocument(docId) {
+  checkAndAutoReset();
+  const idx = _demoStore.documents.findIndex(d => d.id === docId);
+  if (idx !== -1) {
+    const [doc] = _demoStore.documents.splice(idx, 1);
+    const trashed = { ...doc, type: 'document', deletedAt: new Date().toISOString() };
+    if (!_demoStore.trash) _demoStore.trash = [];
+    _demoStore.trash.unshift(trashed);
+    return true;
+  }
+  return false;
+}
+
+export function deleteDemoTask(taskId) {
+  checkAndAutoReset();
+  const idx = _demoStore.tasks.findIndex(t => t.id === taskId);
+  if (idx !== -1) {
+    const [task] = _demoStore.tasks.splice(idx, 1);
+    const trashed = { ...task, type: 'task', deletedAt: new Date().toISOString() };
+    if (!_demoStore.trash) _demoStore.trash = [];
+    _demoStore.trash.unshift(trashed);
+    return true;
+  }
+  return false;
+}
+
+export function createDemoProject(data = {}) {
+  checkAndAutoReset();
+  const allCodes = [..._demoStore.projects, ...(_demoStore.trash || [])].map(p => p.code).filter(Boolean);
+  let maxNum = 0;
+  let maxDigits = 2;
+  for (const c of allCodes) {
+    const matches = String(c).match(/\d+/g);
+    if (matches && matches.length > 0) {
+      const lastMatch = matches[matches.length - 1];
+      if (lastMatch.length > maxDigits) maxDigits = lastMatch.length;
+      const num = parseInt(lastMatch, 10);
+      if (!isNaN(num) && num > maxNum) maxNum = num;
+    }
+  }
+  const defaultCode = `DARC-${String(maxNum + 1).padStart(maxDigits, '0')}`;
+  const code = (data.code && String(data.code).trim().toUpperCase()) || defaultCode;
+
+  const newProject = {
+    id: data.id || ('prj_demo_' + Math.random().toString(36).substring(2, 8)),
+    code,
+    nameAr: data.nameAr || data.name_ar || data.name || 'مشروع هندسي تجريبي جديد',
+    nameEn: data.nameEn || data.name_en || 'New Demo Engineering Project',
+    clientAr: data.clientAr || data.client_ar || 'مجموعة استثمارية',
+    clientEn: data.clientEn || data.client_en || 'Investment Group',
+    descriptionAr: data.descriptionAr || data.description_ar || '',
+    descriptionEn: data.descriptionEn || data.description_en || '',
+    lifecycle: data.lifecycle || 'active',
+    health: data.health || 'on_track',
+    startDate: data.startDate || data.start_date || new Date().toISOString().split('T')[0],
+    dueDate: data.dueDate || data.due_date || new Date(Date.now() + 60 * 86400000).toISOString().split('T')[0],
+    managerId: data.managerId || data.manager_id || 'usr_demo',
+    progress: 0,
+    progressMode: 'weighted',
+    demo: true,
+    memberCount: (Array.isArray(data.memberIds) ? data.memberIds.length : 1),
+    memberIds: Array.isArray(data.memberIds) ? data.memberIds : ['usr_demo'],
+    members: Array.isArray(data.memberIds) ? data.memberIds : ['usr_demo'],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+
+  _demoStore.projects.unshift(newProject);
+  return newProject;
+}
+
+export function updateDemoProject(id, updates = {}) {
+  checkAndAutoReset();
+  const proj = _demoStore.projects.find(p => p.id === id);
+  if (proj) {
+    const cleanUpdates = (updates && typeof updates === 'object' && !Array.isArray(updates)) ? { ...updates } : {};
+    delete cleanUpdates.__proto__;
+    delete cleanUpdates.constructor;
+    delete cleanUpdates.prototype;
+    Object.assign(proj, cleanUpdates, { updatedAt: new Date().toISOString() });
+    return proj;
+  }
+  return null;
+}
+
+export function deleteDemoProject(projectId) {
+  checkAndAutoReset();
+  const idx = _demoStore.projects.findIndex(p => p.id === projectId);
+  if (idx !== -1) {
+    const [project] = _demoStore.projects.splice(idx, 1);
+    const now = new Date().toISOString();
+    const trashed = { ...project, type: 'project', deletedAt: now };
+    if (!_demoStore.trash) _demoStore.trash = [];
+    _demoStore.trash.unshift(trashed);
+
+    // Also soft-delete associated tasks and documents
+    const remainingTasks = [];
+    for (const t of _demoStore.tasks) {
+      if (t.projectId === projectId) {
+        _demoStore.trash.unshift({ ...t, type: 'task', deletedAt: now });
+      } else {
+        remainingTasks.push(t);
+      }
+    }
+    _demoStore.tasks = remainingTasks;
+
+    const remainingDocs = [];
+    for (const d of _demoStore.documents) {
+      if (d.projectId === projectId) {
+        _demoStore.trash.unshift({ ...d, type: 'document', deletedAt: now });
+      } else {
+        remainingDocs.push(d);
+      }
+    }
+    _demoStore.documents = remainingDocs;
+
+    return true;
+  }
+  return false;
+}
+
+export function getDemoTrash() {
+  checkAndAutoReset();
+  if (!_demoStore.trash) _demoStore.trash = [];
+  const list = _demoStore.trash;
+  return {
+    trash: list,
+    projects: list.filter(x => x.type === 'project'),
+    tasks: list.filter(x => x.type === 'task'),
+    documents: list.filter(x => x.type === 'document')
+  };
+}
+
+export function restoreDemoItem(type, id) {
+  checkAndAutoReset();
+  if (!_demoStore.trash) _demoStore.trash = [];
+  const idx = _demoStore.trash.findIndex(item => item.id === id);
+  if (idx === -1) return false;
+
+  const [item] = _demoStore.trash.splice(idx, 1);
+  delete item.deletedAt;
+
+  if (type === 'project' || item.type === 'project') {
+    delete item.type;
+    item.lifecycle = 'active';
+    _demoStore.projects.unshift(item);
+  } else if (type === 'task' || item.type === 'task') {
+    delete item.type;
+    _demoStore.tasks.unshift(item);
+  } else if (type === 'document' || item.type === 'document') {
+    delete item.type;
+    _demoStore.documents.unshift(item);
+  }
+  return true;
+}
+
+export function purgeDemoTrashItem(type, id) {
+  checkAndAutoReset();
+  if (!_demoStore.trash) _demoStore.trash = [];
+  const idx = _demoStore.trash.findIndex(item => item.id === id);
+  if (idx !== -1) {
+    _demoStore.trash.splice(idx, 1);
+    return true;
+  }
+  return false;
+}
+
+export function emptyDemoTrash() {
+  checkAndAutoReset();
+  _demoStore.trash = [];
+  return true;
+}
+
+export function updateDemoComment(commentId, content) {
+  checkAndAutoReset();
+  if (!_demoStore.comments) return null;
+  const cmt = _demoStore.comments.find(c => c.id === commentId);
+  if (cmt) {
+    cmt.content = content;
+    cmt.updatedAt = new Date().toISOString();
+    return cmt;
+  }
+  return null;
+}
+
+export function deleteDemoComment(commentId) {
+  checkAndAutoReset();
+  if (!_demoStore.comments) return false;
+  const idx = _demoStore.comments.findIndex(c => c.id === commentId);
+  if (idx !== -1) {
+    _demoStore.comments.splice(idx, 1);
+    return true;
+  }
+  return false;
+}
+
+export function markDemoNotificationAsRead(id) {
+  checkAndAutoReset();
+  if (!_demoStore.notifications) return false;
+  const notif = _demoStore.notifications.find(n => n.id === id);
+  if (notif) {
+    notif.read = true;
+    notif.readAt = new Date().toISOString();
+    return true;
+  }
+  return false;
+}
+
+export function markAllDemoNotificationsAsRead() {
+  checkAndAutoReset();
+  if (!_demoStore.notifications) return true;
+  const now = new Date().toISOString();
+  _demoStore.notifications.forEach(n => {
+    n.read = true;
+    n.readAt = now;
+  });
+  return true;
+}
+
+export function clearReadDemoNotifications() {
+  checkAndAutoReset();
+  if (!_demoStore.notifications) return true;
+  _demoStore.notifications = _demoStore.notifications.filter(n => !n.read);
+  return true;
+}
+
+export function deleteDemoNotification(id) {
+  checkAndAutoReset();
+  if (!_demoStore.notifications) return false;
+  const idx = _demoStore.notifications.findIndex(n => n.id === id);
+  if (idx !== -1) {
+    _demoStore.notifications.splice(idx, 1);
+    return true;
+  }
+  return false;
+}
+
+export function updateDemoCompany(updates = {}) {
+  checkAndAutoReset();
+  if (!_demoStore.company) _demoStore.company = {};
+  if (updates.nameAr) _demoStore.company.nameAr = updates.nameAr;
+  if (updates.nameEn) _demoStore.company.nameEn = updates.nameEn;
+  if (updates.logoUrl !== undefined) _demoStore.company.logoUrl = updates.logoUrl;
+  _demoStore.company.updatedAt = new Date().toISOString();
+  return _demoStore.company;
+}
+
+export function updateDemoSelfProfile(updates = {}) {
+  checkAndAutoReset();
+  if (!_demoStore.user) return null;
+  if (updates.name) _demoStore.user.name = updates.name;
+  if (updates.nameEn) _demoStore.user.nameEn = updates.nameEn;
+  if (updates.jobTitleAr) _demoStore.user.jobTitleAr = updates.jobTitleAr;
+  if (updates.jobTitleEn) _demoStore.user.jobTitleEn = updates.jobTitleEn;
+  if (updates.phone) _demoStore.user.phone = updates.phone;
+  return _demoStore.user;
+}
+
+export function createDemoUser(userData = {}) {
+  checkAndAutoReset();
+  if (!_demoStore.users) _demoStore.users = [];
+  const newUser = {
+    id: userData.id || ('usr_demo_' + Math.random().toString(36).substring(2, 8)),
+    name: userData.name || userData.nameAr || 'مهندس تجريبي جديد',
+    nameEn: userData.nameEn || 'New Demo Engineer',
+    email: userData.email || `engineer_${Math.random().toString(36).substring(2, 6)}@darc.demo`,
+    jobTitleAr: userData.jobTitleAr || 'مهندس معماري',
+    jobTitleEn: userData.jobTitleEn || 'Architectural Engineer',
+    roleId: userData.roleId || 'team_member',
+    status: userData.status || 'active',
+    avatarColor: userData.avatarColor || '#0d6269',
+    avatarUrl: null
+  };
+  _demoStore.users.push(newUser);
+  return newUser;
+}
+
+export function updateDemoUser(userId, updates = {}) {
+  checkAndAutoReset();
+  if (!_demoStore.users) return null;
+  const user = _demoStore.users.find(u => u.id === userId);
+  if (user) {
+    Object.assign(user, updates);
+    return user;
+  }
+  return null;
+}
+
+export function createDemoTemplate(tplData = {}) {
+  checkAndAutoReset();
+  if (!_demoStore.templates) _demoStore.templates = [];
+  const newTpl = {
+    id: tplData.id || ('tpl_demo_' + Math.random().toString(36).substring(2, 8)),
+    code: tplData.code || String(_demoStore.templates.length + 1).padStart(2, '0'),
+    nameAr: tplData.nameAr || 'قالب مخرج هندسي جديد',
+    nameEn: tplData.nameEn || 'New Engineering Template',
+    defaultWeight: Number(tplData.defaultWeight) || 5,
+    categoryId: tplData.categoryId || 'architectural'
+  };
+  _demoStore.templates.push(newTpl);
+  return newTpl;
+}
+
+export function updateDemoTemplate(tplId, updates = {}) {
+  checkAndAutoReset();
+  if (!_demoStore.templates) return null;
+  const tpl = _demoStore.templates.find(t => t.id === tplId);
+  if (tpl) {
+    Object.assign(tpl, updates);
+    return tpl;
+  }
+  return null;
+}
+
+export function deleteDemoTemplate(tplId) {
+  checkAndAutoReset();
+  if (!_demoStore.templates) return false;
+  const idx = _demoStore.templates.findIndex(t => t.id === tplId);
+  if (idx !== -1) {
+    _demoStore.templates.splice(idx, 1);
+    return true;
+  }
+  return false;
+}
+
+export function createDemoRole(roleData = {}) {
+  checkAndAutoReset();
+  if (!_demoStore.roles) _demoStore.roles = [];
+  const newRole = {
+    id: roleData.id || ('role_demo_' + Math.random().toString(36).substring(2, 8)),
+    nameAr: roleData.nameAr || 'دور وظيفي جديد',
+    nameEn: roleData.nameEn || 'New Role',
+    permissions: Array.isArray(roleData.permissions) ? roleData.permissions : ['view_projects'],
+    builtIn: false
+  };
+  _demoStore.roles.push(newRole);
+  return newRole;
+}
+
+export function updateDemoRole(roleId, updates = {}) {
+  checkAndAutoReset();
+  if (!_demoStore.roles) return null;
+  const role = _demoStore.roles.find(r => r.id === roleId);
+  if (role) {
+    Object.assign(role, updates);
+    return role;
+  }
+  return null;
 }
 
 export function addDemoComment(taskId, content, userId = 'usr_demo') {

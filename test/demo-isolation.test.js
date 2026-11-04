@@ -2,7 +2,7 @@ import assert from 'node:assert';
 import { getIncidentsPerUser, getDemoTelemetryAnalytics, recordTelemetryHeartbeat, recordErrorIncident } from '../darc-cloud-backend/src/features/telemetry/telemetry.service.js';
 import { sendWhatsAppAlert, dispatchDirectNotificationAlert } from '../darc-cloud-backend/src/features/whatsapp/whatsapp.service.js';
 import { createNotification } from '../darc-cloud-backend/src/features/notifications/notifications.service.js';
-import { getDemoPayload } from '../darc-cloud-backend/src/features/demo/demo.service.js';
+import { getDemoPayload, getDemoTrash, createDemoProject, updateDemoProject, deleteDemoProject, deleteDemoTask, restoreDemoItem, emptyDemoTrash } from '../darc-cloud-backend/src/features/demo/demo.service.js';
 import { getDocumentShareableLink, GDRIVE_ROOT_FOLDER_ID } from '../public/src/features/documents/doc-viewer.js';
 
 console.log('--- Running Demo Isolation & Monitoring Verification Suite ---');
@@ -173,7 +173,44 @@ async function runTests() {
   assert.strictEqual(demoData.company.customFields.whatsapp.recipient, '+971500000000', 'Demo WhatsApp recipient must be fake number');
   console.log('✓ Test 13: Demo company configuration is securely mock-isolated with zero real WhatsApp credentials');
 
-  console.log('--- All Demo Isolation & Security Hardening Tests Passed Successfully (13/13) ---');
+  // Test 14: Initial demo trash contains soft-deleted project with reserved code DARC-04, task, and document
+  const initialTrash = getDemoTrash();
+  assert.ok(initialTrash.projects.length >= 1, 'Demo trash must contain at least 1 soft-deleted project');
+  assert.ok(initialTrash.tasks.length >= 1, 'Demo trash must contain at least 1 soft-deleted task');
+  assert.ok(initialTrash.documents.length >= 1, 'Demo trash must contain at least 1 soft-deleted document');
+  const trashedProj = initialTrash.projects.find(p => p.id === 'prj_demo_trashed');
+  assert.strictEqual(trashedProj.code, 'DARC-04', 'Trashed demo project must hold code DARC-04 for 30-day retention lock');
+  console.log('✓ Test 14: Demo recycle bin is populated with high-fidelity showcase items and reserved code DARC-04');
+
+  // Test 15: Creating demo project auto-assigns next monotonic code (DARC-05) without colliding with trash
+  const createdProj = createDemoProject({
+    nameAr: 'مشروع برج الأندلس السكني',
+    nameEn: 'Al Andalus Residential Tower',
+    clientAr: 'مجموعة الأندلس العقارية'
+  });
+  assert.strictEqual(createdProj.code, 'DARC-05', 'New demo project must jump to DARC-05 respecting active DARC-01..03 and trashed DARC-04');
+  console.log('✓ Test 15: Monotonic project code auto-generation seamlessly accounts for active and trashed demo projects');
+
+  // Test 16: Interactive in-memory demo deletion and restoration
+  const taskToDelete = demoData.tasks[0];
+  const deleteOk = deleteDemoTask(taskToDelete.id);
+  assert.strictEqual(deleteOk, true, 'Deleting demo task must succeed');
+  const trashAfterDelete = getDemoTrash();
+  assert.ok(trashAfterDelete.tasks.some(t => t.id === taskToDelete.id), 'Deleted task must appear in demo trash');
+  
+  const restoreOk = restoreDemoItem('task', taskToDelete.id);
+  assert.strictEqual(restoreOk, true, 'Restoring demo task must succeed');
+  const trashAfterRestore = getDemoTrash();
+  assert.ok(!trashAfterRestore.tasks.some(t => t.id === taskToDelete.id), 'Restored task must no longer be in trash');
+  console.log('✓ Test 16: Interactive demo deletion and restoration operates in-memory with complete fidelity');
+
+  // Test 17: Emptying demo trash clears the recycle bin cleanly
+  emptyDemoTrash();
+  const emptyCheck = getDemoTrash();
+  assert.strictEqual(emptyCheck.trash.length, 0, 'Emptying trash must clear demo trash');
+  console.log('✓ Test 17: Emptying demo trash operates safely and cleanly');
+
+  console.log('--- All Demo Isolation & Security Hardening Tests Passed Successfully (17/17) ---');
 }
 
 runTests().catch(err => {

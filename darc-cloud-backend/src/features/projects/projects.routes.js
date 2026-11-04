@@ -15,17 +15,20 @@ app.use('*', async (c, next) => {
 export async function getNextProjectCode(supabase) {
   const { data: allProjects } = await supabase.from('projects').select('code');
   let maxNum = 0;
+  let maxDigits = 2;
   if (allProjects && allProjects.length > 0) {
     for (const p of allProjects) {
       if (!p.code) continue;
       const matches = String(p.code).match(/\d+/g);
       if (matches && matches.length > 0) {
-        const lastNum = parseInt(matches[matches.length - 1], 10);
+        const lastMatch = matches[matches.length - 1];
+        if (lastMatch.length > maxDigits) maxDigits = lastMatch.length;
+        const lastNum = parseInt(lastMatch, 10);
         if (!isNaN(lastNum) && lastNum > maxNum) maxNum = lastNum;
       }
     }
   }
-  return `DARC-${String(maxNum + 1).padStart(3, '0')}`;
+  return `DARC-${String(maxNum + 1).padStart(maxDigits, '0')}`;
 }
 
 // POST /api/projects
