@@ -1,36 +1,23 @@
 // Security & Hardening Middlewares for DARC Cloud Backend
 import { getClientIp } from './rate-limit.js';
 
-const ALLOWED_ORIGINS = [
-  'http://localhost:4318',
-  'http://127.0.0.1:4318',
-  'http://localhost:8787',
-  'http://127.0.0.1:8787',
-  'https://darc-design-team.netlify.app',
-  'https://darc-design-team.workers.dev',
-  'https://darc-design-team.ahmad-hashmi-c.workers.dev',
-  'https://darc-design.bond',
-  'https://panel.darc-design.bond',
-  'https://api.darc-design.bond'
-];
-
 /**
- * Standard HTTP Security Headers & Strict CSP to protect against XSS, clickjacking, etc.
+ * Standard HTTP Security Headers & Strict CSP for API responses.
+ * Note: The API serves JSON only — CSP here is defensive, not for rendering HTML.
+ * 'unsafe-inline' and 'unsafe-eval' are intentionally REMOVED (not needed for JSON APIs).
  */
 export function securityHeadersMiddleware() {
+  // Strict API-level CSP — no inline scripts, no eval, no HTML rendering
   const CSP_POLICY = [
-    "default-src 'self' https://*.darc-design.bond https://darc-design.bond",
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.darc-design.bond https://darc-design.bond https://challenges.cloudflare.com https://static.cloudflareinsights.com",
-    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-    "font-src 'self' https://fonts.gstatic.com data:",
-    "img-src 'self' data: blob: https: http:",
-    "connect-src 'self' https://*.darc-design.bond https://darc-design.bond https://darc-cloud-backend.ahmad-hashmi-c.workers.dev https://*.supabase.co wss://*.supabase.co https://challenges.cloudflare.com https://static.cloudflareinsights.com https://www.googleapis.com data: blob:",
-    "worker-src 'self' blob: https://*.darc-design.bond https://darc-design.bond",
-    "frame-src 'self' https://challenges.cloudflare.com",
+    "default-src 'none'",
+    "script-src 'none'",
+    "style-src 'none'",
+    "img-src 'none'",
+    "connect-src 'self'",
     "frame-ancestors 'none'",
     "object-src 'none'",
     "base-uri 'self'",
-    "form-action 'self'"
+    "form-action 'none'"
   ].join('; ');
 
   return async (c, next) => {
@@ -39,14 +26,27 @@ export function securityHeadersMiddleware() {
     c.res.headers.set('Content-Security-Policy', CSP_POLICY);
     c.res.headers.set('X-Content-Type-Options', 'nosniff');
     c.res.headers.set('X-Frame-Options', 'DENY');
-    c.res.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
-    c.res.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=()');
+    c.res.headers.set('X-Permitted-Cross-Domain-Policies', 'none');
+    c.res.headers.set('Referrer-Policy', 'no-referrer');
+    c.res.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=(), usb=(), bluetooth=()');
     c.res.headers.set('Cross-Origin-Opener-Policy', 'same-origin');
     c.res.headers.set('Cross-Origin-Resource-Policy', 'cross-origin');
+    c.res.headers.set('Cross-Origin-Embedder-Policy', 'require-corp');
 
-    // Enable HSTS with preload for HTTPS connections
+    // HSTS — force HTTPS for 2 years with preload
     if (c.req.url.startsWith('https://')) {
       c.res.headers.set('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
+    }
+
+    // No-cache for auth and sensitive mutation endpoints
+    const path = c.req.path;
+    if (
+      path.startsWith('/api/auth/') ||
+      path.startsWith('/api/users/') ||
+      path.startsWith('/api/roles/')
+    ) {
+      c.res.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+      c.res.headers.set('Pragma', 'no-cache');
     }
   };
 }
