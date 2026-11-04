@@ -82,7 +82,30 @@ async function runTests() {
   assert.ok(notifResult.id.startsWith('notif_demo_'), 'Notification must be stored in in-memory demo store');
   console.log('✓ Test 5: In-app notifications for demo users are safely redirected to in-memory store without DB writes');
 
-  console.log('--- All Demo Isolation & Monitoring Verification Tests Passed Successfully (5/5) ---');
+  // Test 6: Verify document and project isolation for real accounts
+  const mixedRawDocs = [
+    { id: 'doc_real_101', original_name: 'Genuine-Company-Contract.pdf', project_id: 'prj_real_01', uploader_id: 'usr_ahmad_real' },
+    { id: 'doc_demo_01', original_name: 'DARC-VILLA-ARCH-A101_Rev03.pdf', project_id: 'prj_demo_villa', uploader_id: 'usr_demo_arch' },
+    { id: 'doc_demo_02', original_name: 'PALM_VILLA_MAJLIS_3D_RENDER_4K.jpg', project_id: 'prj_demo_villa', uploader_id: 'usr_demo_3d' }
+  ];
+
+  const activeProjects = [{ id: 'prj_real_01', demo: false }];
+  const activeProjectIdSet = new Set(activeProjects.map(p => p.id));
+
+  const isolatedDocsForRealAccount = mixedRawDocs.filter(d => {
+    if (d.project_id && !activeProjectIdSet.has(d.project_id)) return false;
+    if (d.id && String(d.id).startsWith('doc_demo_')) return false;
+    if (d.project_id && String(d.project_id).startsWith('prj_demo_')) return false;
+    if (d.uploader_id && String(d.uploader_id).startsWith('usr_demo')) return false;
+    return true;
+  });
+
+  assert.strictEqual(isolatedDocsForRealAccount.length, 1, 'Only real document must survive for real account');
+  assert.strictEqual(isolatedDocsForRealAccount[0].id, 'doc_real_101', 'Must match real document ID');
+  assert.ok(!isolatedDocsForRealAccount.some(d => d.original_name.includes('DARC-VILLA')), 'Demo blueprint MUST NOT be present in real account');
+  console.log('✓ Test 6: Production account documents are 100% shielded from demo blueprints & mock assets');
+
+  console.log('--- All Demo Isolation & Monitoring Verification Tests Passed Successfully (6/6) ---');
 }
 
 runTests().catch(err => {

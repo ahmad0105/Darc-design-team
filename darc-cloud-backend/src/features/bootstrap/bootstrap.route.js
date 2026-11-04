@@ -144,9 +144,9 @@ export async function generateBootstrapPayloadForUser(env, userId, roleId) {
       }
     }
 
-    let projects = projectsRes?.data || [];
-    const tasks = tasksRes?.data || [];
-    const documents = docsRes?.data || [];
+    let projects = (projectsRes?.data || []).filter(p => !p.demo && !String(p.id).startsWith('prj_demo_'));
+    const tasks = (tasksRes?.data || []).filter(t => !String(t.id).startsWith('tsk_demo_') && !String(t.project_id).startsWith('prj_demo_'));
+    const documents = (docsRes?.data || []).filter(d => !String(d.id).startsWith('doc_demo_') && !String(d.project_id).startsWith('prj_demo_'));
     const members = membersRes?.data || [];
     const comments = commentsRes?.data || [];
     const auditLogs = auditRes?.data || [];
@@ -287,6 +287,10 @@ export async function generateBootstrapPayloadForUser(env, userId, roleId) {
       if (d.deleted_at) return false;
       if (d.project_id && !activeProjectIdSet.has(d.project_id)) return false;
       if (d.task_id && !activeTaskIdSet.has(d.task_id)) return false;
+      // Strict Sandbox Guard: Real production accounts must NEVER see demo documents or demo projects
+      if (d.id && String(d.id).startsWith('doc_demo_')) return false;
+      if (d.project_id && String(d.project_id).startsWith('prj_demo_')) return false;
+      if (d.uploader_id && String(d.uploader_id).startsWith('usr_demo')) return false;
       return true;
     });
 

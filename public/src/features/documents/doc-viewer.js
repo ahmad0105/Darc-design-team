@@ -5,6 +5,7 @@ import { state } from '../../core/state.js';
 import { choose, esc, icon, statusText, getFileFormatInfo, extractDrawingVersion } from '../../core/utils.js';
 import { showToast } from '../../shared/ui.js';
 import { api } from '../../core/api.js';
+import { isDemoSession } from '../../core/realtime.js';
 
 // Official Project Google Drive Root Deliverables Folder ID
 export const GDRIVE_ROOT_FOLDER_ID = '1DsElwxs_mdPU16AsL4p5f2wB-a6V2LNH';
@@ -85,13 +86,21 @@ export function getRealAssetUrl(doc) {
     }
   }
 
-  // 2. Tier 2: Exact Pre-Bundled Architectural Master Assets (Available locally in /assets/)
+  // 2. Tier 2: Exact Pre-Bundled Architectural Master Assets (Strictly isolated to Demo showcase sessions)
+  const isDemo = Boolean(
+    doc.id?.startsWith('doc_demo_') ||
+    doc.projectId?.startsWith('prj_demo_') ||
+    isDemoSession()
+  );
+
   const originalName = (doc.originalName || '').trim();
-  if (originalName === 'darc-walkthrough.mp4') {
-    return '/assets/DARC-VILLA-SITE-PROGRESS-WALKTHROUGH.mp4';
-  }
-  if (originalName && KNOWN_MASTER_ASSETS.has(originalName)) {
-    return `/assets/${encodeURIComponent(originalName)}`;
+  if (isDemo) {
+    if (originalName === 'darc-walkthrough.mp4') {
+      return '/assets/DARC-VILLA-SITE-PROGRESS-WALKTHROUGH.mp4';
+    }
+    if (originalName && KNOWN_MASTER_ASSETS.has(originalName)) {
+      return `/assets/${encodeURIComponent(originalName)}`;
+    }
   }
 
   // 3. Tier 3: Direct HTTP(S) Cloud / CDN / Object Storage URL
