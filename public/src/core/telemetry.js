@@ -128,7 +128,7 @@ export async function reportClientError(error, context = {}) {
   const user = state.data?.user || {};
   const payload = {
     userId: user.id || 'usr_demo',
-    userName: user.name || 'مدير التوظيف / زائر',
+    userName: user.name || 'Demo',
     userEmail: user.email || 'demo@darc-design.bond',
     userRole: user.jobTitleAr || state.data?.role?.nameAr || 'مهندس مساحة العمل',
     avatarColor: user.avatarColor || '#0d6269',

@@ -402,8 +402,8 @@ export function renderLogin(errorMessage = '', mode = 'login', isSuccess = false
             <span>✨</span>
             <span>${choose('بيئة العرض التجريبي (Demo Showcase)', 'Live Demo Showcase')}</span>
           </div>
-          <span style="font-size:10px;background:rgba(20,184,166,0.15);color:var(--brand-teal, #0d6269);padding:2px 8px;border-radius:12px;font-weight:600;">
-            ${choose('للزوار ومدراء التوظيف', 'For Visitors & Hiring Managers')}
+          <span style="font-size:10px;background:rgba(20,184,166,0.18);color:var(--teal, #0d6269);padding:2px 8px;border-radius:12px;font-weight:700;">
+            ${choose('حساب تجريبي Demo', 'Demo Account')}
           </span>
         </div>
         <div style="font-size:11px;color:var(--ink-soft);display:flex;flex-direction:column;gap:3px;font-family:var(--font-mono, monospace);">
