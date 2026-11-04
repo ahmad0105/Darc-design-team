@@ -371,7 +371,7 @@ export function simulateOfflineMutation(path, method, body, state) {
     body.id = tempId;
     const optimisticProject = {
       id: tempId,
-      code: body.code || 'DARC-OFF',
+      code: body.code || ('DARC-OFF-' + Date.now().toString(36).slice(-4).toUpperCase()),
       nameAr: body.nameAr || body.name || 'مشروع محلي جديد',
       nameEn: body.nameEn || body.name || 'New Offline Project',
       clientAr: body.clientAr || '',
@@ -383,6 +383,7 @@ export function simulateOfflineMutation(path, method, body, state) {
       progress: 0,
       progressMode: 'weighted',
       managerId: body.managerId || state.data.user?.id,
+      memberIds: Array.isArray(body.memberIds) ? body.memberIds : [],
       startDate: body.startDate || null,
       dueDate: body.dueDate || null,
       createdAt: now,

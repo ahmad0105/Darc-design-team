@@ -58,8 +58,9 @@ export async function handleSubmit(event) {
       values.memberIds = memberIds;
       const isEdit = !!form.dataset.projectId;
       const res = await api(isEdit ? `/api/projects/${form.dataset.projectId}` : '/api/projects', { method: isEdit ? 'PATCH' : 'POST', body: JSON.stringify(values) });
-      const savedProject = res.project || {
-        id: form.dataset.projectId || `prj_${Date.now()}`,
+      const savedProject = {
+        ...(res?.project || {}),
+        id: res?.project?.id || form.dataset.projectId || `prj_${Date.now()}`,
         nameAr: values.nameAr,
         nameEn: values.nameEn,
         code: values.code,
@@ -71,14 +72,16 @@ export async function handleSubmit(event) {
         startDate: values.startDate,
         dueDate: values.dueDate,
         descriptionAr: values.descriptionAr,
-        health: 'on_track',
-        progress: 0,
-        memberIds: values.memberIds
+        health: res?.project?.health || 'on_track',
+        progress: res?.project?.progress !== undefined ? res.project.progress : 0,
+        memberIds: (res?.project?.memberIds && res.project.memberIds.length) ? res.project.memberIds : values.memberIds
       };
       if (!state.data.projects) state.data.projects = [];
       if (isEdit) {
-        const idx = state.data.projects.findIndex(p => p.id === (res.project?.id || form.dataset.projectId));
-        if (idx !== -1) state.data.projects[idx] = { ...state.data.projects[idx], ...savedProject };
+        const idx = state.data.projects.findIndex(p => p.id === (res?.project?.id || form.dataset.projectId));
+        if (idx !== -1) {
+          state.data.projects[idx] = { ...state.data.projects[idx], ...savedProject };
+        }
       } else {
         state.data.projects.unshift(savedProject);
       }

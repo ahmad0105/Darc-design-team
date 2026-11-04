@@ -11,17 +11,17 @@ app.use('*', async (c, next) => {
   await next();
 });
 
-// Helper to generate next project code safely & efficiently
-async function getNextProjectCode(supabase) {
-  const { data: recentProjects } = await supabase.from('projects').select('code').order('created_at', { ascending: false }).limit(20);
+// Helper to generate next project code safely & efficiently across all projects (active & 30-day trash)
+export async function getNextProjectCode(supabase) {
+  const { data: allProjects } = await supabase.from('projects').select('code');
   let maxNum = 0;
-  if (recentProjects && recentProjects.length > 0) {
-    for (const p of recentProjects) {
+  if (allProjects && allProjects.length > 0) {
+    for (const p of allProjects) {
       if (!p.code) continue;
-      const m = p.code.match(/(\d+)/);
-      if (m) {
-        const num = parseInt(m[1], 10);
-        if (num > maxNum) maxNum = num;
+      const matches = String(p.code).match(/\d+/g);
+      if (matches && matches.length > 0) {
+        const lastNum = parseInt(matches[matches.length - 1], 10);
+        if (!isNaN(lastNum) && lastNum > maxNum) maxNum = lastNum;
       }
     }
   }
@@ -52,9 +52,28 @@ app.post('/', async (c) => {
     }
   }
   
-  let code = body.code ? body.code.trim() : null;
+  let code = body.code ? String(body.code).trim().toUpperCase() : null;
   if (!code) {
     code = await getNextProjectCode(supabase);
+  } else {
+    // Check if code is already used in active OR trashed projects (30-day retention lock)
+    const { data: existingCode } = await supabase
+      .from('projects')
+      .select('id, code, name_ar, deleted_at')
+      .ilike('code', code)
+      .maybeSingle();
+
+    if (existingCode) {
+      if (existingCode.deleted_at) {
+        return c.json({
+          error: `كود المشروع "${code}" محجوز لمشروع سابق في سلة المحذوفات (${existingCode.name_ar}). تظل الأكواد محجوزة طيلة فترة الـ 30 يوماً لتمكين الاستعادة دون تضارب.`
+        }, 400);
+      } else {
+        return c.json({
+          error: `كود المشروع "${code}" مستخدم بالفعل لمشروع آخر (${existingCode.name_ar}). يرجى استخدام كود مميز.`
+        }, 400);
+      }
+    }
   }
 
   const projectData = {
@@ -100,7 +119,12 @@ app.post('/', async (c) => {
 
   invalidateBootstrapCache();
 
-  return c.json({ project: toCamelCase(project) }, 201);
+  return c.json({
+    project: {
+      ...toCamelCase(project),
+      memberIds: incomingMemberIds.length ? incomingMemberIds : members.map(m => m.user_id)
+    }
+  }, 201);
 });
 
 // PATCH /api/projects/:id
@@ -141,9 +165,32 @@ app.patch('/:id', async (c) => {
 
   updates.updated_at = new Date().toISOString();
 
+  if (updates.code) {
+    updates.code = String(updates.code).trim().toUpperCase();
+    const { data: conflict } = await supabase
+      .from('projects')
+      .select('id, code, name_ar, deleted_at')
+      .ilike('code', updates.code)
+      .neq('id', projectId)
+      .maybeSingle();
+
+    if (conflict) {
+      if (conflict.deleted_at) {
+        return c.json({
+          error: `كود المشروع "${updates.code}" محجوز لمشروع سابق في سلة المحذوفات (${conflict.name_ar}). تظل الأكواد محجوزة طيلة فترة الـ 30 يوماً لتمكين الاستعادة دون تضارب.`
+        }, 400);
+      } else {
+        return c.json({
+          error: `كود المشروع "${updates.code}" مستخدم بالفعل لمشروع آخر (${conflict.name_ar}). يرجى استخدام كود مميز.`
+        }, 400);
+      }
+    }
+  }
+
   const { data: project, error } = await supabase.from('projects').update(updates).eq('id', projectId).select().single();
   if (error) throw error;
 
+  let effectiveMemberIds = [];
   if (Array.isArray(body.memberIds)) {
     const newMemberIds = body.memberIds
       .map(mid => typeof mid === 'string' ? mid.trim() : '')
@@ -152,6 +199,7 @@ app.patch('/:id', async (c) => {
         /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(mid) ||
         /^[a-zA-Z0-9_-]{3,64}$/.test(mid)
       );
+    effectiveMemberIds = newMemberIds;
     const effectiveMgr = updates.manager_id || project.manager_id;
     const memberRows = [];
     if (effectiveMgr) {
@@ -179,7 +227,12 @@ app.patch('/:id', async (c) => {
 
   invalidateBootstrapCache();
 
-  return c.json({ project: toCamelCase(project) });
+  return c.json({
+    project: {
+      ...toCamelCase(project),
+      memberIds: effectiveMemberIds.length ? effectiveMemberIds : undefined
+    }
+  });
 });
 
 // DELETE /api/projects/:id

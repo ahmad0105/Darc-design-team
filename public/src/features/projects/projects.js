@@ -43,13 +43,82 @@ export function getDaysLeftBadge(dueDate) {
   return `<span class="days-left-badge" style="display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:700;color:${color};background:${bg};border:1px solid currentColor;">${icon('clock', 11)} ${label}</span>`;
 }
 
+/**
+ * Computes the next unique monotonic project code across all active & trashed projects.
+ * Prevents any code collisions during the 30-day trash retention period.
+ */
+export function getNextAvailableProjectCode() {
+  const activeProjects = (state.data?.projects || []);
+  const trashedProjects = Array.isArray(state.trash) ? state.trash.filter(item => item.type === 'project' || item.code) : [];
+  const allProjects = [...activeProjects, ...trashedProjects];
+
+  let maxNum = 0;
+  for (const p of allProjects) {
+    if (!p.code) continue;
+    const matches = String(p.code).match(/\d+/g);
+    if (matches && matches.length > 0) {
+      const lastNum = parseInt(matches[matches.length - 1], 10);
+      if (!isNaN(lastNum) && lastNum > maxNum) {
+        maxNum = lastNum;
+      }
+    }
+  }
+  return `DARC-${String(maxNum + 1).padStart(3, '0')}`;
+}
+
+/**
+ * Validates whether a project code is unique or collides with active or trashed projects.
+ */
+export function checkProjectCodeStatus(code, currentProjectId = null) {
+  if (!code || !String(code).trim()) {
+    return { valid: false, message: choose('كود المشروع مطلوب.', 'Project code is required.'), status: 'error' };
+  }
+  const cleanCode = String(code).trim().toUpperCase();
+  const activeProjects = (state.data?.projects || []).filter(p => !p.deletedAt && !p.deleted_at);
+  const activeConflict = activeProjects.find(p => p.code && p.code.toUpperCase() === cleanCode && p.id !== currentProjectId);
+  if (activeConflict) {
+    return {
+      valid: false,
+      status: 'error',
+      message: choose(`⚠️ الكود مستخدم بالفعل لمشروع: "${choose(activeConflict.nameAr, activeConflict.nameEn)}"`, `⚠️ Code is already used by: "${choose(activeConflict.nameAr, activeConflict.nameEn)}"`)
+    };
+  }
+
+  const trashedProjects = Array.isArray(state.trash) ? state.trash.filter(item => (item.type === 'project' || item.code) && item.id !== currentProjectId) : [];
+  const trashConflict = trashedProjects.find(p => p.code && p.code.toUpperCase() === cleanCode);
+  if (trashConflict) {
+    return {
+      valid: false,
+      status: 'warning',
+      message: choose(`⚠️ محجوز لمشروع في سلة المحذوفات (فترة الـ 30 يوماً): "${choose(trashConflict.nameAr, trashConflict.nameEn)}"`, `⚠️ Reserved for a project in trash (30-day window): "${choose(trashConflict.nameAr, trashConflict.nameEn)}"`)
+    };
+  }
+
+  return {
+    valid: true,
+    status: 'success',
+    message: choose('✓ كود مميز ومتاح للاستخدام', '✓ Unique and available')
+  };
+}
+
 export function getProjectTeamData(project) {
+  if (!project) return { internalMembers: [], externalMembers: [] };
   const users = state.data?.users || [];
-  const projectTasks = (state.data?.tasks || []).filter(t => t.projectId === project.id);
+  const projectTasks = (state.data?.tasks || []).filter(t => t.projectId === project.id && !t.deletedAt && !t.deleted_at);
   const memberIdSet = new Set();
   const externalNamesSet = new Set();
 
   if (project.managerId) memberIdSet.add(project.managerId);
+  if (Array.isArray(project.memberIds)) {
+    project.memberIds.forEach(id => id && memberIdSet.add(id));
+  }
+  if (Array.isArray(project.members)) {
+    project.members.forEach(m => {
+      const id = typeof m === 'string' ? m : (m.userId || m.id || m.user_id);
+      if (id) memberIdSet.add(id);
+    });
+  }
+
   projectTasks.forEach(t => {
     if (t.assigneeId) memberIdSet.add(t.assigneeId);
     const addAssignees = t.customFields?.additionalAssignees || t.customFields?.additional_assignees || [];
@@ -445,7 +514,9 @@ export function renderProjectOverviewTab(project, tasks, members, externalMember
 
 export function renderProjects() {
   const query = (state.searches?.projects || '').trim().toLowerCase();
-  let projects = (state.data?.projects || []).filter((project) => !query || `${project.nameAr || ''} ${project.nameEn || ''} ${project.code || ''} ${project.clientAr || ''} ${project.clientEn || ''}`.toLowerCase().includes(query));
+  let projects = (state.data?.projects || [])
+    .filter(p => !p.deletedAt && !p.deleted_at)
+    .filter((project) => !query || `${project.nameAr || ''} ${project.nameEn || ''} ${project.code || ''} ${project.clientAr || ''} ${project.clientEn || ''}`.toLowerCase().includes(query));
 
   // User-defined sorting
   const sort = state.projectSort || 'default';
@@ -463,7 +534,7 @@ export function renderProjects() {
 }
 
 export function renderProjectDetail() {
-  const project = state.data?.projects?.find((item) => item.id === state.activeProjectId);
+  const project = state.data?.projects?.find((item) => item.id === state.activeProjectId && !item.deletedAt && !item.deleted_at);
   if (!project) { state.view = 'projects'; return renderProjects(); }
 
   const allTasks = (state.data?.tasks || []).filter((task) => task.projectId === project.id);
@@ -746,9 +817,12 @@ export function buildProjectMemberChipsHtml(memberIds = []) {
 }
 
 export function openProjectModal(project = null) {
-  const defaultCode = project?.code || `DARC-${String((state.data?.projects?.length || 0) + 1).padStart(3, '0')}`;
+  const defaultCode = project?.code || getNextAvailableProjectCode();
   const existingTeam = project ? getProjectTeamData(project).internalMembers.map(m => m.id) : [];
   const currentMemberIds = existingTeam.length > 0 ? existingTeam : [state.data?.user?.id].filter(Boolean);
+
+  const initialCodeStatus = checkProjectCodeStatus(defaultCode, project?.id);
+  const statusColor = initialCodeStatus.status === 'success' ? 'var(--mint-strong)' : (initialCodeStatus.status === 'warning' ? 'var(--amber-strong)' : 'var(--red)');
 
   const form = `
     <form id="project-form" data-project-id="${esc(project?.id || '')}">
@@ -769,8 +843,16 @@ export function openProjectModal(project = null) {
           <input name="nameEn" value="${esc(project?.nameEn || '')}" placeholder="Al Nakheel Villa — Interior Design" />
         </div>
         <div class="field">
-          <label>${t('projectCode')} *</label>
-          <input name="code" value="${esc(defaultCode)}" placeholder="DARC-025" required />
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+            <label style="margin:0;">${t('projectCode')} *</label>
+            <button type="button" id="btn-regenerate-code" style="background:none;border:none;font-size:11px;color:var(--teal);cursor:pointer;padding:0;display:inline-flex;align-items:center;gap:3px;" title="${choose('توليد كود تسلسلي مميز تلقائياً', 'Auto-generate unique monotonic code')}">
+              <span>🔄</span> <span>${choose('توليد تلقائي', 'Auto-generate')}</span>
+            </button>
+          </div>
+          <input name="code" id="project-code-input" value="${esc(defaultCode)}" placeholder="DARC-025" autocomplete="off" required style="font-family:monospace;font-weight:700;text-transform:uppercase;" />
+          <div id="project-code-feedback" style="font-size:11px;margin-top:4px;color:${statusColor};display:flex;align-items:center;gap:4px;">
+            ${esc(initialCodeStatus.message)}
+          </div>
         </div>
         <div class="field full">
           <label>${t('client')}</label>
@@ -959,6 +1041,38 @@ export function openProjectModal(project = null) {
       }
     });
 
+    // Wire real-time project code validation and auto-generate button
+    const codeInput = document.getElementById('project-code-input');
+    const codeFeedback = document.getElementById('project-code-feedback');
+    const regenerateBtn = document.getElementById('btn-regenerate-code');
+    const submitBtn = document.querySelector('#project-form button[type="submit"]');
+
+    function updateCodeFeedback() {
+      if (!codeInput || !codeFeedback) return;
+      const val = codeInput.value.trim().toUpperCase();
+      codeInput.value = val;
+      const status = checkProjectCodeStatus(val, project?.id);
+      codeFeedback.textContent = status.message;
+      codeFeedback.style.color = status.status === 'success' ? 'var(--mint-strong)' : (status.status === 'warning' ? 'var(--amber-strong)' : 'var(--red)');
+      if (submitBtn) {
+        submitBtn.disabled = !status.valid;
+      }
+    }
+
+    if (codeInput) {
+      codeInput.addEventListener('input', updateCodeFeedback);
+      codeInput.addEventListener('blur', updateCodeFeedback);
+    }
+    if (regenerateBtn) {
+      regenerateBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (codeInput) {
+          codeInput.value = getNextAvailableProjectCode();
+          updateCodeFeedback();
+        }
+      });
+    }
+
     updateChips();
   }, 50);
 }
@@ -1053,7 +1167,7 @@ export function openCloneModal(project) {
 export { getCompanyBranding, exportXLS } from '../../core/utils.js';
 
 export function exportPortfolioXLS() {
-  const projects = state.data?.projects || [];
+  const projects = (state.data?.projects || []).filter(p => !p.deletedAt && !p.deleted_at);
   if (!projects || !projects.length) {
     showToast(choose('لا توجد بيانات لتصديرها.', 'No data to export.'), true);
     return;
@@ -1118,9 +1232,9 @@ export function exportPortfolioXLS() {
 }
 
 export function exportProjectXLS(projectId) {
-  const project = (state.data?.projects || []).find(p => p.id === projectId);
+  const project = (state.data?.projects || []).find(p => p.id === projectId && !p.deletedAt && !p.deleted_at);
   if (!project) return;
-  const tasks = (state.data?.tasks || []).filter(t => t.projectId === projectId);
+  const tasks = (state.data?.tasks || []).filter(t => t.projectId === projectId && !t.deletedAt && !t.deleted_at);
   if (!tasks.length) {
     showToast(choose('لا توجد مهام لهذا المشروع لتصديرها.', 'No tasks to export.'), true);
     return;
@@ -1199,9 +1313,9 @@ export function exportProjectXLS(projectId) {
 }
 
 export function exportProjectPDF(projectId, isClientFacing = false) {
-  const project = (state.data?.projects || []).find(p => p.id === projectId);
+  const project = (state.data?.projects || []).find(p => p.id === projectId && !p.deletedAt && !p.deleted_at);
   if (!project) return;
-  const tasks = (state.data?.tasks || []).filter(t => t.projectId === projectId);
+  const tasks = (state.data?.tasks || []).filter(t => t.projectId === projectId && !t.deletedAt && !t.deleted_at);
   if (!tasks.length) {
     showToast(choose('لا توجد مهام لهذا المشروع لطباعة التقرير.', 'No tasks to print report.'), true);
     return;
@@ -1748,7 +1862,7 @@ export function exportProjectPDF(projectId, isClientFacing = false) {
 }
 
 export function exportPortfolioPDF() {
-  const projects = state.data?.projects || [];
+  const projects = (state.data?.projects || []).filter(p => !p.deletedAt && !p.deleted_at);
   if (!projects || !projects.length) {
     showToast(choose('لا توجد مشاريع لتصدير التقرير.', 'No projects to export.'), true);
     return;
