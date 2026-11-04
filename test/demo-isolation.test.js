@@ -173,22 +173,22 @@ async function runTests() {
   assert.strictEqual(demoData.company.customFields.whatsapp.recipient, '+971500000000', 'Demo WhatsApp recipient must be fake number');
   console.log('✓ Test 13: Demo company configuration is securely mock-isolated with zero real WhatsApp credentials');
 
-  // Test 14: Initial demo trash contains soft-deleted project with reserved code DARC-04, task, and document
+  // Test 14: Initial demo trash contains soft-deleted project with reserved code DARC-26-005, task, and document
   const initialTrash = getDemoTrash();
   assert.ok(initialTrash.projects.length >= 1, 'Demo trash must contain at least 1 soft-deleted project');
   assert.ok(initialTrash.tasks.length >= 1, 'Demo trash must contain at least 1 soft-deleted task');
   assert.ok(initialTrash.documents.length >= 1, 'Demo trash must contain at least 1 soft-deleted document');
   const trashedProj = initialTrash.projects.find(p => p.id === 'prj_demo_trashed');
-  assert.strictEqual(trashedProj.code, 'DARC-04', 'Trashed demo project must hold code DARC-04 for 30-day retention lock');
-  console.log('✓ Test 14: Demo recycle bin is populated with high-fidelity showcase items and reserved code DARC-04');
+  assert.strictEqual(trashedProj.code, 'DARC-26-005', 'Trashed demo project must hold code DARC-26-005 for 30-day retention lock');
+  console.log('✓ Test 14: Demo recycle bin is populated with high-fidelity showcase items and reserved code DARC-26-005');
 
-  // Test 15: Creating demo project auto-assigns next monotonic code (DARC-05) without colliding with trash
+  // Test 15: Creating demo project auto-assigns next annual ISO monotonic code (DARC-26-006) without colliding with trash
   const createdProj = createDemoProject({
     nameAr: 'مشروع برج الأندلس السكني',
     nameEn: 'Al Andalus Residential Tower',
     clientAr: 'مجموعة الأندلس العقارية'
   });
-  assert.strictEqual(createdProj.code, 'DARC-05', 'New demo project must jump to DARC-05 respecting active DARC-01..03 and trashed DARC-04');
+  assert.strictEqual(createdProj.code, 'DARC-26-006', 'New demo project must jump to DARC-26-006 respecting active DARC-26-001..004 and trashed DARC-26-005');
   console.log('✓ Test 15: Monotonic project code auto-generation seamlessly accounts for active and trashed demo projects');
 
   // Test 16: Interactive in-memory demo deletion and restoration

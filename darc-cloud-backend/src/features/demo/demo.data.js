@@ -84,7 +84,7 @@ export function createDemoDataset() {
   const demoProjects = [
     {
       id: 'prj_demo_villa',
-      code: 'DARC-01',
+      code: 'DARC-26-001',
       nameAr: 'فيلا نخلة جميرا الفاخرة (Palm Signature Villa)',
       nameEn: 'Palm Jumeirah Signature Villa',
       clientAr: 'مجموعة الفطيم العقارية',
@@ -108,7 +108,7 @@ export function createDemoDataset() {
     },
     {
       id: 'prj_demo_tower',
-      code: 'DARC-02',
+      code: 'DARC-26-002',
       nameAr: 'برج الأفق التجاري الإداري (Skyline Commercial Tower)',
       nameEn: 'Skyline Commercial Business Tower',
       clientAr: 'شركة دار الأركان للاستثمار',
@@ -132,7 +132,7 @@ export function createDemoDataset() {
     },
     {
       id: 'prj_demo_resort',
-      code: 'DARC-03',
+      code: 'DARC-26-003',
       nameAr: 'منتجع ومحمية الساحل البيئي (Red Sea Eco-Resort)',
       nameEn: 'Red Sea Eco-Luxury Coastal Resort',
       clientAr: 'شركة البحر الأحمر للتطوير',
@@ -156,7 +156,7 @@ export function createDemoDataset() {
     },
     {
       id: 'prj_demo_hq',
-      code: 'DARC-04',
+      code: 'DARC-26-004',
       nameAr: 'المقر الإقليمي لشركة التقنية المالية (FinTech Regional HQ)',
       nameEn: 'FinTech Regional Headquarters',
       clientAr: 'صندوق الاستثمارات والتقنية',
@@ -622,7 +622,7 @@ export function createDemoDataset() {
     {
       id: 'prj_demo_trashed',
       type: 'project',
-      code: 'DARC-04',
+      code: 'DARC-26-005',
       nameAr: 'مجمع واحة الأعمال والابتكار (Oasis Business Center)',
       nameEn: 'Oasis Business & Innovation Center',
       clientAr: 'شركة الابتكار للاستثمار العقاري',

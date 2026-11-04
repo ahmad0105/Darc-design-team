@@ -6,12 +6,12 @@ import { state } from '../public/src/core/state.js';
 async function runProjectsTestSuite() {
   console.log('--- Running Projects Feature & Code Architecture Verification Suite ---');
 
-  // Test 1: Monotonic Project Code Generation with Gaps
+  // Test 1: Monotonic Project Code Generation with Gaps (Annual ISO Standard DARC-YY-###)
   state.data = {
     projects: [
-      { id: 'prj_1', code: 'DARC-001', nameAr: 'مشروع 1' },
-      { id: 'prj_2', code: 'DARC-005', nameAr: 'مشروع 5' },
-      { id: 'prj_3', code: 'DARC-012', nameAr: 'مشروع 12' }
+      { id: 'prj_1', code: 'DARC-26-001', nameAr: 'مشروع 1' },
+      { id: 'prj_2', code: 'DARC-26-005', nameAr: 'مشروع 5' },
+      { id: 'prj_3', code: 'DARC-26-012', nameAr: 'مشروع 12' }
     ],
     users: [
       { id: 'usr_1', name: 'أحمد الهاشمي', roleId: 'admin' },
@@ -22,44 +22,44 @@ async function runProjectsTestSuite() {
   };
   state.trash = [];
 
-  const nextCode1 = getNextAvailableProjectCode();
-  assert.strictEqual(nextCode1, 'DARC-013', 'Next code must be MAX(existing numbers) + 1');
-  console.log('✓ Test 1: Monotonic project code correctly identifies MAX(number) + 1 despite gaps');
+  const nextCode1 = getNextAvailableProjectCode(2026);
+  assert.strictEqual(nextCode1, 'DARC-26-013', 'Next code must be DARC-26-013 (MAX of year 26 + 1)');
+  console.log('✓ Test 1: Monotonic annual ISO project code correctly identifies MAX(number) + 1 despite gaps');
 
   // Test 2: Code Reservation during 30-Day Trash Retention
-  // If a project DARC-015 is moved to trash, next code must NEVER recycle DARC-015 or collide with it
+  // If a project DARC-26-015 is moved to trash, next code must NEVER recycle DARC-26-015 or collide with it
   state.trash = [
-    { id: 'prj_trash_1', type: 'project', code: 'DARC-015', nameAr: 'مشروع محذوف في السلة' }
+    { id: 'prj_trash_1', type: 'project', code: 'DARC-26-015', nameAr: 'مشروع محذوف في السلة' }
   ];
-  const nextCode2 = getNextAvailableProjectCode();
-  assert.strictEqual(nextCode2, 'DARC-016', 'Next code must respect projects in 30-day trash and not collide');
+  const nextCode2 = getNextAvailableProjectCode(2026);
+  assert.strictEqual(nextCode2, 'DARC-26-016', 'Next code must respect projects in 30-day trash and not collide');
   console.log('✓ Test 2: Project code accounts for soft-deleted projects in 30-day trash retention');
 
   // Test 3: Uniqueness Validation & Conflict Prevention
-  // Trying to use DARC-001 (active) -> must fail
-  const activeCheck = checkProjectCodeStatus('DARC-001');
+  // Trying to use DARC-26-001 (active) -> must fail
+  const activeCheck = checkProjectCodeStatus('DARC-26-001');
   assert.strictEqual(activeCheck.valid, false);
   assert.strictEqual(activeCheck.status, 'error');
 
-  // Trying to use DARC-015 (in trash) -> must fail/warn (reserved for 30-day restoration window)
-  const trashCheck = checkProjectCodeStatus('DARC-015');
+  // Trying to use DARC-26-015 (in trash) -> must fail/warn (reserved for 30-day restoration window)
+  const trashCheck = checkProjectCodeStatus('DARC-26-015');
   assert.strictEqual(trashCheck.valid, false);
   assert.strictEqual(trashCheck.status, 'warning');
 
   // Valid brand new code -> must pass
-  const validCheck = checkProjectCodeStatus('DARC-017');
+  const validCheck = checkProjectCodeStatus('DARC-26-017');
   assert.strictEqual(validCheck.valid, true);
   assert.strictEqual(validCheck.status, 'success');
 
   // Existing project keeping its own code in edit mode -> must pass
-  const editSelfCheck = checkProjectCodeStatus('DARC-001', 'prj_1');
+  const editSelfCheck = checkProjectCodeStatus('DARC-26-001', 'prj_1');
   assert.strictEqual(editSelfCheck.valid, true);
   console.log('✓ Test 3: Real-time code uniqueness accurately validates against active and trashed projects');
 
   // Test 4: Project Team Data Sync (Members visible immediately without tasks)
   const newProject = {
     id: 'prj_new',
-    code: 'DARC-017',
+    code: 'DARC-26-017',
     nameAr: 'مبنى الأعمال الجديد',
     managerId: 'usr_1',
     memberIds: ['usr_1', 'usr_2', 'usr_3']
@@ -79,21 +79,26 @@ async function runProjectsTestSuite() {
           assert.strictEqual(fields, 'code');
           return Promise.resolve({
             data: [
-              { code: 'DARC-001' },
-              { code: 'DARC-010' },
-              { code: 'DARC-045' }, // Old project beyond top 20
-              { code: 'DARC-020' }
+              { code: 'DARC-26-001' },
+              { code: 'DARC-26-010' },
+              { code: 'DARC-26-045' }, // Old project beyond top 20
+              { code: 'DARC-26-020' }
             ]
           });
         }
       };
     }
   };
-  const backendNextCode = await getNextProjectCode(mockSupabase);
-  assert.strictEqual(backendNextCode, 'DARC-046', 'Backend must scan all DB rows and return MAX + 1');
+  const backendNextCode = await getNextProjectCode(mockSupabase, 2026);
+  assert.strictEqual(backendNextCode, 'DARC-26-046', 'Backend must scan all DB rows and return MAX + 1 in annual ISO format');
   console.log('✓ Test 5: Backend getNextProjectCode scans all DB records reliably');
 
-  console.log('--- All Projects Architecture & Code Integrity Tests Passed Successfully (5/5) ---');
+  // Test 6: ISO Annual Rollover (Fresh year starts at 001 without polluting previous year)
+  const nextYearCode = await getNextProjectCode(mockSupabase, 2027);
+  assert.strictEqual(nextYearCode, 'DARC-27-001', 'Fresh year 2027 must start at DARC-27-001 per ISO standard');
+  console.log('✓ Test 6: ISO Annual rollover cleanly starts fresh sequence at 001');
+
+  console.log('--- All Projects Architecture & Code Integrity Tests Passed Successfully (6/6) ---');
 }
 
 runProjectsTestSuite().catch(err => {

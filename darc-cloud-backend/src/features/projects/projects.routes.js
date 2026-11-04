@@ -12,23 +12,26 @@ app.use('*', async (c, next) => {
 });
 
 // Helper to generate next project code safely & efficiently across all projects (active & 30-day trash)
-export async function getNextProjectCode(supabase) {
+// Enforces Annual Engineering ISO Standard: DARC-YY-### (e.g. DARC-26-001, DARC-26-002)
+export async function getNextProjectCode(supabase, targetYear = null) {
+  const year = targetYear ? String(targetYear).slice(-2) : String(new Date().getFullYear()).slice(-2);
   const { data: allProjects } = await supabase.from('projects').select('code');
   let maxNum = 0;
-  let maxDigits = 2;
+  let maxDigits = 3;
+  const yearPattern = new RegExp(`^DARC-${year}-(\\d+)$`, 'i');
   if (allProjects && allProjects.length > 0) {
     for (const p of allProjects) {
       if (!p.code) continue;
-      const matches = String(p.code).match(/\d+/g);
-      if (matches && matches.length > 0) {
-        const lastMatch = matches[matches.length - 1];
-        if (lastMatch.length > maxDigits) maxDigits = lastMatch.length;
-        const lastNum = parseInt(lastMatch, 10);
+      const match = String(p.code).trim().match(yearPattern);
+      if (match) {
+        const numStr = match[1];
+        if (numStr.length > maxDigits) maxDigits = numStr.length;
+        const lastNum = parseInt(numStr, 10);
         if (!isNaN(lastNum) && lastNum > maxNum) maxNum = lastNum;
       }
     }
   }
-  return `DARC-${String(maxNum + 1).padStart(maxDigits, '0')}`;
+  return `DARC-${year}-${String(maxNum + 1).padStart(maxDigits, '0')}`;
 }
 
 // POST /api/projects

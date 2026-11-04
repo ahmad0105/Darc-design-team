@@ -177,19 +177,21 @@ export function deleteDemoTask(taskId) {
 
 export function createDemoProject(data = {}) {
   checkAndAutoReset();
+  const year = String(new Date().getFullYear()).slice(-2);
   const allCodes = [..._demoStore.projects, ...(_demoStore.trash || [])].map(p => p.code).filter(Boolean);
   let maxNum = 0;
-  let maxDigits = 2;
+  let maxDigits = 3;
+  const yearPattern = new RegExp(`^DARC-${year}-(\\d+)$`, 'i');
   for (const c of allCodes) {
-    const matches = String(c).match(/\d+/g);
-    if (matches && matches.length > 0) {
-      const lastMatch = matches[matches.length - 1];
-      if (lastMatch.length > maxDigits) maxDigits = lastMatch.length;
-      const num = parseInt(lastMatch, 10);
+    const match = String(c).trim().match(yearPattern);
+    if (match) {
+      const numStr = match[1];
+      if (numStr.length > maxDigits) maxDigits = numStr.length;
+      const num = parseInt(numStr, 10);
       if (!isNaN(num) && num > maxNum) maxNum = num;
     }
   }
-  const defaultCode = `DARC-${String(maxNum + 1).padStart(maxDigits, '0')}`;
+  const defaultCode = `DARC-${year}-${String(maxNum + 1).padStart(maxDigits, '0')}`;
   const code = (data.code && String(data.code).trim().toUpperCase()) || defaultCode;
 
   const newProject = {

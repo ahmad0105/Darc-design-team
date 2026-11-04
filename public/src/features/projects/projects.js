@@ -44,29 +44,34 @@ export function getDaysLeftBadge(dueDate) {
 }
 
 /**
- * Computes the next unique monotonic project code across all active & trashed projects.
+ * Computes the next unique monotonic project code according to the Annual Engineering ISO Standard:
+ * Format: DARC-YY-### (e.g., DARC-26-001, DARC-26-002, ...)
  * Prevents any code collisions during the 30-day trash retention period.
  */
-export function getNextAvailableProjectCode() {
+export function getNextAvailableProjectCode(targetYear = null) {
+  const currentYear = targetYear ? String(targetYear) : String(new Date().getFullYear());
+  const yy = currentYear.slice(-2);
   const activeProjects = (state.data?.projects || []);
   const trashedProjects = Array.isArray(state.trash) ? state.trash.filter(item => item.type === 'project' || item.code) : [];
   const allProjects = [...activeProjects, ...trashedProjects];
 
   let maxNum = 0;
-  let maxDigits = 2;
+  let maxDigits = 3;
+  const yearPattern = new RegExp(`^DARC-${yy}-(\\d+)$`, 'i');
+
   for (const p of allProjects) {
     if (!p.code) continue;
-    const matches = String(p.code).match(/\d+/g);
-    if (matches && matches.length > 0) {
-      const lastMatch = matches[matches.length - 1];
-      if (lastMatch.length > maxDigits) maxDigits = lastMatch.length;
-      const lastNum = parseInt(lastMatch, 10);
-      if (!isNaN(lastNum) && lastNum > maxNum) {
-        maxNum = lastNum;
+    const match = String(p.code).trim().match(yearPattern);
+    if (match) {
+      const numStr = match[1];
+      if (numStr.length > maxDigits) maxDigits = numStr.length;
+      const num = parseInt(numStr, 10);
+      if (!isNaN(num) && num > maxNum) {
+        maxNum = num;
       }
     }
   }
-  return `DARC-${String(maxNum + 1).padStart(maxDigits, '0')}`;
+  return `DARC-${yy}-${String(maxNum + 1).padStart(maxDigits, '0')}`;
 }
 
 /**
@@ -860,11 +865,11 @@ export function openProjectModal(project = null) {
         <div class="field">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
             <label style="margin:0;">${t('projectCode')} *</label>
-            <button type="button" id="btn-regenerate-code" style="background:none;border:none;font-size:11px;color:var(--teal);cursor:pointer;padding:0;display:inline-flex;align-items:center;gap:3px;" title="${choose('توليد كود تسلسلي مميز تلقائياً', 'Auto-generate unique monotonic code')}">
-              <span>🔄</span> <span>${choose('توليد تلقائي', 'Auto-generate')}</span>
+            <button type="button" id="btn-regenerate-code" style="background:none;border:none;font-size:11px;color:var(--teal);cursor:pointer;padding:0;display:inline-flex;align-items:center;gap:3px;" title="${choose('توليد كود تسلسلي هندسي سنوي تلقائياً (معيار ISO DARC-YY-###)', 'Auto-generate annual ISO project code (DARC-YY-###)')}">
+              <span>🔄</span> <span>${choose('توليد تلقائي (ISO)', 'Auto-generate (ISO)')}</span>
             </button>
           </div>
-          <input name="code" id="project-code-input" value="${esc(defaultCode)}" placeholder="DARC-025" autocomplete="off" required style="font-family:monospace;font-weight:700;text-transform:uppercase;" />
+          <input name="code" id="project-code-input" value="${esc(defaultCode)}" placeholder="DARC-26-001" autocomplete="off" required style="font-family:monospace;font-weight:700;text-transform:uppercase;" />
           <div id="project-code-feedback" style="font-size:11px;margin-top:4px;color:${statusColor};display:flex;align-items:center;gap:4px;">
             ${esc(initialCodeStatus.message)}
           </div>
