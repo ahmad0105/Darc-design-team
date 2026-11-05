@@ -80,7 +80,7 @@ export async function requestUniversalNotificationPermission() {
  * Dispatches a native or in-app notification with audio and mobile haptics across ALL devices
  */
 export async function dispatchUniversalNotification({
-  title = 'DARC Design Team 📐',
+  title = 'DARC Design Team',
   body = '',
   icon = '/favicon.ico',
   badge = '/favicon.ico',
@@ -168,7 +168,7 @@ export function showIOSNotificationGuide() {
       </div>
 
       <h3 style="font-size:16px;font-weight:700;color:var(--ink);margin:0 0 8px;">
-        ${choose('تفعيل الإشعارات الفورية على iPhone و iPad 📱', 'Enable Push Notifications on iPhone & iPad 📱')}
+        ${choose('تفعيل الإشعارات الفورية على iPhone و iPad', 'Enable Push Notifications on iPhone & iPad')}
       </h3>
       
       <p style="font-size:12px;color:var(--muted);line-height:1.6;margin:0 0 20px;">
@@ -206,10 +206,10 @@ export function showIOSNotificationGuide() {
 
       <div style="display:flex;align-items:center;justify-content:center;gap:10px;">
         <button type="button" class="btn btn-primary btn-sm" data-action="close-modal" style="padding:8px 20px;">
-          ${choose('فهمت ذلك 👍', 'Got it 👍')}
+          ${choose('فهمت ذلك', 'Got it')}
         </button>
-        <button type="button" class="btn btn-ghost btn-sm" data-action="test-in-app-notification" style="color:var(--teal);">
-          🔔 ${choose('تجربة التنبيه الصوتي الآن', 'Test Sound Alert')}
+        <button type="button" class="btn btn-ghost btn-sm" data-action="test-in-app-notification" style="color:var(--teal);display:inline-flex;align-items:center;gap:5px;">
+          ${icon('volume', 14)} <span>${choose('تجربة التنبيه الصوتي الآن', 'Test Sound Alert')}</span>
         </button>
       </div>
     </div>

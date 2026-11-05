@@ -16,7 +16,7 @@ export function renderSyncIndicator() {
   }
   if (count > 0) {
     return `<button class="btn btn-sm btn-ghost offline-indicator-pill" data-action="manual-sync" style="font-size:11px;font-weight:700;color:var(--teal-strong);border:1px solid rgba(20,184,166,0.3);background:rgba(20,184,166,0.08);padding:3px 9px;border-radius:20px;display:inline-flex;align-items:center;gap:5px;cursor:pointer;" title="${choose('انقر للمزامنة الفورية مع السيرفر', 'Click to sync now with server')}">
-      <span class="sync-spinner" style="display:inline-block;">🔄</span>
+      <span class="sync-spinner" style="display:inline-flex;align-items:center;">${icon('refresh', 13)}</span>
       <span>${choose('مزامنة معلقة', 'Pending Sync')}</span>
       <span class="sync-count-chip" style="background:var(--teal-strong);color:#fff;border-radius:10px;padding:1px 5px;font-size:10px;">${count}</span>
     </button>`;
@@ -66,7 +66,7 @@ export function renderNavbar(customTitle = null) {
         <button class="icon-button" data-action="open-cheatsheet" title="${choose('دليل اختصارات لوحة المفاتيح (?)', 'Keyboard shortcuts guide (?)')}" style="color:var(--ink-soft);" aria-label="Shortcuts">
           <kbd class="shortcut-kbd" style="font-size:12px;padding:2px 7px;font-weight:bold;">?</kbd>
         </button>
-        <button class="btn btn-ghost btn-sm topbar-action-btn" data-action="toggle-theme" title="${choose('تبديل المظهر', 'Toggle Theme')}" aria-label="${choose('تبديل المظهر', 'Toggle Theme')}">${state.theme === 'dark' ? '☀️' : '🌙'}</button>
+        <button class="btn btn-ghost btn-sm topbar-action-btn" data-action="toggle-theme" title="${choose('تبديل المظهر', 'Toggle Theme')}" aria-label="${choose('تبديل المظهر', 'Toggle Theme')}">${icon(state.theme === 'dark' ? 'sun' : 'moon', 16)}</button>
         <button class="btn btn-ghost btn-sm topbar-action-btn" data-action="toggle-lang" title="${choose('تبديل اللغة', 'Toggle Language')}" aria-label="${choose('تبديل اللغة', 'Toggle Language')}"><span class="lang-text">${state.lang === 'ar' ? 'EN' : 'عربي'}</span> ${icon('globe', 14)}</button>
         <button class="icon-button topbar-action-btn" data-action="show-notifications" aria-label="${t('notifications')}">${icon('bell', 17)}${unread ? '<span class="notification-dot"></span>' : ''}</button>
         <div class="topbar-divider"></div>

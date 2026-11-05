@@ -1,6 +1,6 @@
 import { state } from '../../core/state.js';
 import { api } from '../../core/api.js';
-import { choose, esc, icon, t } from '../../core/utils.js';
+import { choose, esc, icon, statusDot, t } from '../../core/utils.js';
 import { showToast } from '../../shared/ui.js';
 import { getClientTelemetrySnapshot } from '../../core/telemetry.js';
 import { isDemoSession } from '../../core/realtime.js';
@@ -119,7 +119,7 @@ export function renderDiagnosticsSection() {
     <section class="setting-section" id="diagnostics-dashboard">
       ${isDemo ? `
         <div class="demo-diagnostics-banner" style="background:linear-gradient(90deg, rgba(13,98,105,0.08), rgba(74,199,209,0.12));border:1.5px solid var(--border);border-radius:12px;padding:12px 18px;margin-bottom:20px;display:flex;align-items:center;gap:12px;font-size:12px;color:var(--ink);">
-          <span style="font-size:22px;">🛠️</span>
+          <span style="color:var(--teal);display:flex;align-items:center;">${icon('settings', 22)}</span>
           <div style="flex:1;">
             <div style="font-weight:800;color:var(--teal);margin-bottom:2px;">
               ${choose('بيئة العرض التجريبية — سجل أعطال وتشخيصات محاكاة (Showcase Diagnostics)', 'Demo Showcase Sandbox — Simulated Diagnostics & Logs')}
@@ -171,7 +171,7 @@ export function renderDiagnosticsSection() {
         <div style="background:var(--surface);border:1px solid ${stats.activeIncidents > 0 ? 'rgba(239,68,68,0.3)' : 'var(--line)'};border-radius:10px;padding:14px 16px;">
           <div style="font-size:11px;color:${stats.activeIncidents > 0 ? 'var(--red)' : 'var(--muted)'};font-weight:600;">${choose('مشاكل نشطة بحاجة لمتابعة', 'Active / Unresolved')}</div>
           <div style="font-size:22px;font-weight:800;color:${stats.activeIncidents > 0 ? 'var(--red)' : 'var(--teal)'};margin:4px 0;">${stats.activeIncidents || 0}</div>
-          <div style="font-size:11px;color:var(--ink-soft);">${stats.activeIncidents > 0 ? choose('⚠️ تستدعي فحص المطور', 'Requires developer review') : choose('✓ جميع المشاكل معالجة', 'All resolved')}</div>
+          <div style="font-size:11px;color:var(--ink-soft);">${stats.activeIncidents > 0 ? `${statusDot('warning')} ${choose('تستدعي فحص المطور', 'Requires developer review')}` : `${statusDot('healthy')} ${choose('جميع المشاكل معالجة', 'All resolved')}`}</div>
         </div>
 
         <div style="background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px;">
@@ -183,7 +183,7 @@ export function renderDiagnosticsSection() {
         <div style="background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px;">
           <div style="font-size:11px;color:var(--muted);font-weight:600;">${choose('نظام التنبيهات البريدية (Email Alerts)', 'Email Alert System')}</div>
           <div style="font-size:13px;font-weight:700;color:var(--mint-strong);margin:6px 0;display:flex;align-items:center;gap:6px;">
-            <span>${isDemo ? '🧪' : '📬'}</span> ${isDemo ? choose('محاكاة الساندبوكس (معزول)', 'Sandbox Simulation (Isolated)') : choose('مفعّل ويرسل تلقائياً', 'Active & Auto-Dispatched')}
+            <span style="display:inline-flex;align-items:center;">${isDemo ? icon('flask', 14) : icon('mail', 14)}</span> ${isDemo ? choose('محاكاة الساندبوكس (معزول)', 'Sandbox Simulation (Isolated)') : choose('مفعّل ويرسل تلقائياً', 'Active & Auto-Dispatched')}
           </div>
           <div style="font-size:11px;color:var(--muted);font-family:monospace;">${esc(stats.alertEmailRecipient || (isDemo ? 'demo-alerts@darc.demo (بيئة المحاكاة الآمنة)' : 'admin@darc-design.bond'))}</div>
         </div>
@@ -193,11 +193,11 @@ export function renderDiagnosticsSection() {
       <div style="margin-bottom:24px;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
           <h3 style="margin:0;font-size:14px;font-weight:700;display:flex;align-items:center;gap:6px;">
-            <span>👥</span> ${choose('تفاصيل حالة واستقرار أجهزة كل مستخدم (انقر للفلترة السريعة):', 'User Health & Crash Status (Click to Filter):')}
+            <span style="display:inline-flex;align-items:center;">${icon('users', 14)}</span> ${choose('تفاصيل حالة واستقرار أجهزة كل مستخدم (انقر للفلترة السريعة):', 'User Health & Crash Status (Click to Filter):')}
           </h3>
           ${_selectedUserId !== 'all' ? `
             <button type="button" class="btn btn-xs btn-soft" data-action="clear-diagnostics-user-filter" style="font-size:11px;">
-              ${choose('إلغاء الفلترة وعرض الجميع ✕', 'Clear Filter & Show All ✕')}
+              ${choose('إلغاء الفلترة وعرض الجميع', 'Clear Filter & Show All')}
             </button>
           ` : ''}
         </div>
@@ -210,7 +210,7 @@ export function renderDiagnosticsSection() {
             style="background:${_selectedUserId === 'all' ? 'rgba(13,98,105,0.08)' : 'var(--surface)'};border:1px solid ${_selectedUserId === 'all' ? 'var(--teal)' : 'var(--line)'};border-radius:10px;padding:12px 14px;cursor:pointer;transition:all 0.15s ease;"
           >
             <div style="display:flex;align-items:center;gap:8px;">
-              <span style="font-size:18px;">🌐</span>
+              <span style="display:inline-flex;align-items:center;color:var(--teal);">${icon('globe', 18)}</span>
               <div style="flex:1;">
                 <div style="font-size:12px;font-weight:700;color:var(--ink);">${choose('جميع المستخدمين', 'All Users')}</div>
                 <div style="font-size:11px;color:var(--muted);">${incidents.length} ${choose('بلاغات', 'records')}</div>
@@ -239,15 +239,15 @@ export function renderDiagnosticsSection() {
                         ${esc(choose(u.name || '', u.nameEn || u.name || ''))}
                       </div>
                       ${u.isRealAccount ? `
-                        <span style="background:rgba(16,185,129,0.12);color:#059669;border:1px solid rgba(16,185,129,0.25);font-size:9px;font-weight:700;padding:1px 5px;border-radius:4px;flex-shrink:0;">
-                          ${choose('حساب مفعل 🟢', 'Active 🟢')}
+                        <span style="background:rgba(16,185,129,0.12);color:#059669;border:1px solid rgba(16,185,129,0.25);font-size:9px;font-weight:700;padding:1px 5px;border-radius:4px;flex-shrink:0;display:inline-flex;align-items:center;gap:3px;">
+                          ${statusDot('active')} ${choose('حساب مفعل', 'Active')}
                         </span>
                       ` : ''}
                     </div>
                     <div style="font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(u.email || '')}</div>
                     <div style="display:flex;align-items:center;gap:6px;margin-top:4px;">
                       <span class="status-badge ${hasActive ? 'urgent' : 'done'}" style="font-size:9px;padding:1px 6px;">
-                        ${hasActive ? choose(`${u.activeIncidents} خطأ نشط ⚠️`, `${u.activeIncidents} Active ⚠️`) : choose('مستقر ✓ (0 أعطال)', 'Healthy ✓ (0 errors)')}
+                        ${hasActive ? choose(`${u.activeIncidents} خطأ نشط`, `${u.activeIncidents} Active`) : choose('مستقر (0 أعطال)', 'Healthy (0 errors)')}
                       </span>
                     </div>
                   </div>
@@ -265,15 +265,15 @@ export function renderDiagnosticsSection() {
           
           <select id="diag-severity-filter" data-action="filter-diagnostics-severity" class="input input-sm" style="font-size:11px;min-width:130px;height:32px;">
             <option value="all" ${_selectedSeverity === 'all' ? 'selected' : ''}>${choose('جميع مستويات الخطورة', 'All Severities')}</option>
-            <option value="critical" ${_selectedSeverity === 'critical' ? 'selected' : ''}>🚨 ${choose('حرجة (Critical)', 'Critical')}</option>
-            <option value="high" ${_selectedSeverity === 'high' ? 'selected' : ''}>⚠️ ${choose('مرتفعة (High)', 'High')}</option>
-            <option value="medium" ${_selectedSeverity === 'medium' ? 'selected' : ''}>ℹ️ ${choose('متوسطة (Medium)', 'Medium')}</option>
+            <option value="critical" ${_selectedSeverity === 'critical' ? 'selected' : ''}>${choose('حرجة (Critical)', 'Critical')}</option>
+            <option value="high" ${_selectedSeverity === 'high' ? 'selected' : ''}>${choose('مرتفعة (High)', 'High')}</option>
+            <option value="medium" ${_selectedSeverity === 'medium' ? 'selected' : ''}>${choose('متوسطة (Medium)', 'Medium')}</option>
           </select>
 
           <select id="diag-status-filter" data-action="filter-diagnostics-status" class="input input-sm" style="font-size:11px;min-width:130px;height:32px;">
             <option value="all" ${_selectedStatus === 'all' ? 'selected' : ''}>${choose('جميع الحالات', 'All Statuses')}</option>
-            <option value="active" ${_selectedStatus === 'active' ? 'selected' : ''}>🔴 ${choose('نشطة قيد المعالجة', 'Active')}</option>
-            <option value="resolved" ${_selectedStatus === 'resolved' ? 'selected' : ''}>✅ ${choose('تم حلها بنجاح', 'Resolved')}</option>
+            <option value="active" ${_selectedStatus === 'active' ? 'selected' : ''}>${choose('نشطة قيد المعالجة', 'Active')}</option>
+            <option value="resolved" ${_selectedStatus === 'resolved' ? 'selected' : ''}>${choose('تم حلها بنجاح', 'Resolved')}</option>
           </select>
         </div>
 
@@ -304,7 +304,7 @@ export function renderDiagnosticsSection() {
               <!-- Incident Head -->
               <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:14px;border-bottom:1px solid var(--line);padding-bottom:14px;">
                 <div style="display:flex;align-items:flex-start;gap:12px;">
-                  <span style="font-size:24px;line-height:1;margin-top:2px;">${isResolved ? '✅' : (isCritical ? '🚨' : '⚠️')}</span>
+                  <span style="line-height:1;margin-top:2px;display:flex;align-items:center;color:${isResolved ? '#10b981' : (isCritical ? '#ef4444' : '#f59e0b')};">${isResolved ? icon('success', 22) : (isCritical ? icon('alert', 22) : icon('warning', 22))}</span>
                   <div>
                     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
                       <h4 style="margin:0;font-size:15px;font-weight:700;color:${isResolved ? 'var(--ink)' : (isCritical ? 'var(--red)' : 'var(--amber-strong)')};">
@@ -327,9 +327,9 @@ export function renderDiagnosticsSection() {
                         <strong style="color:var(--ink);">${esc(inc.userName)}</strong> (${esc(inc.userEmail)})
                       </span>
                       <span>·</span>
-                      <span>📍 ${esc(inc.city)}, ${esc(inc.country)} (${esc(inc.ip)})</span>
+                      <span style="display:inline-flex;align-items:center;gap:4px;">${icon('pin', 12)} ${esc(inc.city)}, ${esc(inc.country)} (${esc(inc.ip)})</span>
                       <span>·</span>
-                      <span>🕒 ${new Date(inc.timestamp).toLocaleString(state.lang === 'ar' ? 'ar-AE' : 'en-US')}</span>
+                      <span style="display:inline-flex;align-items:center;gap:4px;">${icon('clock', 12)} ${new Date(inc.timestamp).toLocaleString(state.lang === 'ar' ? 'ar-AE' : 'en-US')}</span>
                     </div>
                   </div>
                 </div>
@@ -338,15 +338,15 @@ export function renderDiagnosticsSection() {
                 <div style="display:flex;align-items:center;gap:8px;">
                   ${!isResolved ? `
                     <button type="button" class="btn btn-sm btn-primary" data-action="resolve-diagnostic-incident" data-incident-id="${esc(inc.id)}" style="font-size:11px;display:flex;align-items:center;gap:5px;">
-                      ${icon('check', 13)} ${choose('تحديد كمعالج ✅', 'Mark Resolved ✅')}
+                      ${icon('check', 13)} ${choose('تحديد كمعالج', 'Mark Resolved')}
                     </button>
                   ` : `
-                    <span class="status-badge done" style="font-size:11px;">
-                      ✓ ${choose('تم حل المشكلة وإغلاق البلاغ', 'Resolved')}
+                    <span class="status-badge done" style="font-size:11px;display:inline-flex;align-items:center;gap:4px;">
+                      ${icon('check', 12)} ${choose('تم حل المشكلة وإغلاق البلاغ', 'Resolved')}
                     </span>
                   `}
                   <button type="button" class="btn btn-sm btn-soft" data-action="copy-debug-bundle" data-bundle="${esc(debugBundleJson)}" style="font-size:11px;display:flex;align-items:center;gap:5px;" title="${choose('نسخ كامل التقرير الفني لحل المشكلة فوراً', 'Copy complete technical debug bundle to clipboard')}">
-                    ${icon('copy', 13)} ${choose('نسخ تقرير الخطأ 📋', 'Copy Debug Info 📋')}
+                    ${icon('copy', 13)} ${choose('نسخ تقرير الخطأ', 'Copy Debug Info')}
                   </button>
                 </div>
               </div>
@@ -364,7 +364,7 @@ export function renderDiagnosticsSection() {
               <!-- Error Message & Stack Trace (The exact code location) -->
               <div style="margin-bottom:14px;">
                 <div style="font-size:12px;font-weight:700;color:var(--ink);margin-bottom:6px;display:flex;align-items:center;gap:6px;">
-                  <span>🔍</span> ${choose('الخطأ البرمجي وموقع الاستثناء في الكود (Stack Trace):', 'Error Message & Call Stack:')}
+                  <span style="display:inline-flex;align-items:center;color:var(--teal);">${icon('search', 14)}</span> ${choose('الخطأ البرمجي وموقع الاستثناء في الكود (Stack Trace):', 'Error Message & Call Stack:')}
                 </div>
                 <div style="background:#090d16;color:#f8fafc;border:1px solid #1e293b;border-radius:8px;padding:12px 14px;font-family:Consolas, Monaco, monospace;font-size:12px;overflow-x:auto;">
                   <div style="color:#ef4444;font-weight:700;margin-bottom:8px;">${esc(inc.errorMessage)}</div>
@@ -375,7 +375,7 @@ export function renderDiagnosticsSection() {
               <!-- User Breadcrumbs (Step-by-step actions that caused it) -->
               <div style="margin-bottom:14px;">
                 <div style="font-size:12px;font-weight:700;color:var(--ink);margin-bottom:6px;display:flex;align-items:center;gap:6px;">
-                  <span>👣</span> ${choose('تسلسل خطوات المستخدم قبل حدوث المشكلة (User Breadcrumbs):', 'Step-by-Step User Actions Prior to Error:')}
+                  <span style="display:inline-flex;align-items:center;color:var(--teal);">${icon('footprint', 14)}</span> ${choose('تسلسل خطوات المستخدم قبل حدوث المشكلة (User Breadcrumbs):', 'Step-by-Step User Actions Prior to Error:')}
                 </div>
                 <div style="background:var(--surface-soft);border:1px solid var(--line);border-radius:8px;padding:10px 14px;">
                   <ol style="margin:0;padding-right:20px;font-size:12px;color:var(--ink-soft);line-height:1.7;">
@@ -393,7 +393,7 @@ export function renderDiagnosticsSection() {
               <!-- Suggested Automated Resolution -->
               <div style="background:rgba(16,185,129,0.07);border:1px solid rgba(16,185,129,0.3);border-radius:8px;padding:12px 16px;margin-bottom:12px;">
                 <div style="font-size:12px;font-weight:700;color:var(--mint-strong);margin-bottom:4px;display:flex;align-items:center;gap:6px;">
-                  <span>💡</span> ${choose('التشخيص التلقائي والحل المقترح للمطور:', 'Automated Root Cause Diagnosis & Recommended Fix:')}
+                  <span style="display:inline-flex;align-items:center;color:var(--teal);">${icon('bulb', 14)}</span> ${choose('التشخيص التلقائي والحل المقترح للمطور:', 'Automated Root Cause Diagnosis & Recommended Fix:')}
                 </div>
                 <div style="font-size:12px;color:var(--ink);line-height:1.6;">
                   ${esc(inc.suggestedSolution || choose('تحقق من صحة الكود ومسارات المعالجة.', 'Review code handling.'))}
@@ -403,9 +403,9 @@ export function renderDiagnosticsSection() {
               <!-- Email Dispatch Status Receipt -->
               <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;font-size:11px;color:var(--muted);padding-top:10px;border-top:1px dashed var(--line);">
                 <div style="display:flex;align-items:center;gap:6px;">
-                  <span>📧</span>
+                  <span style="display:inline-flex;align-items:center;">${icon('mail', 13)}</span>
                   <span>${choose('حالة إرسال بريد التنبيه للإدارة:', 'Admin Alert Email:')}</span>
-                  <strong style="color:var(--teal);">${isDemo ? choose('محاكاة الساندبوكس (معزول) ✓', 'Simulated Sandbox ✓') : (inc.emailAlert?.status === 'delivered' ? choose('تم التسليم للبريد بنجاح ✓', 'Delivered ✓') : choose('تم التحقق والتسجيل في السيرفر ✓', 'Dispatched to Sandbox ✓'))}</strong>
+                  <strong style="color:var(--teal);">${isDemo ? choose('محاكاة الساندبوكس (معزول)', 'Simulated Sandbox') : (inc.emailAlert?.status === 'delivered' ? choose('تم التسليم للبريد بنجاح', 'Delivered') : choose('تم التحقق والتسجيل في السيرفر', 'Dispatched to Sandbox'))}</strong>
                   <span style="font-family:monospace;">(${esc(isDemo ? 'demo-alerts@darc.demo' : (inc.emailAlert?.deliveredTo || 'admin@darc-design.bond'))})</span>
                 </div>
                 <div>
@@ -417,7 +417,7 @@ export function renderDiagnosticsSection() {
           `;
   }).join('') : `
           <div style="text-align:center;padding:40px 20px;background:var(--surface);border:1px dashed var(--line);border-radius:12px;">
-            <span style="font-size:32px;">🎉</span>
+            <div style="color:var(--teal);margin-bottom:8px;display:flex;justify-content:center;">${icon('celebrate', 36)}</div>
             <h4 style="margin:8px 0 4px;font-size:15px;font-weight:700;color:var(--ink);">${choose('لا توجد أي مشاكل مسجلة تطابق التصفية الحالية', 'No Incidents Found')}</h4>
             <p style="margin:0;font-size:12px;color:var(--muted);">${choose('جميع أجهزة المستخدمين تعمل بأقصى درجات الاستقرار والأمان.', 'All user sessions are running with zero active errors.')}</p>
           </div>

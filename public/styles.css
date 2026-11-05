@@ -3766,5 +3766,96 @@ kbd.shortcut-kbd {
   color: #042f2e !important;
 }
 
+/* ═════════════════════════════════════════════════════════════════════════════
+   SEMANTIC STATUS INDICATOR DOTS & EXECUTIVE INLINE ICONS
+   ═════════════════════════════════════════════════════════════════════════════ */
+.status-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  vertical-align: middle;
+  margin-inline-end: 6px;
+  flex-shrink: 0;
+}
+.status-dot--active, .status-dot--healthy, .status-dot--resolved {
+  background: #10b981;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+}
+.status-dot--warning, .status-dot--pending {
+  background: #f59e0b;
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2);
+}
+.status-dot--critical, .status-dot--inactive, .status-dot--error {
+  background: #ef4444;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2);
+}
+
+.ui-inline-icon {
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
+  margin-inline-end: 5px;
+  flex-shrink: 0;
+}
+.ui-inline-icon.icon-success { color: #10b981; }
+.ui-inline-icon.icon-warning { color: #f59e0b; }
+.ui-inline-icon.icon-danger, .ui-inline-icon.icon-error { color: #ef4444; }
+.ui-inline-icon.icon-info { color: var(--teal); }
+
+/* ═════════════════════════════════════════════════════════════════════════════
+   UNIVERSAL RESPONSIVE HARDENING (MOBILE XS TO 4K DESKTOP)
+   ═════════════════════════════════════════════════════════════════════════════ */
+html, body {
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+
+/* Zero unwanted horizontal overflow for touch viewports */
+@media (max-width: 768px) {
+  .app, .workspace, .workspace-content {
+    max-width: 100vw;
+    box-sizing: border-box;
+  }
+  
+  /* Kanban smooth touch scroll snap on tablet & phone */
+  .tasks-board, .board-columns {
+    display: flex;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x mandatory;
+    scroll-padding: 12px;
+    gap: 12px;
+  }
+  .board-column {
+    scroll-snap-align: start;
+    flex: 0 0 85vw;
+    max-width: 320px;
+  }
+
+  /* Modals bottom sheet on small viewports */
+  .modal {
+    max-width: 100vw !important;
+  }
+}
+
+/* Compact XS Screens (<360px) */
+@media (max-width: 360px) {
+  .board-column {
+    flex: 0 0 88vw;
+  }
+  .page-head h1 {
+    font-size: 20px !important;
+  }
+  .btn {
+    font-size: 11px !important;
+    padding: 6px 10px !important;
+  }
+  .topbar {
+    padding-left: 6px !important;
+    padding-right: 6px !important;
+  }
+}
+
 
 

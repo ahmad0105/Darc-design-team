@@ -74,7 +74,7 @@ export async function api(path, options = {}) {
       body: parsedBody
     });
     const simResult = simulateOfflineMutation(path, options.method, parsedBody, state);
-    showToast(choose('أنت في وضع عدم الاتصال: تم حفظ العملية محلياً وستُرفع تلقائياً عند عودة النت 📡', 'Offline mode: action saved locally and will auto-sync on reconnect 📡'), false);
+    showToast(choose('أنت في وضع عدم الاتصال: تم حفظ العملية محلياً وستُرفع تلقائياً عند عودة الاتصال', 'Offline mode: action saved locally and will auto-sync on reconnect'), false);
     return { ok: true, queued: true, offline: true, id: item?.id, ...simResult };
   }
 
@@ -145,7 +145,7 @@ export async function api(path, options = {}) {
         body: parsedBody
       });
       const simResult = simulateOfflineMutation(path, options.method, parsedBody, state);
-      showToast(choose('تعذر الاتصال بالخادم: تم حفظ العملية محلياً للمزامنة التلقائية 📡', 'Connection lost: action saved locally for auto-sync 📡'), false);
+      showToast(choose('تعذر الاتصال بالخادم: تم حفظ العملية محلياً للمزامنة التلقائية', 'Connection lost: action saved locally for auto-sync'), false);
       return { ok: true, queued: true, offline: true, id: item?.id, ...simResult };
     }
     throw new Error(choose('تعذر الاتصال بالخادم، يرجى التحقق من اتصال الإنترنت.', 'Unable to connect to server. Please check your internet connection.'));

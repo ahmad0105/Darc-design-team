@@ -1,6 +1,6 @@
 import { state } from '../../core/state.js';
 import { api } from '../../core/api.js';
-import { getActiveCalendarSystem, esc, sanitizeForSpreadsheet, choose, icon, t, can, isAdmin, avatar, roleName, initials, statusText, formatDateTime, formatReportDate, formatReportTime, getCompanyBranding, exportXLS, PERMISSION_ALIASES, canManageAccountPermissions, dateLabel } from '../../core/utils.js';
+import { getActiveCalendarSystem, esc, sanitizeForSpreadsheet, choose, icon, statusDot, t, can, isAdmin, avatar, roleName, initials, statusText, formatDateTime, formatReportDate, formatReportTime, getCompanyBranding, exportXLS, PERMISSION_ALIASES, canManageAccountPermissions, dateLabel } from '../../core/utils.js';
 import { showToast, modalShell, closeModal } from '../../shared/ui.js';
 import { isDemoSession } from '../../core/realtime.js';
 import { renderAnalyticsSection, fetchAnalyticsData } from './analytics.js';
@@ -159,7 +159,7 @@ function renderAuditDetails(log) {
   if (details.title || details.name) {
     detailHtml = `<strong>${esc(details.title || details.name)}</strong>`;
   } else if (action === 'status_change' && (details.oldStatus || details.newStatus)) {
-    detailHtml = `<span>${esc(statusText(details.oldStatus))} ➔ <strong>${esc(statusText(details.newStatus))}</strong></span>`;
+    detailHtml = `<span>${esc(statusText(details.oldStatus))} → <strong>${esc(statusText(details.newStatus))}</strong></span>`;
   } else if (log.entityId) {
     detailHtml = `<code style="font-size:11px;color:var(--muted);">${esc(log.entityId)}</code>`;
   }
@@ -227,7 +227,7 @@ export function exportAuditLogsXLS(logs = null) {
     if (log.details?.title || log.details?.name) {
       detailsStr = log.details.title || log.details.name;
     } else if (log.action === 'status_change') {
-      detailsStr = `${statusText(log.details?.oldStatus)} ➔ ${statusText(log.details?.newStatus)}`;
+      detailsStr = `${statusText(log.details?.oldStatus)} → ${statusText(log.details?.newStatus)}`;
     } else if (typeof log.details === 'object') {
       detailsStr = JSON.stringify(log.details);
     } else {
@@ -303,7 +303,7 @@ export function printAuditReport(logs = null) {
     if (log.details?.title || log.details?.name) {
       detailsStr = log.details.title || log.details.name;
     } else if (log.action === 'status_change') {
-      detailsStr = `${statusText(log.details?.oldStatus)} ➔ ${statusText(log.details?.newStatus)}`;
+      detailsStr = `${statusText(log.details?.oldStatus)} → ${statusText(log.details?.newStatus)}`;
     } else if (typeof log.details === 'object') {
       detailsStr = JSON.stringify(log.details);
     } else {
@@ -564,7 +564,7 @@ export function printAuditReport(logs = null) {
           <button type="button" class="btn btn-primary btn-sm" id="btn-print-audit-iframe" style="display:flex;align-items:center;gap:6px;">
             ${icon('printer', 14)} ${choose('طباعة / حفظ كـ PDF', 'Print / Save as PDF')}
           </button>
-          <button type="button" class="btn btn-ghost btn-sm" id="btn-close-audit-print-modal">✕</button>
+          <button type="button" class="btn btn-ghost btn-sm" id="btn-close-audit-print-modal">${icon('close', 14)}</button>
         </div>
       </div>
       <div style="flex:1;overflow:hidden;position:relative;background:#ffffff;">
@@ -862,9 +862,9 @@ export function renderSettings() {
     const isDenied = perm === 'denied';
 
     const statusBadgeHtml = isIOSNonPwa
-      ? `<span class="mini-badge" style="background:var(--mint);color:var(--teal);font-weight:700;">${choose('مدعومة عبر تطبيق الويب (PWA) 📱', 'Supported via Web App (PWA) 📱')}</span>`
+      ? `<span class="mini-badge" style="background:var(--mint);color:var(--teal);font-weight:700;">${choose('مدعومة عبر تطبيق الويب (PWA)', 'Supported via Web App (PWA)')}</span>`
       : `<span class="mini-badge" style="background:${isGranted ? 'var(--mint)' : isDenied ? 'var(--red-soft)' : 'var(--surface-soft)'};color:${isGranted ? 'var(--teal)' : isDenied ? 'var(--red)' : 'var(--muted)'};font-weight:700;">
-          ${isGranted ? choose('مفعلة على هذا المتصفح ✅', 'Enabled on this browser ✅') : isDenied ? choose('محظورة من إعدادات المتصفح ❌', 'Blocked in browser settings ❌') : choose('بانتظار الموافقة ⚠️', 'Permission pending ⚠️')}
+          ${isGranted ? choose('مفعلة على هذا المتصفح', 'Enabled on this browser') : isDenied ? choose('محظورة من إعدادات المتصفح', 'Blocked in browser settings') : choose('بانتظار الموافقة', 'Permission pending')}
         </span>`;
 
     const actionButtonHtml = isIOSNonPwa
@@ -925,8 +925,8 @@ export function renderSettings() {
                 </p>
               </div>
             </div>
-            <button type="button" class="btn btn-soft btn-sm" data-action="play-test-chime">
-              🔊 ${choose('استمع للنغمة', 'Play Chime')}
+            <button type="button" class="btn btn-soft btn-sm" data-action="play-test-chime" style="display:inline-flex;align-items:center;gap:6px;">
+              ${icon('volume', 14)} ${choose('استمع للنغمة', 'Play Chime')}
             </button>
           </div>
 
@@ -938,15 +938,15 @@ export function renderSettings() {
             <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:10px;margin-top:10px;">
               <div style="padding:10px;border-radius:10px;background:var(--surface-soft);border:1px solid var(--line);">
                 <span style="font-size:10px;color:var(--muted);display:block;">${choose('التنبيهات داخل المنصة', 'In-App Alerts')}</span>
-                <strong style="color:var(--teal);font-size:12px;">✅ ${choose('نشطة وفورية (WebSocket)', 'Active Real-Time')}</strong>
+                <strong style="color:var(--teal);font-size:12px;display:inline-flex;align-items:center;gap:4px;">${icon('check', 12)} ${choose('نشطة وفورية (WebSocket)', 'Active Real-Time')}</strong>
               </div>
               <div style="padding:10px;border-radius:10px;background:var(--surface-soft);border:1px solid var(--line);">
                 <span style="font-size:10px;color:var(--muted);display:block;">${choose('تنبيهات واتساب المباشرة', 'WhatsApp Direct Alerts')}</span>
-                <strong style="color:var(--teal);font-size:12px;">✅ ${choose('مربوطة (Baileys Engine)', 'Connected Baileys')}</strong>
+                <strong style="color:var(--teal);font-size:12px;display:inline-flex;align-items:center;gap:4px;">${icon('check', 12)} ${choose('مربوطة (Baileys Engine)', 'Connected Baileys')}</strong>
               </div>
               <div style="padding:10px;border-radius:10px;background:var(--surface-soft);border:1px solid var(--line);">
                 <span style="font-size:10px;color:var(--muted);display:block;">${choose('بريد الإشعارات السحابي', 'Cloud Email Gateway')}</span>
-                <strong style="color:var(--teal);font-size:12px;">✅ ${choose('جاهز (Resend API)', 'Ready Resend')}</strong>
+                <strong style="color:var(--teal);font-size:12px;display:inline-flex;align-items:center;gap:4px;">${icon('check', 12)} ${choose('جاهز (Resend API)', 'Ready Resend')}</strong>
               </div>
             </div>
           </div>
@@ -1007,7 +1007,7 @@ export function renderSettings() {
                     </td>
                     <td>
                       ${user.email ? esc(user.email) : `<span style="color:var(--muted)">${t('noEmail')}</span>`}
-                      ${(user.phone || user.customFields?.phone) ? `<div style="font-size:11px;color:var(--primary);direction:ltr;text-align:right;margin-top:3px;font-family:monospace;font-weight:600;">📱 ${esc(user.phone || user.customFields?.phone)}</div>` : ''}
+                      ${(user.phone || user.customFields?.phone) ? `<div style="font-size:11px;color:var(--primary);direction:ltr;text-align:right;margin-top:3px;font-family:monospace;font-weight:600;display:inline-flex;align-items:center;gap:4px;">${icon('phone', 11)} ${esc(user.phone || user.customFields?.phone)}</div>` : ''}
                     </td>
                     <td>
                       <span class="status-badge ${user.status === 'active' ? 'done' : 'not_started'}">${user.status === 'active' ? t('activeAccount') : t('pendingAccount')}</span>
@@ -1507,7 +1507,7 @@ export function renderSettings() {
       <section class="setting-section">
         ${isDemo ? `
           <div class="demo-whatsapp-banner" style="background:rgba(13,98,105,0.08);border:1px solid rgba(13,98,105,0.25);border-radius:10px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;gap:12px;">
-            <span style="font-size:22px;">🛡️</span>
+            <span style="color:var(--teal);display:flex;align-items:center;">${icon('shield', 22)}</span>
             <div style="flex:1;">
               <strong style="display:block;font-size:13px;color:var(--teal);margin-bottom:2px;">${choose('بيئة العرض التجريبية المعزولة (Demo Sandbox)', 'Isolated Demo Showcase Sandbox')}</strong>
               <span style="font-size:11px;color:var(--muted);line-height:1.4;">${choose('إعدادات بوابات واتساب هنا معزولة تماماً للاستعراض؛ لن يتم استهلاك رصيد أو إرسال رسائل فعلية عبر الشبكة.', 'WhatsApp gateway configuration is an isolated simulation for demonstration only; no live external traffic is dispatched.')}</span>
@@ -1523,7 +1523,7 @@ export function renderSettings() {
             <p>${choose('ربط آمن عبر بروتوكول Multi-Device المباشر مع خوارزميات محاكاة السلوك البشري لحماية الأرقام من الحظر.', 'Secure connection via Multi-Device protocol with anti-ban human behavior simulation.')}</p>
           </div>
           <span class="status-badge ${wa.enabled ? 'done' : 'neutral'}">
-            ${wa.enabled ? choose('مفعل نشط ✅', 'Active ✅') : choose('معطل ⏸️', 'Disabled ⏸️')}
+            ${wa.enabled ? choose('مفعل نشط', 'Active') : choose('معطل', 'Disabled')}
           </span>
         </div>
 
@@ -1568,7 +1568,7 @@ export function renderSettings() {
           <div class="field">
             <label>${choose('المستلم الافتراضي / قروب الواتساب (اختياري)', 'Default Recipient / WhatsApp Group (Optional)')}</label>
             <input type="text" name="recipient" value="${esc(wa.recipient || '')}" placeholder="${choose('كود قروب واتساب المهندسين (1203630...@g.us) أو رقم جوال الإدارة', 'WhatsApp Group JID (1203630...@g.us) or Management Phone')}" />
-            <small style="font-size:11px;color:var(--teal);margin-top:4px;display:block;">${choose('💡 ملاحظة: هذا الحقل اختياري. في حال عدم وجود قروب حالياً، يمكنك تركه فارغاً وسيتكفل النظام بإرسال كافة التنبيهات والمنشن كرسائل فردية مباشرة إلى هواتف المهندسين والمدير المسجلة في حساباتهم.', '💡 Note: This field is optional. If you do not have a group yet, leave it blank and the system will automatically send alerts & mentions directly to engineers & manager personal phones.')}</small>
+            <small style="font-size:11px;color:var(--teal);margin-top:4px;display:block;">${choose('ملاحظة: هذا الحقل اختياري. في حال عدم وجود قروب حالياً، يمكنك تركه فارغاً وسيتكفل النظام بإرسال كافة التنبيهات والمنشن كرسائل فردية مباشرة إلى هواتف المهندسين والمدير المسجلة في حساباتهم.', 'Note: This field is optional. If you do not have a group yet, leave it blank and the system will automatically send alerts & mentions directly to engineers & manager personal phones.')}</small>
           </div>
 
           <div style="background:var(--surface-soft);border:1px solid var(--border);border-radius:12px;padding:16px;">
@@ -1576,23 +1576,23 @@ export function renderSettings() {
             <div style="display:grid;gap:8px;">
               <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink);cursor:pointer;">
                 <input type="checkbox" name="notifyOnCollectiveMention" ${wa.notifyOnCollectiveMention !== false ? 'checked' : ''} />
-                <span>📢 ${choose('عند المنشن الجماعي (@all / @الكل): إرسال تنبيه مباشر لكل أعضاء المشروع والإدارة حتى المدير', 'When collective mention (@all / @everyone): send direct alert to all project members and managers')}</span>
+                <span style="display:inline-flex;align-items:center;gap:6px;">${icon('megaphone', 13)} ${choose('عند المنشن الجماعي (@all / @الكل): إرسال تنبيه مباشر لكل أعضاء المشروع والإدارة حتى المدير', 'When collective mention (@all / @everyone): send direct alert to all project members and managers')}</span>
               </label>
               <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink);cursor:pointer;">
                 <input type="checkbox" name="sendGroupBroadcast" ${wa.sendGroupBroadcast ? 'checked' : ''} />
-                <span>👥 ${choose('إرسال نسخة لقروب الواتساب العام (في حال إدخال كود القروب في الحقل أعلاه)', 'Send a copy to the WhatsApp Group (if Group JID is set above)')}</span>
+                <span style="display:inline-flex;align-items:center;gap:6px;">${icon('users', 13)} ${choose('إرسال نسخة لقروب الواتساب العام (في حال إدخال كود القروب في الحقل أعلاه)', 'Send a copy to the WhatsApp Group (if Group JID is set above)')}</span>
               </label>
               <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink);cursor:pointer;">
                 <input type="checkbox" name="notifyOnBlocked" ${wa.notifyOnBlocked !== false ? 'checked' : ''} />
-                <span>⚠️ ${choose('عند تعليق مهمة هندسية (Task Blocked) لتنبيه الموقع فوراً', 'When a task is blocked to alert field engineers instantly')}</span>
+                <span style="display:inline-flex;align-items:center;gap:6px;">${icon('warning', 13)} ${choose('عند تعليق مهمة هندسية (Task Blocked) لتنبيه الموقع فوراً', 'When a task is blocked to alert field engineers instantly')}</span>
               </label>
               <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink);cursor:pointer;">
                 <input type="checkbox" name="notifyOnApproval" ${wa.notifyOnApproval !== false ? 'checked' : ''} />
-                <span>🔍 ${choose('عند إحالة مهمة للمراجعة والاعتماد (Review / Approval)', 'When a deliverable is submitted for review & approval')}</span>
+                <span style="display:inline-flex;align-items:center;gap:6px;">${icon('search', 13)} ${choose('عند إحالة مهمة للمراجعة والاعتماد (Review / Approval)', 'When a deliverable is submitted for review & approval')}</span>
               </label>
               <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink);cursor:pointer;">
                 <input type="checkbox" name="notifyOnDrawing" ${wa.notifyOnDrawing !== false ? 'checked' : ''} />
-                <span>📐 ${choose('عند اعتماد أو رفع مخطط معماري أو إنشائي جديد (New Drawing)', 'When an architectural or structural drawing is approved/uploaded')}</span>
+                <span style="display:inline-flex;align-items:center;gap:6px;">${icon('compass', 13)} ${choose('عند اعتماد أو رفع مخطط معماري أو إنشائي جديد (New Drawing)', 'When an architectural or structural drawing is approved/uploaded')}</span>
               </label>
             </div>
           </div>
@@ -1602,7 +1602,7 @@ export function renderSettings() {
               ${icon('check', 14)} <span>${choose('حفظ إعدادات واتساب', 'Save WhatsApp Settings')}</span>
             </button>
             <button type="button" class="btn btn-soft" data-action="test-whatsapp" style="display:inline-flex;align-items:center;gap:7px;">
-              <span>📲</span> <span>${choose('إرسال تنبيه تجريبي للواتساب', 'Send Test WhatsApp Alert')}</span>
+              <span>${icon('phone', 13)}</span> <span>${choose('إرسال تنبيه تجريبي للواتساب', 'Send Test WhatsApp Alert')}</span>
             </button>
           </div>
         </form>
@@ -1633,14 +1633,14 @@ export function renderSettings() {
 }
 
 export const FULL_PERMISSIONS_CATALOG = [
-  // 🏢 المشاريع والفرق (Projects & Teams)
+  // المشاريع والفرق (Projects & Teams)
   { id: 'view_projects', category: 'projects', categoryAr: 'المشاريع والفرق', categoryEn: 'Projects & Teams', nameAr: 'عرض المشاريع', nameEn: 'View Projects' },
   { id: 'create_projects', category: 'projects', categoryAr: 'المشاريع والفرق', categoryEn: 'Projects & Teams', nameAr: 'إنشاء مشاريع جديدة', nameEn: 'Create Projects' },
   { id: 'edit_projects', category: 'projects', categoryAr: 'المشاريع والفرق', categoryEn: 'Projects & Teams', nameAr: 'تعديل بيانات ومراحل المشاريع', nameEn: 'Edit Projects' },
   { id: 'delete_projects', category: 'projects', categoryAr: 'المشاريع والفرق', categoryEn: 'Projects & Teams', nameAr: 'حذف المشاريع', nameEn: 'Delete Projects' },
   { id: 'manage_project_members', category: 'projects', categoryAr: 'المشاريع والفرق', categoryEn: 'Projects & Teams', nameAr: 'إدارة وتعيين أعضاء المشروع', nameEn: 'Manage Project Members' },
 
-  // 📋 المهام والتنفيذ (Tasks & Execution)
+  // المهام والتنفيذ (Tasks & Execution)
   { id: 'create_tasks', category: 'tasks', categoryAr: 'المهام والتنفيذ', categoryEn: 'Tasks & Execution', nameAr: 'إنشاء المهام والمخرجات', nameEn: 'Create Tasks' },
   { id: 'edit_tasks', category: 'tasks', categoryAr: 'المهام والتنفيذ', categoryEn: 'Tasks & Execution', nameAr: 'تعديل تفاصيل وحالة المهام', nameEn: 'Edit Tasks' },
   { id: 'delete_tasks', category: 'tasks', categoryAr: 'المهام والتنفيذ', categoryEn: 'Tasks & Execution', nameAr: 'حذف المهام', nameEn: 'Delete Tasks' },
@@ -1649,7 +1649,7 @@ export const FULL_PERMISSIONS_CATALOG = [
   { id: 'approve_tasks', category: 'tasks', categoryAr: 'المهام والتنفيذ', categoryEn: 'Tasks & Execution', nameAr: 'اعتماد وتوقيع المخرجات الهندسية', nameEn: 'Approve Deliverables' },
   { id: 'manage_reminders', category: 'tasks', categoryAr: 'المهام والتنفيذ', categoryEn: 'Tasks & Execution', nameAr: 'إدارة التذكيرات والمتابعات', nameEn: 'Manage Reminders' },
 
-  // 📐 المخططات والمكتبة القياسية (Drawings & Deliverables Library)
+  // المخططات والمكتبة القياسية (Drawings & Deliverables Library)
   { id: 'upload_documents', category: 'documents', categoryAr: 'المخططات والمكتبة القياسية', categoryEn: 'Drawings & Deliverables Library', nameAr: 'رفع وإدارة المخططات والمستندات', nameEn: 'Upload Documents' },
   { id: 'delete_documents', category: 'documents', categoryAr: 'المخططات والمكتبة القياسية', categoryEn: 'Drawings & Deliverables Library', nameAr: 'حذف المخططات والمستندات', nameEn: 'Delete Documents' },
   { id: 'manage_templates', category: 'documents', categoryAr: 'المخططات والمكتبة القياسية', categoryEn: 'Drawings & Deliverables Library', nameAr: 'إدارة مكتبة القوالب والمخرجات القياسية', nameEn: 'Manage Templates Library' },
@@ -1659,7 +1659,7 @@ export const FULL_PERMISSIONS_CATALOG = [
   { id: 'view_reports', category: 'reports', categoryAr: 'المؤشرات والتقارير', categoryEn: 'Analytics & Reports', nameAr: 'عرض صفحة التقارير والمؤشرات', nameEn: 'View Reports' },
   { id: 'export_reports', category: 'reports', categoryAr: 'المؤشرات والتقارير', categoryEn: 'Analytics & Reports', nameAr: 'تصدير التقارير (Excel)', nameEn: 'Export Reports (Excel)' },
 
-  // 🛡️ النظام والأمان (Administration & Governance)
+  // النظام والأمان (Administration & Governance)
   { id: 'manage_users', category: 'admin', categoryAr: 'النظام والأمان', categoryEn: 'Administration & Governance', nameAr: 'إدارة ودعوة وتفعيل حسابات المستخدمين', nameEn: 'Manage Users' },
   { id: 'manage_existing_account_permissions', category: 'admin', categoryAr: 'النظام والأمان', categoryEn: 'Administration & Governance', nameAr: 'تعديل أدوار وصلاحيات الحسابات الموجودة', nameEn: 'Manage Existing Account Permissions' },
   { id: 'view_user_activity', category: 'admin', categoryAr: 'النظام والأمان', categoryEn: 'Administration & Governance', nameAr: 'متابعة أوقات دخول ونشاط المستخدمين', nameEn: 'View User Logins & Activity Timestamps' },

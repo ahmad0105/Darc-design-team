@@ -69,12 +69,12 @@ export function renderApp() {
         <div class="demo-showcase-banner">
           <div class="demo-showcase-content">
             <span class="demo-showcase-badge">${choose('بيئة عرض تجريبية', 'DEMO SHOWCASE')}</span>
-            <span class="demo-showcase-timer">⏱️ ${choose('تنظيف ذاتي كل 15 دقيقة', 'Auto-resets every 15m')}</span>
+            <span class="demo-showcase-timer" style="display:inline-flex;align-items:center;gap:4px;">${icon('clock', 12)} ${choose('تنظيف ذاتي كل 15 دقيقة', 'Auto-resets every 15m')}</span>
             <span class="demo-showcase-desc">${choose('مساحة تفاعلية مخصصة لاستعراض قدرات المنصة — تُحذف الملفات والتعديلات تلقائياً كل 15 دقيقة لحماية السيرفر ونظافة العرض.', 'Interactive sandbox showcasing DARC capabilities — all demo changes & uploads automatically purge every 15 minutes.')}</span>
           </div>
           <div class="demo-showcase-actions">
-            <button class="btn btn-xs demo-showcase-btn" data-action="reset-demo-sandbox">
-              <span>🔄</span>
+            <button class="btn btn-xs demo-showcase-btn" data-action="reset-demo-sandbox" style="display:inline-flex;align-items:center;gap:5px;">
+              <span>${icon('refresh', 12)}</span>
               <span>${choose('إعادة ضبط الآن', 'Reset Now')}</span>
             </button>
           </div>

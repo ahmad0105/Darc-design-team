@@ -200,7 +200,7 @@ export function calculatePasswordStrength(pass) {
   if (score === 1) return { score: 1, label: state.lang === 'ar' ? 'ضعيفة جداً' : 'Very weak', percent: 25, color: 'var(--red)' };
   if (score === 2) return { score: 2, label: state.lang === 'ar' ? 'متوسطة' : 'Fair', percent: 50, color: 'var(--amber)' };
   if (score === 3) return { score: 3, label: state.lang === 'ar' ? 'جيدة' : 'Good', percent: 75, color: 'var(--blue)' };
-  return { score: 4, label: state.lang === 'ar' ? 'قوية وممتازة 🛡️' : 'Strong & Secure 🛡️', percent: 100, color: 'var(--mint-strong)' };
+  return { score: 4, label: state.lang === 'ar' ? 'قوية وممتازة' : 'Strong & Secure', percent: 100, color: 'var(--mint-strong)' };
 }
 
 // Render dynamic strength meter HTML
@@ -253,12 +253,12 @@ function bindLivePasswordChecks(formId, passName, confirmName, meterPrefix, subm
       } else if (p1 === p2) {
         matchIndicator.style.display = 'block';
         matchIndicator.style.color = 'var(--mint-strong)';
-        matchIndicator.textContent = state.lang === 'ar' ? '✓ كلمتا المرور متطابقتان' : '✓ Passwords match';
+        matchIndicator.textContent = state.lang === 'ar' ? 'كلمتا المرور متطابقتان' : 'Passwords match';
         if (submitBtn) submitBtn.disabled = false;
       } else {
         matchIndicator.style.display = 'block';
         matchIndicator.style.color = 'var(--red)';
-        matchIndicator.textContent = state.lang === 'ar' ? '✗ كلمتا المرور غير متطابقتين' : '✗ Passwords do not match';
+        matchIndicator.textContent = state.lang === 'ar' ? 'كلمتا المرور غير متطابقتين' : 'Passwords do not match';
         if (submitBtn) submitBtn.disabled = true;
       }
     }
@@ -308,7 +308,7 @@ function bindUniversalPasswordToggles() {
           warning.style.display = 'flex';
           warning.style.alignItems = 'center';
           warning.style.gap = '4px';
-          warning.innerHTML = `<span>⚠️</span> <span>${state.lang === 'ar' ? 'زر الحروف الكبيرة (Caps Lock) مفعّل' : 'Caps Lock is active'}</span>`;
+          warning.innerHTML = `<span class="ui-inline-icon icon-warning">${icon('alert', 13)}</span> <span>${state.lang === 'ar' ? 'زر الحروف الكبيرة (Caps Lock) مفعّل' : 'Caps Lock is active'}</span>`;
           input.parentElement.parentElement.appendChild(warning);
         }
       } else if (warning) {
@@ -400,7 +400,7 @@ export function renderLogin(errorMessage = '', mode = 'login', isSuccess = false
       <div class="demo-showcase-box" style="margin-top:20px;padding:14px 16px;border-radius:10px;background:var(--surface-soft, rgba(13,98,105,0.06));border:1px dashed rgba(20,184,166,0.4);display:flex;flex-direction:column;gap:10px;">
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
           <div style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--brand-teal, #0d6269);">
-            <span>✨</span>
+            <span>${icon('sparkles', 15)}</span>
             <span>${choose('بيئة العرض التجريبي (Demo Showcase)', 'Live Demo Showcase')}</span>
           </div>
           <span style="font-size:10px;background:rgba(20,184,166,0.18);color:var(--teal, #0d6269);padding:2px 8px;border-radius:12px;font-weight:700;">
@@ -412,7 +412,7 @@ export function renderLogin(errorMessage = '', mode = 'login', isSuccess = false
           <div><strong>${choose('كلمة المرور:', 'Password:')}</strong> <code>demo123456</code></div>
         </div>
         <button type="button" class="btn btn-sm btn-soft" data-action="quick-fill-login" data-email="demo@darc-design.bond" data-pass="demo123456" data-autosubmit="true" style="width:100%;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:6px;padding:8px 12px;border-radius:6px;cursor:pointer;">
-          <span>⚡</span>
+          <span>${icon('zap', 14)}</span>
           <span>${choose('تعبئة تلقائية ودخول فوري', 'Auto-fill & Sign In')}</span>
         </button>
       </div>
@@ -449,7 +449,7 @@ export function renderLogin(errorMessage = '', mode = 'login', isSuccess = false
             <div class="page-head" style="align-items:flex-start;margin-bottom:0">
               <div><p class="eyebrow">${mode === 'login' ? choose('مرحبًا بعودتك', 'WELCOME BACK') : choose('استعادة الحساب', 'ACCOUNT RECOVERY')}</p><h2>${mode === 'login' ? t('login') : choose('نسيت كلمة المرور', 'Forgot Password')}</h2><p class="intro">${mode === 'login' ? t('loginIntro') : choose('أدخل بريدك الإلكتروني لاستلام رابط استعادة كلمة المرور.', 'Enter your email to receive a reset link.')}</p></div>
               <div style="display:flex;align-items:center;gap:6px;">
-                <button class="btn btn-ghost btn-sm" type="button" data-action="toggle-theme" title="${state.theme === 'dark' ? 'الوضع النهاري' : 'الوضع الليلي'}">${state.theme === 'dark' ? '☀️' : '🌙'}</button>
+                <button class="btn btn-ghost btn-sm" type="button" data-action="toggle-theme" title="${state.theme === 'dark' ? 'الوضع النهاري' : 'الوضع الليلي'}">${icon(state.theme === 'dark' ? 'sun' : 'moon', 16)}</button>
                 <button class="btn btn-ghost btn-sm" type="button" data-action="toggle-lang">${state.lang === 'ar' ? 'EN' : 'عربي'}</button>
               </div>
             </div>
@@ -610,7 +610,7 @@ export function renderLogin(errorMessage = '', mode = 'login', isSuccess = false
     const originalText = button ? button.innerHTML : '';
     if (button) {
       button.disabled = true;
-      button.innerHTML = `<span>⏳ ${choose('جاري إرسال الرابط...', 'Sending reset link...')}</span>`;
+      button.innerHTML = `<span>${choose('جاري إرسال الرابط...', 'Sending reset link...')}</span>`;
     }
     try {
       await api('/api/auth/forgot-password', { method: 'POST', body: JSON.stringify({ email }) });
@@ -618,7 +618,7 @@ export function renderLogin(errorMessage = '', mode = 'login', isSuccess = false
         button.disabled = false;
         button.innerHTML = originalText;
       }
-      showLoginError(choose('تم إرسال رابط استعادة كلمة المرور إلى بريدك الإلكتروني بنجاح ✨', 'Password reset link sent to your email successfully ✨'), true);
+      showLoginError(choose('تم إرسال رابط استعادة كلمة المرور إلى بريدك الإلكتروني بنجاح', 'Password reset link sent to your email successfully'), true);
     } catch (error) {
       if (button) {
         button.disabled = false;
@@ -657,7 +657,7 @@ export function renderActivation(token, errorMessage = '') {
             <div class="page-head" style="align-items:flex-start;margin-bottom:0">
               <div><p class="eyebrow">${choose('دعوة DARC الرسمية', 'DARC INVITE')}</p><h2>${choose('تفعيل الحساب', 'Activate account')}</h2><p class="intro">${choose('يجب أن تحتوي كلمة المرور على 10 أحرف على الأقل مع رموز وأرقام.', 'Your password must be at least 10 characters with numbers and symbols.')}</p></div>
               <div style="display:flex;align-items:center;gap:6px;">
-                <button class="btn btn-ghost btn-sm" type="button" data-action="toggle-theme">${state.theme === 'dark' ? '☀️' : '🌙'}</button>
+                <button class="btn btn-ghost btn-sm" type="button" data-action="toggle-theme">${icon(state.theme === 'dark' ? 'sun' : 'moon', 16)}</button>
                 <button class="btn btn-ghost btn-sm" type="button" data-action="toggle-lang">${state.lang === 'ar' ? 'EN' : 'عربي'}</button>
               </div>
             </div>
@@ -721,7 +721,7 @@ export function renderResetPassword(token, errorMessage = '') {
             <div class="page-head" style="align-items:flex-start;margin-bottom:0">
               <div><p class="eyebrow">${choose('استعادة الحساب', 'ACCOUNT RECOVERY')}</p><h2>${choose('كلمة مرور جديدة', 'New Password')}</h2><p class="intro">${choose('أدخل كلمة المرور الجديدة وقم بتأكيدها.', 'Enter and confirm your new password.')}</p></div>
               <div style="display:flex;align-items:center;gap:6px;">
-                <button class="btn btn-ghost btn-sm" type="button" data-action="toggle-theme">${state.theme === 'dark' ? '☀️' : '🌙'}</button>
+                <button class="btn btn-ghost btn-sm" type="button" data-action="toggle-theme">${icon(state.theme === 'dark' ? 'sun' : 'moon', 16)}</button>
                 <button class="btn btn-ghost btn-sm" type="button" data-action="toggle-lang">${state.lang === 'ar' ? 'EN' : 'عربي'}</button>
               </div>
             </div>

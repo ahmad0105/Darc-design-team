@@ -64,7 +64,7 @@ export function showNotifications() {
   if (isIOSNonPwa) {
     browserBanner = `
       <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 12px;border-radius:8px;background:var(--surface-soft);border:1px dashed var(--blue);margin-bottom:12px;font-size:11px;">
-        <span style="color:var(--ink-soft);">${choose('تفعيل إشعارات نظام iOS الفورية على iPhone و iPad 📱', 'Enable native iOS push alerts on iPhone & iPad 📱')}</span>
+        <span style="color:var(--ink-soft);display:inline-flex;align-items:center;gap:5px;">${icon('phone', 13)} ${choose('تفعيل إشعارات نظام iOS الفورية على iPhone و iPad', 'Enable native iOS push alerts on iPhone & iPad')}</span>
         <button type="button" class="btn btn-primary btn-sm" data-action="show-ios-notification-guide" style="font-size:10px;padding:3px 8px;height:auto;flex-shrink:0;">${choose('عرض الطريقة', 'View Setup')}</button>
       </div>
     `;
@@ -162,7 +162,7 @@ export function showNotifications() {
           <span style="color:var(--teal);background:var(--mint);padding:12px;border-radius:14px;display:inline-flex;margin-bottom:10px;">
             ${icon('check', 24)}
           </span>
-          <strong style="display:block;font-size:14px;color:var(--ink);">${choose('رائع! لقد اطلعت على كافة التنبيهات 🎉', 'All caught up! No unread notifications 🎉')}</strong>
+          <strong style="display:block;font-size:14px;color:var(--ink);">${choose('رائع! لقد اطلعت على كافة التنبيهات', 'All caught up! No unread notifications')}</strong>
           <span style="display:block;color:var(--muted);font-size:12px;margin-top:4px;">${choose('لا توجد إشعارات غير مقروءة في صندوق الوارد حالياً.', 'You have no unread notifications in your inbox right now.')}</span>
         </div>
       `;

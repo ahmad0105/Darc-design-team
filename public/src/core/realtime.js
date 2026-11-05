@@ -345,7 +345,7 @@ export function applyGranularDelta(tableName, actionType, rawRecord, rawOldRecor
           ? (record.titleAr || record.messageAr || record.bodyAr || record.content || record.titleEn || choose('إشعار جديد', 'New notification'))
           : (record.titleEn || record.messageEn || record.bodyEn || (record.content !== record.titleAr && record.content !== record.messageAr ? record.content : '') || record.titleAr || choose('إشعار جديد', 'New notification'));
         if (title) {
-          showToast(`🔔 ${title}`, false);
+          showToast(title, false);
         }
         // Universal Device Notification (Android ServiceWorker / iOS PWA / Desktop / In-App Chime & Haptics)
         const bodyMsg = state.lang === 'ar'
@@ -767,8 +767,8 @@ export function initRealtimeConnection() {
       const syncRes = await syncPendingMutations(apiFn);
       if (syncRes && syncRes.synced > 0) {
         showToastFn(chooseFn(
-          `تمت استعادة الاتصال ومزامنة ${syncRes.synced} عمليات معلقة بنجاح! 🚀`,
-          `Internet restored! Synced ${syncRes.synced} pending actions successfully! 🚀`
+          `تمت استعادة الاتصال ومزامنة ${syncRes.synced} عمليات معلقة بنجاح!`,
+          `Internet restored! Synced ${syncRes.synced} pending actions successfully!`
         ), false);
       } else {
         showToastFn(chooseFn('تمت استعادة الاتصال بالإنترنت', 'Internet connection restored'), false);

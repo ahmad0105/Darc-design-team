@@ -37,7 +37,7 @@ export function renderTaskAssignees(task) {
 
   if (externalNames.length) {
     externalNames.slice(0, 2).forEach(name => {
-      html += `<span class="external-assignee-badge" style="font-size:10px;padding:2px 6px;border-radius:6px;background:var(--amber-soft);color:var(--amber);border:1px solid rgba(199,131,52,0.25);display:inline-flex;align-items:center;gap:3px;" title="${esc(name)}">🌐 ${esc(name)} <small style="opacity:0.8">(${choose('خارجي', 'Ext')})</small></span>`;
+      html += `<span class="external-assignee-badge" style="font-size:10px;padding:2px 6px;border-radius:6px;background:var(--amber-soft);color:var(--amber);border:1px solid rgba(199,131,52,0.25);display:inline-flex;align-items:center;gap:3px;" title="${esc(name)}">${icon('globe', 11)} ${esc(name)} <small style="opacity:0.8">(${choose('خارجي', 'Ext')})</small></span>`;
     });
     if (externalNames.length > 2) {
       html += `<span style="font-size:10px;color:var(--amber);" title="${externalNames.slice(2).map(esc).join('، ')}">+${externalNames.length - 2}</span>`;
@@ -129,9 +129,9 @@ export function taskCard(task) {
         <span class="task-code">${esc(task.templateId ? task.templateId.replace('tpl-', '#') : '#CUSTOM')}</span>
       </div>
       <div style="display:flex;align-items:center;gap:6px;">
-        ${task._isOfflinePending ? `<span class="badge badge-amber" style="font-size:9px;padding:1px 5px;" title="${choose('بانتظار المزامنة مع السيرفر', 'Pending cloud sync')}">⏳ ${choose('معلقة', 'Pending')}</span>` : ''}
-        ${commentCount > 0 ? `<span style="font-size:10px;color:var(--muted);display:inline-flex;align-items:center;gap:2px;" title="${commentCount} ${choose('تعليقات', 'comments')}">💬 ${commentCount}</span>` : ''}
-        ${docCount > 0 ? `<span style="font-size:10px;color:var(--muted);display:inline-flex;align-items:center;gap:2px;" title="${docCount} ${choose('مرفقات', 'attachments')}">📎 ${docCount}</span>` : ''}
+        ${task._isOfflinePending ? `<span class="badge badge-amber" style="font-size:9px;padding:1px 5px;display:inline-flex;align-items:center;gap:3px;" title="${choose('بانتظار المزامنة مع السيرفر', 'Pending cloud sync')}">${icon('hourglass', 10)} ${choose('معلقة', 'Pending')}</span>` : ''}
+        ${commentCount > 0 ? `<span style="font-size:10px;color:var(--muted);display:inline-flex;align-items:center;gap:2px;" title="${commentCount} ${choose('تعليقات', 'comments')}">${icon('chat', 11)} ${commentCount}</span>` : ''}
+        ${docCount > 0 ? `<span style="font-size:10px;color:var(--muted);display:inline-flex;align-items:center;gap:2px;" title="${docCount} ${choose('مرفقات', 'attachments')}">${icon('link', 11)} ${docCount}</span>` : ''}
         ${dueBadge}
         <span class="priority-badge ${esc(task.priority)}">${esc(priorityText(task.priority))}</span>
       </div>
@@ -491,15 +491,15 @@ export function renderTasks() {
       <div class="tasks-toolbar-row tasks-toolbar-row-bottom">
         <div class="tasks-toolbar-filters">
           <select class="filter-select select-compact" data-action="task-project-filter" style="min-width:180px;">
-            <option value="all">${choose('📁 كل المشاريع', '📁 All Projects')}</option>
+            <option value="all">${choose('كل المشاريع', 'All Projects')}</option>
             ${(state.data?.projects || []).map((project) => `<option value="${esc(project.id)}" ${state.taskProjectFilter === project.id ? 'selected' : ''}>${esc(choose(project.nameAr, project.nameEn))}</option>`).join('')}
           </select>
           <select class="filter-select select-compact" data-action="task-priority-filter" style="min-width:140px;">
-            <option value="all">${choose('⚡ كل الأولويات', '⚡ All Priorities')}</option>
-            <option value="urgent" ${state.taskPriorityFilter === 'urgent' ? 'selected' : ''}>🔥 ${choose('عاجلة', 'Urgent')}</option>
-            <option value="high" ${state.taskPriorityFilter === 'high' ? 'selected' : ''}>⚡ ${choose('عالية', 'High')}</option>
-            <option value="medium" ${state.taskPriorityFilter === 'medium' ? 'selected' : ''}>🔹 ${choose('متوسطة', 'Medium')}</option>
-            <option value="low" ${state.taskPriorityFilter === 'low' ? 'selected' : ''}>☕ ${choose('منخفضة', 'Low')}</option>
+            <option value="all">${choose('كل الأولويات', 'All Priorities')}</option>
+            <option value="urgent" ${state.taskPriorityFilter === 'urgent' ? 'selected' : ''}>${choose('عاجلة', 'Urgent')}</option>
+            <option value="high" ${state.taskPriorityFilter === 'high' ? 'selected' : ''}>${choose('عالية', 'High')}</option>
+            <option value="medium" ${state.taskPriorityFilter === 'medium' ? 'selected' : ''}>${choose('متوسطة', 'Medium')}</option>
+            <option value="low" ${state.taskPriorityFilter === 'low' ? 'selected' : ''}>${choose('منخفضة', 'Low')}</option>
           </select>
         </div>
         <div class="tasks-toolbar-sort">
@@ -534,7 +534,7 @@ export function buildAssigneeChipsHtml(selectedUserIds = [], selectedExternals =
   selectedExternals.forEach(ext => {
     html += `
       <span class="chip-item" style="display:inline-flex;align-items:center;gap:5px;background:var(--teal-soft);border:1px solid var(--teal);border-radius:16px;padding:2px 8px 2px 6px;font-size:11px;color:var(--teal);">
-        <span>🌐</span>
+        <span style="display:inline-flex;align-items:center;">${icon('globe', 11)}</span>
         <span style="font-weight:600;">${esc(ext)}</span>
         <span style="font-size:9px;background:var(--teal);color:#fff;border-radius:8px;padding:1px 4px;">${choose('خارجي', 'Ext')}</span>
         <button type="button" class="btn-remove-chip-ext" data-ext="${esc(ext)}" style="border:none;background:none;cursor:pointer;color:var(--teal);padding:0 2px;font-size:13px;line-height:1;" title="${choose('إزالة', 'Remove')}">×</button>
@@ -598,9 +598,9 @@ export function openTaskModal(task = null, presetTemplateId = null, presetProjec
     <input type="hidden" name="remindersJson" id="task-reminders-input" value="${esc(JSON.stringify(taskReminders))}" />
 
     <div class="form-grid">
-      <!-- 📋 القسم 1: البيانات الأساسية والمكتبة القياسية -->
+      <!-- Section 1: Basic Details & Standard Library -->
       <div style="font-size:12px;font-weight:700;color:var(--teal);margin:4px 0 2px;grid-column:1/-1;border-bottom:1px solid var(--line);padding-bottom:4px;display:flex;align-items:center;gap:6px;">
-        <span>📋</span> <span>${choose('البيانات الأساسية والمكتبة القياسية', 'Basic Details & Standard Library')}</span>
+        ${icon('checklist', 14)} <span>${choose('البيانات الأساسية والمكتبة القياسية', 'Basic Details & Standard Library')}</span>
       </div>
 
       <div class="field full">
@@ -626,9 +626,9 @@ export function openTaskModal(task = null, presetTemplateId = null, presetProjec
         </select>
       </div>
 
-      <!-- 👥 القسم 2: المسؤوليات وفريق العمل -->
+      <!-- Section 2: Ownership & Team -->
       <div style="font-size:12px;font-weight:700;color:var(--teal);margin:12px 0 4px;grid-column:1/-1;border-bottom:1px solid var(--line);padding-bottom:4px;display:flex;align-items:center;gap:6px;">
-        <span>👥</span> <span>${choose('المسؤوليات وفريق العمل', 'Ownership & Team')}</span>
+        ${icon('users', 14)} <span>${choose('المسؤوليات وفريق العمل', 'Ownership & Team')}</span>
       </div>
 
       <div class="field full">
@@ -654,8 +654,8 @@ export function openTaskModal(task = null, presetTemplateId = null, presetProjec
         <!-- حقل البحث والإضافة السريعة -->
         <div style="position:relative;display:flex;gap:6px;">
           <input type="text" id="assignee-combobox-search" placeholder="${choose('ابحث عن عضو بالفريق أو اكتب اسماً خارجياً...', 'Search team member or type external name...')}" autocomplete="off" style="flex:1;padding:8px 12px;font-size:12px;" />
-          <button type="button" id="btn-add-external-quick" class="btn btn-soft btn-sm" style="display:none;padding:0 12px;white-space:nowrap;font-size:11px;">
-            ➕ ${choose('إضافة كمسؤول خارجي', 'Add external')}
+          <button type="button" id="btn-add-external-quick" class="btn btn-soft btn-sm" style="display:none;padding:0 12px;white-space:nowrap;font-size:11px;display:inline-flex;align-items:center;gap:4px;">
+            ${icon('plus', 11)} <span>${choose('إضافة كمسؤول خارجي', 'Add external')}</span>
           </button>
         </div>
 
@@ -664,9 +664,9 @@ export function openTaskModal(task = null, presetTemplateId = null, presetProjec
         </div>
       </div>
 
-      <!-- ⏱️ القسم 3: الحالة والجدولة والتذكيرات (بدون تبعيات نهائياً) -->
+      <!-- Section 3: Status, Scheduling & Reminders -->
       <div style="font-size:12px;font-weight:700;color:var(--teal);margin:12px 0 4px;grid-column:1/-1;border-bottom:1px solid var(--line);padding-bottom:4px;display:flex;align-items:center;gap:6px;">
-        <span>⏱️</span> <span>${choose('الحالة والجدولة والتذكيرات', 'Status, Scheduling & Reminders')}</span>
+        ${icon('clock', 14)} <span>${choose('الحالة والجدولة والتذكيرات', 'Status, Scheduling & Reminders')}</span>
       </div>
 
       <div class="field">
@@ -693,7 +693,7 @@ export function openTaskModal(task = null, presetTemplateId = null, presetProjec
       <div class="field full" style="background:var(--surface-soft);border:1px solid var(--line);border-radius:10px;padding:12px;">
         <label style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
           <span style="font-weight:600;display:flex;align-items:center;gap:6px;">
-            <span>⏰</span> ${choose('تذكيرات المهمة (إشعار نظام + بريد إلكتروني للمسؤول)', 'Task Reminders (System Notification + Email to Assignee)')}
+            ${icon('bell', 13)} ${choose('تذكيرات المهمة (إشعار نظام + بريد إلكتروني للمسؤول)', 'Task Reminders (System Notification + Email to Assignee)')}
           </span>
           <span style="font-size:10px;color:var(--muted);font-weight:normal;">${choose('يمكنك إضافة أكثر من موعد تذكير وحذف ما تشاء', 'Add multiple reminders and delete any')}</span>
         </label>
@@ -708,14 +708,14 @@ export function openTaskModal(task = null, presetTemplateId = null, presetProjec
           <input type="datetime-local" id="new-reminder-datetime" style="flex:1;min-width:180px;font-size:12px;padding:6px 10px;" />
           <input type="text" id="new-reminder-note" placeholder="${choose('ملاحظة التذكير (اختياري)...', 'Reminder note (optional)...')}" style="flex:1;min-width:150px;font-size:12px;padding:6px 10px;" />
           <button type="button" id="btn-add-reminder" class="btn btn-soft btn-sm" style="white-space:nowrap;padding:7px 12px;font-weight:600;display:inline-flex;align-items:center;gap:4px;">
-            ➕ ${choose('إضافة تذكير', 'Add Reminder')}
+            ${icon('plus', 11)} <span>${choose('إضافة تذكير', 'Add Reminder')}</span>
           </button>
         </div>
       </div>
 
-      <!-- 📝 القسم 4: تفاصيل ومخرجات المهمة -->
+      <!-- Section 4: Details & Deliverables -->
       <div style="font-size:12px;font-weight:700;color:var(--teal);margin:12px 0 4px;grid-column:1/-1;border-bottom:1px solid var(--line);padding-bottom:4px;display:flex;align-items:center;gap:6px;">
-        <span>📝</span> <span>${choose('تفاصيل ومخرجات المهمة', 'Task Details & Deliverables')}</span>
+        ${icon('edit', 14)} <span>${choose('تفاصيل ومخرجات المهمة', 'Task Details & Deliverables')}</span>
       </div>
 
       <div class="field full">
@@ -780,8 +780,8 @@ export function openTaskModal(task = null, presetTemplateId = null, presetProjec
               </div>
             </div>
             ` : `
-            <div style="padding:10px 12px;margin-bottom:12px;background:var(--surface-soft);border:1px dashed var(--line);border-radius:8px;font-size:11px;color:var(--muted);text-align:center;">
-              🔒 ${choose('إرفاق ورفع الملفات متاح لمدير المشروع والمسند إليهم المهمة فقط.', 'File attachments restricted to project managers and task assignees.')}
+            <div style="padding:10px 12px;margin-bottom:12px;background:var(--surface-soft);border:1px dashed var(--line);border-radius:8px;font-size:11px;color:var(--muted);text-align:center;display:flex;align-items:center;justify-content:center;gap:6px;">
+              ${icon('lock', 13)} <span>${choose('إرفاق ورفع الملفات متاح لمدير المشروع والمسند إليهم المهمة فقط.', 'File attachments restricted to project managers and task assignees.')}</span>
             </div>
             `}
             <div id="task-documents-list">${renderTaskDocuments(task)}</div>
@@ -899,7 +899,7 @@ export function initTaskModalWidgets(task) {
     if (term) {
       itemsHtml += `
         <div class="dropdown-ext-action" style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:var(--teal-soft);color:var(--teal);border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;margin-bottom:4px;">
-          <span>➕ ${choose('إضافة مسؤول خارجي:', 'Add external assignee:')} "${esc(searchTerm.trim())}"</span>
+          <span style="display:flex;align-items:center;gap:4px;">${icon('plus', 11)} <span>${choose('إضافة مسؤول خارجي:', 'Add external assignee:')} "${esc(searchTerm.trim())}"</span></span>
           <span style="font-size:10px;background:var(--teal);color:#fff;border-radius:4px;padding:2px 6px;">${choose('إضافة سريعة', 'Quick Add')}</span>
         </div>
       `;
@@ -920,7 +920,7 @@ export function initTaskModalWidgets(task) {
                 <span style="font-size:10px;color:var(--muted);display:block;">${esc(choose(u.jobTitleAr, u.jobTitleEn) || u.email || '')}</span>
               </div>
             </div>
-            ${isChecked ? `<span style="font-size:11px;color:var(--teal);font-weight:bold;">✓</span>` : ''}
+            ${isChecked ? `<span style="display:inline-flex;align-items:center;color:var(--teal);">${icon('check', 13)}</span>` : ''}
           </div>
         `;
       });

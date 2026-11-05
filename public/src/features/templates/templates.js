@@ -4,17 +4,17 @@ import { choose, esc, can, t, icon } from '../../core/utils.js';
 import { showToast, modalShell } from '../../shared/ui.js';
 
 export const TEMPLATE_CATEGORIES = [
-  { id: 'architectural', ar: 'معماري', en: 'Architectural', icon: '🏛️' },
-  { id: 'electrical', ar: 'كهرباء — إلكتروميكانيك', en: 'Electrical', icon: '⚡' },
-  { id: 'plumbing', ar: 'سباكة — إلكتروميكانيك', en: 'Plumbing', icon: '💧' },
-  { id: 'hvac', ar: 'تكييف — إلكتروميكانيك', en: 'HVAC', icon: '🌡️' },
-  { id: 'fire', ar: 'حريق — إلكتروميكانيك', en: 'Fire Protection', icon: '🧯' },
-  { id: 'low_current', ar: 'تيار خفيف', en: 'Low Current', icon: '📡' },
-  { id: 'sections', ar: 'مقاطع', en: 'Sections', icon: '✂️' },
-  { id: 'detail', ar: 'تفصيلي', en: 'Detailed', icon: '🔍' },
-  { id: 'site', ar: 'موقع عام', en: 'Site Plan', icon: '🗺️' },
-  { id: 'quantity', ar: 'جداول كميات', en: 'Quantity Tables', icon: '📊' },
-  { id: 'documents', ar: 'وثائق وخطابات', en: 'Documents & Letters', icon: '📄' }
+  { id: 'architectural', ar: 'معماري', en: 'Architectural', iconName: 'building' },
+  { id: 'electrical', ar: 'كهرباء — إلكتروميكانيك', en: 'Electrical', iconName: 'zap' },
+  { id: 'plumbing', ar: 'سباكة — إلكتروميكانيك', en: 'Plumbing', iconName: 'droplet' },
+  { id: 'hvac', ar: 'تكييف — إلكتروميكانيك', en: 'HVAC', iconName: 'thermometer' },
+  { id: 'fire', ar: 'حريق — إلكتروميكانيك', en: 'Fire Protection', iconName: 'flame' },
+  { id: 'low_current', ar: 'تيار خفيف', en: 'Low Current', iconName: 'signal' },
+  { id: 'sections', ar: 'مقاطع', en: 'Sections', iconName: 'layers' },
+  { id: 'detail', ar: 'تفصيلي', en: 'Detailed', iconName: 'search' },
+  { id: 'site', ar: 'موقع عام', en: 'Site Plan', iconName: 'globe' },
+  { id: 'quantity', ar: 'جداول كميات', en: 'Quantity Tables', iconName: 'chart' },
+  { id: 'documents', ar: 'وثائق وخطابات', en: 'Documents & Letters', iconName: 'document' }
 ];
 
 export function renderTemplates() {
@@ -70,7 +70,7 @@ export function renderTemplates() {
       </button>
       ${TEMPLATE_CATEGORIES.map(cat => `
         <button class="template-category-tab ${activeCategory === cat.id ? 'active' : ''}" data-action="template-category" data-category="${esc(cat.id)}">
-          <span class="category-icon">${esc(cat.icon)}</span>
+          <span class="category-icon" style="display:inline-flex;align-items:center;">${icon(cat.iconName || 'document', 16)}</span>
           <span>${esc(choose(cat.ar, cat.en))}</span>
           <small>${categoryCounts.get(cat.id) || 0}</small>
         </button>
@@ -80,7 +80,7 @@ export function renderTemplates() {
       ${groups.length ? groups.map(group => `
         <section class="template-section">
           <div class="template-section-head">
-            <span class="category-icon">${esc(group.icon)}</span>
+            <span class="category-icon" style="display:inline-flex;align-items:center;">${icon(group.iconName || 'document', 18)}</span>
             <div>
               <h3>${esc(choose(group.ar, group.en))}</h3>
               <span>${group.items.length} ${t('templatesCount')}</span>

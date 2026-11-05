@@ -176,8 +176,8 @@ export async function handleCopyDocLink(doc, btnElement = null) {
     }
     const isDemo = isDemoSession() || (doc && (String(doc.id).startsWith('doc_demo') || doc.isDemo || String(doc.driveFileId || '').startsWith('demo_')));
     showToast(choose(
-      isDemo ? `تم نسخ رابط المستند بنجاح ✅` : `تم نسخ رابط المخرج الهندسي في Google Drive بنجاح ✅`,
-      isDemo ? `Document link copied successfully ✅` : `Google Drive deliverable link copied ✅`
+      isDemo ? `تم نسخ رابط المستند بنجاح` : `تم نسخ رابط المخرج الهندسي في Google Drive بنجاح`,
+      isDemo ? `Document link copied successfully` : `Google Drive deliverable link copied`
     ));
   }
 }
@@ -248,7 +248,7 @@ export async function downloadDocument(docId) {
       a.click();
       a.remove();
       setTimeout(() => URL.revokeObjectURL(blobUrl), 30000);
-      showToast(choose(`تم تنزيل المستند الأصلي "${doc.originalName}" بنجاح ✅`, `Downloaded "${doc.originalName}" successfully ✅`));
+      showToast(choose(`تم تنزيل المستند الأصلي "${doc.originalName}" بنجاح`, `Downloaded "${doc.originalName}" successfully`));
       return;
     }
 
@@ -535,7 +535,7 @@ export async function openDocumentPreviewModal(docId) {
               ↗ ${choose('نافذة كاملة مستقلة', 'Full Window')}
             </button>
             <button type="button" class="btn btn-sm" id="pdf-download-btn" style="background:#1e293b;border:1px solid #334155;color:#fff;padding:5px 12px;border-radius:6px;font-weight:700;font-size:11px;cursor:pointer;">
-              ⬇️ ${choose('تنزيل PDF', 'Download PDF')}
+              ${icon('download', 12)} ${choose('تنزيل PDF', 'Download PDF')}
             </button>
           </div>
         </div>
@@ -586,9 +586,9 @@ export async function openDocumentPreviewModal(docId) {
       <div style="width:100%;height:100%;position:relative;display:flex;flex-direction:column;background:#0a0e14;user-select:none;">
         <!-- Inspection Toolbar -->
         <div style="position:absolute;top:16px;left:50%;transform:translateX(-50%);background:rgba(15,23,42,0.88);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,0.15);padding:6px 14px;border-radius:30px;display:flex;align-items:center;gap:10px;z-index:20;box-shadow:0 10px 25px rgba(0,0,0,0.5);color:#fff;font-size:12px;">
-          <button type="button" class="btn btn-ghost btn-sm" id="img-zoom-in" style="color:#fff;padding:4px 8px;font-weight:700;" title="${choose('تكبير', 'Zoom In')}">🔍 +</button>
+          <button type="button" class="btn btn-ghost btn-sm" id="img-zoom-in" style="color:#fff;padding:4px 8px;font-weight:700;display:inline-flex;align-items:center;" title="${choose('تكبير', 'Zoom In')}">${icon('plus', 14)}</button>
           <span id="img-zoom-level" style="font-weight:700;min-width:44px;text-align:center;">100%</span>
-          <button type="button" class="btn btn-ghost btn-sm" id="img-zoom-out" style="color:#fff;padding:4px 8px;font-weight:700;" title="${choose('تصغير', 'Zoom Out')}">🔍 -</button>
+          <button type="button" class="btn btn-ghost btn-sm" id="img-zoom-out" style="color:#fff;padding:4px 8px;font-weight:700;display:inline-flex;align-items:center;" title="${choose('تصغير', 'Zoom Out')}">${icon('minus', 14)}</button>
           <button type="button" class="btn btn-ghost btn-sm" id="img-rotate-btn" style="color:#38bdf8;padding:4px 8px;font-weight:700;" title="${choose('تدوير 90 درجة', 'Rotate 90')}">↻ 90°</button>
           <button type="button" class="btn btn-ghost btn-sm" id="img-reset-btn" style="color:#fff;padding:4px 8px;font-weight:700;" title="${choose('إعادة ضبط', 'Reset')}">⤢ 100%</button>
         </div>
@@ -711,11 +711,11 @@ export async function openDocumentPreviewModal(docId) {
               <option value="1.5">1.5x</option>
               <option value="2">2.0x</option>
             </select>
-            <button type="button" class="btn btn-sm" id="video-pip-btn" style="background:#1e293b;border:1px solid #334155;color:#e2e8f0;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;">
-              🗗 PiP
+            <button type="button" class="btn btn-sm" id="video-pip-btn" style="background:#1e293b;border:1px solid #334155;color:#e2e8f0;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:4px;">
+              ${icon('eye', 13)} <span>PiP</span>
             </button>
-            <button type="button" class="btn btn-sm btn-primary" id="video-download-btn" style="padding:4px 12px;font-weight:700;font-size:11px;">
-              ⬇️ ${choose('تنزيل الفيديو', 'Download Video')}
+            <button type="button" class="btn btn-sm btn-primary" id="video-download-btn" style="padding:4px 12px;font-weight:700;font-size:11px;display:inline-flex;align-items:center;gap:4px;">
+              ${icon('download', 13)} <span>${choose('تنزيل الفيديو', 'Download Video')}</span>
             </button>
           </div>
         </div>
@@ -738,7 +738,7 @@ export async function openDocumentPreviewModal(docId) {
 
         <!-- Keyframe Jump Chips -->
         <div style="padding:8px 16px;background:rgba(15,23,42,0.95);border-top:1px solid #1e293b;display:flex;align-items:center;gap:8px;overflow-x:auto;" class="touch-scroll">
-          <span style="font-size:11px;color:#94a3b8;white-space:nowrap;font-weight:700;">📍 ${choose('محطات الجولة:', 'Keyframes:')}</span>
+          <span style="font-size:11px;color:#94a3b8;white-space:nowrap;font-weight:700;display:inline-flex;align-items:center;gap:4px;">${icon('pin', 12)} <span>${choose('محطات الجولة:', 'Keyframes:')}</span></span>
           <button type="button" class="video-jump-btn" data-sec="0" style="background:#1e293b;border:1px solid #334155;color:#38bdf8;padding:3px 10px;border-radius:14px;font-size:11px;cursor:pointer;white-space:nowrap;">
             00:00 ${choose('المدخل والمجلس', 'Majlis & Entry')}
           </button>
@@ -790,19 +790,19 @@ export async function openDocumentPreviewModal(docId) {
         <!-- CAD Inspection Top Bar -->
         <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:rgba(16,20,24,0.95);border-bottom:1px solid #1e293b;color:#e2e8f0;font-size:12px;z-index:20;flex-wrap:wrap;gap:8px;">
           <div style="display:flex;align-items:center;gap:12px;">
-            <span style="font-weight:900;color:#0284c7;background:rgba(2,132,199,0.15);padding:3px 8px;border-radius:4px;">
-              📐 CAD 2D
+            <span style="font-weight:900;color:#0284c7;background:rgba(2,132,199,0.15);padding:3px 8px;border-radius:4px;display:inline-flex;align-items:center;gap:4px;">
+              ${icon('compass', 13)} <span>CAD 2D</span>
             </span>
             <span style="font-weight:700;color:#f8fafc;">${esc(doc.originalName)}</span>
             <span style="color:#64748b;">•</span>
             <span id="cad-coords" style="font-family:monospace;color:#38bdf8;font-size:11px;">X: 0.00m | Y: 0.00m</span>
           </div>
           <div style="display:flex;align-items:center;gap:8px;">
-            <button type="button" class="btn btn-sm" id="cad-zoom-in" style="background:#1e293b;border:1px solid #334155;color:#fff;padding:4px 8px;font-weight:700;">➕</button>
-            <button type="button" class="btn btn-sm" id="cad-zoom-out" style="background:#1e293b;border:1px solid #334155;color:#fff;padding:4px 8px;font-weight:700;">➖</button>
+            <button type="button" class="btn btn-sm" id="cad-zoom-in" style="background:#1e293b;border:1px solid #334155;color:#fff;padding:4px 8px;font-weight:700;display:inline-flex;align-items:center;">${icon('plus', 14)}</button>
+            <button type="button" class="btn btn-sm" id="cad-zoom-out" style="background:#1e293b;border:1px solid #334155;color:#fff;padding:4px 8px;font-weight:700;display:inline-flex;align-items:center;">${icon('minus', 14)}</button>
             <button type="button" class="btn btn-sm" id="cad-reset" style="background:#1e293b;border:1px solid #334155;color:#fff;padding:4px 8px;font-weight:700;">⤢ 100%</button>
-            <button type="button" class="btn btn-sm" id="cad-download-btn" style="background:#0284c7;border:none;color:#fff;padding:5px 12px;border-radius:6px;font-weight:700;font-size:11px;cursor:pointer;">
-              ⬇️ ${choose('تنزيل DWG / DXF', 'Download CAD')}
+            <button type="button" class="btn btn-sm" id="cad-download-btn" style="background:#0284c7;border:none;color:#fff;padding:5px 12px;border-radius:6px;font-weight:700;font-size:11px;cursor:pointer;display:inline-flex;align-items:center;gap:4px;">
+              ${icon('download', 13)} <span>${choose('تنزيل DWG / DXF', 'Download CAD')}</span>
             </button>
           </div>
         </div>
@@ -1172,7 +1172,7 @@ export async function openDocumentPreviewModal(docId) {
             <td style="padding:10px 14px;text-align:end;font-weight:700;font-variant-numeric:tabular-nums;">${r.rate.toLocaleString()}</td>
             <td style="padding:10px 14px;text-align:end;font-weight:900;color:#107c41;font-variant-numeric:tabular-nums;">${r.total.toLocaleString()}</td>
             <td style="padding:10px 14px;text-align:center;">
-              <span class="status-badge approved" style="font-size:10px;padding:2px 8px;font-weight:800;">✅ ${choose('معتمد', 'Approved')}</span>
+              <span class="status-badge approved" style="font-size:10px;padding:2px 8px;font-weight:800;display:inline-flex;align-items:center;gap:4px;">${icon('check', 11)} ${choose('معتمد', 'Approved')}</span>
             </td>
           </tr>
         `).join('');
@@ -1192,10 +1192,10 @@ export async function openDocumentPreviewModal(docId) {
           </div>
           <div style="display:flex;align-items:center;gap:8px;">
             <button type="button" class="btn btn-sm" id="excel-print-btn" style="background:rgba(255,255,255,0.2);color:#ffffff;border:none;padding:5px 12px;border-radius:6px;font-weight:700;font-size:11px;cursor:pointer;">
-              🖨️ ${choose('طباعة المقايسة', 'Print BOQ')}
+              ${icon('printer', 13)} ${choose('طباعة المقايسة', 'Print BOQ')}
             </button>
             <button type="button" class="btn btn-sm" id="excel-direct-download" style="background:#ffffff;color:#107c41;border:none;padding:5px 14px;border-radius:6px;font-weight:800;font-size:11px;cursor:pointer;">
-              ⬇️ ${choose('تنزيل ملف XLSX الأصلي', 'Download XLSX')}
+              ${icon('download', 13)} ${choose('تنزيل ملف XLSX الأصلي', 'Download XLSX')}
             </button>
           </div>
         </div>
@@ -1306,10 +1306,10 @@ export async function openDocumentPreviewModal(docId) {
           </div>
           <div style="display:flex;align-items:center;gap:8px;">
             <button type="button" class="btn btn-sm" id="word-print-btn" style="background:rgba(255,255,255,0.2);color:#ffffff;border:none;padding:5px 12px;border-radius:6px;font-weight:700;font-size:11px;cursor:pointer;">
-              🖨️ ${choose('طباعة الوثيقة', 'Print Specs')}
+              ${icon('printer', 13)} ${choose('طباعة الوثيقة', 'Print Specs')}
             </button>
             <button type="button" class="btn btn-sm" id="word-download-btn" style="background:#ffffff;color:#2b579a;border:none;padding:5px 14px;border-radius:6px;font-weight:800;font-size:11px;cursor:pointer;">
-              ⬇️ ${choose('تنزيل DOCX الأصلي', 'Download DOCX')}
+              ${icon('download', 13)} ${choose('تنزيل DOCX الأصلي', 'Download DOCX')}
             </button>
           </div>
         </div>
@@ -1336,7 +1336,7 @@ export async function openDocumentPreviewModal(docId) {
               <div style="text-align:end;font-size:11px;color:#64748b;">
                 <div><strong>${choose('رقم الوثيقة:', 'Doc Code:')}</strong> SPEC-2026-VILLA-01-REV03</div>
                 <div><strong>${choose('تاريخ الاعتماد:', 'Date:')}</strong> 2026-11-01</div>
-                <div><span class="status-badge approved" style="font-size:10px;display:inline-block;margin-top:4px;">✅ معتمد للتنفيذ (Approved for Construction)</span></div>
+                <div><span class="status-badge approved" style="font-size:10px;display:inline-flex;align-items:center;gap:4px;margin-top:4px;">${icon('check', 11)} معتمد للتنفيذ (Approved for Construction)</span></div>
               </div>
             </div>
 
@@ -1450,9 +1450,9 @@ export async function openDocumentPreviewModal(docId) {
               ${choose('دمج العمارة النجدية المعاصرة بالخطوط الهندسية الحديثة، مع تعزيز الانفتاح البصري والخصوصية العائلية المطلقة.', 'Seamless blend of contemporary regional architecture and modern minimalism, maximizing indoor-outdoor spatial harmony.')}
             </p>
             <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center;font-size:12px;color:#cbd5e1;">
-              <span style="background:rgba(255,255,255,0.06);padding:6px 14px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);">📍 ${choose('الرياض / نخلة جميرا', 'Riyadh / Palm Jumeirah')}</span>
-              <span style="background:rgba(255,255,255,0.06);padding:6px 14px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);">📐 ${choose('المساحة المبنية: 1,450 م2', 'BUA: 1,450 sqm')}</span>
-              <span style="background:rgba(255,255,255,0.06);padding:6px 14px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);">🏛️ ${choose('الإصدار: Rev 03', 'Revision: Rev 03')}</span>
+              <span style="background:rgba(255,255,255,0.06);padding:6px 14px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);display:inline-flex;align-items:center;gap:6px;">${icon('pin', 12)} ${choose('الرياض / نخلة جميرا', 'Riyadh / Palm Jumeirah')}</span>
+              <span style="background:rgba(255,255,255,0.06);padding:6px 14px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);display:inline-flex;align-items:center;gap:6px;">${icon('compass', 12)} ${choose('المساحة المبنية: 1,450 م2', 'BUA: 1,450 sqm')}</span>
+              <span style="background:rgba(255,255,255,0.06);padding:6px 14px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);display:inline-flex;align-items:center;gap:6px;">${icon('building', 12)} ${choose('الإصدار: Rev 03', 'Revision: Rev 03')}</span>
             </div>
           </div>
         `
@@ -1475,12 +1475,12 @@ export async function openDocumentPreviewModal(docId) {
                 )}
               </p>
               <div style="display:grid;gap:8px;font-size:12px;">
-                <div style="background:rgba(2,132,199,0.1);border-left:3px solid #0284c7;padding:8px 12px;color:#e2e8f0;">⚡ ${choose('توفير سنوي مقدر بنسبة 32% في استهلاك طاقة التكييف.', '32% estimated annual HVAC cooling load reduction.')}</div>
-                <div style="background:rgba(16,185,129,0.1);border-left:3px solid #10b981;padding:8px 12px;color:#e2e8f0;">🌿 ${choose('استغلال الإضاءة الطبيعية لتقليل الاعتماد على الإنارة الاصطناعية النهارية.', 'Optimal daylight autonomy across all active family spaces.')}</div>
+                <div style="background:rgba(2,132,199,0.1);border-left:3px solid #0284c7;padding:8px 12px;color:#e2e8f0;display:flex;align-items:center;gap:6px;"><span class="ui-inline-icon icon-info">${icon('zap', 14)}</span> ${choose('توفير سنوي مقدر بنسبة 32% في استهلاك طاقة التكييف.', '32% estimated annual HVAC cooling load reduction.')}</div>
+                <div style="background:rgba(16,185,129,0.1);border-left:3px solid #10b981;padding:8px 12px;color:#e2e8f0;display:flex;align-items:center;gap:6px;"><span class="ui-inline-icon icon-success">${icon('leaf', 14)}</span> ${choose('استغلال الإضاءة الطبيعية لتقليل الاعتماد على الإنارة الاصطناعية النهارية.', 'Optimal daylight autonomy across all active family spaces.')}</div>
               </div>
             </div>
             <div style="background:rgba(255,255,255,0.03);border:1px dashed #334155;border-radius:12px;padding:24px;text-align:center;">
-              <div style="font-size:48px;margin-bottom:12px;">☀️</div>
+              <div style="margin-bottom:12px;color:#f59e0b;display:flex;justify-content:center;">${icon('sun', 44)}</div>
               <h4 style="color:#f8fafc;margin:0 0 6px;">${choose('توزيع الإشعاع الشمسي المباشر', 'Direct Radiation Spectrum')}</h4>
               <p style="color:#64748b;font-size:11px;margin:0;">SBC 601 Certified Passive Thermal Envelope</p>
             </div>
@@ -1505,7 +1505,7 @@ export async function openDocumentPreviewModal(docId) {
               </ul>
             </div>
             <div style="background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.25);border-radius:12px;padding:24px;text-align:center;">
-              <div style="font-size:48px;margin-bottom:12px;">🏛️</div>
+              <div style="margin-bottom:12px;color:#10b981;display:flex;justify-content:center;">${icon('building', 44)}</div>
               <h4 style="color:#f8fafc;margin:0 0 6px;">${choose('مخطط الحركة والخصوصية التامة', 'Circulation & Privacy Blueprint')}</h4>
               <p style="color:#94a3b8;font-size:12px;margin:0;">${choose('فصل تام لحركة الضيوف عن خصوصية أهل المنزل.', 'Zero visual overlap between guest circulation and family quarters.')}</p>
             </div>
@@ -1560,7 +1560,7 @@ export async function openDocumentPreviewModal(docId) {
               </p>
             </div>
             <div style="background:rgba(139,92,246,0.06);border:1px solid rgba(139,92,246,0.25);border-radius:12px;padding:24px;text-align:center;">
-              <div style="font-size:48px;margin-bottom:12px;">🏗️</div>
+              <div style="margin-bottom:12px;color:#8b5cf6;display:flex;justify-content:center;">${icon('construction', 44)}</div>
               <h4 style="color:#f8fafc;margin:0 0 6px;">4.20m Column-Free Overhang</h4>
               <p style="color:#94a3b8;font-size:12px;margin:0;">SBC 304 Reinforced Concrete Engineering Verification</p>
             </div>
@@ -1584,8 +1584,8 @@ export async function openDocumentPreviewModal(docId) {
               )}
             </p>
             <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center;">
-              <button type="button" class="btn btn-primary" id="ppt-slide-download-btn" style="background:#d24726;border:none;padding:10px 22px;border-radius:8px;font-weight:800;">
-                ⬇️ ${choose('تنزيل العرض التقديمي الكامل (PPTX)', 'Download Complete Presentation (PPTX)')}
+              <button type="button" class="btn btn-primary" id="ppt-slide-download-btn" style="background:#d24726;border:none;padding:10px 22px;border-radius:8px;font-weight:800;display:inline-flex;align-items:center;gap:6px;">
+                ${icon('download', 14)} ${choose('تنزيل العرض التقديمي الكامل (PPTX)', 'Download Complete Presentation (PPTX)')}
               </button>
             </div>
           </div>
@@ -1638,7 +1638,7 @@ export async function openDocumentPreviewModal(docId) {
           <div style="display:flex;align-items:center;gap:8px;">
             <span id="ppt-slide-counter" style="font-size:12px;font-weight:800;background:rgba(0,0,0,0.25);padding:4px 10px;border-radius:12px;">شريحة 1 / 6</span>
             <button type="button" class="btn btn-sm" id="ppt-download-btn" style="background:#ffffff;color:#d24726;border:none;padding:5px 14px;border-radius:6px;font-weight:800;font-size:11px;cursor:pointer;">
-              ⬇️ ${choose('تنزيل PPTX الأصلي', 'Download PPTX')}
+              ${icon('download', 13)} ${choose('تنزيل PPTX الأصلي', 'Download PPTX')}
             </button>
           </div>
         </div>
@@ -1723,27 +1723,27 @@ export async function openDocumentPreviewModal(docId) {
         <!-- Zip Header -->
         <div style="background:#d97706;color:#ffffff;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
           <div style="display:flex;align-items:center;gap:12px;">
-            <div style="display:flex;align-items:center;justify-content:center;background:#ffffff;color:#d97706;width:32px;height:32px;border-radius:6px;font-weight:900;font-size:16px;">📦</div>
+            <div style="display:flex;align-items:center;justify-content:center;background:#ffffff;color:#d97706;width:32px;height:32px;border-radius:6px;font-weight:900;font-size:16px;">${icon('package', 18)}</div>
             <div>
               <div style="font-weight:800;font-size:15px;">${esc(doc.originalName)}</div>
               <div style="font-size:12px;opacity:0.9;">Archive Deliverable Package • ${sizeFormatted}</div>
             </div>
           </div>
-          <button type="button" class="btn btn-sm" id="zip-download-btn" style="background:#ffffff;color:#d97706;border:none;padding:6px 16px;border-radius:6px;font-weight:800;cursor:pointer;">
-            ⬇️ ${choose('تنزيل كامل الحزمة المضغوطة', 'Download Full Archive')}
+          <button type="button" class="btn btn-sm" id="zip-download-btn" style="background:#ffffff;color:#d97706;border:none;padding:6px 16px;border-radius:6px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:6px;">
+            ${icon('download', 13)} ${choose('تنزيل كامل الحزمة المضغوطة', 'Download Full Archive')}
           </button>
         </div>
 
         <!-- Archive Workspace Viewport -->
         <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px;text-align:center;">
           <div style="max-width:540px;">
-            <div style="font-size:48px;margin-bottom:16px;">📦</div>
+            <div style="margin-bottom:16px;color:#d97706;display:flex;justify-content:center;">${icon('package', 48)}</div>
             <h3 style="color:var(--text, #0f172a);font-size:18px;font-weight:800;margin:0 0 8px 0;">${esc(doc.originalName)}</h3>
             <p style="color:#64748b;font-size:13px;line-height:1.6;margin:0 0 24px 0;">
               ${choose('ملف أرشيف مضغوط حقيقي معتمد. يحتوي على كامل مخرجات المشروع الهندسية جاهزة للتنزيل وفك الضغط.', 'Authentic archive deliverable. Ready for direct binary download and local extraction.')}
             </p>
-            <button type="button" class="btn btn-primary" id="zip-cta-download" style="padding:10px 22px;border-radius:8px;font-weight:800;background:#d97706;color:#fff;border:none;cursor:pointer;">
-              ⬇️ ${choose('تنزيل الحزمة المضغوطة الآن', 'Download Archive Now')} (${sizeFormatted})
+            <button type="button" class="btn btn-primary" id="zip-cta-download" style="padding:10px 22px;border-radius:8px;font-weight:800;background:#d97706;color:#fff;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:6px;">
+              ${icon('download', 14)} ${choose('تنزيل الحزمة المضغوطة الآن', 'Download Archive Now')} (${sizeFormatted})
             </button>
           </div>
         </div>
@@ -1768,8 +1768,8 @@ export async function openDocumentPreviewModal(docId) {
         ${choose('هذا المستند المعماري جاهز للتنزيل المباشر أو الفتح عبر التطبيق الهندسي المختص.', 'This architectural document is ready for direct download or local desktop review.')}
       </p>
       <div style="display:flex;gap:12px;">
-        <button type="button" class="btn btn-primary" id="fallback-download-btn" style="padding:10px 24px;border-radius:8px;font-weight:800;">
-          ⬇️ ${choose('تنزيل الملف الآن', 'Download File')} (${sizeFormatted})
+        <button type="button" class="btn btn-primary" id="fallback-download-btn" style="padding:10px 24px;border-radius:8px;font-weight:800;display:inline-flex;align-items:center;gap:6px;">
+          ${icon('download', 14)} ${choose('تنزيل الملف الآن', 'Download File')} (${sizeFormatted})
         </button>
       </div>
     </div>

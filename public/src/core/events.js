@@ -385,7 +385,7 @@ export async function handleSubmit(event) {
           state.data.company.custom_fields.whatsapp = res.config;
         }
       }
-      showToast(choose('تم حفظ إعدادات تنبيهات واتساب بنجاح ✅', 'WhatsApp alert settings saved successfully ✅'));
+      showToast(choose('تم حفظ إعدادات تنبيهات واتساب بنجاح', 'WhatsApp alert settings saved successfully'));
       renderView();
       if (submitButton) submitButton.disabled = false;
       return;
@@ -454,7 +454,7 @@ export async function handleClick(event) {
         method: 'POST',
         body: JSON.stringify({ config: { serverUrl, apiKey, recipient, instanceName, provider } })
       });
-      showToast(res.message || choose('تم إرسال الرسالة بنجاح! 🚀', 'Test message sent successfully! 🚀'));
+      showToast(res.message || choose('تم إرسال الرسالة بنجاح!', 'Test message sent successfully!'));
     } catch (err) {
       showToast(err.message || choose('فشل إرسال رسالة الاختبار، تحقق من صحة البيانات.', 'Failed to send test alert.'), true);
     } finally {
@@ -494,7 +494,7 @@ export async function handleClick(event) {
     savePreferencesCookies({ theme: state.theme });
     document.documentElement.dataset.theme = state.theme;
     document.querySelectorAll('[data-action="toggle-theme"]').forEach(btn => {
-      btn.textContent = state.theme === 'dark' ? '☀️' : '🌙';
+      btn.innerHTML = icon(state.theme === 'dark' ? 'sun' : 'moon', 18);
     });
     return;
   }
@@ -579,7 +579,7 @@ export async function handleClick(event) {
         state.data = res.data;
         saveOfflineBootstrap(res.data);
         renderApp();
-        showToast(choose('تمت إعادة ضبط البيانات بنجاح ✨', 'Demo data reset successfully ✨'), false);
+        showToast(choose('تمت إعادة ضبط البيانات بنجاح', 'Demo data reset successfully'), false);
       }
     } catch (e) {
       showToast(e.message, true);
@@ -729,9 +729,9 @@ export async function handleClick(event) {
     event.stopPropagation();
     requestUniversalNotificationPermission().then(res => {
       if (res.status === 'granted') {
-        showToast(choose('تم تفعيل إشعارات المتصفح بنجاح! 🔔', 'Browser notifications enabled successfully! 🔔'));
+        showToast(choose('تم تفعيل إشعارات المتصفح بنجاح!', 'Browser notifications enabled successfully!'));
         dispatchUniversalNotification({
-          title: choose('فريق دارك للتصميم 📐', 'DARC Design Team 📐'),
+          title: choose('فريق دارك للتصميم', 'DARC Design Team'),
           body: choose('إشعارات المتصفح والنظام تعمل بنجاح الآن على هذا الجهاز.', 'Browser & system notifications are now active on this device.'),
           icon: '/favicon.ico'
         });
@@ -741,9 +741,9 @@ export async function handleClick(event) {
         // iOS Safari guidance modal presented
       } else {
         // Universal in-app alerts active
-        showToast(choose('التنبيهات التفاعلية والصوتية مفعلة بنجاح على هذا المتصفح 🔔', 'Interactive in-app alerts and sounds are active on this browser 🔔'));
+        showToast(choose('التنبيهات التفاعلية والصوتية مفعلة بنجاح على هذا المتصفح', 'Interactive in-app alerts and sounds are active on this browser'));
         dispatchUniversalNotification({
-          title: choose('فريق دارك للتصميم 📐', 'DARC Design Team 📐'),
+          title: choose('فريق دارك للتصميم', 'DARC Design Team'),
           body: choose('تم تفعيل التنبيهات الصوتية والتفاعلية بنجاح على هذا الجهاز.', 'Interactive alerts & sound notifications active on this device.'),
           icon: '/favicon.ico'
         });
@@ -761,8 +761,8 @@ export async function handleClick(event) {
   if (action === 'test-in-app-notification') {
     event.stopPropagation();
     dispatchUniversalNotification({
-      title: choose('تنبيه فحص النظام الصوتي 🔔', 'Audio & Haptic System Test 🔔'),
-      body: choose('النغمة التنبيهية والاهتزاز يعملان بنجاح على هذا الهاتف! 🚀', 'Chime and haptic vibration operating smoothly on this phone! 🚀'),
+      title: choose('تنبيه فحص النظام الصوتي', 'Audio & Haptic System Test'),
+      body: choose('النغمة التنبيهية والاهتزاز يعملان بنجاح على هذا الهاتف!', 'Chime and haptic vibration operating smoothly on this phone!'),
       icon: '/favicon.ico'
     });
     return;
@@ -773,13 +773,13 @@ export async function handleClick(event) {
     api('/api/notifications/test', {
       method: 'POST',
       body: JSON.stringify({
-        messageAr: 'إشعار فحص النظام المباشر — السيرفر والربط اللحظي يعملان بكفاءة 🚀',
-        messageEn: 'Live System Test — Backend and Realtime are operating smoothly 🚀'
+        messageAr: 'إشعار فحص النظام المباشر — السيرفر والربط اللحظي يعملان بكفاءة',
+        messageEn: 'Live System Test — Backend and Realtime are operating smoothly'
       })
     }).then((res) => {
-      showToast(choose('تم إرسال الإشعار من السيرفر بنجاح! 🔔', 'Test notification dispatched from server! 🔔'));
+      showToast(choose('تم إرسال الإشعار من السيرفر بنجاح!', 'Test notification dispatched from server!'));
 
-      const testTitle = res?.notification?.titleAr || choose('إشعار فحص النظام المباشر 🔔', 'Live System Test 🔔');
+      const testTitle = res?.notification?.titleAr || choose('إشعار فحص النظام المباشر', 'Live System Test');
       const testBody = res?.notification?.messageAr || choose('السيرفر والربط اللحظي يعملان بكفاءة على كافة الأجهزة!', 'Backend and realtime operating smoothly on all devices!');
 
       // Universal Device Notification (Web Audio + Haptics + ServiceWorker / Notification API / Toast)
@@ -804,17 +804,17 @@ export async function handleClick(event) {
   if (action === 'play-test-chime') {
     event.stopPropagation();
     playNotificationChime();
-    showToast(choose('تم تشغيل النغمة التنبيهية 🔔', 'Notification chime played 🔔'));
+    showToast(choose('تم تشغيل النغمة التنبيهية', 'Notification chime played'));
     return;
   }
   if (action === 'test-browser-notification') {
     event.stopPropagation();
     dispatchUniversalNotification({
-      title: choose('فريق دارك للتصميم — فحص التنبيه 🔔', 'DARC Design Team — Alert Test 🔔'),
-      body: choose('هذا اختبار لإشعار المتصفح والجوال — يعمل بنجاح فائق! 🚀', 'This is a test notification for browser & mobile — working smoothly! 🚀'),
+      title: choose('فريق دارك للتصميم — فحص التنبيه', 'DARC Design Team — Alert Test'),
+      body: choose('هذا اختبار لإشعار المتصفح والجوال — يعمل بنجاح فائق!', 'This is a test notification for browser & mobile — working smoothly!'),
       icon: '/favicon.ico'
     }).then(() => {
-      showToast(choose('تم إرسال إشعار الفحص بنجاح على هذا الجهاز! 📱🔔', 'Test alert dispatched successfully on this device! 📱🔔'));
+      showToast(choose('تم إرسال إشعار الفحص بنجاح على هذا الجهاز!', 'Test alert dispatched successfully on this device!'));
     });
     return;
   }
@@ -1118,18 +1118,18 @@ export async function handleClick(event) {
   }
   if (action === 'manual-sync') {
     if (typeof navigator !== 'undefined' && !navigator.onLine) {
-      showToast(choose('أنت في وضع عدم الاتصال حالياً. كافة العمليات محفوظة محلياً وستُرفع تلقائياً عند عودة النت 📡', 'You are currently offline. Changes are saved locally and will auto-sync on reconnect 📡'), false);
+      showToast(choose('أنت في وضع عدم الاتصال حالياً. كافة العمليات محفوظة محلياً وستُرفع تلقائياً عند عودة الاتصال.', 'You are currently offline. Changes are saved locally and will auto-sync on reconnect.'), false);
       return;
     }
     const pending = getPendingMutations();
     if (!pending.length) {
-      showToast(choose('جميع البيانات متزامنة ومحدثة بالكامل مع الخادم السحابي ✔️', 'All data is completely synchronized with cloud server ✔️'), false);
+      showToast(choose('جميع البيانات متزامنة ومحدثة بالكامل مع الخادم السحابي.', 'All data is completely synchronized with cloud server.'), false);
       return;
     }
     showToast(choose(`جاري مزامنة ${pending.length} عمليات معلقة مع السيرفر...`, `Syncing ${pending.length} pending actions with server...`), false);
     const res = await syncPendingMutations(api);
     if (res.synced > 0) {
-      showToast(choose(`تمت مزامنة ${res.synced} عمليات بنجاح! 🚀`, `Successfully synced ${res.synced} actions! 🚀`), false);
+      showToast(choose(`تمت مزامنة ${res.synced} عمليات بنجاح!`, `Successfully synced ${res.synced} actions!`), false);
       await loadData(); 
     if (state.data?.user?.customFields?.calendarSystem) {
       state.calendarSystem = state.data.user.customFields.calendarSystem;
@@ -1458,7 +1458,7 @@ export async function handleClick(event) {
       await fetchAnalyticsData(true);
       await loadData(true);
       renderApp();
-      showToast(choose('🚨 تم رصد استهلاك زائد بنجاح وإرسال إشعار فوري لمركز التنبيهات!', '🚨 Anomaly detected! Alert notification dispatched to Notification Center!'));
+      showToast(choose('تم رصد استهلاك زائد بنجاح وإرسال إشعار فوري لمركز التنبيهات!', 'Anomaly detected! Alert notification dispatched to Notification Center!'));
     } catch (e) {
       showToast(e.message, true);
     }
@@ -1500,7 +1500,7 @@ export async function handleClick(event) {
       await fetchDiagnosticsData(true);
       await loadData(true);
       renderView();
-      showToast(choose('🚨 تم رصد الخطأ وتوثيق خطوات المستخدم وإرسال بريد تنبيه للإدارة بنجاح!', '🚨 Incident recorded with stack trace and alert email sent to admin!'));
+      showToast(choose('تم رصد الخطأ وتوثيق خطوات المستخدم وإرسال بريد تنبيه للإدارة بنجاح!', 'Incident recorded with stack trace and alert email sent to admin!'));
     } catch (e) {
       showToast(e.message, true);
     }
@@ -1513,7 +1513,7 @@ export async function handleClick(event) {
     }
     try {
       const res = await api('/api/telemetry/test-email', { method: 'POST' });
-      showToast(choose('✉️ تم إرسال رسالة اختبار التنبيهات البريدية للإدارة بنجاح!', '✉️ Test alert email dispatched to admin successfully!'));
+      showToast(choose('تم إرسال رسالة اختبار التنبيهات البريدية للإدارة بنجاح!', 'Test alert email dispatched to admin successfully!'));
     } catch (e) {
       showToast(e.message, true);
     }
@@ -1541,7 +1541,7 @@ export async function handleClick(event) {
         await api(`/api/telemetry/incidents/${incId}/resolve`, { method: 'PATCH' });
         await fetchDiagnosticsData(true);
         renderView();
-        showToast(choose('تم تحديد المشكلة كمعالجة بنجاح ✅', 'Incident marked as resolved ✅'));
+        showToast(choose('تم تحديد المشكلة كمعالجة بنجاح', 'Incident marked as resolved'));
       } catch (e) {
         showToast(e.message, true);
       }
@@ -1776,7 +1776,7 @@ export function handleInput(event) {
       if (matchesCollective) {
         itemsHtml += `
           <div class="mention-option collective-mention" data-username="all" style="padding:8px 12px;cursor:pointer;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--line);background:rgba(20,184,166,0.06);">
-            <div style="width:28px;height:28px;border-radius:50%;background:var(--brand-teal);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;">📢</div>
+            <div style="width:28px;height:28px;border-radius:50%;background:var(--brand-teal);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;">${icon('megaphone', 14)}</div>
             <div style="display:flex;flex-direction:column;gap:1px;text-align:start;">
               <strong style="font-size:12px;color:var(--brand-teal);">@all · ${choose('الكل / الجميع (منشن لكافة الفريق والمدير)', 'Everyone (Team & Management)')}</strong>
               <span style="font-size:10px;color:var(--muted);">${choose('إرسال تنبيه مباشر لكل أعضاء المشروع والإدارة عبر واتساب', 'Direct WhatsApp alert to all project members & managers')}</span>
@@ -1886,7 +1886,7 @@ export async function handleChange(event) {
         body: JSON.stringify({ status: newStatus })
       });
       doc.status = newStatus;
-      showToast(choose('تم تحديث حالة المخطط بنجاح ✅', 'Drawing status updated ✅'));
+      showToast(choose('تم تحديث حالة المخطط بنجاح', 'Drawing status updated'));
       await refreshView(true);
     } catch (err) {
       showToast(err.message, true);
@@ -2258,7 +2258,7 @@ export function getOrCreateFloatingUploadWidget({ projectName, taskName, totalFi
         </div>
         <div style="display:flex;align-items:center;gap:6px;">
           <button id="fum-minimize-btn" type="button" style="background:transparent;border:none;color:var(--ink-soft);cursor:pointer;padding:2px 6px;font-size:13px;line-height:1;border-radius:4px;" title="${choose('تصغير / توسيع', 'Minimize / Expand')}">—</button>
-          <button id="fum-close-btn" type="button" style="background:transparent;border:none;color:var(--ink-soft);cursor:pointer;padding:2px 6px;font-size:15px;line-height:1;border-radius:4px;display:none;" title="${choose('إغلاق', 'Close')}">✕</button>
+          <button id="fum-close-btn" type="button" style="background:transparent;border:none;color:var(--ink-soft);cursor:pointer;padding:2px 6px;font-size:13px;line-height:1;border-radius:4px;display:none;" title="${choose('إغلاق', 'Close')}">${icon('close', 13)}</button>
         </div>
       </div>
       <div id="fum-body" style="padding:12px 14px;display:flex;flex-direction:column;gap:9px;">
@@ -2928,7 +2928,7 @@ export async function init() {
             state.theme = e.matches ? 'dark' : 'light';
             document.documentElement.dataset.theme = state.theme;
             const themeBtn = document.querySelector('[data-action="toggle-theme"]');
-            if (themeBtn) themeBtn.textContent = state.theme === 'dark' ? '☀️' : '🌙';
+            if (themeBtn) themeBtn.innerHTML = icon(state.theme === 'dark' ? 'sun' : 'moon', 18);
           }
         } catch (err) {}
       });

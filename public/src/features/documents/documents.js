@@ -151,10 +151,10 @@ export function renderDocuments() {
                     <div class="doc-status-cell">
                       ${canManageStatus ? `
                         <select class="select-compact doc-status-select" data-action="change-doc-status" data-doc-id="${esc(doc.id)}" style="font-size:11px;font-weight:700;padding:4px 8px;border-radius:8px;border:1px solid var(--line);background:var(--surface);cursor:pointer;">
-                          <option value="draft" ${doc.status === 'draft' ? 'selected' : ''}>📝 ${choose('مسودة عمل', 'Draft')}</option>
-                          <option value="review" ${doc.status === 'review' ? 'selected' : ''}>🔍 ${choose('قيد المراجعة', 'Review')}</option>
-                          <option value="approved" ${doc.status === 'approved' ? 'selected' : ''}>✅ ${choose('معتمد للتنفيذ', 'Approved')}</option>
-                          <option value="superseded" ${doc.status === 'superseded' ? 'selected' : ''}>⏳ ${choose('مستبدل بنسخة أحدث', 'Superseded')}</option>
+                          <option value="draft" ${doc.status === 'draft' ? 'selected' : ''}>${choose('مسودة عمل', 'Draft')}</option>
+                          <option value="review" ${doc.status === 'review' ? 'selected' : ''}>${choose('قيد المراجعة', 'Review')}</option>
+                          <option value="approved" ${doc.status === 'approved' ? 'selected' : ''}>${choose('معتمد للتنفيذ', 'Approved')}</option>
+                          <option value="superseded" ${doc.status === 'superseded' ? 'selected' : ''}>${choose('مستبدل بنسخة أحدث', 'Superseded')}</option>
                         </select>
                       ` : `
                         <span class="status-badge ${esc(doc.status || 'draft')}" style="font-size:11px;">
@@ -230,22 +230,22 @@ export function openUploadDrawingModal(preselectedProjectId = null) {
         <div class="field">
           <label style="font-size:12px;font-weight:700;">${choose('التخصص الهندسي', 'Engineering Discipline')}</label>
           <select id="drawing-upload-discipline" style="width:100%;min-height:44px;padding:8px 12px 8px 36px;font-size:13px;line-height:1.6;border:1px solid var(--line);border-radius:10px;background-color:var(--surface);color:var(--ink);box-sizing:border-box;">
-            <option value="معماري">🏛️ ${choose('معماري (Architectural)', 'Architectural')}</option>
-            <option value="إنشائي">🏗️ ${choose('إنشائي (Structural)', 'Structural')}</option>
-            <option value="كهرباء">⚡ ${choose('كهرباء (Electrical)', 'Electrical')}</option>
-            <option value="ميكانيك وتكييف">🌡️ ${choose('ميكانيك وتكييف (HVAC)', 'HVAC')}</option>
-            <option value="سباكة وصحي">💧 ${choose('سباكة وصحي (Plumbing)', 'Plumbing')}</option>
-            <option value="مخرجات ثلاثية الأبعاد">📐 ${choose('3D / BIM (Revit/SketchUp)', '3D / BIM')}</option>
-            <option value="عام">📁 ${choose('مستندات عامة ومواصفات', 'General Specs')}</option>
+            <option value="معماري">${choose('معماري (Architectural)', 'Architectural')}</option>
+            <option value="إنشائي">${choose('إنشائي (Structural)', 'Structural')}</option>
+            <option value="كهرباء">${choose('كهرباء (Electrical)', 'Electrical')}</option>
+            <option value="ميكانيك وتكييف">${choose('ميكانيك وتكييف (HVAC)', 'HVAC')}</option>
+            <option value="سباكة وصحي">${choose('سباكة وصحي (Plumbing)', 'Plumbing')}</option>
+            <option value="مخرجات ثلاثية الأبعاد">${choose('3D / BIM (Revit/SketchUp)', '3D / BIM')}</option>
+            <option value="عام">${choose('مستندات عامة ومواصفات', 'General Specs')}</option>
           </select>
         </div>
 
         <div class="field">
           <label style="font-size:12px;font-weight:700;">${choose('الحالة الهندسية المبدئية', 'Initial Approval Status')}</label>
           <select id="drawing-upload-status" style="width:100%;min-height:44px;padding:8px 12px 8px 36px;font-size:13px;line-height:1.6;border:1px solid var(--line);border-radius:10px;background-color:var(--surface);color:var(--ink);box-sizing:border-box;">
-            <option value="draft">📝 ${choose('مسودة عمل (Draft)', 'Draft')}</option>
-            <option value="review" selected>🔍 ${choose('قيد المراجعة الفنية (Under Review)', 'Under Review')}</option>
-            <option value="approved">✅ ${choose('معتمد للتنفيذ (Approved for Construction)', 'Approved for Construction')}</option>
+            <option value="draft">${choose('مسودة عمل (Draft)', 'Draft')}</option>
+            <option value="review" selected>${choose('قيد المراجعة الفنية (Under Review)', 'Under Review')}</option>
+            <option value="approved">${choose('معتمد للتنفيذ (Approved for Construction)', 'Approved for Construction')}</option>
           </select>
         </div>
       </div>

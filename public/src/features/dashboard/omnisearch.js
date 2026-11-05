@@ -226,7 +226,7 @@ export function renderOmnisearchResults(rawQuery) {
           type: 'task',
           id: t.id,
           title: choose(t.titleAr, t.titleEn),
-          sub: t.dueDate ? `📅 ${dateLabel(t.dueDate)}` : (choose(t.categoryAr, t.categoryEn) || ''),
+          sub: t.dueDate ? `${dateLabel(t.dueDate)}` : (choose(t.categoryAr, t.categoryEn) || ''),
           badge: `${t.progress}%`,
           icon: 'checklist'
         });

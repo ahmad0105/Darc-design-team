@@ -31,8 +31,8 @@ export const NOTIFICATION_CATALOG = {
     category: 'tasks',
     icon: 'alert',
     color: 'red',
-    titleAr: 'مهمة متوقفة ⚠️',
-    titleEn: 'Task Blocked ⚠️',
+    titleAr: 'مهمة متوقفة',
+    titleEn: 'Task Blocked',
     badgeTextAr: 'فتح المهمة',
     badgeTextEn: 'Open Task'
   },
@@ -131,8 +131,8 @@ export const NOTIFICATION_CATALOG = {
     category: 'system',
     icon: 'alert',
     color: 'red',
-    titleAr: 'تصعيد مهمة ونظام 🚨',
-    titleEn: 'Escalation Alert 🚨',
+    titleAr: 'تصعيد مهمة ونظام',
+    titleEn: 'Escalation Alert',
     badgeTextAr: 'التفاصيل',
     badgeTextEn: 'Details'
   },

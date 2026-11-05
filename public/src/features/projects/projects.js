@@ -88,7 +88,7 @@ export function checkProjectCodeStatus(code, currentProjectId = null) {
     return {
       valid: false,
       status: 'error',
-      message: choose(`⚠️ الكود مستخدم بالفعل لمشروع: "${choose(activeConflict.nameAr, activeConflict.nameEn)}"`, `⚠️ Code is already used by: "${choose(activeConflict.nameAr, activeConflict.nameEn)}"`)
+      message: choose(`الكود مستخدم بالفعل لمشروع: "${choose(activeConflict.nameAr, activeConflict.nameEn)}"`, `Code is already used by: "${choose(activeConflict.nameAr, activeConflict.nameEn)}"`)
     };
   }
 
@@ -98,14 +98,14 @@ export function checkProjectCodeStatus(code, currentProjectId = null) {
     return {
       valid: false,
       status: 'warning',
-      message: choose(`⚠️ محجوز لمشروع في سلة المحذوفات (فترة الـ 30 يوماً): "${choose(trashConflict.nameAr, trashConflict.nameEn)}"`, `⚠️ Reserved for a project in trash (30-day window): "${choose(trashConflict.nameAr, trashConflict.nameEn)}"`)
+      message: choose(`محجوز لمشروع في سلة المحذوفات (فترة الـ 30 يوماً): "${choose(trashConflict.nameAr, trashConflict.nameEn)}"`, `Reserved for a project in trash (30-day window): "${choose(trashConflict.nameAr, trashConflict.nameEn)}"`)
     };
   }
 
   return {
     valid: true,
     status: 'success',
-    message: choose('✓ كود مميز ومتاح للاستخدام', '✓ Unique and available')
+    message: choose('كود مميز ومتاح للاستخدام', 'Unique and available')
   };
 }
 
@@ -177,7 +177,7 @@ export function renderProjectTeamAvatars(members, maxVisible = 4, clickable = tr
   }
 
   if (externalMembers && externalMembers.length > 0) {
-    html += `<span class="mini-badge" style="font-size:10px;padding:2px 6px;background:var(--surface-soft);color:var(--teal);border:1px solid var(--line);border-radius:999px;" title="${esc(externalMembers.join('، '))}">🌐 +${externalMembers.length} ${choose('خارجي', 'ext')}</span>`;
+    html += `<span class="mini-badge" style="font-size:10px;padding:2px 6px;background:var(--surface-soft);color:var(--teal);border:1px solid var(--line);border-radius:999px;display:inline-flex;align-items:center;gap:3px;" title="${esc(externalMembers.join('، '))}">${icon('globe', 11)} +${externalMembers.length} ${choose('خارجي', 'ext')}</span>`;
   }
 
   // Hover Tooltip: fixed width, single horizontal row with smooth horizontal scrollbar
@@ -198,18 +198,18 @@ export function renderProjectTeamAvatars(members, maxVisible = 4, clickable = tr
     
     ${externalMembers && externalMembers.length > 0 ? `
       <hr style="border:0;border-top:1px dashed var(--line);margin:8px 0 6px;" />
-      <strong style="display:block;font-size:11px;color:var(--teal);margin-bottom:6px;">🌐 ${choose('الشركاء والمتعاونون الخارجيون', 'External Partners')} (${externalMembers.length})</strong>
+      <strong style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--teal);margin-bottom:6px;">${icon('globe', 12)} ${choose('الشركاء والمتعاونون الخارجيون', 'External Partners')} (${externalMembers.length})</strong>
       <div style="display:flex;flex-wrap:nowrap;align-items:center;gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:thin;">
         ${externalMembers.map(ext => `
           <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--ink);background:var(--surface-soft);border:1px solid var(--line);border-radius:8px;padding:4px 8px;flex-shrink:0;white-space:nowrap;">
-            <span style="font-size:11px;color:var(--teal);">🌐</span>
+            <span style="display:inline-flex;align-items:center;color:var(--teal);">${icon('globe', 11)}</span>
             <span style="font-weight:500;">${esc(ext)}</span>
           </div>
         `).join('')}
       </div>
     ` : ''}
 
-    ${clickable ? `<div style="margin-top:6px;padding-top:4px;border-top:1px dashed var(--line);font-size:9px;color:var(--teal);">${choose('💡 اضغط على أي عضو لفلترة مهامه', '💡 Click member to filter tasks')}</div>` : ''}
+    ${clickable ? `<div style="margin-top:6px;padding-top:4px;border-top:1px dashed var(--line);font-size:9px;color:var(--teal);display:flex;align-items:center;gap:4px;">${icon('bulb', 11)} <span>${choose('اضغط على أي عضو لفلترة مهامه', 'Click member to filter tasks')}</span></div>` : ''}
   </div>`;
 
   html += `</div>`;
@@ -241,7 +241,7 @@ export function renderProjectTimelineBar(project) {
           <strong>${choose('المؤشر الزمني للمشروع', 'Project Schedule Elapsed')}</strong>: 
           <span style="color:${barColor};font-weight:bold;">${isTimeOverdue ? choose('انتهى موعد التسليم!', 'Deadline passed!') : choose(`مضى ${elapsedPercent}% من الوقت`, `${elapsedPercent}% time elapsed`)}</span>
         </span>
-        <span style="color:var(--muted);font-size:10px;">${dateLabel(project.startDate)} ➔ ${dateLabel(project.dueDate)}</span>
+        <span style="color:var(--muted);font-size:10px;display:inline-flex;align-items:center;gap:4px;">${dateLabel(project.startDate)} <span style="opacity:0.6;">→</span> ${dateLabel(project.dueDate)}</span>
       </div>
       <div class="progress-track" style="height:6px;background:var(--line);border-radius:6px;overflow:hidden;position:relative;">
         <div class="progress-fill" style="width:${elapsedPercent}%;background:${barColor};height:100%;border-radius:6px;transition:width 0.4s ease;"></div>
@@ -284,7 +284,7 @@ export function renderProjectCardTeamAvatars(members = [], externalMembers = [],
   }
 
   if (externalMembers && externalMembers.length > 0 && remaining <= 0) {
-    html += `<span style="margin-inline-start:4px;font-size:9.5px;color:var(--teal);background:var(--mint);padding:1px 5px;border-radius:999px;font-weight:700;">🌐</span>`;
+    html += `<span style="margin-inline-start:4px;font-size:9.5px;color:var(--teal);background:var(--mint);padding:1px 5px;border-radius:999px;font-weight:700;display:inline-flex;align-items:center;">${icon('globe', 10)}</span>`;
   }
   html += `</div>`;
 
@@ -308,7 +308,7 @@ export function renderProjectCardTeamAvatars(members = [], externalMembers = [],
       </div>
       ${externalMembers && externalMembers.length > 0 ? `
         <div style="margin-top:8px;padding-top:6px;border-top:1px dashed var(--line);">
-          <span style="font-size:9.5px;font-weight:700;color:var(--teal);display:block;margin-bottom:4px;">🌐 ${choose('الشركاء الخارجيون', 'External Partners')} (${externalMembers.length})</span>
+          <span style="font-size:9.5px;font-weight:700;color:var(--teal);display:flex;align-items:center;gap:4px;margin-bottom:4px;">${icon('globe', 11)} ${choose('الشركاء الخارجيون', 'External Partners')} (${externalMembers.length})</span>
           <div style="display:flex;flex-direction:column;gap:3px;">
             ${externalMembers.map(ext => `
               <div style="font-size:10.5px;color:var(--ink-soft);padding:2px 4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
@@ -491,7 +491,7 @@ export function renderProjectOverviewTab(project, tasks, members, externalMember
           ${externalMembers && externalMembers.length > 0 ? `
             <hr style="border:0;border-top:1px dashed var(--line);margin:14px 0 10px;" />
             <span style="font-size:11px;color:var(--teal);font-weight:bold;margin-bottom:8px;display:flex;align-items:center;gap:6px;">
-              🌐 ${choose('الشركاء والمتعاونون الخارجيون:', 'External Partners & Collaborators:')}
+              ${icon('globe', 13)} ${choose('الشركاء والمتعاونون الخارجيون:', 'External Partners & Collaborators:')}
             </span>
             <div style="display:flex;flex-direction:column;gap:8px;max-height:180px;overflow-y:auto;">
               ${externalMembers.map(extName => {
@@ -502,7 +502,7 @@ export function renderProjectOverviewTab(project, tasks, members, externalMember
     return `
                   <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:var(--surface-soft);border-radius:8px;font-size:12px;">
                     <div style="display:flex;align-items:center;gap:8px;">
-                      <span style="font-size:14px;">🌐</span>
+                      <span style="color:var(--teal);display:inline-flex;align-items:center;">${icon('globe', 14)}</span>
                       <div>
                         <strong style="display:block;font-size:12px;color:var(--ink);">${esc(extName)}</strong>
                         <span style="font-size:10px;color:var(--muted);">${choose('شريك / جهة خارجية', 'External Partner')}</span>
@@ -849,7 +849,7 @@ export function openProjectModal(project = null) {
       <input type="hidden" name="memberIds" id="project-members-input" value="${esc(JSON.stringify(currentMemberIds))}" />
 
       <div class="form-grid">
-        <!-- 🏢 القسم 1: البيانات الأساسية للمشروع -->
+        <!-- Section 1: Core Project Information -->
         <div style="font-size:12px;font-weight:700;color:var(--teal);margin:4px 0 6px;grid-column:1/-1;border-bottom:1px solid var(--line);padding-bottom:4px;display:flex;align-items:center;gap:6px;">
           ${icon('building', 14)} <span>${choose('البيانات الأساسية للمشروع', 'Core Project Information')}</span>
         </div>
@@ -866,7 +866,7 @@ export function openProjectModal(project = null) {
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
             <label style="margin:0;">${t('projectCode')} *</label>
             <button type="button" id="btn-regenerate-code" style="background:none;border:none;font-size:11px;color:var(--teal);cursor:pointer;padding:0;display:inline-flex;align-items:center;gap:3px;" title="${choose('توليد كود تسلسلي هندسي سنوي تلقائياً (معيار ISO DARC-YY-###)', 'Auto-generate annual ISO project code (DARC-YY-###)')}">
-              <span>🔄</span> <span>${choose('توليد تلقائي (ISO)', 'Auto-generate (ISO)')}</span>
+              <span style="display:inline-flex;align-items:center;">${icon('refresh', 12)}</span> <span>${choose('توليد تلقائي (ISO)', 'Auto-generate (ISO)')}</span>
             </button>
           </div>
           <input name="code" id="project-code-input" value="${esc(defaultCode)}" placeholder="DARC-26-001" autocomplete="off" required style="font-family:monospace;font-weight:700;text-transform:uppercase;" />
@@ -879,7 +879,7 @@ export function openProjectModal(project = null) {
           <input name="clientAr" value="${esc(project?.clientAr || '')}" placeholder="${choose('اسم العميل أو الجهة المالكة', 'Client or owning entity')}" />
         </div>
 
-        <!-- 📅 القسم 2: الجدولة والإدارة -->
+        <!-- Section 2: Management & Schedule -->
         <div style="font-size:12px;font-weight:700;color:var(--teal);margin:16px 0 6px;grid-column:1/-1;padding-top:12px;border-top:1px solid var(--line);display:flex;align-items:center;gap:6px;">
           ${icon('calendar', 14)} <span>${choose('الجدولة والإدارة', 'Management & Schedule')}</span>
         </div>
@@ -919,7 +919,7 @@ export function openProjectModal(project = null) {
           <input type="date" name="dueDate" value="${esc((project?.dueDate || '').split('T')[0])}" />
         </div>
 
-        <!-- 👥 القسم 3: أعضاء فريق المشروع والمشاركون -->
+        <!-- Section 3: Project Team Members -->
         <div style="font-size:12px;font-weight:700;color:var(--teal);margin:16px 0 6px;grid-column:1/-1;padding-top:12px;border-top:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;">
           <div style="display:flex;align-items:center;gap:6px;">
             ${icon('users', 14)} <span>${choose('أعضاء فريق المشروع والمشاركون', 'Project Team Members & Collaborators')}</span>
@@ -943,7 +943,7 @@ export function openProjectModal(project = null) {
           </div>
         </div>
 
-        <!-- 📝 القسم 4: نطاق المشروع والملاحظات -->
+        <!-- Section 4: Scope & Notes -->
         <div style="font-size:12px;font-weight:700;color:var(--teal);margin:16px 0 6px;grid-column:1/-1;padding-top:12px;border-top:1px solid var(--line);display:flex;align-items:center;gap:6px;">
           ${icon('document', 14)} <span>${choose('نطاق المشروع والملاحظات', 'Scope & Notes')}</span>
         </div>
@@ -1032,7 +1032,7 @@ export function openProjectModal(project = null) {
               <div style="font-weight:600;color:var(--ink);">${esc(choose(u.name, u.nameEn || u.name))}</div>
               <div style="font-size:10px;color:var(--muted);">${esc(u.roleId || '')}</div>
             </div>
-            <span style="font-size:11px;color:var(--teal);">➕ ${choose('إضافة', 'Add')}</span>
+            <span style="font-size:11px;color:var(--teal);display:inline-flex;align-items:center;gap:3px;">${icon('plus', 11)} ${choose('إضافة', 'Add')}</span>
           </div>
         `).join('');
 
@@ -1731,7 +1731,7 @@ export function exportProjectPDF(projectId, isClientFacing = false) {
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-inline-end:4px;"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 21h5v-5"/></svg>${isClientFacing ? choose('التبديل للتقرير الفني الشامل', 'Switch to Technical Report') : choose('التبديل لتقرير المالك والعميل', 'Switch to Client Report')}
           </button>
           <button class="btn-toolbar-ghost" onclick="window.close()">
-            ✕ ${choose('إغلاق', 'Close')}
+            <span style="display:inline-flex;align-items:center;gap:4px;">${icon('close', 12)} ${choose('إغلاق', 'Close')}</span>
           </button>
         </div>
       </div>
@@ -2031,7 +2031,7 @@ export function exportPortfolioPDF() {
         </div>
         <div style="display:flex;gap:8px;">
           <button class="btn-toolbar" onclick="window.print()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-inline-end:4px;"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>${choose('طباعة / حفظ كـ PDF', 'Print / Save as PDF')}</button>
-          <button class="btn-toolbar-ghost" onclick="window.close()">✕ ${choose('إغلاق', 'Close')}</button>
+          <button class="btn-toolbar-ghost" onclick="window.close()"><span style="display:inline-flex;align-items:center;gap:4px;">${icon('close', 12)} ${choose('إغلاق', 'Close')}</span></button>
         </div>
       </div>
 
@@ -2154,7 +2154,7 @@ export function renderInPagePrintModal(printHtml) {
           <button type="button" class="btn btn-primary btn-sm" id="btn-print-iframe" style="display:flex;align-items:center;gap:6px;">
             ${icon('printer', 14)} ${choose('طباعة / حفظ كـ PDF', 'Print / Save as PDF')}
           </button>
-          <button type="button" class="btn btn-ghost btn-sm" id="btn-close-print-modal">✕</button>
+          <button type="button" class="btn btn-ghost btn-sm" id="btn-close-print-modal">${icon('close', 14)}</button>
         </div>
       </div>
       <div style="flex:1;overflow:hidden;position:relative;background:#ffffff;">
