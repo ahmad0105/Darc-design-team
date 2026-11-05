@@ -604,6 +604,7 @@ a { color: inherit; text-decoration: none; }
 .search-box {
   min-width: 240px;
   height: 38px;
+  min-height: 38px;
   box-sizing: border-box;
   display: inline-flex;
   align-items: center;
@@ -793,9 +794,11 @@ select, .filter-select, .select-compact {
   border-bottom: 1px solid var(--line);
 }
 .tasks-search-box {
-  flex: 1;
+  flex: 1 1 240px;
   max-width: 380px;
   min-width: 220px;
+  height: 40px;
+  min-height: 40px;
 }
 .segmented-control {
   display: inline-flex;
@@ -2708,10 +2711,12 @@ body.is-ltr .toast-stack {
     gap: 10px !important;
   }
   .tasks-search-box {
+    flex: none !important;
     width: 100% !important;
     max-width: 100% !important;
     min-width: 0 !important;
     height: 42px !important;
+    min-height: 42px !important;
     box-sizing: border-box !important;
   }
   .tasks-search-box input {
@@ -2948,7 +2953,15 @@ body.is-ltr .toast-stack {
 
   /* Tasks 2-Tier Toolbar Responsive */
   .tasks-toolbar-row-top { flex-direction: column-reverse; align-items: stretch; gap: 10px; }
-  .tasks-search-box { max-width: 100%; width: 100%; }
+  .tasks-search-box {
+    flex: none !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    height: 42px !important;
+    min-height: 42px !important;
+    box-sizing: border-box !important;
+  }
   .segmented-control { width: 100%; overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; scrollbar-width: none; justify-content: flex-start; }
   .segmented-control::-webkit-scrollbar { display: none; }
   .segmented-tab { flex-shrink: 0; }
