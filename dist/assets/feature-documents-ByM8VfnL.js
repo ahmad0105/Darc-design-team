@@ -681,24 +681,24 @@ import{t as se}from"./rolldown-runtime-BQ-_32WO.js";import{$ as pe,Dt as z,F as 
       </div>
     </div>
   `,document.getElementById("fallback-download-btn")?.addEventListener("click",()=>F(i.id))}}var $e=se({openUploadDrawingModal:()=>ye,renderDocuments:()=>me});function me(){const n=z.data?.documents||[],i=z.data?.projects||[],f=z.data?.tasks||[],o=(z.searches?.documents||"").trim().toLowerCase(),u=z.docProjectFilter||"all",x=z.data?.user?.id,g=pe(),I=g||X("review_tasks")||X("approve_tasks")||X("edit_tasks"),A=new Set(f.filter(a=>!a.deletedAt).map(a=>a.id)),N=new Set(i.filter(a=>!a.deletedAt).map(a=>a.id)),R=n.filter(a=>!(a.deletedAt||a.projectId&&!N.has(a.projectId)||!a.projectId&&a.taskId&&!A.has(a.taskId)||u!=="all"&&a.projectId!==u||o&&!(a.originalName||"").toLowerCase().includes(o))).sort((a,P)=>new Date(P.createdAt||0)-new Date(a.createdAt||0)),_=R.reduce((a,P)=>a+(P.size||0),0),j=_>1073741824?(_/1073741824).toFixed(1)+" GB":_>1048576?(_/1048576).toFixed(1)+" MB":Math.round(_/1024)+" KB";return`
-    <div class="page-head" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;">
+    <div class="page-head">
       <div>
         <p class="eyebrow">${e("مركز المخرجات والمخططات الهندسية","DELIVERABLES & BLUEPRINTS CENTER")}</p>
-        <h2>${Y("documents")}</h2>
-        <p class="intro">${e("إدارة وتحميل ومعاينة المخططات المعمارية والإنشائية، ومتابعة إصدارات المخرجات (V1, V2, V3) واعتماداتها.","Manage, upload, and preview architectural drawings, track revisions (V1, V2, V3), and engineering approvals.")}</p>
+        <h1>${Y("documents")}</h1>
+        <p>${e("إدارة وتحميل ومعاينة المخططات المعمارية والإنشائية، ومتابعة إصدارات المخرجات (V1, V2, V3) واعتماداتها.","Manage, upload, and preview architectural drawings, track revisions (V1, V2, V3), and engineering approvals.")}</p>
       </div>
-      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+      <div class="page-actions">
         ${X("upload_documents")||g?`
-          <button class="btn btn-primary btn-sm" data-action="open-upload-drawing-modal" style="display:inline-flex;align-items:center;gap:7px;font-weight:700;box-shadow:0 2px 8px rgba(13,98,105,0.25);">
-            ${p("upload",14)}
+          <button class="btn btn-primary" data-action="open-upload-drawing-modal" style="display:inline-flex;align-items:center;gap:7px;">
+            ${p("upload",15)}
             <span>${e("رفع مخطط / ملف جديد","Upload Drawing / File")}</span>
           </button>
         `:""}
         <button class="btn btn-secondary btn-sm" data-action="go-to-trash" style="display:inline-flex;align-items:center;gap:6px;" title="${e("الانتقال لسلة المحذوفات لاستعراض واستعادة الملفات والمشاريع المحذوفة","Go to trash bin to review and restore deleted files and projects")}">
-          ${p("trash",14)}
+          ${p("trash",15)}
           <span>${e("سلة المهملات","Trash")}</span>
         </button>
-        <span class="mini-badge badge-pulse" style="padding:6px 12px;font-weight:700;font-size:12px;">
+        <span class="mini-badge badge-pulse" style="padding:6px 12px;font-weight:700;font-size:12px;display:inline-flex;align-items:center;">
           ${R.length} ${e("مخطط / ملف","drawings")} (${j})
         </span>
       </div>

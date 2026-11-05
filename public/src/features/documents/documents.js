@@ -38,24 +38,24 @@ export function renderDocuments() {
       : Math.round(totalSize / 1024) + ' KB';
 
   return `
-    <div class="page-head" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;">
+    <div class="page-head">
       <div>
         <p class="eyebrow">${choose('مركز المخرجات والمخططات الهندسية', 'DELIVERABLES & BLUEPRINTS CENTER')}</p>
-        <h2>${t('documents')}</h2>
-        <p class="intro">${choose('إدارة وتحميل ومعاينة المخططات المعمارية والإنشائية، ومتابعة إصدارات المخرجات (V1, V2, V3) واعتماداتها.', 'Manage, upload, and preview architectural drawings, track revisions (V1, V2, V3), and engineering approvals.')}</p>
+        <h1>${t('documents')}</h1>
+        <p>${choose('إدارة وتحميل ومعاينة المخططات المعمارية والإنشائية، ومتابعة إصدارات المخرجات (V1, V2, V3) واعتماداتها.', 'Manage, upload, and preview architectural drawings, track revisions (V1, V2, V3), and engineering approvals.')}</p>
       </div>
-      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+      <div class="page-actions">
         ${(can('upload_documents') || userIsAdmin) ? `
-          <button class="btn btn-primary btn-sm" data-action="open-upload-drawing-modal" style="display:inline-flex;align-items:center;gap:7px;font-weight:700;box-shadow:0 2px 8px rgba(13,98,105,0.25);">
-            ${icon('upload', 14)}
+          <button class="btn btn-primary" data-action="open-upload-drawing-modal" style="display:inline-flex;align-items:center;gap:7px;">
+            ${icon('upload', 15)}
             <span>${choose('رفع مخطط / ملف جديد', 'Upload Drawing / File')}</span>
           </button>
         ` : ''}
         <button class="btn btn-secondary btn-sm" data-action="go-to-trash" style="display:inline-flex;align-items:center;gap:6px;" title="${choose('الانتقال لسلة المحذوفات لاستعراض واستعادة الملفات والمشاريع المحذوفة', 'Go to trash bin to review and restore deleted files and projects')}">
-          ${icon('trash', 14)}
+          ${icon('trash', 15)}
           <span>${choose('سلة المهملات', 'Trash')}</span>
         </button>
-        <span class="mini-badge badge-pulse" style="padding:6px 12px;font-weight:700;font-size:12px;">
+        <span class="mini-badge badge-pulse" style="padding:6px 12px;font-weight:700;font-size:12px;display:inline-flex;align-items:center;">
           ${filteredDocs.length} ${choose('مخطط / ملف', 'drawings')} (${totalSizeFormatted})
         </span>
       </div>
