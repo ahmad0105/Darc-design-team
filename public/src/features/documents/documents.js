@@ -62,9 +62,9 @@ export function renderDocuments() {
     </div>
 
     <!-- Filters Bar (Unified View Toolbar) -->
-    <div class="view-toolbar" style="margin-bottom:20px;">
-      <div class="view-toolbar-start" style="flex:1;">
-        <div class="search-box" style="flex:1;max-width:440px;">
+    <div class="view-toolbar documents-toolbar">
+      <div class="view-toolbar-start documents-toolbar-start">
+        <div class="search-box documents-search-box">
           ${icon('search', 15)}
           <input 
             type="search" 
@@ -75,16 +75,16 @@ export function renderDocuments() {
           />
         </div>
 
-        <div class="sort-box">
-          <span>${choose('المشروع:', 'Project:')}</span>
-          <select data-action="doc-project-filter" class="filter-select select-compact" style="min-width:180px;">
+        <div class="sort-box documents-filter-group">
+          <span class="documents-filter-label">${icon('building', 13)} ${choose('المشروع:', 'Project:')}</span>
+          <select data-action="doc-project-filter" class="filter-select select-compact documents-select">
             <option value="all" ${projectFilter === 'all' ? 'selected' : ''}>${choose('— جميع المشاريع —', '— All Projects —')}</option>
             ${projects.map(p => `<option value="${esc(p.id)}" ${projectFilter === p.id ? 'selected' : ''}>${esc(p.code)} - ${esc(choose(p.nameAr, p.nameEn))}</option>`).join('')}
           </select>
         </div>
       </div>
 
-      <div class="view-toolbar-end">
+      <div class="view-toolbar-end documents-toolbar-end">
         <span class="mini-badge" style="padding:8px 10px;color:var(--ink-soft);background:var(--surface-soft)">
           ${filteredDocs.length} ${choose('مخرجات', 'deliverables')}
         </span>

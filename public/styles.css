@@ -1355,25 +1355,97 @@ body.is-touch-dragging .dnd-edge-hotzone.is-active {
 .template-category-tab { display: flex; align-items: center; gap: 9px; padding: 10px; border: 0; border-radius: 10px; color: var(--ink-soft); background: transparent; text-align: start; font-size: 10px; font-weight: 800; }
 .template-category-tab:hover { background: #f5f9f8; }
 .template-category-tab.active { color: var(--teal); background: var(--mint); }
-.template-category-tab .category-icon { width: 25px; height: 25px; display: grid; place-items: center; border-radius: 8px; background: rgba(255,255,255,.65); font-size: 14px; }
+.template-category-tab .category-icon {
+  width: 25px;
+  height: 25px;
+  min-width: 25px;
+  min-height: 25px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: rgba(255,255,255,.65);
+  font-size: 14px;
+  flex-shrink: 0;
+  line-height: 1;
+  padding: 0;
+  box-sizing: border-box;
+}
+.template-category-tab .category-icon svg {
+  display: block;
+  margin: auto;
+  flex-shrink: 0;
+}
 .template-category-tab small { margin-inline-start: auto; color: var(--muted); font-size: 9px; }
 .template-section { margin-bottom: 22px; }
 .template-section-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-.template-section-head .category-icon { width: 31px; height: 31px; display: grid; place-items: center; border-radius: 10px; background: var(--mint); font-size: 16px; }
+.template-section-head .category-icon {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: var(--mint);
+  font-size: 16px;
+  flex-shrink: 0;
+  line-height: 1;
+  padding: 0;
+  box-sizing: border-box;
+}
+.template-section-head .category-icon svg {
+  display: block;
+  margin: auto;
+  flex-shrink: 0;
+}
 .template-section-head h3 { margin: 0; font-size: 13px; }
 .template-section-head span { color: var(--muted); font-size: 9px; }
 .template-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
 .template-item { display: flex; align-items: center; gap: 11px; padding: 12px; border: 1px solid var(--line); border-radius: 13px; background: #fff; transition: .2s border-color, .2s background; }
 .template-item:hover { border-color: #cde4df; background: #fbfefd; }
-.template-number { width: 30px; height: 30px; display: grid; place-items: center; flex: none; border-radius: 9px; color: var(--teal); background: #eaf7f4; font-size: 10px; font-weight: 900; }
+.template-number {
+  width: 30px;
+  height: 30px;
+  min-width: 30px;
+  min-height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  border-radius: 9px;
+  color: var(--teal);
+  background: #eaf7f4;
+  font-size: 10px;
+  font-weight: 900;
+  line-height: 1;
+  box-sizing: border-box;
+  padding: 0;
+}
 .template-copy { min-width: 0; flex: 1; }
 .template-copy strong, .template-copy span:not(.badge):not(.mini-badge):not(.role-badge):not(.role-system-badge):not(.stealth-dev-badge):not(.type-pill) { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .template-copy strong { font-size: 10px; }
 .template-copy span { margin-top: 4px; color: var(--muted); font-size: 9px; text-align: start; }
 .template-weight { color: var(--muted); font-size: 9px; }
-.template-action { width: 27px; height: 27px; display: grid; place-items: center; border: 0; border-radius: 8px; color: var(--teal); background: #f0f9f7; }
+.template-action {
+  width: 27px;
+  height: 27px;
+  min-width: 27px;
+  min-height: 27px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 8px;
+  color: var(--teal);
+  background: #f0f9f7;
+  padding: 0;
+  line-height: 1;
+  box-sizing: border-box;
+}
 .template-action:hover { background: var(--mint); }
-.template-action svg { width: 14px; height: 14px; }
+.template-action svg { width: 14px; height: 14px; display: block; margin: auto; }
 
 .team-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 13px; }
 .member-card { padding: 17px; border: 1px solid var(--line); border-radius: 17px; background: #fff; box-shadow: var(--shadow-sm); }
@@ -1408,12 +1480,87 @@ body.is-touch-dragging .dnd-edge-hotzone.is-active {
 .report-actions { margin-top: 0; }
 .report-action-buttons { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 .btn-report-action { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; padding: 8px 14px; border-radius: 9px; white-space: nowrap; }
-.report-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-.report-toolbar-start { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; flex: 1 1 380px; }
-.report-filter-item { display: flex; align-items: center; gap: 6px; min-width: 0; flex: 1 1 180px; }
-.report-filter-item span { font-size: 12px; color: var(--ink-soft); font-weight: 600; white-space: nowrap; }
-.report-select { min-width: 0; }
-.report-badge-count { white-space: nowrap; font-size: 11px; font-weight: 700; border-radius: 8px; }
+.report-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  min-height: auto;
+  height: auto;
+}
+.report-toolbar-start {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  flex: 1 1 380px;
+  min-height: auto;
+  height: auto;
+}
+.report-filter-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  flex: 1 1 180px;
+  min-height: auto;
+  height: auto;
+}
+.report-filter-item span, .report-filter-label {
+  font-size: 12px;
+  color: var(--ink-soft);
+  font-weight: 600;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.report-select {
+  min-width: 0;
+  height: 38px;
+}
+.report-badge-count {
+  white-space: nowrap;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 8px;
+}
+
+/* Documents Fluid Toolbar Engine */
+.documents-toolbar-start {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.documents-search-box {
+  flex: 1 1 320px;
+  max-width: 480px;
+  min-width: 220px;
+  height: 38px;
+}
+.documents-filter-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 220px;
+}
+.documents-filter-label {
+  font-size: 12px;
+  color: var(--ink-soft);
+  font-weight: 600;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.documents-select {
+  flex: 1 1 auto;
+  min-width: 180px;
+  height: 38px;
+}
 .report-tabs { display: flex; gap: 4px; margin-bottom: 20px; padding: 4px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
 .report-tabs::-webkit-scrollbar { display: none; }
 .discipline-icon-badge { width: 32px; height: 32px; border-radius: 8px; background: var(--mint); color: var(--teal); display: grid; place-items: center; flex-shrink: 0; }
@@ -2317,6 +2464,62 @@ body.is-ltr .toast-stack {
   }
 }
 
+/* ==========================================================================
+   Universal Icon Centering Engine Across Entire Project (Fix Image 3)
+   Guarantees 100% horizontal & vertical mathematical centering inside any box/badge
+   ========================================================================== */
+.category-icon,
+.template-number,
+.template-action,
+.project-symbol,
+.project-card-symbol,
+.metric-icon,
+.attention-icon,
+.empty-icon,
+.discipline-icon-badge,
+.back-button,
+.member-menu,
+.modal-close,
+.icon-button,
+.topbar-action-btn,
+.btn-icon,
+.project-arrow,
+.team-menu,
+.nav-icon {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  line-height: 1 !important;
+  box-sizing: border-box !important;
+  flex-shrink: 0 !important;
+  padding: 0 !important;
+}
+
+.category-icon svg,
+.template-number svg,
+.template-action svg,
+.project-symbol svg,
+.project-card-symbol svg,
+.metric-icon svg,
+.attention-icon svg,
+.empty-icon svg,
+.discipline-icon-badge svg,
+.back-button svg,
+.member-menu svg,
+.modal-close svg,
+.icon-button svg,
+.topbar-action-btn svg,
+.btn-icon svg,
+.project-arrow svg,
+.team-menu svg,
+.nav-icon svg {
+  display: block !important;
+  margin: auto !important;
+  flex-shrink: 0 !important;
+  vertical-align: middle !important;
+}
+
 @media (max-width: 880px) {
   .login-wrap { grid-template-columns: 1fr; }
   .login-art { min-height: 220px; }
@@ -2420,6 +2623,183 @@ body.is-ltr .toast-stack {
   }
   .board-column {
     scroll-snap-align: start;
+  }
+
+  /* ==========================================================================
+     Responsive Toolbars & Controls for Tablet & Mobile (<= 880px)
+     ========================================================================== */
+  .view-toolbar {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 10px !important;
+    align-items: stretch !important;
+    min-height: auto !important;
+    height: auto !important;
+  }
+  .view-toolbar-start,
+  .view-toolbar-end {
+    width: 100% !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+    align-items: center !important;
+    min-height: auto !important;
+    height: auto !important;
+  }
+  .view-toolbar-end {
+    margin-top: 4px !important;
+  }
+
+  /* Image 1 Fix: Reports Toolbar Dropdown Spacing on Tablet & Mobile */
+  .report-toolbar {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+    min-height: auto !important;
+    height: auto !important;
+    flex: none !important;
+  }
+  .report-toolbar-start {
+    width: 100% !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+    min-height: auto !important;
+    height: auto !important;
+    flex: none !important;
+  }
+  .report-filter-item {
+    width: 100% !important;
+    flex: none !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    min-height: auto !important;
+    height: auto !important;
+    margin: 0 !important;
+  }
+  .report-filter-label {
+    min-width: 65px !important;
+    flex-shrink: 0 !important;
+  }
+  .report-filter-item .report-select {
+    width: 100% !important;
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    height: 40px !important;
+  }
+  .report-toolbar-end {
+    width: 100% !important;
+    display: flex !important;
+    justify-content: flex-start !important;
+  }
+  .report-badge-count {
+    width: 100% !important;
+    justify-content: center !important;
+    text-align: center !important;
+    min-height: 36px !important;
+  }
+
+  /* Image 2 Fix: Tasks Toolbar & Search Box on Tablet & Mobile */
+  .tasks-toolbar-row-top {
+    flex-direction: column-reverse !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+  }
+  .tasks-search-box {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    height: 42px !important;
+    box-sizing: border-box !important;
+  }
+  .tasks-search-box input {
+    font-size: 13px !important;
+    font-weight: 500 !important;
+  }
+  .segmented-control {
+    width: 100% !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+    justify-content: flex-start !important;
+  }
+  .segmented-control::-webkit-scrollbar { display: none !important; }
+  .segmented-tab { flex-shrink: 0 !important; }
+  .tasks-toolbar-row-bottom {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+  }
+  .tasks-toolbar-filters {
+    width: 100% !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+  }
+  .tasks-toolbar-filters .filter-select {
+    flex: 1 1 calc(50% - 5px) !important;
+    min-width: 130px !important;
+    width: auto !important;
+    height: 40px !important;
+  }
+  .tasks-toolbar-sort {
+    width: 100% !important;
+  }
+  .tasks-toolbar-sort .sort-box {
+    width: 100% !important;
+    display: flex !important;
+  }
+  .tasks-toolbar-sort .sort-box select {
+    flex: 1 !important;
+    height: 40px !important;
+  }
+
+  /* Image 4 Fix: Documents Search Box & Dropdown Fluid Matching on Tablet & Mobile */
+  .documents-toolbar-start {
+    width: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+  }
+  .documents-search-box {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    height: 42px !important;
+    box-sizing: border-box !important;
+    flex: none !important;
+  }
+  .documents-search-box input {
+    font-size: 13px !important;
+    font-weight: 500 !important;
+  }
+  .documents-filter-group {
+    width: 100% !important;
+    max-width: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    margin: 0 !important;
+    flex: none !important;
+  }
+  .documents-filter-label {
+    min-width: 65px !important;
+    flex-shrink: 0 !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+  }
+  .documents-select {
+    flex: 1 1 auto !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    height: 42px !important;
+  }
+  .documents-toolbar-end {
+    width: 100% !important;
   }
 }
 

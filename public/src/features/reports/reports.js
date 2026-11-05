@@ -203,14 +203,14 @@ export function renderReports() {
     </div>
 
     <!-- Filter Toolbar & Horizon Selector -->
-    <div class="view-toolbar report-toolbar" style="margin-bottom:16px;">
-      <div class="view-toolbar-start report-toolbar-start" style="flex:1;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+    <div class="view-toolbar report-toolbar">
+      <div class="view-toolbar-start report-toolbar-start">
         <!-- Project Scope Dropdown -->
-        <div class="report-filter-item" style="display:flex;align-items:center;gap:6px;min-width:0;flex:1 1 200px;">
-          <span style="font-size:12px;color:var(--ink-soft);font-weight:600;white-space:nowrap;display:inline-flex;align-items:center;gap:4px;">
+        <div class="report-filter-item">
+          <span class="report-filter-label">
             ${icon('building', 13)} ${choose('المشروع:', 'Project:')}
           </span>
-          <select class="select-compact report-select" data-action="filter-report-project" style="width:100%;">
+          <select class="select-compact report-select" data-action="filter-report-project">
             <option value="all" ${projectFilter === 'all' ? 'selected' : ''}>${choose('— كافة مشاريع المحفظة —', '— All Portfolio Projects —')}</option>
             ${projects.map(p => `
               <option value="${esc(p.id)}" ${projectFilter === p.id ? 'selected' : ''}>
@@ -221,11 +221,11 @@ export function renderReports() {
         </div>
 
         <!-- Timeframe / Horizon Dropdown -->
-        <div class="report-filter-item" style="display:flex;align-items:center;gap:6px;min-width:0;flex:1 1 180px;">
-          <span style="font-size:12px;color:var(--ink-soft);font-weight:600;white-space:nowrap;display:inline-flex;align-items:center;gap:4px;">
+        <div class="report-filter-item">
+          <span class="report-filter-label">
             ${icon('calendar', 13)} ${choose('الفترة:', 'Period:')}
           </span>
-          <select class="select-compact report-select" data-action="filter-report-timeframe" style="width:100%;">
+          <select class="select-compact report-select" data-action="filter-report-timeframe">
             <option value="all" ${timeframeFilter === 'all' ? 'selected' : ''}>${choose('كافة الفترات والمراحل', 'All Milestones & Time')}</option>
             <option value="month" ${timeframeFilter === 'month' ? 'selected' : ''}>${choose('الشهر الحالي', 'Current Month')}</option>
             <option value="quarter" ${timeframeFilter === 'quarter' ? 'selected' : ''}>${choose('الربع السنوي الحالي (Q)', 'Current Quarter')}</option>
@@ -235,7 +235,7 @@ export function renderReports() {
       </div>
 
       <div class="view-toolbar-end report-toolbar-end">
-        <span class="mini-badge report-badge-count" style="padding:6px 10px;font-size:11px;font-weight:700;color:var(--brand-teal);background:rgba(20,184,166,0.1);display:inline-flex;align-items:center;gap:4px;">
+        <span class="mini-badge report-badge-count">
           ${icon('target', 12)} ${filteredProjects.length} ${choose('مشاريع مشمولة', 'projects analyzed')} · ${filteredTasks.length} ${choose('مهمة', 'tasks')}
         </span>
       </div>

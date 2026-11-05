@@ -64,13 +64,13 @@ export function renderTemplates() {
   <div class="template-layout">
     <aside class="template-sidebar">
       <button class="template-category-tab ${activeCategory === 'all' ? 'active' : ''}" data-action="template-category" data-category="all">
-        <span class="category-icon">◌</span>
+        <span class="category-icon">${icon('layers', 15)}</span>
         <span>${t('all')}</span>
         <small>${sortedTemplates.length}</small>
       </button>
       ${TEMPLATE_CATEGORIES.map(cat => `
         <button class="template-category-tab ${activeCategory === cat.id ? 'active' : ''}" data-action="template-category" data-category="${esc(cat.id)}">
-          <span class="category-icon" style="display:inline-flex;align-items:center;">${icon(cat.iconName || 'document', 16)}</span>
+          <span class="category-icon">${icon(cat.iconName || 'document', 16)}</span>
           <span>${esc(choose(cat.ar, cat.en))}</span>
           <small>${categoryCounts.get(cat.id) || 0}</small>
         </button>
@@ -80,7 +80,7 @@ export function renderTemplates() {
       ${groups.length ? groups.map(group => `
         <section class="template-section">
           <div class="template-section-head">
-            <span class="category-icon" style="display:inline-flex;align-items:center;">${icon(group.iconName || 'document', 18)}</span>
+            <span class="category-icon">${icon(group.iconName || 'document', 18)}</span>
             <div>
               <h3>${esc(choose(group.ar, group.en))}</h3>
               <span>${group.items.length} ${t('templatesCount')}</span>

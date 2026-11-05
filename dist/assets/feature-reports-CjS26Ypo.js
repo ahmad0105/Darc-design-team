@@ -1,9 +1,9 @@
-import{t as J}from"./rolldown-runtime-BQ-_32WO.js";import{$ as C,A as ee,Dt as v,F as R,G as q,H as O,L as h,P as e,R as F,V as B,W as I,Z as n,bt as x,ct as u,j as z,mt as f,nt as M,pt as A,st as te}from"./core-dragdrop-DK4kSQhC.js";var ue=J({computeDisciplinesBreakdown:()=>K,computeTeamWorkload:()=>V,exportDisciplinesExcel:()=>oe,exportDrawingsExcel:()=>pe,exportRisksExcel:()=>ce,exportTeamWorkloadExcel:()=>de,getDaysOverdue:()=>q,getDisciplineIcon:()=>U,getReportFilteredTasks:()=>_,renderReports:()=>ae});function U(l="",d=15){const t=String(l).toLowerCase();return t.includes("معمار")||t.includes("arch")?n("building",d):t.includes("كهرب")||t.includes("elect")?n("zap",d):t.includes("سباك")||t.includes("صحي")||t.includes("plumb")?n("droplet",d):t.includes("تكييف")||t.includes("hvac")||t.includes("ميكانيك")?n("thermometer",d):t.includes("إنشائ")||t.includes("انشائ")||t.includes("struct")?n("layers",d):t.includes("ديكور")||t.includes("داخل")||t.includes("interior")?n("armchair",d):t.includes("3d")||t.includes("رندر")||t.includes("visual")?n("palette",d):t.includes("كميات")||t.includes("boq")||t.includes("quantity")?n("chart",d):t.includes("حريق")||t.includes("fire")?n("flame",d):n("compass",d)}function _(l=[],d="all",t="all"){let i=d==="all"?l:l.filter(o=>o.projectId===d);const s=new Date;if(t==="month"){const o=new Date(s.getFullYear(),s.getMonth(),1);i=i.filter(r=>{const a=r.dueDate?new Date(r.dueDate):r.updatedAt?new Date(r.updatedAt):null;return a&&a>=o})}else if(t==="quarter"){const o=Math.floor(s.getMonth()/3)*3,r=new Date(s.getFullYear(),o,1);i=i.filter(a=>{const g=a.dueDate?new Date(a.dueDate):a.updatedAt?new Date(a.updatedAt):null;return g&&g>=r})}else t==="critical"&&(i=i.filter(o=>M(o)||o.priority==="urgent"||o.status==="blocked"));return i}function K(l=[]){const d=new Map;return l.forEach(t=>{const i=((v.lang==="ar"?t.categoryAr:t.categoryEn)||e(t.typeAr||"معماري",t.typeEn||"Architectural")).trim(),s=d.get(i)||{name:i,weight:0,progress:0,total:0,done:0,overdue:0},o=Number(t.weight||1);s.weight+=o,s.progress+=(t.progress||0)*o,s.total++,["done","completed"].includes(t.status)&&s.done++,M(t)&&s.overdue++,d.set(i,s)}),[...d.values()].map(t=>({...t,percentage:t.weight?Math.round(t.progress/t.weight):0})).sort((t,i)=>i.total-t.total)}function V(l=[],d=[]){const t=new Map;return l.forEach(i=>{const s=new Set;i.assigneeId&&s.add(i.assigneeId),i.assignee_id&&s.add(i.assignee_id);const o=i.customFields?.additionalAssignees||i.customFields?.additional_assignees||i.custom_fields?.additionalAssignees||i.custom_fields?.additional_assignees;Array.isArray(o)&&o.forEach(r=>{r&&s.add(r)}),s.forEach(r=>{const a=t.get(r);a?a.push(i):t.set(r,[i])})}),d.filter(i=>i.status!=="inactive").map(i=>{const s=t.get(i.id)||[],o=s.filter(m=>["done","completed"].includes(m.status)).length,r=s.filter(m=>["in_progress","review","approval"].includes(m.status)).length,a=s.filter(M).length,g=s.reduce((m,D)=>m+Number(D.weight||1),0),p=s.reduce((m,D)=>m+(D.progress||0)*Number(D.weight||1),0),$=g?Math.round(p/g):0;let b="optimal",y=e("متزن","Optimal");return r===0&&s.length===0?(b="idle",y=e("متاح","Available")):r>7||a>=2?(b="critical",y=e("ضغط حرج","Critical Overload")):r>4&&(b="high",y=e("حمولة مرتفعة","High Load")),{user:i,total:s.length,done:o,active:r,overdue:a,progress:$,capacity:b,capacityLabel:y}}).sort((i,s)=>s.active-i.active||s.overdue-i.overdue)}function ae(){const{projects:l=[],tasks:d=[],users:t=[],documents:i=[]}=v.data||{},s=z("export_reports")||C(),o=v.reportProjectFilter||"all",r=v.reportTimeframe||"all",a=v.reportsTab||"overview",g=o==="all"?l:l.filter(c=>c.id===o),p=_(d,o,r),$=p.reduce((c,T)=>c+Number(T.weight||1),0),b=$?Math.round(p.reduce((c,T)=>c+(T.progress||0)*Number(T.weight||1),0)/$):0,y=p.filter(c=>["done","completed"].includes(c.status)).length,m=p.filter(c=>c.status==="in_progress").length,D=p.filter(c=>["review","approval"].includes(c.status)).length,S=p.filter(M),w=S.length,N=p.filter(c=>c.status==="blocked").length,j=g.filter(c=>c.health==="on_track").length,Z=g.filter(c=>c.health==="at_risk").length,P=g.filter(c=>c.health==="off_track").length,W=g.filter(c=>c.lifecycle==="completed"||c.progress===100).length,L=p.length?Math.max(0,Math.min(100,Math.round((p.length-w)/p.length*100))):100,E=o==="all"?(i||[]).filter(c=>!c.deletedAt):(i||[]).filter(c=>c.projectId===o&&!c.deletedAt),H=E.filter(c=>c.status==="approved").length,k=K(p),G=V(p,t),Q=k[0]?.name||e("معماري","Architectural"),X=[...g].sort((c,T)=>(T.progress||0)-(c.progress||0))[0],Y=[...g].filter(c=>c.lifecycle==="active").sort((c,T)=>(c.progress||0)-(T.progress||0))[0];return`
+import{t as J}from"./rolldown-runtime-BQ-_32WO.js";import{$ as C,A as ee,Dt as v,F as R,G as q,H as O,L as h,P as e,R as F,V as B,W as I,Z as n,bt as f,ct as u,j as z,mt as x,nt as M,pt as A,st as te}from"./core-dragdrop-DK4kSQhC.js";var ue=J({computeDisciplinesBreakdown:()=>K,computeTeamWorkload:()=>V,exportDisciplinesExcel:()=>oe,exportDrawingsExcel:()=>pe,exportRisksExcel:()=>ce,exportTeamWorkloadExcel:()=>de,getDaysOverdue:()=>q,getDisciplineIcon:()=>U,getReportFilteredTasks:()=>_,renderReports:()=>ae});function U(l="",d=15){const t=String(l).toLowerCase();return t.includes("معمار")||t.includes("arch")?n("building",d):t.includes("كهرب")||t.includes("elect")?n("zap",d):t.includes("سباك")||t.includes("صحي")||t.includes("plumb")?n("droplet",d):t.includes("تكييف")||t.includes("hvac")||t.includes("ميكانيك")?n("thermometer",d):t.includes("إنشائ")||t.includes("انشائ")||t.includes("struct")?n("layers",d):t.includes("ديكور")||t.includes("داخل")||t.includes("interior")?n("armchair",d):t.includes("3d")||t.includes("رندر")||t.includes("visual")?n("palette",d):t.includes("كميات")||t.includes("boq")||t.includes("quantity")?n("chart",d):t.includes("حريق")||t.includes("fire")?n("flame",d):n("compass",d)}function _(l=[],d="all",t="all"){let i=d==="all"?l:l.filter(o=>o.projectId===d);const s=new Date;if(t==="month"){const o=new Date(s.getFullYear(),s.getMonth(),1);i=i.filter(r=>{const a=r.dueDate?new Date(r.dueDate):r.updatedAt?new Date(r.updatedAt):null;return a&&a>=o})}else if(t==="quarter"){const o=Math.floor(s.getMonth()/3)*3,r=new Date(s.getFullYear(),o,1);i=i.filter(a=>{const g=a.dueDate?new Date(a.dueDate):a.updatedAt?new Date(a.updatedAt):null;return g&&g>=r})}else t==="critical"&&(i=i.filter(o=>M(o)||o.priority==="urgent"||o.status==="blocked"));return i}function K(l=[]){const d=new Map;return l.forEach(t=>{const i=((v.lang==="ar"?t.categoryAr:t.categoryEn)||e(t.typeAr||"معماري",t.typeEn||"Architectural")).trim(),s=d.get(i)||{name:i,weight:0,progress:0,total:0,done:0,overdue:0},o=Number(t.weight||1);s.weight+=o,s.progress+=(t.progress||0)*o,s.total++,["done","completed"].includes(t.status)&&s.done++,M(t)&&s.overdue++,d.set(i,s)}),[...d.values()].map(t=>({...t,percentage:t.weight?Math.round(t.progress/t.weight):0})).sort((t,i)=>i.total-t.total)}function V(l=[],d=[]){const t=new Map;return l.forEach(i=>{const s=new Set;i.assigneeId&&s.add(i.assigneeId),i.assignee_id&&s.add(i.assignee_id);const o=i.customFields?.additionalAssignees||i.customFields?.additional_assignees||i.custom_fields?.additionalAssignees||i.custom_fields?.additional_assignees;Array.isArray(o)&&o.forEach(r=>{r&&s.add(r)}),s.forEach(r=>{const a=t.get(r);a?a.push(i):t.set(r,[i])})}),d.filter(i=>i.status!=="inactive").map(i=>{const s=t.get(i.id)||[],o=s.filter(m=>["done","completed"].includes(m.status)).length,r=s.filter(m=>["in_progress","review","approval"].includes(m.status)).length,a=s.filter(M).length,g=s.reduce((m,D)=>m+Number(D.weight||1),0),p=s.reduce((m,D)=>m+(D.progress||0)*Number(D.weight||1),0),$=g?Math.round(p/g):0;let b="optimal",y=e("متزن","Optimal");return r===0&&s.length===0?(b="idle",y=e("متاح","Available")):r>7||a>=2?(b="critical",y=e("ضغط حرج","Critical Overload")):r>4&&(b="high",y=e("حمولة مرتفعة","High Load")),{user:i,total:s.length,done:o,active:r,overdue:a,progress:$,capacity:b,capacityLabel:y}}).sort((i,s)=>s.active-i.active||s.overdue-i.overdue)}function ae(){const{projects:l=[],tasks:d=[],users:t=[],documents:i=[]}=v.data||{},s=z("export_reports")||C(),o=v.reportProjectFilter||"all",r=v.reportTimeframe||"all",a=v.reportsTab||"overview",g=o==="all"?l:l.filter(c=>c.id===o),p=_(d,o,r),$=p.reduce((c,T)=>c+Number(T.weight||1),0),b=$?Math.round(p.reduce((c,T)=>c+(T.progress||0)*Number(T.weight||1),0)/$):0,y=p.filter(c=>["done","completed"].includes(c.status)).length,m=p.filter(c=>c.status==="in_progress").length,D=p.filter(c=>["review","approval"].includes(c.status)).length,S=p.filter(M),w=S.length,N=p.filter(c=>c.status==="blocked").length,j=g.filter(c=>c.health==="on_track").length,Z=g.filter(c=>c.health==="at_risk").length,P=g.filter(c=>c.health==="off_track").length,W=g.filter(c=>c.lifecycle==="completed"||c.progress===100).length,L=p.length?Math.max(0,Math.min(100,Math.round((p.length-w)/p.length*100))):100,E=o==="all"?(i||[]).filter(c=>!c.deletedAt):(i||[]).filter(c=>c.projectId===o&&!c.deletedAt),H=E.filter(c=>c.status==="approved").length,k=K(p),G=V(p,t),Q=k[0]?.name||e("معماري","Architectural"),X=[...g].sort((c,T)=>(T.progress||0)-(c.progress||0))[0],Y=[...g].filter(c=>c.lifecycle==="active").sort((c,T)=>(c.progress||0)-(T.progress||0))[0];return`
     <!-- Page Header with Actions -->
     <div class="page-head report-page-head">
       <div>
         <p class="eyebrow">${e("الرقابة والذكاء التنفيذي","EXECUTIVE INTELLIGENCE & AUDIT")}</p>
-        <h1>${f("reports")}</h1>
+        <h1>${x("reports")}</h1>
         <p>${e("تحليلات شاملة للمحفظة الهندسية: الإنجاز الموزون، كفاءة الأقسام، ضغط الفريق، ومؤشرات المخاطر.","Comprehensive engineering portfolio readout: weighted progress, discipline efficiency, team capacity, and risk indicators.")}</p>
       </div>
       <div class="page-actions report-actions">
@@ -21,14 +21,14 @@ import{t as J}from"./rolldown-runtime-BQ-_32WO.js";import{$ as C,A as ee,Dt as v
     </div>
 
     <!-- Filter Toolbar & Horizon Selector -->
-    <div class="view-toolbar report-toolbar" style="margin-bottom:16px;">
-      <div class="view-toolbar-start report-toolbar-start" style="flex:1;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+    <div class="view-toolbar report-toolbar">
+      <div class="view-toolbar-start report-toolbar-start">
         <!-- Project Scope Dropdown -->
-        <div class="report-filter-item" style="display:flex;align-items:center;gap:6px;min-width:0;flex:1 1 200px;">
-          <span style="font-size:12px;color:var(--ink-soft);font-weight:600;white-space:nowrap;display:inline-flex;align-items:center;gap:4px;">
+        <div class="report-filter-item">
+          <span class="report-filter-label">
             ${n("building",13)} ${e("المشروع:","Project:")}
           </span>
-          <select class="select-compact report-select" data-action="filter-report-project" style="width:100%;">
+          <select class="select-compact report-select" data-action="filter-report-project">
             <option value="all" ${o==="all"?"selected":""}>${e("— كافة مشاريع المحفظة —","— All Portfolio Projects —")}</option>
             ${l.map(c=>`
               <option value="${h(c.id)}" ${o===c.id?"selected":""}>
@@ -39,11 +39,11 @@ import{t as J}from"./rolldown-runtime-BQ-_32WO.js";import{$ as C,A as ee,Dt as v
         </div>
 
         <!-- Timeframe / Horizon Dropdown -->
-        <div class="report-filter-item" style="display:flex;align-items:center;gap:6px;min-width:0;flex:1 1 180px;">
-          <span style="font-size:12px;color:var(--ink-soft);font-weight:600;white-space:nowrap;display:inline-flex;align-items:center;gap:4px;">
+        <div class="report-filter-item">
+          <span class="report-filter-label">
             ${n("calendar",13)} ${e("الفترة:","Period:")}
           </span>
-          <select class="select-compact report-select" data-action="filter-report-timeframe" style="width:100%;">
+          <select class="select-compact report-select" data-action="filter-report-timeframe">
             <option value="all" ${r==="all"?"selected":""}>${e("كافة الفترات والمراحل","All Milestones & Time")}</option>
             <option value="month" ${r==="month"?"selected":""}>${e("الشهر الحالي","Current Month")}</option>
             <option value="quarter" ${r==="quarter"?"selected":""}>${e("الربع السنوي الحالي (Q)","Current Quarter")}</option>
@@ -53,7 +53,7 @@ import{t as J}from"./rolldown-runtime-BQ-_32WO.js";import{$ as C,A as ee,Dt as v
       </div>
 
       <div class="view-toolbar-end report-toolbar-end">
-        <span class="mini-badge report-badge-count" style="padding:6px 10px;font-size:11px;font-weight:700;color:var(--brand-teal);background:rgba(20,184,166,0.1);display:inline-flex;align-items:center;gap:4px;">
+        <span class="mini-badge report-badge-count">
           ${n("target",12)} ${g.length} ${e("مشاريع مشمولة","projects analyzed")} · ${p.length} ${e("مهمة","tasks")}
         </span>
       </div>
@@ -191,7 +191,7 @@ import{t as J}from"./rolldown-runtime-BQ-_32WO.js";import{$ as C,A as ee,Dt as v
                 </div>
                 <strong>${k.percentage}%</strong>
               </div>
-            `).join(""):`<div class="empty">${f("noTasks")}</div>`}
+            `).join(""):`<div class="empty">${x("noTasks")}</div>`}
           </div>
         </section>
 
@@ -221,28 +221,28 @@ import{t as J}from"./rolldown-runtime-BQ-_32WO.js";import{$ as C,A as ee,Dt as v
               <div class="report-stat">
                 <span style="display:flex;align-items:center;gap:6px;">
                   <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--mint-strong);"></span>
-                  ${f("onTrack")}
+                  ${x("onTrack")}
                 </span>
                 <strong style="color:var(--mint-strong)">${p}</strong>
               </div>
               <div class="report-stat">
                 <span style="display:flex;align-items:center;gap:6px;">
                   <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--amber);"></span>
-                  ${f("atRisk")}
+                  ${x("atRisk")}
                 </span>
                 <strong style="color:var(--amber)">${$}</strong>
               </div>
               <div class="report-stat">
                 <span style="display:flex;align-items:center;gap:6px;">
                   <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--red);"></span>
-                  ${f("offTrack")}
+                  ${x("offTrack")}
                 </span>
                 <strong style="color:var(--red)">${b}</strong>
               </div>
               <div class="report-stat">
                 <span style="display:flex;align-items:center;gap:6px;">
                   <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--teal);"></span>
-                  ${f("completed")}
+                  ${x("completed")}
                 </span>
                 <strong style="color:var(--teal)">${y}</strong>
               </div>
@@ -338,7 +338,7 @@ import{t as J}from"./rolldown-runtime-BQ-_32WO.js";import{$ as C,A as ee,Dt as v
                 </tr>
               `}).join(""):`
               <tr>
-                <td colspan="6"><div class="empty">${f("noTasks")}</div></td>
+                <td colspan="6"><div class="empty">${x("noTasks")}</div></td>
               </tr>
             `}
           </tbody>
@@ -621,7 +621,7 @@ import{t as J}from"./rolldown-runtime-BQ-_32WO.js";import{$ as C,A as ee,Dt as v
         </div>
       </div>
     </div>
-  `}function oe(){if(!z("export_reports")&&!C()){x(f("permissionDenied"),!0);return}const{projects:l=[],tasks:d=[]}=v.data||{},t=v.reportProjectFilter||"all",i=v.reportTimeframe||"all",s=_(d,t,i),o=K(s);if(!o.length){x(e("لا توجد بيانات تخصصات لتصديرها.","No discipline data to export."),!0);return}const r=I(),a=t==="all"?e("كافة مشاريع المحفظة","All Portfolio Projects"):l.find(p=>p.id===t)?.nameAr||t,g=`
+  `}function oe(){if(!z("export_reports")&&!C()){f(x("permissionDenied"),!0);return}const{projects:l=[],tasks:d=[]}=v.data||{},t=v.reportProjectFilter||"all",i=v.reportTimeframe||"all",s=_(d,t,i),o=K(s);if(!o.length){f(e("لا توجد بيانات تخصصات لتصديرها.","No discipline data to export."),!0);return}const r=I(),a=t==="all"?e("كافة مشاريع المحفظة","All Portfolio Projects"):l.find(p=>p.id===t)?.nameAr||t,g=`
     <table>
       <tr><th colspan="6" class="title">${u(r.displayName)} - ${e("تقرير تحليل التخصصات الهندسية والمخرجات","Engineering Disciplines & Deliverables Report")}</th></tr>
       <tr><td colspan="6" class="subtitle">${e("نطاق المشروع:","Project Scope:")} ${u(a)} | ${e("الفترة:","Timeframe:")} ${u(i)}</td></tr>
@@ -645,7 +645,7 @@ import{t as J}from"./rolldown-runtime-BQ-_32WO.js";import{$ as C,A as ee,Dt as v
           </tr>
         `}).join("")}
     </table>
-  `;F(`DARC_Disciplines_${Date.now()}`,g),x(e("تم تصدير تقرير التخصصات بنجاح.","Disciplines report exported successfully."))}function de(){if(!z("export_reports")&&!C()){x(f("permissionDenied"),!0);return}const{tasks:l=[],users:d=[]}=v.data||{},t=_(l,v.reportProjectFilter||"all",v.reportTimeframe||"all"),i=V(t,d);if(!i.length){x(e("لا توجد بيانات فريق لتصديرها.","No team data to export."),!0);return}const s=I(),o=`
+  `;F(`DARC_Disciplines_${Date.now()}`,g),f(e("تم تصدير تقرير التخصصات بنجاح.","Disciplines report exported successfully."))}function de(){if(!z("export_reports")&&!C()){f(x("permissionDenied"),!0);return}const{tasks:l=[],users:d=[]}=v.data||{},t=_(l,v.reportProjectFilter||"all",v.reportTimeframe||"all"),i=V(t,d);if(!i.length){f(e("لا توجد بيانات فريق لتصديرها.","No team data to export."),!0);return}const s=I(),o=`
     <table>
       <tr><th colspan="7" class="title">${u(s.displayName)} - ${e("تقرير أداء وحمولة فريق العمل الهندسي","Engineering Team Workload & Capacity Report")}</th></tr>
       <tr><td colspan="7" class="subtitle">${e("إجمالي أعضاء الفريق:","Total Members:")} ${i.length} | ${e("المهام الإجمالية:","Total Tasks:")} ${t.length}</td></tr>
@@ -671,7 +671,7 @@ import{t as J}from"./rolldown-runtime-BQ-_32WO.js";import{$ as C,A as ee,Dt as v
         </tr>
       `).join("")}
     </table>
-  `;F(`DARC_Team_Workload_${Date.now()}`,o),x(e("تم تصدير تقرير حمولة الفريق بنجاح.","Team workload report exported successfully."))}function ce(){if(!z("export_reports")&&!C()){x(f("permissionDenied"),!0);return}const{projects:l=[],tasks:d=[]}=v.data||{},t=v.reportProjectFilter||"all",i=_(d,t,"all").filter(M),s=(t==="all"?l:l.filter(a=>a.id===t)).filter(a=>a.health==="at_risk"||a.health==="off_track");if(!i.length&&!s.length){x(e("لا توجد مهام أو مشاريع متأخرة حالياً لتصديرها.","No overdue tasks or at-risk projects to export."));return}const o=I(),r=`
+  `;F(`DARC_Team_Workload_${Date.now()}`,o),f(e("تم تصدير تقرير حمولة الفريق بنجاح.","Team workload report exported successfully."))}function ce(){if(!z("export_reports")&&!C()){f(x("permissionDenied"),!0);return}const{projects:l=[],tasks:d=[]}=v.data||{},t=v.reportProjectFilter||"all",i=_(d,t,"all").filter(M),s=(t==="all"?l:l.filter(a=>a.id===t)).filter(a=>a.health==="at_risk"||a.health==="off_track");if(!i.length&&!s.length){f(e("لا توجد مهام أو مشاريع متأخرة حالياً لتصديرها.","No overdue tasks or at-risk projects to export."));return}const o=I(),r=`
     <table>
       <tr><th colspan="7" class="title">${u(o.displayName)} - ${e("سجل المخاطر والتأخيرات الهندسية (Risk & Delay Register)","Engineering Risk & Delay Register")}</th></tr>
       <tr><td colspan="7" class="meta">${e("تاريخ التصدير:","Export Date:")} ${B(new Date)} ${O(new Date)}</td></tr>
@@ -721,7 +721,7 @@ import{t as J}from"./rolldown-runtime-BQ-_32WO.js";import{$ as C,A as ee,Dt as v
         </tr>
       `).join("")}
     </table>
-  `;F(`DARC_Risks_Register_${Date.now()}`,r),x(e("تم تصدير سجل المخاطر بنجاح.","Risk register exported successfully."))}function pe(){if(!z("export_reports")&&!C()){x(f("permissionDenied"),!0);return}const{projects:l=[],documents:d=[]}=v.data||{},t=v.reportProjectFilter||"all",i=t==="all"?(d||[]).filter(a=>!a.deletedAt):(d||[]).filter(a=>a.projectId===t&&!a.deletedAt);if(!i.length){x(e("لا توجد مخططات مرفوعة لتصديرها.","No drawings to export."),!0);return}const s=I(),o=t==="all"?e("كافة مشاريع المحفظة","All Portfolio Projects"):l.find(a=>a.id===t)?.nameAr||t,r=`
+  `;F(`DARC_Risks_Register_${Date.now()}`,r),f(e("تم تصدير سجل المخاطر بنجاح.","Risk register exported successfully."))}function pe(){if(!z("export_reports")&&!C()){f(x("permissionDenied"),!0);return}const{projects:l=[],documents:d=[]}=v.data||{},t=v.reportProjectFilter||"all",i=t==="all"?(d||[]).filter(a=>!a.deletedAt):(d||[]).filter(a=>a.projectId===t&&!a.deletedAt);if(!i.length){f(e("لا توجد مخططات مرفوعة لتصديرها.","No drawings to export."),!0);return}const s=I(),o=t==="all"?e("كافة مشاريع المحفظة","All Portfolio Projects"):l.find(a=>a.id===t)?.nameAr||t,r=`
     <table>
       <tr><th colspan="6" class="title">${u(s.displayName)} - ${e("سجل المخططات والمستندات الهندسية (Drawings Register)","Drawings & Blueprints Submittals Register")}</th></tr>
       <tr><td colspan="6" class="subtitle">${e("نطاق المشروع:","Project Scope:")} ${u(o)} | ${e("إجمالي المخططات:","Total Blueprints:")} ${i.length}</td></tr>
@@ -745,4 +745,4 @@ import{t as J}from"./rolldown-runtime-BQ-_32WO.js";import{$ as C,A as ee,Dt as v
           </tr>
         `}).join("")}
     </table>
-  `;F(`DARC_Drawings_Register_${Date.now()}`,r),x(e("تم تصدير سجل المخططات بنجاح.","Drawings register exported successfully."))}export{ue as a,de as i,pe as n,ce as r,oe as t};
+  `;F(`DARC_Drawings_Register_${Date.now()}`,r),f(e("تم تصدير سجل المخططات بنجاح.","Drawings register exported successfully."))}export{ue as a,de as i,pe as n,ce as r,oe as t};
