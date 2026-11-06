@@ -251,6 +251,8 @@ export async function api(path, options = {}) {
           deltaPayload = { table: 'comments', action: options.method === 'POST' ? 'INSERT' : 'UPDATE', record: result.comment };
         } else if (result.document) {
           deltaPayload = { table: 'documents', action: options.method === 'POST' ? 'INSERT' : 'UPDATE', record: result.document };
+        } else if (path === '/api/tasks/reorder' && (Array.isArray(result.items) || (parsedBody && Array.isArray(parsedBody.items)))) {
+          deltaPayload = { table: 'tasks', action: 'BATCH_REORDER', record: { items: result.items || parsedBody.items } };
         }
       }
       if (!deltaPayload && options.method === 'DELETE' && mutatedId) {

@@ -209,7 +209,12 @@ app.patch('/reorder', async (c) => {
 
   if (c.get('isDemo')) {
     items.forEach(item => applyDemoTaskUpdate(item.id, item));
-    return c.json({ ok: true });
+    c.set('mutationDelta', {
+      table: 'tasks',
+      action: 'BATCH_REORDER',
+      record: { items }
+    });
+    return c.json({ ok: true, items });
   }
 
   const userId = c.get('userId');
@@ -338,7 +343,7 @@ app.patch('/reorder', async (c) => {
     record: { items }
   });
 
-  return c.json({ ok: true });
+  return c.json({ ok: true, items });
 });
 
 // PATCH /api/tasks/:id

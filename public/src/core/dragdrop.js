@@ -715,6 +715,15 @@ async function handleTaskDrop(column, clientY, explicitTaskId = null) {
     }
   });
 
+  // Zero-Latency Cross-Tab Sync: Dispatch granular mutation immediately across local browser tabs
+  if (typeof window !== 'undefined' && typeof window.notifyStateMutation === 'function') {
+    window.notifyStateMutation({
+      table: 'tasks',
+      action: 'BATCH_REORDER',
+      record: { items: syncItems }
+    });
+  }
+
   // Debounce & Queue batch reorder API sync to consolidate rapid consecutive drops
   if (window._reorderSyncTimer) clearTimeout(window._reorderSyncTimer);
   window._pendingReorderBatch = window._pendingReorderBatch || new Map();

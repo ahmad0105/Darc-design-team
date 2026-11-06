@@ -303,12 +303,41 @@ function patchTaskDomSurgically(taskId, record, actionType) {
 function patchBatchReorderSurgically(items) {
   if (typeof document === 'undefined' || !Array.isArray(items)) return false;
   let anyPatched = false;
+  const affectedColumns = new Set();
+
   for (const item of items) {
     if (item.id) {
+      const cardEl = document.querySelector(`.task-card[data-task-id="${item.id}"]`);
+      if (cardEl) {
+        const col = cardEl.closest('.board-column');
+        if (col) affectedColumns.add(col);
+      }
       const ok = patchTaskDomSurgically(item.id, item);
       if (ok) anyPatched = true;
     }
   }
+
+  // In-place surgical DOM re-ordering inside affected Kanban columns by sortOrder (0 DOM rebuild)
+  if (state.data?.tasks && affectedColumns.size > 0) {
+    const taskMap = new Map(state.data.tasks.map(t => [t.id, t]));
+    affectedColumns.forEach(col => {
+      const cardsContainer = col.querySelector('.board-cards');
+      if (!cardsContainer) return;
+      const cardEls = Array.from(cardsContainer.querySelectorAll('.task-card'));
+      if (cardEls.length <= 1) return;
+
+      cardEls.sort((a, b) => {
+        const tA = taskMap.get(a.dataset.taskId);
+        const tB = taskMap.get(b.dataset.taskId);
+        const orderA = (tA && typeof tA.sortOrder === 'number') ? tA.sortOrder : ((tA && typeof tA.sort_order === 'number') ? tA.sort_order : 0);
+        const orderB = (tB && typeof tB.sortOrder === 'number') ? tB.sortOrder : ((tB && typeof tB.sort_order === 'number') ? tB.sort_order : 0);
+        return orderA - orderB;
+      });
+
+      cardEls.forEach(el => cardsContainer.appendChild(el));
+    });
+  }
+
   return anyPatched;
 }
 
@@ -340,10 +369,6 @@ function scheduleBatchedViewUpdate() {
  */
 export function applyGranularDelta(tableName, actionType, rawRecord, rawOldRecord) {
   if (!state.data || !tableName) return false;
-  if (isDemoSession()) {
-    // Shielded Sandbox: Demo sessions NEVER mutate from production CDC events
-    return false;
-  }
 
   const validTables = ['tasks', 'projects', 'comments', 'documents', 'notifications'];
   if (!validTables.includes(tableName)) return false;
@@ -762,6 +787,7 @@ function connectSupabaseRealtime() {
 
         // Ignore internal protocol acknowledgments and heartbeats
         if (evt === 'phx_reply' || evt === 'phx_close') return;
+        if (isDemoSession()) return; // Shielded Sandbox: Demo sessions NEVER process live production CDC events
 
         // A. Smart In-Memory Delta Patching (Postgres CDC events): 0 KB HTTP Traffic!
         if (evt === 'postgres_changes' && payload?.data) {
@@ -950,7 +976,7 @@ export function initRealtimeConnection() {
         const { table, action, record, oldRecord } = event.data.delta;
         applyGranularDelta(table, action, record, oldRecord);
       } else if (event.data?.type === 'STATE_MUTATION') {
-        triggerImmediateSync('broadcast_channel');
+        triggerImmediateSync('broadcast_channel', true);
       }
     };
     window._darcBroadcastChannel = channel;
