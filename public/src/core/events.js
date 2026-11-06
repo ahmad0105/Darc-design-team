@@ -1851,7 +1851,73 @@ export function handleInput(event) {
 
   const search = event.target.dataset.search || (event.target.dataset.action === 'search-documents' ? 'documents' : null);
   if (!search) return;
+  const query = (event.target.value || '').trim().toLowerCase();
   state.searches[search] = event.target.value;
+
+  // Instant In-Place DOM Filtering (0ms Latency, Zero DOM Destruction, Zero Input Lag)
+  if (search === 'tasks') {
+    const cards = document.querySelectorAll('.task-card');
+    cards.forEach(card => {
+      if (!query) {
+        card.style.display = '';
+        return;
+      }
+      const title = (card.querySelector('.task-card-title, strong')?.textContent || '').toLowerCase();
+      const code = (card.querySelector('.task-code, .badge')?.textContent || '').toLowerCase();
+      const assignee = (card.querySelector('.task-assignee, .avatar')?.getAttribute('title') || '').toLowerCase();
+      const match = title.includes(query) || code.includes(query) || assignee.includes(query);
+      card.style.display = match ? '' : 'none';
+    });
+    // Update column counters smoothly
+    document.querySelectorAll('.board-column').forEach(col => {
+      const visibleCards = col.querySelectorAll('.task-card:not([style*="display: none"])');
+      const countEl = col.querySelector('.board-count');
+      if (countEl) countEl.textContent = String(visibleCards.length);
+      const emptyEl = col.querySelector('.empty');
+      if (emptyEl) emptyEl.style.display = visibleCards.length === 0 ? '' : 'none';
+    });
+    return;
+  }
+
+  if (search === 'documents') {
+    const rows = document.querySelectorAll('.doc-row, .documents-table tbody tr');
+    rows.forEach(row => {
+      if (!query) {
+        row.style.display = '';
+        return;
+      }
+      const text = row.textContent.toLowerCase();
+      row.style.display = text.includes(query) ? '' : 'none';
+    });
+    return;
+  }
+
+  if (search === 'projects') {
+    const cards = document.querySelectorAll('.project-card, .project-row');
+    cards.forEach(card => {
+      if (!query) {
+        card.style.display = '';
+        return;
+      }
+      const text = card.textContent.toLowerCase();
+      card.style.display = text.includes(query) ? '' : 'none';
+    });
+    return;
+  }
+
+  if (search === 'templates') {
+    const items = document.querySelectorAll('.template-item');
+    items.forEach(item => {
+      if (!query) {
+        item.style.display = '';
+        return;
+      }
+      const text = item.textContent.toLowerCase();
+      item.style.display = text.includes(query) ? '' : 'none';
+    });
+    return;
+  }
+
   const cursor = event.target.selectionStart;
   clearTimeout(_searchDebounceTimer);
   _searchDebounceTimer = setTimeout(() => {
@@ -1861,7 +1927,7 @@ export function handleInput(event) {
       next.focus({ preventScroll: true });
       try { next.setSelectionRange(cursor, cursor); } catch (_) {}
     }
-  }, 180);
+  }, 250);
 }
 
 export async function handleChange(event) {
@@ -3049,15 +3115,24 @@ export async function init() {
         window.addEventListener('click', onUserGesture, { passive: true });
         window.addEventListener('keydown', onUserGesture, { passive: true });
         window.addEventListener('touchstart', onUserGesture, { passive: true });
-        window.addEventListener('mousemove', onUserGesture, { passive: true });
+        window.addEventListener('scroll', onUserGesture, { passive: true });
       }
 
       const scheduleNextPoll = () => {
         if (_pollTimer) clearTimeout(_pollTimer);
-        // Adaptive Idle Throttling: If user is inactive for >45s, relax polling to 15s (saves 75% edge requests)
+        const isWsAlive = typeof window !== 'undefined' && typeof window.isRealtimeConnected === 'function' && window.isRealtimeConnected();
         const isUserIdle = (Date.now() - _lastActivityTime) > 45000;
-        const baseDelay = isUserIdle ? 15000 : 4000;
-        const delay = _pollFailures > 0 ? Math.min(25000, baseDelay * Math.pow(2, _pollFailures)) : baseDelay;
+
+        // Smart Adaptive Throttle:
+        // - When WebSocket is active and receiving live instant deltas: Poll gently every 60s (or 120s if idle).
+        // - When WebSocket is disconnected or in fallback: Poll every 12s (or 25s if idle).
+        let baseDelay;
+        if (isWsAlive) {
+          baseDelay = isUserIdle ? 120000 : 60000;
+        } else {
+          baseDelay = isUserIdle ? 25000 : 12000;
+        }
+        const delay = _pollFailures > 0 ? Math.min(60000, baseDelay * Math.pow(2, _pollFailures)) : baseDelay;
         _pollTimer = setTimeout(runPoll, delay);
       };
 

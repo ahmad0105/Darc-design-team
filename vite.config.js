@@ -39,6 +39,18 @@ export default defineConfig({
     reportCompressedSize: true,
     cssCodeSplit: true,
     chunkSizeWarningLimit: 1200,
+    modulePreload: {
+      resolveDependencies(filename, deps) {
+        // Exclude heavy deferred chunks from render-blocking initial modulepreload in <head>
+        return deps.filter(dep => 
+          !dep.includes('feature-settings') &&
+          !dep.includes('feature-documents') &&
+          !dep.includes('feature-reports') &&
+          !dep.includes('core-dragdrop') &&
+          !dep.includes('feature-workspace')
+        );
+      }
+    },
     rollupOptions: {
       input: {
         main: resolve(__dirname, 'public/index.html')

@@ -37,6 +37,13 @@ let _lastActivityTimestamp = Date.now();
 let _lastActivityThrottle = 0;
 let _renderRaf = null;
 
+/**
+ * Returns true if the WebSocket connection is actively open and receiving live deltas
+ */
+export function isRealtimeConnected() {
+  return Boolean(_ws && _ws.readyState === 1);
+}
+
 // Track local client mutations to eliminate redundant echoes & re-renders
 const _recentLocalMutations = new Map(); // id -> timestamp
 
@@ -210,9 +217,9 @@ export function playNotificationChime() {
  * Surgical in-place DOM patching for task cards and Kanban columns (0ms latency, zero flicker, 90%+ CPU savings)
  */
 function patchTaskDomSurgically(taskId, record, actionType) {
-  if (typeof document === 'undefined' || !taskId) return;
+  if (typeof document === 'undefined' || !taskId) return false;
   const cardEl = document.querySelector(`.task-card[data-task-id="${taskId}"]`);
-  if (!cardEl) return;
+  if (!cardEl) return false;
 
   // 0. Surgical delete: remove card and decrement column badge
   if (actionType === 'DELETE' || record?.deletedAt || record?.deleted_at) {
@@ -231,7 +238,7 @@ function patchTaskDomSurgically(taskId, record, actionType) {
         }
       }
     }
-    return;
+    return true;
   }
 
   // 1. Surgical progress update (0 DOM rebuild)
@@ -290,13 +297,19 @@ function patchTaskDomSurgically(taskId, record, actionType) {
       }
     }
   }
+  return true;
 }
 
 function patchBatchReorderSurgically(items) {
-  if (typeof document === 'undefined' || !Array.isArray(items)) return;
+  if (typeof document === 'undefined' || !Array.isArray(items)) return false;
+  let anyPatched = false;
   for (const item of items) {
-    if (item.id) patchTaskDomSurgically(item.id, item);
+    if (item.id) {
+      const ok = patchTaskDomSurgically(item.id, item);
+      if (ok) anyPatched = true;
+    }
   }
+  return anyPatched;
 }
 
 /**
@@ -527,11 +540,12 @@ export function applyGranularDelta(tableName, actionType, rawRecord, rawOldRecor
     invalidateBootstrapEtag();
 
     // 1. Surgical DOM update for tasks and kanban columns (instant response, zero flicker)
+    let didPatchSurgically = false;
     if (tableName === 'tasks') {
       if ((actionType === 'UPDATE' || actionType === 'DELETE' || isSoftDeleted) && (record || targetId)) {
-        patchTaskDomSurgically(targetId, record, isSoftDeleted ? 'DELETE' : actionType);
+        didPatchSurgically = patchTaskDomSurgically(targetId, record, isSoftDeleted ? 'DELETE' : actionType);
       } else if (actionType === 'BATCH_REORDER' && Array.isArray(record?.items)) {
-        patchBatchReorderSurgically(record.items);
+        didPatchSurgically = patchBatchReorderSurgically(record.items);
       }
     }
 
@@ -564,8 +578,11 @@ export function applyGranularDelta(tableName, actionType, rawRecord, rawOldRecor
       }
     }
 
-    // 3. Batch render view smoothly
-    scheduleBatchedViewUpdate();
+    // 3. Only batch render view if surgical DOM patching was not applicable
+    // (e.g. INSERT of a new card, or updates to other views like projects/reports)
+    if (!didPatchSurgically) {
+      scheduleBatchedViewUpdate();
+    }
     return true;
   }
 
@@ -999,6 +1016,7 @@ export function notifyStateMutation(delta = null) {
 }
 
 if (typeof window !== 'undefined') {
+  window.isRealtimeConnected = isRealtimeConnected;
   window.notifyStateMutation = notifyStateMutation;
   window.disconnectSupabaseRealtime = disconnectSupabaseRealtime;
   window.recordRecentLocalMutation = recordRecentLocalMutation;
