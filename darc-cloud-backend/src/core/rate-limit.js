@@ -10,6 +10,9 @@ const MUTATION_WINDOW_MS = 60 * 1000; // 1 minute
 const UPLOAD_MAX_SESSIONS = 8; // Strictly capped under 15 per user instruction
 const UPLOAD_WINDOW_MS = 60 * 1000;
 
+const FORGOT_PW_MAX = 4; // Max 4 password reset requests per 10 minutes per IP
+const FORGOT_PW_WINDOW_MS = 10 * 60 * 1000;
+
 // ip -> { count: number, resetAt: number }
 const _authFailures = new Map();
 
@@ -18,6 +21,9 @@ const _mutationTracker = new Map();
 
 // key -> { count: number, resetAt: number }
 const _uploadTracker = new Map();
+
+// ip -> { count: number, resetAt: number }
+const _forgotPwTracker = new Map();
 
 const MAX_MAP_SIZE = 5000;
 
@@ -49,6 +55,9 @@ function maybeCleanup() {
   }
   for (const [key, item] of _uploadTracker.entries()) {
     if (now > item.resetAt) _uploadTracker.delete(key);
+  }
+  for (const [key, item] of _forgotPwTracker.entries()) {
+    if (now > item.resetAt) _forgotPwTracker.delete(key);
   }
 }
 
@@ -133,6 +142,46 @@ export function authRateLimiter() {
           'X-RateLimit-Remaining': '0'
         }
       );
+    }
+
+    await next();
+  };
+}
+
+/**
+ * Dedicated Rate Limiter for Password Reset Requests (CWE-770 / Email Flood Shield)
+ * Limits password reset requests to at most 4 per 10 minutes per IP.
+ */
+export function forgotPasswordRateLimiter() {
+  return async (c, next) => {
+    if (c.req.method === 'OPTIONS') return next();
+    maybeCleanup();
+
+    const rawIp = getClientIp(c);
+    const ip = getIpRateLimitKey(rawIp);
+    const now = Date.now();
+
+    const entry = _forgotPwTracker.get(ip);
+    if (entry && now < entry.resetAt && entry.count >= FORGOT_PW_MAX) {
+      const retryAfterSeconds = Math.max(1, Math.ceil((entry.resetAt - now) / 1000));
+      return c.json(
+        {
+          error: 'تم تجاوز الحد المسموح لطلبات استعادة كلمة المرور. يرجى الانتظار بضع دقائق قبل المحاولة مجدداً.',
+          retryAfter: retryAfterSeconds
+        },
+        429,
+        {
+          'Retry-After': String(retryAfterSeconds),
+          'X-RateLimit-Limit': String(FORGOT_PW_MAX),
+          'X-RateLimit-Remaining': '0'
+        }
+      );
+    }
+
+    if (!entry || now > entry.resetAt) {
+      safeSetMap(_forgotPwTracker, ip, { count: 1, resetAt: now + FORGOT_PW_WINDOW_MS });
+    } else {
+      entry.count += 1;
     }
 
     await next();

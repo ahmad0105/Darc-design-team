@@ -285,7 +285,10 @@ app.get('/:id', async (c) => {
         }
         return c.redirect(doc.disk_filename, 302);
       } else if (isDownload || isStream) {
-        return c.redirect(doc.disk_filename, 302);
+        // Open Redirect & SSRF Guard (CWE-601): Only allow safe public HTTP/HTTPS URLs
+        if (['https:', 'http:'].includes(u.protocol) && !u.hostname.includes('localhost') && !u.hostname.includes('127.0.0.1') && !u.hostname.endsWith('.internal')) {
+          return c.redirect(doc.disk_filename, 302);
+        }
       }
     } catch (e) {}
   }
@@ -462,6 +465,11 @@ app.post('/finalize', async (c) => {
     }]).then().catch(() => {});
 
     invalidateBootstrapCache();
+    c.set('mutationDelta', {
+      table: 'documents',
+      action: 'INSERT',
+      record: toCamelCase(data)
+    });
     return c.json({ ok: true, document: toCamelCase(data) });
   } catch (err) {
     console.error('[Documents] Finalize Error:', err);
@@ -613,6 +621,11 @@ app.put('/chunk', async (c) => {
       }]).then().catch(() => {});
 
       invalidateBootstrapCache();
+      c.set('mutationDelta', {
+        table: 'documents',
+        action: 'INSERT',
+        record: toCamelCase(data)
+      });
       return c.json({ ok: true, document: toCamelCase(data) });
     } catch (err) {
       console.error("[Documents] Finalize Error:", err);
@@ -724,6 +737,11 @@ app.post('/', uploadRateLimiter(), async (c) => {
     }]).then().catch(() => {});
 
     invalidateBootstrapCache();
+    c.set('mutationDelta', {
+      table: 'documents',
+      action: 'INSERT',
+      record: toCamelCase(data)
+    });
     return c.json({ ok: true, document: toCamelCase(data) }, 201);
   } catch (error) {
     console.error("[Documents] Upload Error:", error);
@@ -823,6 +841,11 @@ app.patch('/:id', async (c) => {
   }
   
   invalidateBootstrapCache();
+  c.set('mutationDelta', {
+    table: 'documents',
+    action: 'UPDATE',
+    record: toCamelCase(data)
+  });
   return c.json({ ok: true, document: toCamelCase(data) });
 });
 
@@ -870,6 +893,11 @@ app.delete('/:id', async (c) => {
   // for 30 days so users can restore it. It is permanently deleted only upon manual purge or 30-day cleanup.
 
   invalidateBootstrapCache();
+  c.set('mutationDelta', {
+    table: 'documents',
+    action: 'DELETE',
+    record: { id: docId, projectId: doc.project_id, taskId: doc.task_id }
+  });
 
   return c.json({ ok: true, message: 'تم نقل المستند إلى سلة المهملات بنجاح.' });
 });

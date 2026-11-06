@@ -244,16 +244,32 @@ export async function sendHeartbeat(isPriority = false, useBeacon = false) {
   }
 }
 
+let _lastTelemetryActivity = Date.now();
+
+if (typeof window !== 'undefined') {
+  const onActivity = () => { _lastTelemetryActivity = Date.now(); };
+  ['pointerdown', 'keydown', 'touchstart'].forEach(evt => {
+    window.addEventListener(evt, onActivity, { passive: true });
+  });
+}
+
 export function initTelemetryEngine() {
   if (_heartbeatTimer) clearInterval(_heartbeatTimer);
+  const isDataSaver = typeof navigator !== 'undefined' && Boolean(navigator.connection?.saveData);
+  const baseInterval = isDataSaver ? 90000 : 45000;
+
   // Send initial heartbeat after 5 seconds of activity
   setTimeout(() => sendHeartbeat(false), 5000);
-  // Recurring heartbeat every 45 seconds
+
+  // Adaptive telemetry heartbeat: skips pings when tab is idle (>2 min) or hidden to conserve battery & data
   _heartbeatTimer = setInterval(() => {
-    if (document.visibilityState === 'visible') {
-      sendHeartbeat(false);
+    if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+      const isIdle = (Date.now() - _lastTelemetryActivity) > (2 * 60 * 1000);
+      if (!isIdle) {
+        sendHeartbeat(false);
+      }
     }
-  }, 45000);
+  }, baseInterval);
 }
 
 export function getClientTelemetrySnapshot() {

@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { getDB } from '../../core/db.js';
-import { invalidateUsersCache, invalidateBootstrapCache, setUserTokenVersion, getUserTokenVersion, setUserStatus } from '../../core/cache.js';
+import { invalidateUsersCache, invalidateBootstrapCache, setUserTokenVersion, getUserTokenVersion, setUserStatus, setUserRole } from '../../core/cache.js';
 import { logAudit } from '../../core/audit.js';
 import { toCamelCase, sanitizeUserCustomFields } from '../../utils/transformers.js';
 import { hasPermission } from '../../utils/permissions.js';
@@ -127,7 +127,7 @@ app.patch('/me', async (c) => {
         return c.json({ error: 'حجم بيانات الصورة كبير جداً ويتجاوز الحد الأقصى المسموح به (250KB). يرجى ضغط الصورة.' }, 400);
       }
       const isSafeRaster = /^data:image\/(png|jpeg|jpg|webp|gif);base64,/i.test(body.avatarUrl);
-      const isHttpsOrRelative = body.avatarUrl.startsWith('https://') || body.avatarUrl.startsWith('/');
+      const isHttpsOrRelative = body.avatarUrl.startsWith('https://') || (body.avatarUrl.startsWith('/') && !body.avatarUrl.startsWith('//'));
       const isDangerousSvgOrScript = /\.svg($|\?)|<|>|javascript:/i.test(body.avatarUrl);
       if ((!isSafeRaster && !isHttpsOrRelative) || isDangerousSvgOrScript) {
         return c.json({ error: 'نوع ملف الصورة غير مدعوم أو غير آمن. يرجى استخدام صورة نقطية آمنة (PNG, JPEG, WebP).' }, 400);
@@ -330,6 +330,16 @@ app.patch('/:id', async (c) => {
       customFields.phone = cleanPhone;
     }
     updates.custom_fields = customFields;
+  }
+
+  // Privilege Revocation Shield (CWE-270): If role is altered or account deactivated, immediately revoke all existing sessions
+  if (updates.role_id !== undefined || updates.status === 'inactive') {
+    const currentVer = Number(targetUser.custom_fields?.tokenVersion || 1);
+    const nextVer = currentVer + 1;
+    const existingCF = updates.custom_fields || targetUser.custom_fields || {};
+    updates.custom_fields = { ...existingCF, tokenVersion: nextVer };
+    setUserTokenVersion(userId, nextVer);
+    if (updates.role_id) setUserRole(userId, updates.role_id);
   }
 
   updates.updated_at = new Date().toISOString();

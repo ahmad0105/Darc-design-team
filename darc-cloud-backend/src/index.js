@@ -29,7 +29,7 @@ import { processDueReminders } from './features/reminders/reminders.service.js';
 // Core Security, Error Resilience & Performance
 import { createErrorHandler } from './core/errors.js';
 import { securityHeadersMiddleware, csrfGuardMiddleware, correlationIdMiddleware, payloadLimitMiddleware, edgeSentryMiddleware, computeClientFingerprint, computeDeviceFingerprint } from './core/security.js';
-import { authRateLimiter, recordAuthFailure, clearAuthFailure, getClientIp, mutationRateLimiter } from './core/rate-limit.js';
+import { authRateLimiter, forgotPasswordRateLimiter, recordAuthFailure, clearAuthFailure, getClientIp, mutationRateLimiter } from './core/rate-limit.js';
 import { getDB } from './core/db.js';
 import { getUserTokenRecord, invalidateBootstrapCache } from './core/cache.js';
 import { 
@@ -150,8 +150,8 @@ app.get('/', (c) => c.json({ status: 'success', message: '🚀 DARC Edge API v2'
 
 // Protect sensitive public auth routes against brute-force and credential stuffing
 app.use('/api/auth/login', authRateLimiter());
-app.use('/api/auth/forgot-password', authRateLimiter());
-app.use('/api/auth/reset-password', authRateLimiter());
+app.use('/api/auth/forgot-password', forgotPasswordRateLimiter());
+app.use('/api/auth/reset-password', forgotPasswordRateLimiter());
 app.use('/api/auth/activate', authRateLimiter());
 app.use('/api/auth/change-password', authRateLimiter());
 
@@ -358,7 +358,8 @@ app.use('/api/*', async (c, next) => {
       }
     }
     c.set('userId', payload.userId);
-    c.set('roleId', payload.roleId);
+    // Enforce authoritative database role (prevents stale admin token retention after demotion - CWE-270)
+    c.set('roleId', userRec.roleId || payload.roleId);
 
     // Sliding Session Window: If token has less than 2 days remaining, refresh session cookie seamlessly
     const remainingSeconds = (payload.exp || 0) - Math.floor(Date.now() / 1000);
@@ -723,6 +724,18 @@ app.use('/api/*', async (c, next) => {
           const pathParts = c.req.path.split('/');
           const entityId = (pathParts.length >= 4 && pathParts[3] && !pathParts[3].includes('?')) ? pathParts[3] : null;
 
+          // Extract and sanitize granular delta if provided by route handler (Security Shielding)
+          let delta = c.get('mutationDelta') || null;
+          if (delta && delta.record && typeof delta.record === 'object') {
+            const sanitized = { ...delta.record };
+            delete sanitized.password;
+            delete sanitized.password_hash;
+            delete sanitized.token;
+            delete sanitized.apiKey;
+            delete sanitized.secret;
+            delta = { ...delta, record: sanitized };
+          }
+
           const broadcastPromise = fetch(`${c.env.SUPABASE_URL}/realtime/v1/api/broadcast`, {
             method: 'POST',
             headers: {
@@ -739,6 +752,7 @@ app.use('/api/*', async (c, next) => {
                   method,
                   mutationId: clientMutationId,
                   entityId,
+                  delta,
                   timestamp: Date.now()
                 }
               }]

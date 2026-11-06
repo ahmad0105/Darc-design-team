@@ -49,8 +49,9 @@ export function getDaysLeftBadge(dueDate) {
  * Prevents any code collisions during the 30-day trash retention period.
  */
 export function getNextAvailableProjectCode(targetYear = null) {
-  const currentYear = targetYear ? String(targetYear) : String(new Date().getFullYear());
-  const yy = currentYear.slice(-2);
+  // ReDoS & Injection Protection (CWE-1333): Enforce strictly 2 digits for year
+  const rawYear = targetYear ? String(targetYear).replace(/\D/g, '') : '';
+  const yy = rawYear.length >= 2 ? rawYear.slice(-2) : String(new Date().getFullYear()).slice(-2);
   const activeProjects = (state.data?.projects || []);
   const trashedProjects = Array.isArray(state.trash) ? state.trash.filter(item => item.type === 'project' || item.code) : [];
   const allProjects = [...activeProjects, ...trashedProjects];

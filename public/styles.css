@@ -1432,23 +1432,26 @@ body.is-touch-dragging .dnd-edge-hotzone.is-active {
 .template-copy span { margin-top: 4px; color: var(--muted); font-size: 9px; text-align: start; }
 .template-weight { color: var(--muted); font-size: 9px; }
 .template-action {
-  width: 27px;
-  height: 27px;
-  min-width: 27px;
-  min-height: 27px;
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  min-height: 28px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 0;
+  border: 1px solid var(--line);
   border-radius: 8px;
   color: var(--teal);
-  background: #f0f9f7;
+  background: var(--surface-soft, #f0f9f7);
   padding: 0;
-  line-height: 1;
+  line-height: 0;
+  font-size: 0;
   box-sizing: border-box;
+  cursor: pointer;
+  transition: all 0.15s ease;
 }
-.template-action:hover { background: var(--mint); }
-.template-action svg { width: 14px; height: 14px; display: block; margin: auto; }
+.template-action:hover { background: var(--mint); color: var(--teal-strong, #0a5c54); border-color: var(--teal); }
+.template-action svg { width: 14px; height: 14px; display: block; margin: 0; flex-shrink: 0; }
 
 .team-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 13px; }
 .member-card { padding: 17px; border: 1px solid var(--line); border-radius: 17px; background: #fff; box-shadow: var(--shadow-sm); }
@@ -1458,8 +1461,9 @@ body.is-touch-dragging .dnd-edge-hotzone.is-active {
 .member-card-person-copy strong, .member-card-person-copy span:not(.badge):not(.mini-badge):not(.role-badge):not(.role-system-badge):not(.stealth-dev-badge):not(.type-pill) { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .member-card-person-copy strong { font-size: 11px; }
 .member-card-person-copy span { margin-top: 4px; color: var(--muted); font-size: 9px; }
-.member-menu { width: 27px; height: 27px; display: grid; place-items: center; border: 0; border-radius: 8px; color: var(--muted); background: transparent; }
+.member-menu { width: 28px; height: 28px; min-width: 28px; min-height: 28px; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 8px; color: var(--muted); background: transparent; padding: 0; line-height: 0; font-size: 0; cursor: pointer; }
 .member-menu:hover { background: var(--surface-soft); color: var(--teal); }
+.member-menu svg { width: 14px; height: 14px; display: block; margin: 0; flex-shrink: 0; }
 .member-card-role { margin: 15px 0 12px; }
 .member-card-role .status-badge { padding: 5px 8px; }
 .member-card-stats { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-top: 12px; border-top: 1px solid #f0f3f2; color: var(--muted); font-size: 9px; }
@@ -2493,7 +2497,8 @@ body.is-ltr .toast-stack {
   align-items: center !important;
   justify-content: center !important;
   text-align: center !important;
-  line-height: 1 !important;
+  line-height: 0 !important;
+  font-size: 0 !important;
   box-sizing: border-box !important;
   flex-shrink: 0 !important;
   padding: 0 !important;
@@ -2518,8 +2523,9 @@ body.is-ltr .toast-stack {
 .team-menu svg,
 .nav-icon svg {
   display: block !important;
-  margin: auto !important;
+  margin: 0 !important;
   flex-shrink: 0 !important;
+  transform: none !important;
   vertical-align: middle !important;
 }
 
@@ -2634,20 +2640,24 @@ body.is-ltr .toast-stack {
   .view-toolbar {
     display: flex !important;
     flex-direction: column !important;
+    justify-content: flex-start !important;
     gap: 10px !important;
     align-items: stretch !important;
     min-height: auto !important;
     height: auto !important;
+    flex: none !important;
   }
   .view-toolbar-start,
   .view-toolbar-end {
     width: 100% !important;
     display: flex !important;
     flex-wrap: wrap !important;
+    justify-content: flex-start !important;
     gap: 8px !important;
     align-items: center !important;
     min-height: auto !important;
     height: auto !important;
+    flex: none !important;
   }
   .view-toolbar-end {
     margin-top: 4px !important;
@@ -2657,6 +2667,7 @@ body.is-ltr .toast-stack {
   .report-toolbar {
     display: flex !important;
     flex-direction: column !important;
+    justify-content: flex-start !important;
     align-items: stretch !important;
     gap: 10px !important;
     min-height: auto !important;
@@ -2666,6 +2677,7 @@ body.is-ltr .toast-stack {
   .report-toolbar-start {
     width: 100% !important;
     flex-direction: column !important;
+    justify-content: flex-start !important;
     align-items: stretch !important;
     gap: 10px !important;
     min-height: auto !important;
@@ -2677,6 +2689,7 @@ body.is-ltr .toast-stack {
     flex: none !important;
     display: flex !important;
     align-items: center !important;
+    justify-content: flex-start !important;
     gap: 8px !important;
     min-height: auto !important;
     height: auto !important;
@@ -2943,8 +2956,8 @@ body.is-ltr .toast-stack {
     gap: 8px;
   }
   .team-progress { display: none; }
-  .view-toolbar { display: flex; flex-direction: column; gap: 10px; align-items: stretch; }
-  .view-toolbar-start, .view-toolbar-end { width: 100%; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .view-toolbar { display: flex; flex-direction: column; justify-content: flex-start; gap: 10px; align-items: stretch; height: auto; min-height: auto; flex: none; }
+  .view-toolbar-start, .view-toolbar-end { width: 100%; display: flex; flex-wrap: wrap; justify-content: flex-start; gap: 8px; align-items: center; height: auto; min-height: auto; flex: none; }
   .view-toolbar-end { margin-top: 4px; }
   .search-box { min-width: 0; width: 100%; flex: 1 1 100%; }
   .filter-select, .select-compact { flex: 1 1 calc(50% - 6px); min-width: 130px; }
@@ -2987,11 +3000,11 @@ body.is-ltr .toast-stack {
   .report-actions { margin-top: 6px; width: 100%; }
   .report-action-buttons { width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
   .btn-report-action { width: 100%; justify-content: center; min-height: 40px; font-size: 11.5px; padding: 8px 10px; }
-  .report-toolbar { flex-direction: column; align-items: stretch; gap: 10px; }
-  .report-toolbar-start { width: 100%; flex-direction: column; align-items: stretch; gap: 8px; }
-  .report-filter-item { width: 100%; flex: 1 1 100%; }
-  .report-filter-item .report-select { width: 100%; }
-  .report-toolbar-end { width: 100%; }
+  .report-toolbar { flex-direction: column; justify-content: flex-start; align-items: stretch; gap: 10px; height: auto; min-height: auto; flex: none; }
+  .report-toolbar-start { width: 100%; flex-direction: column; justify-content: flex-start; align-items: stretch; gap: 8px; height: auto; min-height: auto; flex: none; }
+  .report-filter-item { width: 100%; flex: none; height: auto; min-height: auto; margin: 0; }
+  .report-filter-item .report-select { width: 100%; height: 40px; }
+  .report-toolbar-end { width: 100%; display: flex; justify-content: flex-start; }
   .report-badge-count { width: 100%; justify-content: center; text-align: center; }
   .report-bar-row { grid-template-columns: minmax(105px, 1.2fr) minmax(70px, 1.5fr) 38px; gap: 8px; }
   .report-tabs { margin-bottom: 16px; }

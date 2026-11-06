@@ -193,6 +193,12 @@ app.post('/', async (c) => {
 
   supabase.from('audit_logs').insert([{ user_id: userId, action: 'create', entity_type: 'task', entity_id: task.id, details: { title: task.title_ar } }]).then().catch(() => {});
 
+  c.set('mutationDelta', {
+    table: 'tasks',
+    action: 'INSERT',
+    record: toCamelCase(task)
+  });
+
   return c.json({ task: toCamelCase(task) }, 201);
 });
 
@@ -325,6 +331,13 @@ app.patch('/reorder', async (c) => {
 
   await Promise.all(updatePromises);
   invalidateBootstrapCache();
+
+  c.set('mutationDelta', {
+    table: 'tasks',
+    action: 'BATCH_REORDER',
+    record: { items }
+  });
+
   return c.json({ ok: true });
 });
 
@@ -493,6 +506,13 @@ app.patch('/:id', async (c) => {
   delete safeAuditDetails.apiKey;
   supabase.from('audit_logs').insert([{ user_id: userId, action: 'update', entity_type: 'task', entity_id: taskId, details: safeAuditDetails }]).then().catch(() => {});
 
+  c.set('mutationDelta', {
+    table: 'tasks',
+    action: 'UPDATE',
+    record: toCamelCase(updatedTask),
+    oldRecord: toCamelCase(task)
+  });
+
   return c.json({ task: toCamelCase(updatedTask) });
 });
 
@@ -532,6 +552,12 @@ app.delete('/:id', async (c) => {
   if (delRes.error) throw delRes.error;
 
   invalidateBootstrapCache();
+
+  c.set('mutationDelta', {
+    table: 'tasks',
+    action: 'DELETE',
+    record: { id: taskId, projectId: task.project_id }
+  });
 
   return c.json({ ok: true });
 });
@@ -750,6 +776,12 @@ app.post('/:id/comments', async (c) => {
 
   invalidateBootstrapCache();
 
+  c.set('mutationDelta', {
+    table: 'comments',
+    action: 'INSERT',
+    record: toCamelCase(comment)
+  });
+
   return c.json({ comment: toCamelCase(comment) }, 201);
 });
 
@@ -804,6 +836,12 @@ app.patch('/:id/comments/:commentId', async (c) => {
 
   invalidateBootstrapCache();
 
+  c.set('mutationDelta', {
+    table: 'comments',
+    action: 'UPDATE',
+    record: toCamelCase(updatedComment)
+  });
+
   return c.json({ comment: toCamelCase(updatedComment) });
 });
 
@@ -852,6 +890,12 @@ app.delete('/:id/comments/:commentId', async (c) => {
   if (delErr) throw delErr;
 
   invalidateBootstrapCache();
+
+  c.set('mutationDelta', {
+    table: 'comments',
+    action: 'DELETE',
+    record: { id: commentId, taskId }
+  });
 
   return c.json({ ok: true });
 });

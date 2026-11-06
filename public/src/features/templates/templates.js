@@ -94,7 +94,7 @@ export function renderTemplates() {
                   <strong>${esc(choose(template.nameAr, template.nameEn))}</strong>
                   <span>${esc(state.lang === 'ar' ? template.nameEn : template.nameAr)}</span>
                 </div>
-                ${can('manage_templates') ? `<button class="template-action" data-action="edit-template" data-template-id="${esc(template.id)}" title="${t('edit')}" style="background:var(--surface-soft);color:var(--ink-soft);border-radius:6px;width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--line);margin-${state.lang === 'ar' ? 'right' : 'left'}:auto">${icon('edit', 14)}</button>` : ''}
+                ${can('manage_templates') ? `<button class="template-action" data-action="edit-template" data-template-id="${esc(template.id)}" title="${t('edit')}" style="margin-${state.lang === 'ar' ? 'right' : 'left'}:auto">${icon('edit', 14)}</button>` : ''}
               </article>
             `).join('')}
           </div>

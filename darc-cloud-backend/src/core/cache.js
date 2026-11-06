@@ -31,18 +31,19 @@ export async function getUserTokenRecord(supabase, userId) {
   if (cached && (now - cached.time < 30000)) {
     return cached;
   }
-  return supabase.from('users').select('status, custom_fields').eq('id', userId).single().then(({ data }) => {
+  return supabase.from('users').select('status, role_id, custom_fields').eq('id', userId).single().then(({ data }) => {
     if (!data) {
-      const record = { ver: 0, status: 'inactive', notFound: true, time: now };
+      const record = { ver: 0, status: 'inactive', roleId: 'member', notFound: true, time: now };
       _userTokenVersions.set(userId, record);
       return record;
     }
     const ver = Number(data?.custom_fields?.tokenVersion || 1);
     const status = data?.status || 'active';
-    const record = { ver, status, time: now };
+    const roleId = data?.role_id || 'member';
+    const record = { ver, status, roleId, time: now };
     _userTokenVersions.set(userId, record);
     return record;
-  }).catch(() => ({ ver: 0, status: 'inactive', time: now }));
+  }).catch(() => ({ ver: 0, status: 'inactive', roleId: 'member', time: now }));
 }
 
 export async function getUserTokenVersion(supabase, userId) {
@@ -51,8 +52,13 @@ export async function getUserTokenVersion(supabase, userId) {
 }
 
 export function setUserTokenVersion(userId, ver) {
-  const cached = _userTokenVersions.get(userId) || { status: 'active' };
+  const cached = _userTokenVersions.get(userId) || { status: 'active', roleId: 'member' };
   _userTokenVersions.set(userId, { ...cached, ver, time: Date.now() });
+}
+
+export function setUserRole(userId, roleId) {
+  const cached = _userTokenVersions.get(userId) || { ver: 1, status: 'active' };
+  _userTokenVersions.set(userId, { ...cached, roleId, time: Date.now() });
 }
 
 export function setUserStatus(userId, status) {

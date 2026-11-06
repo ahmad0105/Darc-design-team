@@ -14,7 +14,9 @@ app.use('*', async (c, next) => {
 // Helper to generate next project code safely & efficiently across all projects (active & 30-day trash)
 // Enforces Annual Engineering ISO Standard: DARC-YY-### (e.g. DARC-26-001, DARC-26-002)
 export async function getNextProjectCode(supabase, targetYear = null) {
-  const year = targetYear ? String(targetYear).slice(-2) : String(new Date().getFullYear()).slice(-2);
+  // ReDoS & Injection Protection (CWE-1333): Enforce strictly 2 digits for year
+  const rawYear = targetYear ? String(targetYear).replace(/\D/g, '') : '';
+  const year = rawYear.length >= 2 ? rawYear.slice(-2) : String(new Date().getFullYear()).slice(-2);
   const { data: allProjects } = await supabase.from('projects').select('code');
   let maxNum = 0;
   let maxDigits = 3;
@@ -125,6 +127,12 @@ app.post('/', async (c) => {
 
   invalidateBootstrapCache();
 
+  c.set('mutationDelta', {
+    table: 'projects',
+    action: 'INSERT',
+    record: toCamelCase(project)
+  });
+
   return c.json({
     project: {
       ...toCamelCase(project),
@@ -233,6 +241,12 @@ app.patch('/:id', async (c) => {
 
   invalidateBootstrapCache();
 
+  c.set('mutationDelta', {
+    table: 'projects',
+    action: 'UPDATE',
+    record: toCamelCase(project)
+  });
+
   return c.json({
     project: {
       ...toCamelCase(project),
@@ -273,6 +287,12 @@ app.delete('/:id', async (c) => {
   if (delRes.error) throw delRes.error;
 
   invalidateBootstrapCache();
+
+  c.set('mutationDelta', {
+    table: 'projects',
+    action: 'DELETE',
+    record: { id: projectId }
+  });
 
   return c.json({ ok: true });
 });
@@ -370,6 +390,12 @@ app.post('/:id/clone', async (c) => {
   await Promise.all(parallelInserts);
 
   invalidateBootstrapCache();
+
+  c.set('mutationDelta', {
+    table: 'projects',
+    action: 'INSERT',
+    record: toCamelCase(clonedProject)
+  });
 
   return c.json({ project: toCamelCase(clonedProject) }, 201);
 });
