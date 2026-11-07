@@ -1568,6 +1568,78 @@ body.is-touch-dragging .dnd-edge-hotzone.is-active {
   min-width: 180px;
   height: 38px;
 }
+
+/* Documents Hub & Blueprint Cards Engine */
+.documents-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(295px, 1fr));
+  gap: 16px;
+  margin-top: 14px;
+}
+.doc-blueprint-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease;
+}
+.doc-blueprint-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.08);
+  border-color: var(--teal);
+}
+.doc-blueprint-card:hover .doc-card-hover-overlay {
+  opacity: 1 !important;
+}
+.doc-blueprint-card:hover .doc-card-banner img {
+  transform: scale(1.04);
+}
+.doc-card-banner {
+  height: 148px;
+  position: relative;
+  background: var(--surface-soft);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  user-select: none;
+  border-bottom: 1px solid var(--line);
+}
+.doc-card-hover-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(8, 14, 18, 0.45);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 4;
+}
+.doc-view-toggle button.active {
+  background: var(--teal) !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 6px rgba(13, 98, 105, 0.3);
+}
+@media (max-width: 768px) {
+  .documents-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .documents-search-box {
+    flex: 1 1 100% !important;
+    max-width: 100% !important;
+  }
+  .documents-filter-group {
+    flex: 1 1 100% !important;
+  }
+}
 .report-tabs { display: flex; gap: 4px; margin-bottom: 20px; padding: 4px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
 .report-tabs::-webkit-scrollbar { display: none; }
 .discipline-icon-badge { width: 32px; height: 32px; border-radius: 8px; background: var(--mint); color: var(--teal); display: grid; place-items: center; flex-shrink: 0; }

@@ -108,6 +108,10 @@ export const state = {
   taskPriorityFilter: 'all',
   docTaskFilter: 'all',
   docProjectFilter: 'all',
+  docDisciplineFilter: 'all',
+  docStatusFilter: 'all',
+  docSortOrder: 'newest',
+  docViewMode: (typeof localStorage !== 'undefined' ? (localStorage.getItem('darc_doc_view_mode') || 'grid') : 'grid'),
   sidebarOpen: false,
   isOffline: typeof navigator !== 'undefined' ? !navigator.onLine : false,
   data: null

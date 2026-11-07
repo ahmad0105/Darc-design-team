@@ -1,6 +1,11 @@
 // Automated Regression Test Suite: Universal Document Viewer & Responsive Cross-Platform Verification
 import assert from 'node:assert';
-import { getFileFormatInfo, extractDrawingVersion } from '../public/src/core/utils.js';
+import { 
+  getFileFormatInfo, 
+  extractDrawingVersion, 
+  detectDocumentDiscipline, 
+  getDisciplineInfo 
+} from '../public/src/core/utils.js';
 import { 
   getDocumentShareableLink, 
   getRealAssetUrl, 
@@ -107,7 +112,29 @@ async function runTests() {
   assert.ok(!safePath.includes('../'), 'Path traversal must be neutralized');
   console.log('✓ Test 5: Strict SSRF and Path Traversal protection enforced (1/1)');
 
-  console.log('--- All Universal Document Viewer & Responsive Cross-Platform Tests Passed (19/19) ---');
+  // 6. Test Multi-Discipline Detection & Taxonomy Engine
+  const disciplineTestCases = [
+    { doc: { originalName: 'DARC-VILLA-ARCH-A101_Rev03.pdf' }, expected: 'architectural' },
+    { doc: { originalName: 'DARC-STRUCTURAL-LAYOUT-V2.dwg' }, expected: 'structural' },
+    { doc: { originalName: 'DARC-BEAM-COLUMN-CALCULATION.pdf' }, expected: 'structural' },
+    { doc: { originalName: 'BUILDING-MEP-HVAC-COORDINATION.pdf' }, expected: 'mep' },
+    { doc: { originalName: 'VILLA-ELECTRICAL-LIGHTING-LAYOUT.dwg' }, expected: 'mep' },
+    { doc: { originalName: 'DARC-VILLA-BOQ-BILL-OF-QUANTITIES.xlsx' }, expected: 'boq' },
+    { doc: { originalName: 'DARC-PALM-VILLA-TECHNICAL-SPECIFICATIONS.docx' }, expected: 'boq' },
+    { doc: { originalName: 'MAIN-CONTRACT-AGREEMENT-SIGNED.pdf' }, expected: 'contracts' },
+    { doc: { originalName: 'MUNICIPALITY-BUILDING-PERMIT-2026.pdf' }, expected: 'contracts' },
+    { doc: { originalName: 'SITE-PHOTO.jpg', discipline: 'mep' }, expected: 'mep' }
+  ];
+
+  for (const tc of disciplineTestCases) {
+    const detected = detectDocumentDiscipline(tc.doc);
+    assert.strictEqual(detected, tc.expected, `Document ${tc.doc.originalName} should be detected as ${tc.expected}, got ${detected}`);
+    const info = getDisciplineInfo(detected);
+    assert.ok(info.labelAr && info.labelEn && info.color && info.bg, `Discipline info for ${detected} must contain localized labels and theme colors`);
+  }
+  console.log('✓ Test 6: Engineering discipline taxonomy (Architectural, Structural, MEP, BOQ, Contracts) verified (10/10)');
+
+  console.log('--- All Universal Document Viewer & Responsive Cross-Platform Tests Passed (29/29) ---');
 }
 
 runTests().catch(err => {

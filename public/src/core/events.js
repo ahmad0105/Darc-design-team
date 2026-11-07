@@ -916,6 +916,13 @@ export async function handleClick(event) {
     if (projectMenu) projectMenu.style.display = projectMenu.style.display === 'none' ? 'block' : 'none';
     return;
   }
+  if (action === 'toggle-doc-view') {
+    const mode = target.dataset.viewMode || (state.docViewMode === 'grid' ? 'table' : 'grid');
+    state.docViewMode = mode;
+    try { localStorage.setItem('darc_doc_view_mode', mode); } catch (_) {}
+    renderView();
+    return;
+  }
   if (action === 'preview-doc') {
     const docId = target.dataset.docId || target.closest('[data-doc-id]')?.dataset.docId;
     if (docId) {
@@ -1880,14 +1887,14 @@ export function handleInput(event) {
   }
 
   if (search === 'documents') {
-    const rows = document.querySelectorAll('.doc-row, .documents-table tbody tr');
-    rows.forEach(row => {
+    const items = document.querySelectorAll('.doc-row, .documents-table tbody tr, .doc-blueprint-card');
+    items.forEach(item => {
       if (!query) {
-        row.style.display = '';
+        item.style.display = '';
         return;
       }
-      const text = row.textContent.toLowerCase();
-      row.style.display = text.includes(query) ? '' : 'none';
+      const text = item.textContent.toLowerCase();
+      item.style.display = text.includes(query) ? '' : 'none';
     });
     return;
   }
@@ -1974,6 +1981,24 @@ export async function handleChange(event) {
 
   if (event.target.dataset.action === 'doc-project-filter') {
     state.docProjectFilter = event.target.value;
+    renderView();
+    return;
+  }
+
+  if (event.target.dataset.action === 'doc-discipline-filter') {
+    state.docDisciplineFilter = event.target.value;
+    renderView();
+    return;
+  }
+
+  if (event.target.dataset.action === 'doc-status-filter') {
+    state.docStatusFilter = event.target.value;
+    renderView();
+    return;
+  }
+
+  if (event.target.dataset.action === 'doc-sort-order') {
+    state.docSortOrder = event.target.value;
     renderView();
     return;
   }

@@ -189,7 +189,10 @@ const ICON_PATHS = {
   thumbUp: '<path d="M7 10v12M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h3"/>',
   package: '<path d="m7.5 4.27 9 5.15M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5M12 22V12"/>',
   leaf: '<path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/>',
-  construction: '<rect x="2" y="6" width="20" height="8" rx="1"/><path d="M17 14v7M7 14v7M17 3v3M7 3v3M10 14 2.3 6.3M14 6l7.7 7.7M8 6l8 8"/>'
+  construction: '<rect x="2" y="6" width="20" height="8" rx="1"/><path d="M17 14v7M7 14v7M17 3v3M7 3v3M10 14 2.3 6.3M14 6l7.7 7.7M8 6l8 8"/>',
+  list: '<line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>',
+  external: '<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>',
+  fileText: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>'
 };
 
 export function icon(name, size = 18, extraClass = '') {
@@ -323,6 +326,96 @@ export function extractDrawingVersion(filename) {
     return `V${parseInt(match[1], 10)}`;
   }
   return null;
+}
+
+/**
+ * Categorizes an engineering deliverable into its discipline domain
+ */
+export function detectDocumentDiscipline(doc) {
+  if (!doc) return 'architectural';
+  if (doc.discipline && typeof doc.discipline === 'string' && doc.discipline !== 'all') {
+    return doc.discipline.toLowerCase();
+  }
+  if (doc.customFields?.discipline && doc.customFields.discipline !== 'all') {
+    return String(doc.customFields.discipline).toLowerCase();
+  }
+
+  const name = String(doc.originalName || doc.name || '').toUpperCase();
+  const ext = (name.split('.').pop() || '').toLowerCase();
+
+  if (name.includes('STRUCT') || name.includes('-S-') || name.includes('STR-') || name.includes('CONCRETE') || name.includes('STEEL') || name.includes('FOUNDATION') || name.includes('REBAR') || name.includes('BEAM') || name.includes('COLUMN') || name.includes('CALCULATION')) {
+    return 'structural';
+  }
+  if (name.includes('MEP') || name.includes('-M-') || name.includes('-E-') || name.includes('-P-') || name.includes('HVAC') || name.includes('ELECTRICAL') || name.includes('PLUMBING') || name.includes('DRAINAGE') || name.includes('LIGHTING')) {
+    return 'mep';
+  }
+  if (name.includes('BOQ') || name.includes('QUANTIT') || name.includes('BILL') || name.includes('SPEC') || ['xlsx', 'xls', 'csv'].includes(ext)) {
+    return 'boq';
+  }
+  if (name.includes('CONTRACT') || name.includes('PERMIT') || name.includes('LICENSE') || name.includes('AGREEMENT') || name.includes('APPROVAL') || name.includes('TENDER')) {
+    return 'contracts';
+  }
+  return 'architectural';
+}
+
+export function getDisciplineInfo(disciplineKey) {
+  const map = {
+    architectural: {
+      key: 'architectural',
+      labelAr: 'معماري',
+      labelEn: 'Architectural',
+      color: '#0d6269',
+      bg: 'rgba(13, 98, 105, 0.12)',
+      border: 'rgba(13, 98, 105, 0.3)',
+      icon: 'building'
+    },
+    structural: {
+      key: 'structural',
+      labelAr: 'إنشائي',
+      labelEn: 'Structural',
+      color: '#2563eb',
+      bg: 'rgba(37, 99, 235, 0.12)',
+      border: 'rgba(37, 99, 235, 0.3)',
+      icon: 'shield'
+    },
+    mep: {
+      key: 'mep',
+      labelAr: 'كهروميكانيكي',
+      labelEn: 'MEP Systems',
+      color: '#d97706',
+      bg: 'rgba(217, 119, 6, 0.12)',
+      border: 'rgba(217, 119, 6, 0.3)',
+      icon: 'zap'
+    },
+    boq: {
+      key: 'boq',
+      labelAr: 'كميات ومواصفات',
+      labelEn: 'BOQ & Specs',
+      color: '#059669',
+      bg: 'rgba(5, 150, 105, 0.12)',
+      border: 'rgba(5, 150, 105, 0.3)',
+      icon: 'document'
+    },
+    contracts: {
+      key: 'contracts',
+      labelAr: 'عقود وتراخيص',
+      labelEn: 'Contracts & Permits',
+      color: '#7c3aed',
+      bg: 'rgba(124, 58, 237, 0.12)',
+      border: 'rgba(124, 58, 237, 0.3)',
+      icon: 'award'
+    },
+    general: {
+      key: 'general',
+      labelAr: 'عام / مخرجات',
+      labelEn: 'General',
+      color: '#475569',
+      bg: 'rgba(71, 85, 105, 0.12)',
+      border: 'rgba(71, 85, 105, 0.3)',
+      icon: 'folder'
+    }
+  };
+  return map[disciplineKey] || map.architectural;
 }
 
 export function getActiveCalendarSystem() {

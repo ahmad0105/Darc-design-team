@@ -3,7 +3,7 @@
 // Built strictly for all devices (Mobile, Tablet, Desktop), Operating Systems (iOS, Android, macOS, Windows, Linux) and Modern Browsers (Safari, Chrome, Edge, Firefox)
 
 import { state } from '../../core/state.js';
-import { choose, esc, icon, statusText, getFileFormatInfo, extractDrawingVersion } from '../../core/utils.js';
+import { choose, esc, icon, statusText, getFileFormatInfo, extractDrawingVersion, detectDocumentDiscipline, getDisciplineInfo } from '../../core/utils.js';
 import { showToast } from '../../shared/ui.js';
 import { api } from '../../core/api.js';
 import { isDemoSession } from '../../core/realtime.js';
@@ -423,6 +423,8 @@ export async function openDocumentPreviewModal(docId) {
   const ext = (doc.originalName || '').split('.').pop()?.toLowerCase() || '';
   const fmt = getFileFormatInfo(doc.originalName, doc.mimeType);
   const version = extractDrawingVersion(doc.originalName) || 'V1';
+  const discKey = detectDocumentDiscipline(doc);
+  const disc = getDisciplineInfo(discKey);
   const sizeFormatted = doc.size > 1024 * 1024
     ? (doc.size / (1024 * 1024)).toFixed(1) + ' MB'
     : Math.round((doc.size || 0) / 1024) + ' KB';
@@ -439,6 +441,19 @@ export async function openDocumentPreviewModal(docId) {
 
   const isDemo = isDemoSession() || (doc && (String(doc.id).startsWith('doc_demo') || doc.isDemo));
   const shareLink = getDocumentShareableLink(doc);
+
+  // Google Drive Direct Embed Resolver
+  const rawDriveId = doc.driveFileId || doc.drive_file_id;
+  let gdriveEmbedUrl = null;
+  if (rawDriveId && !String(rawDriveId).startsWith('demo_') && String(rawDriveId).length >= 20 && rawDriveId !== GDRIVE_ROOT_FOLDER_ID) {
+    gdriveEmbedUrl = `https://drive.google.com/file/d/${encodeURIComponent(rawDriveId)}/preview`;
+  } else {
+    const rawTarget = doc.diskFilename || doc.disk_filename || doc.viewLink || doc.webViewLink || doc.url || '';
+    const match = rawTarget.match(/(?:file\/d\/|id=)([a-zA-Z0-9_-]{20,50})/);
+    if (match && match[1] && !match[1].startsWith('demo_') && match[1].length >= 20 && match[1] !== GDRIVE_ROOT_FOLDER_ID) {
+      gdriveEmbedUrl = `https://drive.google.com/file/d/${match[1]}/preview`;
+    }
+  }
 
   let overlay = document.getElementById('preview-modal-overlay');
   if (!overlay) {
@@ -463,6 +478,8 @@ export async function openDocumentPreviewModal(docId) {
             <div style="display:flex;align-items:center;gap:8px;margin-top:2px;font-size:11px;color:var(--muted, #64748b);flex-wrap:wrap;">
               <span class="version-badge" style="background:rgba(13,98,105,0.08);color:var(--teal, #0d6269);padding:1px 6px;border-radius:4px;font-weight:800;">${version}</span>
               <span>•</span>
+              <span style="background:${disc.bg};color:${disc.color};border:1px solid ${disc.border};padding:1px 6px;border-radius:4px;font-weight:800;">${choose(disc.labelAr, disc.labelEn)}</span>
+              <span>•</span>
               <span>${sizeFormatted}</span>
               <span>•</span>
               <span class="status-badge ${esc(doc.status || 'approved')}" style="font-size:10px;padding:2px 7px;">${esc(statusText(doc.status || 'approved'))}</span>
@@ -471,7 +488,17 @@ export async function openDocumentPreviewModal(docId) {
         </div>
 
         <!-- Action Buttons (Responsive on Mobile) -->
-        <div class="doc-modal-header-actions" style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+        <div class="doc-modal-header-actions" style="display:flex;align-items:center;gap:8px;flex-shrink:0;flex-wrap:wrap;">
+          <!-- Dual Engine Switcher -->
+          <div class="doc-viewer-engine-switch" style="display:inline-flex;align-items:center;background:var(--surface-soft, #f1f5f9);border:1px solid var(--line, #e2e8f0);border-radius:8px;padding:2px;gap:2px;">
+            <button type="button" class="btn btn-sm" id="btn-engine-native" style="padding:4px 9px;font-size:11px;font-weight:700;border-radius:6px;border:none;cursor:pointer;background:var(--brand-teal, #0d6269);color:#ffffff;transition:all 0.15s;" title="${choose('عرض بالمستعرض المدمج فائق الدقة', 'View in Native High-Fidelity Viewer')}">
+              ${choose('المستعرض المدمج', 'Native')}
+            </button>
+            <button type="button" class="btn btn-sm" id="btn-engine-drive" style="padding:4px 9px;font-size:11px;font-weight:700;border-radius:6px;border:none;cursor:pointer;background:transparent;color:var(--ink-soft, #475569);transition:all 0.15s;" title="${choose('عرض بتضمين Google Drive', 'View in Google Drive Viewer')}">
+              Google Drive
+            </button>
+          </div>
+
           <button type="button" class="btn btn-soft btn-sm" id="modal-copy-link-btn" style="display:inline-flex;align-items:center;gap:6px;font-weight:700;color:var(--teal, #0d6269);" title="${choose(isDemo ? 'نسخ رابط المستند' : 'نسخ رابط Google Drive', isDemo ? 'Copy Document Link' : 'Copy Drive Link')}">
             ${icon('link', 14)} <span class="btn-label">${choose('نسخ الرابط', 'Copy Link')}</span>
           </button>
@@ -521,6 +548,98 @@ export async function openDocumentPreviewModal(docId) {
 
   const viewport = document.getElementById('doc-viewer-viewport');
   if (!viewport) return;
+
+  function cleanupActivePreview() {
+    const vid = viewport.querySelector('video');
+    if (vid) {
+      try {
+        vid.pause();
+        vid.removeAttribute('src');
+        vid.load();
+      } catch (_) {}
+    }
+    if (Array.isArray(window.__docPreviewCleanups)) {
+      window.__docPreviewCleanups.forEach(fn => {
+        try { fn(); } catch (_) {}
+      });
+      window.__docPreviewCleanups = [];
+    }
+  }
+
+  function setEngine(engine) {
+    const btnNative = document.getElementById('btn-engine-native');
+    const btnDrive = document.getElementById('btn-engine-drive');
+
+    if (btnNative && btnDrive) {
+      if (engine === 'native') {
+        btnNative.style.background = 'var(--brand-teal, #0d6269)';
+        btnNative.style.color = '#ffffff';
+        btnDrive.style.background = 'transparent';
+        btnDrive.style.color = 'var(--ink-soft, #475569)';
+      } else {
+        btnDrive.style.background = 'var(--brand-teal, #0d6269)';
+        btnDrive.style.color = '#ffffff';
+        btnNative.style.background = 'transparent';
+        btnNative.style.color = 'var(--ink-soft, #475569)';
+      }
+    }
+
+    cleanupActivePreview();
+    viewport.innerHTML = '';
+
+    if (engine === 'drive') {
+      renderDriveEngine();
+    } else {
+      renderNativeEngine();
+    }
+  }
+
+  function renderDriveEngine() {
+    if (gdriveEmbedUrl) {
+      viewport.innerHTML = `
+        <div style="width:100%;height:100%;display:flex;flex-direction:column;position:relative;background:#1e293b;">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 16px;background:rgba(15,23,42,0.95);border-bottom:1px solid #334155;color:#94a3b8;font-size:12px;flex-wrap:wrap;gap:8px;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#22c55e;"></span>
+              <span style="font-weight:700;color:#f8fafc;">${choose('مستعرض Google Drive السحابي الرسمي', 'Official Google Drive Cloud Viewer')}</span>
+            </div>
+            <a href="${esc(shareLink)}" target="_blank" rel="noopener noreferrer" class="btn btn-sm" style="color:#38bdf8;background:transparent;border:none;cursor:pointer;font-weight:700;font-size:11px;display:inline-flex;align-items:center;gap:4px;">
+              ${icon('external', 12)} ${choose('فتح في علامة تبويب جديدة', 'Open in New Tab')}
+            </a>
+          </div>
+          <iframe 
+            src="${esc(gdriveEmbedUrl)}" 
+            style="flex:1;width:100%;height:100%;border:none;background:#ffffff;" 
+            allow="autoplay; encrypted-media; fullscreen"
+            title="Google Drive Preview"
+          ></iframe>
+        </div>
+      `;
+    } else {
+      viewport.innerHTML = `
+        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:#fff;text-align:center;padding:30px;box-sizing:border-box;">
+          <div style="background:rgba(15,23,42,0.85);border:1px solid #334155;border-radius:14px;padding:32px 24px;max-width:480px;box-shadow:0 20px 40px rgba(0,0,0,0.5);">
+            <div style="color:var(--teal, #0d6269);margin-bottom:14px;display:flex;justify-content:center;">${icon('external', 36)}</div>
+            <h4 style="margin:0 0 8px;font-size:16px;font-weight:800;color:#f8fafc;">${choose('معاينة Google Drive السحابية', 'Google Drive Cloud Preview')}</h4>
+            <p style="margin:0 0 18px;font-size:13px;color:#94a3b8;line-height:1.6;">
+              ${choose('هذا الملف مخزن في بيئة العمل المحلية أو كعينة هندسية، ولا يتوفر له رابط تضمين مباشر من Drive. نوصي باستخدام المستعرض المدمج فائق الدقة.', 'This file is hosted locally or as a demo showcase asset and does not have an active Google Drive embed link. We recommend using the high-fidelity native viewer.')}
+            </p>
+            <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+              <button type="button" class="btn btn-primary btn-sm" id="btn-revert-native" style="font-weight:700;display:inline-flex;align-items:center;gap:6px;">
+                ${icon('eye', 13)} <span>${choose('العودة للمستعرض المدمج', 'Back to Native Viewer')}</span>
+              </button>
+              <a href="${esc(shareLink)}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-sm" style="font-weight:700;display:inline-flex;align-items:center;gap:6px;">
+                ${icon('external', 13)} <span>${choose('مجلد Google Drive', 'Google Drive Folder')}</span>
+              </a>
+            </div>
+          </div>
+        </div>
+      `;
+      document.getElementById('btn-revert-native')?.addEventListener('click', () => setEngine('native'));
+    }
+  }
+
+  function renderNativeEngine() {
 
   // ═════════════════════════════════════════════════════════════════════════════
   // 1. RENDER PDF ARCHITECTURAL BLUEPRINTS
@@ -1788,4 +1907,12 @@ export async function openDocumentPreviewModal(docId) {
   `;
 
   document.getElementById('fallback-download-btn')?.addEventListener('click', () => downloadDocument(doc.id));
+  }
+
+  // Wire Engine Switcher Buttons
+  document.getElementById('btn-engine-native')?.addEventListener('click', () => setEngine('native'));
+  document.getElementById('btn-engine-drive')?.addEventListener('click', () => setEngine('drive'));
+
+  // Initialize Native High-Fidelity Viewer by default
+  setEngine('native');
 }
