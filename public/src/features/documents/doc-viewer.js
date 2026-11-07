@@ -268,7 +268,7 @@ export function closeDocumentPreviewModal() {
   const overlay = document.getElementById('preview-modal-overlay');
   if (!overlay) return;
 
-  // Release active media / video hardware decoders
+  // 1. Release active media / video hardware decoders
   const vid = overlay.querySelector('video');
   if (vid) {
     try {
@@ -278,13 +278,31 @@ export function closeDocumentPreviewModal() {
     } catch (_) {}
   }
 
-  // Remove keyboard listeners
+  // 2. Wipe 2D/3D Canvases to release GPU backing stores
+  const canvases = overlay.querySelectorAll('canvas');
+  canvases.forEach(cvs => {
+    try {
+      cvs.width = 0;
+      cvs.height = 0;
+    } catch (_) {}
+  });
+
+  // 3. Clear all active Iframes and embedded Objects to free child process heaps
+  const iframes = overlay.querySelectorAll('iframe, object');
+  iframes.forEach(el => {
+    try {
+      el.src = 'about:blank';
+      el.data = 'about:blank';
+    } catch (_) {}
+  });
+
+  // 4. Remove keyboard listeners
   if (window.__docPreviewKeyHandler) {
     window.removeEventListener('keydown', window.__docPreviewKeyHandler);
     window.__docPreviewKeyHandler = null;
   }
 
-  // Release and clean up all scoped preview listeners (e.g. CAD resize, PPT arrow keys)
+  // 5. Release and clean up all scoped preview listeners (e.g. CAD resize, PPT arrow keys)
   if (Array.isArray(window.__docPreviewCleanups)) {
     window.__docPreviewCleanups.forEach(fn => {
       try { fn(); } catch (_) {}

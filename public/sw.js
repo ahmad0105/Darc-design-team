@@ -1,5 +1,5 @@
 // DARC Design Team — Enterprise Resilient Service Worker & Offline PWA Engine
-const CACHE_NAME = 'darc-cache-v6.1.0';
+const CACHE_NAME = 'darc-cache-v6.2.0';
 const PRECACHE_ASSETS = [
   '/',
   '/index.html',
@@ -57,8 +57,14 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // 3. Static hashed assets (/assets/): Cache-First since filenames are content-hashed and immutable
+  // 3. Static hashed assets (/assets/*.js, *.css): Cache-First since filenames are content-hashed and immutable
   if (url.pathname.startsWith('/assets/')) {
+    // Explicitly SKIP heavy media, videos, PDFs, and CAD drawings from Service Worker Cache Storage (OWASP Client Memory Exhaustion Guard)
+    const isHeavyMedia = /\.(mp4|webm|mov|m4v|pdf|dwg|dxf|zip|xlsx|xls|csv|docx|doc|pptx|ppt)($|\?)/i.test(url.pathname);
+    if (isHeavyMedia || event.request.headers.get('range')) {
+      return; // Direct network stream, NEVER cache in browser Cache Storage
+    }
+
     event.respondWith(
       caches.match(event.request).then((cached) => {
         if (cached) return cached;

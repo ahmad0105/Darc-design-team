@@ -740,15 +740,22 @@ export function currentViewTitle() {
   return ({ dashboard: t('dashboard'), projects: t('projects'), tasks: t('myTasks'), documents: t('documents'), templates: t('templates'), team: t('team'), reports: t('reports'), settings: t('settings') }[state.view] || t('dashboard'));
 }
 
+let _sharedSuccessAudioCtx = null;
+
 /**
- * Plays a soft, luxury 2-tone audio chime (Web Audio API) when an upload completes.
+ * Plays a soft, luxury 2-tone audio chime via Singleton AudioContext (Zero Memory Leaks)
  * Pure native browser audio, 0 external assets, 0ms latency.
  */
 export function playSuccessChime() {
   try {
     const AudioContextClass = window.AudioContext || window.webkitAudioContext;
     if (!AudioContextClass) return;
-    const ctx = new AudioContextClass();
+    if (!_sharedSuccessAudioCtx || _sharedSuccessAudioCtx.state === 'closed') {
+      _sharedSuccessAudioCtx = new AudioContextClass();
+    } else if (_sharedSuccessAudioCtx.state === 'suspended') {
+      _sharedSuccessAudioCtx.resume().catch(() => {});
+    }
+    const ctx = _sharedSuccessAudioCtx;
 
     const now = ctx.currentTime;
     

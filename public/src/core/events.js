@@ -2595,7 +2595,6 @@ export async function uploadDirectFiles({ files, projectId = null, taskId = null
         try {
           const localBlobUrl = URL.createObjectURL(file);
           window.__docBlobCache.set(compiledName, localBlobUrl, file.size);
-          window.__docBlobCache.set(file.name, localBlobUrl, file.size);
         } catch (e) {}
       }
       const fileSizeMB = file.size >= 1024 * 1024 * 1024
