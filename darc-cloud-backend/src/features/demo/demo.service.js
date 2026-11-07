@@ -193,11 +193,10 @@ export function createDemoProject(data = {}) {
   const allCodes = [..._demoStore.projects, ...(_demoStore.trash || [])].map(p => p.code).filter(Boolean);
   let maxNum = 0;
   let maxDigits = 3;
-  const yearPattern = new RegExp(`^DARC-${year}-(\\d+)$`, 'i');
   for (const c of allCodes) {
-    const match = String(c).trim().match(yearPattern);
-    if (match) {
-      const numStr = match[1];
+    const match = String(c).trim().match(/^DARC-(\d{2})-(\d+)$/i);
+    if (match && match[1] === year) {
+      const numStr = match[2];
       if (numStr.length > maxDigits) maxDigits = numStr.length;
       const num = parseInt(numStr, 10);
       if (!isNaN(num) && num > maxNum) maxNum = num;

@@ -20,13 +20,12 @@ export async function getNextProjectCode(supabase, targetYear = null) {
   const { data: allProjects } = await supabase.from('projects').select('code');
   let maxNum = 0;
   let maxDigits = 3;
-  const yearPattern = new RegExp(`^DARC-${year}-(\\d+)$`, 'i');
   if (allProjects && allProjects.length > 0) {
     for (const p of allProjects) {
       if (!p.code) continue;
-      const match = String(p.code).trim().match(yearPattern);
-      if (match) {
-        const numStr = match[1];
+      const match = String(p.code).trim().match(/^DARC-(\d{2})-(\d+)$/i);
+      if (match && match[1] === year) {
+        const numStr = match[2];
         if (numStr.length > maxDigits) maxDigits = numStr.length;
         const lastNum = parseInt(numStr, 10);
         if (!isNaN(lastNum) && lastNum > maxNum) maxNum = lastNum;

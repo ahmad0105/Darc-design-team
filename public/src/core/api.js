@@ -210,7 +210,7 @@ export async function api(path, options = {}) {
     result = rawText ? JSON.parse(rawText) : { ok: true };
   } catch (parseError) {
     if (path.startsWith('/api/bootstrap') || (!isMutation && !isAuth)) {
-      console.error(`[API] JSON parse failed on ${path}:`, parseError.message);
+      console.error('[API] JSON parse failed on path:', path, parseError.message);
       throw new Error(choose('فشل استلام بيانات النظام بشكل صحيح من الخادم.', 'Failed to parse workspace data from server.'));
     }
     result = { ok: true };

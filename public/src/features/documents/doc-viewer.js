@@ -284,6 +284,14 @@ export function closeDocumentPreviewModal() {
     window.__docPreviewKeyHandler = null;
   }
 
+  // Release and clean up all scoped preview listeners (e.g. CAD resize, PPT arrow keys)
+  if (Array.isArray(window.__docPreviewCleanups)) {
+    window.__docPreviewCleanups.forEach(fn => {
+      try { fn(); } catch (_) {}
+    });
+    window.__docPreviewCleanups = [];
+  }
+
   // Restore body scroll
   document.body.style.overflow = '';
 
@@ -1037,6 +1045,8 @@ export async function openDocumentPreviewModal(docId) {
       }
 
       window.addEventListener('resize', resizeCanvas);
+      window.__docPreviewCleanups = window.__docPreviewCleanups || [];
+      window.__docPreviewCleanups.push(() => window.removeEventListener('resize', resizeCanvas));
       setTimeout(resizeCanvas, 50);
 
       // Layer change redraw
@@ -1691,6 +1701,8 @@ export async function openDocumentPreviewModal(docId) {
       if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') goPrev();
     };
     window.addEventListener('keydown', arrowKeyHandler);
+    window.__docPreviewCleanups = window.__docPreviewCleanups || [];
+    window.__docPreviewCleanups.push(() => window.removeEventListener('keydown', arrowKeyHandler));
 
     // Touch Swipe Gestures for iOS / Android
     const touchWrapper = document.getElementById('ppt-touch-wrapper');

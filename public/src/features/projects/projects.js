@@ -58,13 +58,12 @@ export function getNextAvailableProjectCode(targetYear = null) {
 
   let maxNum = 0;
   let maxDigits = 3;
-  const yearPattern = new RegExp(`^DARC-${yy}-(\\d+)$`, 'i');
 
   for (const p of allProjects) {
     if (!p.code) continue;
-    const match = String(p.code).trim().match(yearPattern);
-    if (match) {
-      const numStr = match[1];
+    const match = String(p.code).trim().match(/^DARC-(\d{2})-(\d+)$/i);
+    if (match && match[1] === yy) {
+      const numStr = match[2];
       if (numStr.length > maxDigits) maxDigits = numStr.length;
       const num = parseInt(numStr, 10);
       if (!isNaN(num) && num > maxNum) {
