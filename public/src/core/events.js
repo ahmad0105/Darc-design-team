@@ -201,6 +201,18 @@ export async function handleSubmit(event) {
         }
       }
       closeModal();
+      if (result.task) {
+        if (typeof window.recordRecentLocalMutation === 'function') {
+          window.recordRecentLocalMutation(result.task.id);
+        }
+        if (typeof window.notifyStateMutation === 'function') {
+          window.notifyStateMutation({
+            table: 'tasks',
+            action: isEdit ? 'UPDATE' : 'INSERT',
+            record: result.task
+          });
+        }
+      }
       renderView();
       showToast(choose('تم حفظ المهمة بنجاح.', 'Task saved successfully.'));
       return;

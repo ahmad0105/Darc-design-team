@@ -1,6 +1,8 @@
 // DARC Design Team — Enterprise Offline-First & Sync Engine (v3.0)
 // Dual-layer storage (IndexedDB + LocalStorage fallback) + Optimistic Local Simulation + Deduplicated Outbox Replay
 
+import { state } from './state.js';
+
 const DB_NAME = 'darc_offline_db';
 const DB_VERSION = 1;
 const STORE_NAME = 'cache_store';
@@ -243,7 +245,14 @@ export function enqueueOfflineMutation({ path, method = 'POST', body = null, des
       const existingPatchIdx = queue.findIndex(m => m.method === 'PATCH' && m.path === path);
       if (existingPatchIdx !== -1) {
         const existing = queue[existingPatchIdx];
-        existing.body = { ...(existing.body || {}), ...body };
+        if (path === '/api/tasks/reorder' && Array.isArray(body.items)) {
+          // Coalesce reorder items into a unified latest batch without loss
+          const existingMap = new Map((existing.body?.items || []).map(it => [it.id, it]));
+          body.items.forEach(it => existingMap.set(it.id, it));
+          existing.body = { items: Array.from(existingMap.values()) };
+        } else {
+          existing.body = { ...(existing.body || {}), ...body };
+        }
         existing.createdAt = new Date().toISOString();
         localStorage.setItem(STORAGE_QUEUE_KEY, JSON.stringify(queue));
         emitQueueChange();
@@ -538,6 +547,15 @@ export async function syncPendingMutations(apiFunction) {
 
   if (!stoppedDueToNetwork) {
     clearPendingMutations();
+    // Clean up in-memory pending flags and DOM badges immediately
+    if (state.data?.tasks) {
+      state.data.tasks.forEach(t => {
+        if (t._isOfflinePending) delete t._isOfflinePending;
+      });
+      if (typeof document !== 'undefined') {
+        document.querySelectorAll('.badge-offline-pending').forEach(badge => badge.remove());
+      }
+    }
   }
 
   _isSyncing = false;

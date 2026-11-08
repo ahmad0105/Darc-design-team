@@ -222,6 +222,9 @@ app.patch('/reorder', async (c) => {
   const supabase = c.get('supabase');
 
   if (!items.length) return c.json({ ok: true });
+  if (items.length > 60) {
+    return c.json({ error: 'Batch size limit exceeded (maximum 60 items)' }, 400);
+  }
 
   const now = new Date().toISOString();
   const taskIds = Array.from(new Set(items.map(i => i.id).filter(Boolean)));
@@ -299,6 +302,15 @@ app.patch('/reorder', async (c) => {
 
     const incomingCF = (item.customFields || item.custom_fields || {});
     const sortOrderVal = typeof item.sortOrder === 'number' ? item.sortOrder : (typeof item.sort_order === 'number' ? item.sort_order : 0);
+    const existingSortOrder = typeof existingCF.sortOrder === 'number' ? existingCF.sortOrder : (typeof existingCF.sort_order === 'number' ? existingCF.sort_order : 0);
+    const isStatusChanging = Boolean(item.status && item.status !== existing.status);
+    const isSortOrderChanging = sortOrderVal !== existingSortOrder;
+
+    // High-Throughput Delta Filtering: Only update records that truly changed status or position
+    if (!isStatusChanging && !isSortOrderChanging) {
+      continue;
+    }
+
     const mergedCF = {
       ...existingCF,
       ...incomingCF,

@@ -9,6 +9,7 @@ import { choose, isNotificationRead, hasSessionIndicator } from './utils.js';
 import { showToast } from '../shared/ui.js';
 import { showNotifications } from '../features/notifications/notifications.js';
 import { dispatchUniversalNotification } from '../features/notifications/notification-manager.js';
+import { taskCard } from '../features/tasks/tasks.js';
 
 const SUPABASE_WS_ENDPOINT = 'wss://yjfmrpwkjstxldnwegob.supabase.co/realtime/v1/websocket?apikey=sb_publishable_Zr7mRIWo5djcRpwq4Ihl0A_Eb3AA8gJ&vsn=1.0.0';
 
@@ -19,7 +20,7 @@ const TAB_HIDDEN_STANDBY_MS = isDataSaver ? 10 * 1000 : 30 * 1000; // 10s (Data 
 const SYNC_DEBOUNCE_MS = isDataSaver ? 500 : 250;           // Fast & responsive 250ms batching (ultra-low latency)
 const HEARTBEAT_ACTIVE_MS = 25 * 1000;                      // 25s keepalive ping while actively working
 const HEARTBEAT_IDLE_MS = 45 * 1000;                        // 45s adaptive keepalive when idle > 2 minutes (conserves power)
-const MAX_LOCAL_MUTATIONS = 150;
+const MAX_LOCAL_MUTATIONS = 50;
 
 let _syncDebounceTimer = null;
 let _isRealtimeInitialized = false;
@@ -28,6 +29,7 @@ let _sharedAudioContext = null;
 let _ws = null;
 let _wsHeartbeatTimer = null;
 let _wsReconnectTimer = null;
+let _socketHealthWatchdog = null;
 let _idleCheckTimer = null;
 let _hiddenStandbyTimer = null;
 let _wsMsgRef = 0;
@@ -55,9 +57,9 @@ export function recordRecentLocalMutation(id) {
   const now = Date.now();
   _recentLocalMutations.set(id, now);
 
-  // Auto-prune entries older than 8 seconds
+  // Auto-prune entries older than 4 seconds
   for (const [k, v] of _recentLocalMutations.entries()) {
-    if (now - v > 8000) _recentLocalMutations.delete(k);
+    if (now - v > 4000) _recentLocalMutations.delete(k);
   }
 
   // Strict cap on map size (prevent memory leak)
@@ -241,62 +243,69 @@ function patchTaskDomSurgically(taskId, record, actionType) {
     return true;
   }
 
-  // 1. Surgical progress update (0 DOM rebuild)
-  if (record.progress !== undefined) {
-    const progVal = Number(record.progress) || 0;
-    const progTextEl = cardEl.querySelector('.task-progress');
-    if (progTextEl) {
-      progTextEl.textContent = `${progVal}%`;
-      progTextEl.style.color = progVal === 100 ? 'var(--mint-strong)' : 'var(--teal)';
-    }
-    const barEl = cardEl.querySelector('.task-card-mini-bar > div');
-    if (barEl) {
-      barEl.style.width = `${progVal}%`;
-      barEl.style.background = progVal === 100 ? 'var(--mint-strong)' : (progVal >= 50 ? 'var(--teal)' : 'var(--amber)');
-    }
+  // If locally dragging this exact card, don't interrupt active pointer interaction
+  if (window._isDraggingTask && window._activeDraggedTaskId === taskId) {
+    return true;
   }
 
-  // 2. Surgical status move across Kanban columns (0 DOM rebuild)
-  if (record.status) {
-    const currentCol = cardEl.closest('.board-column');
-    if (currentCol && currentCol.dataset.status !== record.status) {
-      const targetCol = document.querySelector(`.board-column[data-status="${record.status}"]`);
-      if (targetCol) {
-        const targetCards = targetCol.querySelector('.board-cards');
-        if (targetCards) {
-          // Remove empty state placeholder in target column
-          const emptyMsg = targetCards.querySelector('.empty');
-          if (emptyMsg) emptyMsg.remove();
+  // Find updated task entity in local state
+  const task = (state.data?.tasks || []).find((t) => t.id === taskId);
+  if (!task) return false;
 
-          // Move the card to target column smoothly
-          targetCards.prepend(cardEl);
+  // Render fresh card markup via single source of truth taskCard()
+  const temp = document.createElement('div');
+  temp.innerHTML = taskCard(task);
+  const newCard = temp.firstElementChild;
+  if (!newCard) return false;
 
-          // Update column counter badges
-          const currentCountEl = currentCol.querySelector('.board-count');
-          if (currentCountEl) {
-            const curVal = Math.max(0, (parseInt(currentCountEl.textContent, 10) || 1) - 1);
-            currentCountEl.textContent = String(curVal);
-            if (curVal === 0 && !currentCol.querySelector('.task-card')) {
-              const emptyT = (typeof window !== 'undefined' && typeof window.t === 'function') ? window.t('noTasks') : 'لا توجد مهام';
-              currentCol.querySelector('.board-cards')?.insertAdjacentHTML('beforeend', `<div class="empty" style="min-height:150px;pointer-events:none;">${emptyT}</div>`);
-            }
+  const currentCol = cardEl.closest('.board-column');
+  const oldStatus = currentCol?.dataset.status;
+  const newStatus = task.status;
+
+  if (currentCol && oldStatus && newStatus && oldStatus !== newStatus) {
+    const targetCol = document.querySelector(`.board-column[data-status="${newStatus}"]`);
+    if (targetCol) {
+      const targetCards = targetCol.querySelector('.board-cards');
+      if (targetCards) {
+        // Remove empty state placeholder in target column
+        targetCards.querySelector('.empty')?.remove();
+        targetCards.prepend(newCard);
+        cardEl.remove();
+
+        // Update old column counter
+        const currentCountEl = currentCol.querySelector('.board-count');
+        if (currentCountEl) {
+          const curVal = Math.max(0, (parseInt(currentCountEl.textContent, 10) || 1) - 1);
+          currentCountEl.textContent = String(curVal);
+          if (curVal === 0 && !currentCol.querySelector('.task-card')) {
+            const emptyT = (typeof window.t === 'function') ? window.t('noTasks') : 'لا توجد مهام';
+            currentCol.querySelector('.board-cards')?.insertAdjacentHTML('beforeend', `<div class="empty" style="min-height:150px;pointer-events:none;">${emptyT}</div>`);
           }
-          const targetCountEl = targetCol.querySelector('.board-count');
-          if (targetCountEl) {
-            const nextVal = (parseInt(targetCountEl.textContent, 10) || 0) + 1;
-            targetCountEl.textContent = String(nextVal);
-          }
-
-          // Subtle pulse highlight
-          cardEl.style.transition = 'box-shadow 0.3s ease';
-          cardEl.style.boxShadow = '0 0 0 2px var(--teal)';
-          setTimeout(() => {
-            if (cardEl) cardEl.style.boxShadow = '';
-          }, 1200);
         }
+        // Update new column counter
+        const targetCountEl = targetCol.querySelector('.board-count');
+        if (targetCountEl) {
+          const nextVal = (parseInt(targetCountEl.textContent, 10) || 0) + 1;
+          targetCountEl.textContent = String(nextVal);
+        }
+      } else {
+        cardEl.replaceWith(newCard);
       }
+    } else {
+      cardEl.replaceWith(newCard);
     }
+  } else {
+    // Status didn't change: surgical in-place DOM replacement
+    cardEl.replaceWith(newCard);
   }
+
+  // Subtle pulse highlight for instant collaborator awareness
+  newCard.style.transition = 'box-shadow 0.3s ease';
+  newCard.style.boxShadow = '0 0 0 2px var(--teal)';
+  setTimeout(() => {
+    if (newCard) newCard.style.boxShadow = '';
+  }, 800);
+
   return true;
 }
 
@@ -696,6 +705,10 @@ function stopWsHeartbeat() {
 export function disconnectSupabaseRealtime(reason = 'disconnect') {
   _isExplicitlyDisconnected = true;
   stopWsHeartbeat();
+  if (_socketHealthWatchdog) {
+    clearTimeout(_socketHealthWatchdog);
+    _socketHealthWatchdog = null;
+  }
   if (_wsReconnectTimer) {
     clearTimeout(_wsReconnectTimer);
     _wsReconnectTimer = null;
@@ -727,13 +740,23 @@ function wakeUpFromHibernation(source = 'wake_up') {
   if (!isAuthenticated()) return;
   if (typeof navigator !== 'undefined' && !navigator.onLine) return;
 
-  // Re-establish connection if closed
-  if (!_ws || _ws.readyState === WebSocket.CLOSED || _ws.readyState === WebSocket.CLOSING) {
+  // Active Socket Health Probe: Test if socket is truly alive or a silent carrier zombie
+  if (_ws && _ws.readyState === WebSocket.OPEN) {
+    if (_socketHealthWatchdog) clearTimeout(_socketHealthWatchdog);
+    _socketHealthWatchdog = setTimeout(() => {
+      console.warn('[Realtime] Socket health probe timed out (zombie connection detected). Reconnecting cleanly...');
+      _socketHealthWatchdog = null;
+      disconnectSupabaseRealtime('zombie_probe_timeout');
+      connectSupabaseRealtime();
+      triggerImmediateSync('zombie_recovery', true);
+    }, 1200);
+    sendWsMessage(_ws, 'phoenix', 'heartbeat');
+  } else if (!_ws || _ws.readyState === WebSocket.CLOSED || _ws.readyState === WebSocket.CLOSING) {
     connectSupabaseRealtime();
   }
 
   // If we were sleeping, perform immediate catch-up sync for any missed mutations
-  if (wasHibernating || source === 'tab_visible' || source === 'online') {
+  if (wasHibernating || source === 'tab_visible' || source === 'pageshow' || source === 'focus' || source === 'online') {
     triggerImmediateSync(source, true); // Immediate zero-latency catch-up
   }
 }
@@ -782,6 +805,10 @@ function connectSupabaseRealtime() {
 
     ws.onmessage = (event) => {
       try {
+        if (_socketHealthWatchdog) {
+          clearTimeout(_socketHealthWatchdog);
+          _socketHealthWatchdog = null;
+        }
         const msg = JSON.parse(event.data);
         const { event: evt, topic, payload } = msg;
 
@@ -961,6 +988,12 @@ export function initRealtimeConnection() {
         wakeUpFromHibernation('tab_visible');
       }
     });
+
+    // Mobile Safari / Android foreground recovery via pageshow & window focus
+    if (typeof window !== 'undefined') {
+      window.addEventListener('pageshow', () => wakeUpFromHibernation('pageshow'), { passive: true });
+      window.addEventListener('focus', () => wakeUpFromHibernation('focus'), { passive: true });
+    }
   }
 
   // 5. BroadcastChannel between local browser tabs (Zero-Network fast path with Demo Sandboxing)

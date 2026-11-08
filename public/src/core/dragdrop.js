@@ -731,6 +731,8 @@ async function handleTaskDrop(column, clientY, explicitTaskId = null) {
     window._pendingReorderBatch.set(item.id, item);
   });
 
+  // Micro-flush delay: 10ms for instant network dispatch without artificial lag
+  const DROP_FLUSH_DELAY_MS = 10;
   window._reorderSyncTimer = setTimeout(() => {
     const batchItems = Array.from(window._pendingReorderBatch.values());
     window._pendingReorderBatch.clear();
@@ -754,7 +756,7 @@ async function handleTaskDrop(column, clientY, explicitTaskId = null) {
       renderView(true);
       showToast(choose('فشل حفظ الترتيب الجديد في الخادم. تم التراجع عن التعديل تلقائياً.', 'Failed to save task order to server. Reverted automatically.'), true);
     });
-  }, 220);
+  }, DROP_FLUSH_DELAY_MS);
 }
 
 // Clean all active drag states, ghosts, and placeholders
