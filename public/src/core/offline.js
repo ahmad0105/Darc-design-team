@@ -491,86 +491,89 @@ export async function syncPendingMutations(apiFunction) {
   const ALLOWED_MUTATION_PATHS = /^\/api\/(tasks|projects|documents|reminders|comments|notifications)(\/|$)/;
   const ALLOWED_METHODS = new Set(['POST', 'PATCH', 'PUT', 'DELETE']);
 
-  for (let i = 0; i < queue.length; i++) {
-    const item = queue[i];
-    if (!item || !item.path || typeof item.path !== 'string' || !ALLOWED_MUTATION_PATHS.test(item.path) || !ALLOWED_METHODS.has(item.method)) {
-      console.warn('[Offline Sync] Dropping unauthorized/malformed queue mutation:', item?.id, item?.path);
-      continue;
-    }
-    try {
-      const opts = {
-        method: item.method,
-        headers: {
-          'X-Offline-Replay': 'true',
-          'X-Offline-Id': item.id,
-          'X-Idempotency-Key': item.id
-        }
-      };
-      if (item.body) {
-        opts.body = typeof item.body === 'string' ? item.body : JSON.stringify(item.body);
+  try {
+    for (let i = 0; i < queue.length; i++) {
+      const item = queue[i];
+      if (!item || !item.path || typeof item.path !== 'string' || !ALLOWED_MUTATION_PATHS.test(item.path) || !ALLOWED_METHODS.has(item.method)) {
+        console.warn('[Offline Sync] Dropping unauthorized/malformed queue mutation:', item?.id, item?.path);
+        continue;
       }
-      const res = await apiFunction(item.path, opts);
-      if (res && res.error && !res.ok) {
-        // Validation / business error: drop poison pill so queue isn't blocked
-        console.warn('[Offline Sync] Dropping unprocessable mutation:', item.id, res.error);
-      } else {
-        syncedCount++;
-        if (item.path === '/api/tasks/reorder' && Array.isArray(item.body?.items)) {
-          item.body.items.forEach(it => {
-            if (it?.id && typeof window !== 'undefined' && typeof window.recordRecentLocalMutation === 'function') {
-              window.recordRecentLocalMutation(it.id);
-            }
-          });
+      try {
+        const opts = {
+          method: item.method,
+          headers: {
+            'X-Offline-Replay': 'true',
+            'X-Offline-Id': item.id,
+            'X-Idempotency-Key': item.id
+          }
+        };
+        if (item.body) {
+          opts.body = typeof item.body === 'string' ? item.body : JSON.stringify(item.body);
+        }
+        const res = await apiFunction(item.path, opts);
+        if (res && res.error && !res.ok) {
+          // Validation / business error: drop poison pill so queue isn't blocked
+          console.warn('[Offline Sync] Dropping unprocessable mutation:', item.id, res.error);
         } else {
-          const syncedId = (item.body && typeof item.body === 'object' && item.body.id) || (typeof item.path === 'string' && item.path.split('/')[3]);
-          if (syncedId && typeof window !== 'undefined' && typeof window.recordRecentLocalMutation === 'function') {
-            window.recordRecentLocalMutation(syncedId);
+          syncedCount++;
+          if (item.path === '/api/tasks/reorder' && Array.isArray(item.body?.items)) {
+            item.body.items.forEach(it => {
+              if (it?.id && typeof window !== 'undefined' && typeof window.recordRecentLocalMutation === 'function') {
+                window.recordRecentLocalMutation(it.id);
+              }
+            });
+          } else {
+            const syncedId = (item.body && typeof item.body === 'object' && item.body.id) || (typeof item.path === 'string' && item.path.split('/')[3]);
+            if (syncedId && typeof window !== 'undefined' && typeof window.recordRecentLocalMutation === 'function') {
+              window.recordRecentLocalMutation(syncedId);
+            }
           }
         }
-      }
-    } catch (err) {
-      console.error('[Offline Sync] Failed to replay mutation:', item.id, item.path, err.message);
-      const hasHttpStatus = typeof err.status === 'number' && err.status > 0;
-      const isClientReject = hasHttpStatus && err.status >= 400 && err.status < 500;
-      const isNetError = !isClientReject && (
-        (typeof navigator !== 'undefined' && !navigator.onLine) ||
-        (!hasHttpStatus && err.name === 'TypeError') ||
-        (err.message && (err.message.includes('تعذر الاتصال') || err.message.includes('NetworkError')))
-      );
-      if (isNetError) {
-        // Network dropped mid-replay: preserve this item AND all subsequent items in FIFO order
-        const remaining = queue.slice(i);
-        if (typeof localStorage !== 'undefined') {
-          localStorage.setItem(STORAGE_QUEUE_KEY, JSON.stringify(remaining));
+      } catch (err) {
+        console.error('[Offline Sync] Failed to replay mutation:', item.id, item.path, err.message);
+        const hasHttpStatus = typeof err.status === 'number' && err.status > 0;
+        const isClientReject = hasHttpStatus && err.status >= 400 && err.status < 500;
+        const isNetError = !isClientReject && (
+          (typeof navigator !== 'undefined' && !navigator.onLine) ||
+          (!hasHttpStatus && err.name === 'TypeError') ||
+          (err.message && (err.message.includes('تعذر الاتصال') || err.message.includes('NetworkError')))
+        );
+        if (isNetError) {
+          // Network dropped mid-replay: preserve this item AND all subsequent items in FIFO order
+          const remaining = queue.slice(i);
+          if (typeof localStorage !== 'undefined') {
+            localStorage.setItem(STORAGE_QUEUE_KEY, JSON.stringify(remaining));
+          }
+          stoppedDueToNetwork = true;
+          break;
         }
-        stoppedDueToNetwork = true;
-        break;
+        // If 4xx client validation or server rejection, drop the poison pill and log
+        console.warn(`[Offline Sync] Poison pill dropped (HTTP ${err.status || 'Client Error'}):`, item.id, item.path);
       }
-      // If 4xx client validation or server rejection, drop the poison pill and log
-      console.warn(`[Offline Sync] Poison pill dropped (HTTP ${err.status || 'Client Error'}):`, item.id, item.path);
     }
+
+    if (!stoppedDueToNetwork) {
+      clearPendingMutations();
+      // Clean up in-memory pending flags and DOM badges immediately across all entities
+      ['tasks', 'projects', 'comments', 'documents'].forEach(key => {
+        if (Array.isArray(state.data?.[key])) {
+          state.data[key].forEach(entity => {
+            if (entity._isOfflinePending) delete entity._isOfflinePending;
+          });
+        }
+      });
+      if (state.data) {
+        saveOfflineBootstrap(state.data);
+      }
+      if (typeof document !== 'undefined') {
+        document.querySelectorAll('.badge-offline-pending').forEach(badge => badge.remove());
+      }
+    }
+  } finally {
+    _isSyncing = false;
+    emitQueueChange();
   }
 
-  if (!stoppedDueToNetwork) {
-    clearPendingMutations();
-    // Clean up in-memory pending flags and DOM badges immediately across all entities
-    ['tasks', 'projects', 'comments', 'documents'].forEach(key => {
-      if (Array.isArray(state.data?.[key])) {
-        state.data[key].forEach(entity => {
-          if (entity._isOfflinePending) delete entity._isOfflinePending;
-        });
-      }
-    });
-    if (state.data) {
-      saveOfflineBootstrap(state.data);
-    }
-    if (typeof document !== 'undefined') {
-      document.querySelectorAll('.badge-offline-pending').forEach(badge => badge.remove());
-    }
-  }
-
-  _isSyncing = false;
-  emitQueueChange();
   return {
     total: queue.length,
     synced: syncedCount,

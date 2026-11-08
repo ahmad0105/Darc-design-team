@@ -441,6 +441,48 @@ function patchBatchReorderSurgically(items) {
 }
 
 /**
+ * Surgical in-place DOM insertion for newly arrived tasks (eliminates full-board redraws)
+ */
+function patchTaskInsertSurgically(task) {
+  if (typeof document === 'undefined' || !task || !task.id) return false;
+  if (document.querySelector(`.task-card[data-task-id="${task.id}"]`)) return true;
+  if (!taskMatchesCurrentFilters(task)) return true;
+
+  const colKey = getColumnKeyForStatus(task.status);
+  const targetCol = document.querySelector(`.board-column[data-status="${colKey}"]`);
+  if (!targetCol) return false;
+
+  const targetCards = targetCol.querySelector('.board-cards');
+  if (!targetCards) return false;
+
+  const temp = document.createElement('div');
+  temp.innerHTML = taskCard(task);
+  const newCard = temp.firstElementChild;
+  if (!newCard) return false;
+
+  targetCards.querySelector('.empty')?.remove();
+  targetCards.prepend(newCard);
+
+  const targetCountEl = targetCol.querySelector('.board-count');
+  if (targetCountEl) {
+    const nextVal = (parseInt(targetCountEl.textContent, 10) || 0) + 1;
+    targetCountEl.textContent = String(nextVal);
+  }
+
+  if (typeof window !== 'undefined' && typeof window.verifyBoardSymmetry === 'function') {
+    requestAnimationFrame(() => window.verifyBoardSymmetry());
+  }
+
+  newCard.style.transition = 'box-shadow 0.3s ease';
+  newCard.style.boxShadow = '0 0 0 2px var(--teal)';
+  setTimeout(() => {
+    if (newCard) newCard.style.boxShadow = '';
+  }, 1000);
+
+  return true;
+}
+
+/**
  * Batch render view updates using requestAnimationFrame (60 FPS fluid UI)
  */
 function scheduleBatchedViewUpdate() {
@@ -676,6 +718,8 @@ export function applyGranularDelta(tableName, actionType, rawRecord, rawOldRecor
         didPatchSurgically = patchTaskDomSurgically(targetId, record, isSoftDeleted ? 'DELETE' : actionType);
       } else if (actionType === 'BATCH_REORDER' && Array.isArray(record?.items)) {
         didPatchSurgically = patchBatchReorderSurgically(record.items);
+      } else if (actionType === 'INSERT' && record && record.id) {
+        didPatchSurgically = patchTaskInsertSurgically(record);
       }
     }
 
@@ -846,7 +890,7 @@ function wakeUpFromHibernation(source = 'wake_up') {
       disconnectSupabaseRealtime('zombie_probe_timeout');
       connectSupabaseRealtime();
       triggerImmediateSync('zombie_recovery', true);
-    }, 800);
+    }, 2500);
     _lastHeartbeatSentAt = Date.now();
     sendWsMessage(_ws, 'phoenix', 'heartbeat');
   } else if (!_ws || _ws.readyState === WebSocket.CLOSED || _ws.readyState === WebSocket.CLOSING) {

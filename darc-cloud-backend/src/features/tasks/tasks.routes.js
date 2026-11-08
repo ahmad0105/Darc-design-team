@@ -222,8 +222,8 @@ app.patch('/reorder', async (c) => {
   const supabase = c.get('supabase');
 
   if (!items.length) return c.json({ ok: true });
-  if (items.length > 60) {
-    return c.json({ error: 'Batch size limit exceeded (maximum 60 items)' }, 400);
+  if (items.length > 250) {
+    return c.json({ error: 'Batch size limit exceeded (maximum 250 items)' }, 400);
   }
 
   const now = new Date().toISOString();

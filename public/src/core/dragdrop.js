@@ -742,8 +742,12 @@ async function handleTaskDrop(column, clientY, explicitTaskId = null) {
       body: JSON.stringify({ items: batchItems })
     }).catch(e => {
       console.warn('Reorder sync error, performing local rollback:', e);
-      // Automatic Enterprise Rollback
+      // Automatic Enterprise Rollback: preserve any items moved in subsequent user gestures
       snapshotTasks.forEach(snap => {
+        const movedInfo = window._recentlyMovedTasks?.get(snap.id);
+        if (movedInfo && movedInfo.timestamp > nowMovedAt) {
+          return; // Do not overwrite a newer user move
+        }
         const item = (state.data?.tasks || []).find(x => x.id === snap.id);
         if (item) {
           item.status = snap.status;
