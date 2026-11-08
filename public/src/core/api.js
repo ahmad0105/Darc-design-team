@@ -126,9 +126,14 @@ export async function api(path, options = {}) {
   }
 
   options.credentials = 'include';
+  const reqStart = typeof performance !== 'undefined' ? performance.now() : Date.now();
   let response;
   try {
     response = await fetch(API_BASE + path, { ...options, headers });
+    const latency = Math.round((typeof performance !== 'undefined' ? performance.now() : Date.now()) - reqStart);
+    if (!path.startsWith('/api/telemetry')) {
+      recordBreadcrumb('http.request', `${options.method || 'GET'} ${path} (${response.status} - ${latency}ms)`);
+    }
   } catch (networkError) {
     if (isMutation && !isAuth && !isReplay) {
       if (isFormData) {

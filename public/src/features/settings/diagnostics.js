@@ -40,6 +40,17 @@ export function setDiagnosticsStatusFilter(status) {
   _selectedStatus = status;
 }
 
+function getBreadcrumbCategoryClass(cat = '') {
+  const c = String(cat).toLowerCase();
+  if (c.includes('http') || c.includes('api')) return 'cat-http';
+  if (c.includes('nav')) return 'cat-nav';
+  if (c.includes('ui') || c.includes('click') || c.includes('drop')) return 'cat-ui';
+  if (c.includes('ws') || c.includes('socket') || c.includes('realtime')) return 'cat-ws';
+  if (c.includes('err')) return 'cat-err';
+  if (c.includes('warn')) return 'cat-warn';
+  return 'cat-ui';
+}
+
 export function renderDiagnosticsSection() {
   const isDemo = isDemoSession();
   const data = _cachedDiagnostics;
@@ -105,7 +116,7 @@ export function renderDiagnosticsSection() {
 
   // Filter incidents
   if (_selectedUserId !== 'all') {
-    incidents = incidents.filter(i => i.userId === _selectedUserId);
+    incidents = incidents.filter(i => i.userId === _selectedUserId || i.affectedUsers?.includes(_selectedUserId));
   }
   if (_selectedSeverity !== 'all') {
     incidents = incidents.filter(i => i.severity === _selectedSeverity);
@@ -132,16 +143,16 @@ export function renderDiagnosticsSection() {
       : 'var(--blue)';
 
   return `
-    <section class="setting-section" id="diagnostics-dashboard">
+    <section class="setting-section diag-section" id="diagnostics-dashboard">
       ${isDemo ? `
-        <div class="demo-diagnostics-banner" style="background:linear-gradient(90deg, rgba(13,98,105,0.08), rgba(74,199,209,0.12));border:1.5px solid var(--border);border-radius:12px;padding:12px 18px;margin-bottom:20px;display:flex;align-items:center;gap:12px;font-size:12px;color:var(--ink);">
+        <div class="diag-banner">
           <span style="color:var(--teal);display:flex;align-items:center;">${icon('settings', 22)}</span>
           <div style="flex:1;">
             <div style="font-weight:800;color:var(--teal);margin-bottom:2px;">
-              ${choose('بيئة العرض التجريبية — سجل أعطال وتشخيصات محاكاة (Showcase Diagnostics)', 'Demo Showcase Sandbox — Simulated Diagnostics & Logs')}
+              ${choose('بيئة العرض التجريبية — مركز تشخيص محاكاة (Showcase Diagnostics)', 'Demo Showcase Sandbox — Simulated Diagnostics & Logs')}
             </div>
             <div style="color:var(--muted);font-size:11px;line-height:1.4;">
-              ${choose('هذه السجلات وفحوصات الذاكرة وتقارير التتبع هي نماذج محاكاة مخصصة للاستعراض، ولا تتضمن أي بيانات أو أخطاء من بيئة الإنتاج الحقيقية.', 'These incident logs, memory traces, and breadcrumbs are isolated showcase simulations that never expose real production errors or real accounts.')}
+              ${choose('سجلات الأعطال وفحوصات الذاكرة وتقارير التتبع هنا معزولة تماماً لأغراض الاستعراض ولن تسرب أخطاء الإنتاج الحقيقية.', 'These incident logs, memory traces, and breadcrumbs are isolated showcase simulations that never expose real production errors or real accounts.')}
             </div>
           </div>
           <span class="badge" style="background:var(--teal);color:#fff;font-size:10px;font-weight:700;padding:4px 8px;border-radius:6px;white-space:nowrap;">
@@ -149,21 +160,21 @@ export function renderDiagnosticsSection() {
           </span>
         </div>
       ` : ''}
+
       <!-- 1. Header & Actions Bar -->
-      <div class="panel-head" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:14px;margin-bottom:20px;">
+      <div class="panel-head diag-header">
         <div>
           <div style="display:flex;align-items:center;gap:8px;">
-            <span style="font-size:22px;"></span>
             <h2 style="margin:0;font-size:18px;font-weight:700;">
-              ${choose('سجل الأخطاء الفنية وتشخيص أداء المستخدمين', 'Error Diagnostics & User Incident Center')}
+              ${choose('مركز تشخيص الأعطال وحوادث المستخدمين', 'Error Diagnostics & User Incident Center')}
             </h2>
           </div>
-          <p style="margin:6px 0 0;font-size:13px;color:var(--muted);max-width:720px;line-height:1.5;">
-            ${choose('رصد دقيق لكل مشكلة برمجية تواجه أي مستخدم، مع إرسال بريد إلكتروني فوري للإدارة، تسجيل ملف التتبع (Stack Trace)، خطوات المستخدم (Breadcrumbs)، وتشخيص آلي لمساعدتك على الحل فوراً.', 'Real-time error logging per user with automated admin email alerts, stack traces, user breadcrumbs, and instant diagnosis guidance.')}
+          <p style="margin:6px 0 0;font-size:13px;color:var(--muted);max-width:760px;line-height:1.5;">
+            ${choose('نظام مراقبة أداء وتتبع أخطاء متقدم يجمع بين تقارير تتبع الكود (Stack Traces)، بصمة الخطأ التلقائية، خطوات المستخدم (5D Flight Recorder)، والحلول الهندسية الفورية.', 'Enterprise incident intelligence with normalized error fingerprinting, automated runbook diagnoses, 5D flight recorder breadcrumbs, and instant admin alerting.')}
           </p>
         </div>
 
-        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+        <div class="diag-header-actions">
           <button type="button" class="btn btn-sm btn-soft" data-action="test-diagnostic-email" style="color:var(--teal);display:flex;align-items:center;gap:6px;font-size:11px;font-weight:600;" title="${choose('اختبار وصول رسائل التنبيه إلى بريد الإدارة', 'Send test alert email to admin recipient')}">
             ${icon('mail', 13)} ${choose('اختبار إرسال بريد التنبيه', 'Test Email Alert')}
           </button>
@@ -177,51 +188,51 @@ export function renderDiagnosticsSection() {
       </div>
 
       <!-- 2. Status & Metric Summary Badges -->
-      <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:12px;margin-bottom:20px;">
-        <div style="background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px;">
-          <div style="font-size:11px;color:var(--muted);font-weight:600;">${choose('إجمالي المشاكل المسجلة', 'Total Incidents')}</div>
+      <div class="diag-metrics-grid">
+        <div class="diag-metric-card">
+          <div style="font-size:11px;color:var(--muted);font-weight:600;">${choose('إجمالي الحوادث المسجلة', 'Total Incidents')}</div>
           <div style="font-size:22px;font-weight:800;color:var(--ink);margin:4px 0;">${stats.totalIncidents || 0}</div>
-          <div style="font-size:11px;color:var(--ink-soft);">${choose('تم توثيقها بالكامل مع تقارير التتبع', 'Fully documented with stack traces')}</div>
+          <div style="font-size:11px;color:var(--ink-soft);">${choose('موثقة بالكامل ببصمات فريدة', 'Fingerprint grouped with stack traces')}</div>
         </div>
 
-        <div style="background:var(--surface);border:1px solid ${stats.activeIncidents > 0 ? 'rgba(239,68,68,0.3)' : 'var(--line)'};border-radius:10px;padding:14px 16px;">
-          <div style="font-size:11px;color:${stats.activeIncidents > 0 ? 'var(--red)' : 'var(--muted)'};font-weight:600;">${choose('مشاكل نشطة بحاجة لمتابعة', 'Active / Unresolved')}</div>
+        <div class="diag-metric-card ${stats.activeIncidents > 0 ? 'is-active-warning' : ''}">
+          <div style="font-size:11px;color:${stats.activeIncidents > 0 ? 'var(--red)' : 'var(--muted)'};font-weight:600;">${choose('حوادث نشطة بحاجة لمتابعة', 'Active / Unresolved')}</div>
           <div style="font-size:22px;font-weight:800;color:${stats.activeIncidents > 0 ? 'var(--red)' : 'var(--teal)'};margin:4px 0;">${stats.activeIncidents || 0}</div>
-          <div style="font-size:11px;color:var(--ink-soft);">${stats.activeIncidents > 0 ? `${statusDot('warning')} ${choose('تستدعي فحص المطور', 'Requires developer review')}` : `${statusDot('healthy')} ${choose('جميع المشاكل معالجة', 'All resolved')}`}</div>
+          <div style="font-size:11px;color:var(--ink-soft);">${stats.activeIncidents > 0 ? `${statusDot('warning')} ${choose('تستدعي تدخل هندسي', 'Requires engineering fix')}` : `${statusDot('healthy')} ${choose('جميع الحوادث معالجة', 'All resolved')}`}</div>
         </div>
 
-        <div style="background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px;">
+        <div class="diag-metric-card">
           <div style="font-size:11px;color:var(--muted);font-weight:600;">${choose('حسابات الفريق المراقبة', 'Monitored Users')}</div>
           <div style="font-size:22px;font-weight:800;color:var(--teal);margin:4px 0;">${users.length || stats.totalUsersMonitored || 6} ${choose('مستخدمين', 'Users')}</div>
-          <div style="font-size:11px;color:var(--ink-soft);">${choose('تغطية شاملة لكل جهاز ومصادقة', 'Continuous per-session telemetry')}</div>
+          <div style="font-size:11px;color:var(--ink-soft);">${choose('تغطية شاملة لكل جلسة ومصادقة', 'Continuous per-session telemetry')}</div>
         </div>
 
-        <div style="background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px;">
+        <div class="diag-metric-card">
           <div style="font-size:11px;color:var(--muted);font-weight:600;">${choose('نظام التنبيهات البريدية (Email Alerts)', 'Email Alert System')}</div>
           <div style="font-size:13px;font-weight:700;color:var(--mint-strong);margin:6px 0;display:flex;align-items:center;gap:6px;">
             <span style="display:inline-flex;align-items:center;">${isDemo ? icon('flask', 14) : icon('mail', 14)}</span> ${isDemo ? choose('محاكاة الساندبوكس (معزول)', 'Sandbox Simulation (Isolated)') : choose('مفعّل ويرسل تلقائياً', 'Active & Auto-Dispatched')}
           </div>
-          <div style="font-size:11px;color:var(--muted);font-family:monospace;">${esc(stats.alertEmailRecipient || (isDemo ? 'demo-alerts@darc.demo (بيئة المحاكاة الآمنة)' : 'admin@darc-design.bond'))}</div>
+          <div style="font-size:11px;color:var(--muted);font-family:monospace;overflow:hidden;text-overflow:ellipsis;">${esc(stats.alertEmailRecipient || (isDemo ? 'demo-alerts@darc.demo' : 'admin@darc-design.bond'))}</div>
         </div>
 
-        <div style="background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px;">
-          <div style="font-size:11px;color:var(--muted);font-weight:600;">${choose('مزامنة المولد الفوري (Realtime & Outbox)', 'Live Sync & Outbox')}</div>
+        <div class="diag-metric-card">
+          <div style="font-size:11px;color:var(--muted);font-weight:600;">${choose('المزامنة الفورية (Realtime & Outbox)', 'Live Sync & Outbox')}</div>
           <div style="font-size:13px;font-weight:700;color:${realtimeStatusColor};margin:6px 0;display:flex;align-items:center;gap:6px;">
             <span class="column-dot ${realtimeDiag.connected ? 'green' : 'amber'}"></span>
             ${realtimeStatusLabel}
             ${realtimeDiag.latencyMs ? `<span style="font-size:10px;color:var(--muted);font-weight:500;">(${realtimeDiag.latencyMs}ms)</span>` : ''}
           </div>
           <div style="font-size:11px;color:var(--ink-soft);">
-            ${pendingMutationsCount > 0 ? `<span style="color:var(--amber);font-weight:600;">${pendingMutationsCount} ${choose('عمليات معلقة بالمزامنة', 'mutations pending')}</span>` : `${statusDot('healthy')} ${choose('قائمة الإرسال خالية ومحدثة', 'Outbox queue empty & synced')}`}
+            ${pendingMutationsCount > 0 ? `<span style="color:var(--amber);font-weight:600;">${pendingMutationsCount} ${choose('معلقة بالإرسال', 'outbox pending')}</span>` : `${statusDot('healthy')} ${choose('قائمة الإرسال خالية ومحدثة', 'Outbox empty & synced')}`}
           </div>
         </div>
       </div>
 
-      <!-- 3. User Explorer Grid (بطاقات تفاصيل أداء كل مستخدم) -->
+      <!-- 3. User Explorer Grid -->
       <div style="margin-bottom:24px;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
           <h3 style="margin:0;font-size:14px;font-weight:700;display:flex;align-items:center;gap:6px;">
-            <span style="display:inline-flex;align-items:center;">${icon('users', 14)}</span> ${choose('تفاصيل حالة واستقرار أجهزة كل مستخدم (انقر للفلترة السريعة):', 'User Health & Crash Status (Click to Filter):')}
+            <span style="display:inline-flex;align-items:center;">${icon('users', 14)}</span> ${choose('حالة واستقرار حسابات المستخدمين (انقر للفلترة السريعة):', 'User Health & Incidents (Click to Filter):')}
           </h3>
           ${_selectedUserId !== 'all' ? `
             <button type="button" class="btn btn-xs btn-soft" data-action="clear-diagnostics-user-filter" style="font-size:11px;">
@@ -230,18 +241,17 @@ export function renderDiagnosticsSection() {
           ` : ''}
         </div>
 
-        <div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(220px, 1fr));gap:10px;">
+        <div class="diag-users-grid">
           <div 
-            class="user-diag-card ${(_selectedUserId === 'all') ? 'is-active' : ''}" 
+            class="diag-user-card user-diag-card ${(_selectedUserId === 'all') ? 'is-active' : ''}" 
             data-action="filter-diagnostics-user" 
             data-user-id="all"
-            style="background:${_selectedUserId === 'all' ? 'rgba(13,98,105,0.08)' : 'var(--surface)'};border:1px solid ${_selectedUserId === 'all' ? 'var(--teal)' : 'var(--line)'};border-radius:10px;padding:12px 14px;cursor:pointer;transition:all 0.15s ease;"
           >
             <div style="display:flex;align-items:center;gap:8px;">
               <span style="display:inline-flex;align-items:center;color:var(--teal);">${icon('globe', 18)}</span>
               <div style="flex:1;">
                 <div style="font-size:12px;font-weight:700;color:var(--ink);">${choose('جميع المستخدمين', 'All Users')}</div>
-                <div style="font-size:11px;color:var(--muted);">${incidents.length} ${choose('بلاغات', 'records')}</div>
+                <div style="font-size:11px;color:var(--muted);">${incidents.length} ${choose('حوادث', 'records')}</div>
               </div>
             </div>
           </div>
@@ -251,11 +261,10 @@ export function renderDiagnosticsSection() {
     const hasActive = u.activeIncidents > 0;
     return `
               <div 
-                class="user-diag-card ${isSelected ? 'is-active' : ''}" 
+                class="diag-user-card user-diag-card ${isSelected ? 'is-active' : ''}" 
                 data-action="filter-diagnostics-user" 
                 data-user-id="${esc(u.userId)}"
-                style="background:${isSelected ? 'rgba(13,98,105,0.08)' : 'var(--surface)'};border:1px solid ${isSelected ? 'var(--teal)' : (hasActive ? 'rgba(239,68,68,0.3)' : 'var(--line)')};border-radius:10px;padding:12px 14px;cursor:pointer;transition:all 0.15s ease;"
-                title="${choose('انقر لعرض الأخطاء الخاصة بهذا المستخدم فقط', 'Click to view only incidents for this user')}"
+                title="${choose('انقر لعرض الحوادث الخاصة بهذا المستخدم فقط', 'Click to view only incidents for this user')}"
               >
                 <div style="display:flex;align-items:center;gap:10px;">
                   <div style="width:34px;height:34px;border-radius:50%;background:${esc(u.avatarColor || '#0d6269')};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;flex-shrink:0;">
@@ -275,7 +284,7 @@ export function renderDiagnosticsSection() {
                     <div style="font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(u.email || '')}</div>
                     <div style="display:flex;align-items:center;gap:6px;margin-top:4px;">
                       <span class="status-badge ${hasActive ? 'urgent' : 'done'}" style="font-size:9px;padding:1px 6px;">
-                        ${hasActive ? choose(`${u.activeIncidents} خطأ نشط`, `${u.activeIncidents} Active`) : choose('مستقر (0 أعطال)', 'Healthy (0 errors)')}
+                        ${hasActive ? choose(`${u.activeIncidents} حادث نشط`, `${u.activeIncidents} Active`) : choose('مستقر (0 أعطال)', 'Healthy (0 errors)')}
                       </span>
                     </div>
                   </div>
@@ -287,7 +296,7 @@ export function renderDiagnosticsSection() {
       </div>
 
       <!-- 4. Filter Toolbar -->
-      <div style="background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 16px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
+      <div class="diag-filter-bar">
         <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
           <div style="font-size:12px;font-weight:600;color:var(--muted);">${choose('تصفية حسب:', 'Filter by:')}</div>
           
@@ -306,18 +315,26 @@ export function renderDiagnosticsSection() {
         </div>
 
         <div style="font-size:12px;color:var(--muted);">
-          ${choose(`عرض ${incidents.length} مشكلة مسجلة`, `Showing ${incidents.length} incidents`)}
+          ${choose(`عرض ${incidents.length} حادث مسجل`, `Showing ${incidents.length} incidents`)}
           ${selectedUserObj ? ` (${choose('للمستخدم:', 'for user:')} <strong>${selectedUserObj.name}</strong>)` : ''}
         </div>
       </div>
 
-      <!-- 5. Detailed Incident Cards (مع كل التفاصيل التي تساعد في الحل الدقيق) -->
+      <!-- 5. Detailed Incident Cards -->
       <div style="display:flex;flex-direction:column;gap:16px;">
         ${incidents.length ? incidents.map(inc => {
     const isCritical = inc.severity === 'critical';
     const isResolved = inc.status === 'resolved';
+    const occurrencesCount = inc.occurrences || 1;
+    const affectedUsersCount = (inc.affectedUsers && inc.affectedUsers.length) || 1;
+    const originLabel = inc.origin === 'backend_worker' ? 'Backend Server (Worker)' : 'Frontend Client (SPA)';
+
     const debugBundleJson = JSON.stringify({
       incidentId: inc.id,
+      fingerprint: inc.fingerprint || null,
+      occurrences: occurrencesCount,
+      affectedUsersCount,
+      origin: inc.origin || 'frontend_client',
       timestamp: inc.timestamp,
       user: { id: inc.userId, name: inc.userName, email: inc.userEmail, role: inc.userRole },
       client: { device: inc.deviceType, browser: inc.browser, os: inc.os, resolution: inc.screenResolution, memoryMb: inc.memoryMb, ip: inc.ip, location: `${inc.city}, ${inc.country}` },
@@ -327,10 +344,10 @@ export function renderDiagnosticsSection() {
     }, null, 2);
 
     return `
-            <article class="incident-card" style="background:var(--surface);border:1px solid ${isResolved ? 'var(--line)' : (isCritical ? 'rgba(239,68,68,0.4)' : 'rgba(245,158,11,0.35)')};border-radius:12px;padding:20px;box-shadow:var(--shadow-sm);transition:all 0.2s ease;">
+            <article class="diag-incident-card ${isCritical ? 'is-critical' : (inc.severity === 'high' ? 'is-warning' : '')}">
               
               <!-- Incident Head -->
-              <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:14px;border-bottom:1px solid var(--line);padding-bottom:14px;">
+              <div class="diag-incident-head">
                 <div style="display:flex;align-items:flex-start;gap:12px;">
                   <span style="line-height:1;margin-top:2px;display:flex;align-items:center;color:${isResolved ? '#10b981' : (isCritical ? '#ef4444' : '#f59e0b')};">${isResolved ? icon('success', 22) : (isCritical ? icon('alert', 22) : icon('warning', 22))}</span>
                   <div>
@@ -341,9 +358,22 @@ export function renderDiagnosticsSection() {
                       <span class="status-badge ${isCritical ? 'urgent' : (inc.severity === 'high' ? 'in-review' : 'done')}" style="font-size:10px;">
                         ${esc(String(inc.severity || 'high').toUpperCase())}
                       </span>
-                      <span style="font-size:11px;font-family:monospace;background:var(--surface-soft);border:1px solid var(--line);padding:2px 8px;border-radius:4px;color:var(--muted);">
+                      <span style="font-size:10px;font-family:monospace;background:var(--surface-soft);border:1px solid var(--line);padding:2px 8px;border-radius:4px;color:var(--muted);">
                         ${esc(inc.id || '')}
                       </span>
+                      <span style="font-size:10px;font-family:monospace;background:rgba(13,98,105,0.08);color:var(--teal);border:1px solid rgba(13,98,105,0.2);padding:2px 6px;border-radius:4px;">
+                        ${esc(originLabel)}
+                      </span>
+                      ${occurrencesCount > 1 ? `
+                        <span class="badge" style="background:rgba(239,68,68,0.12);color:var(--red);border:1px solid rgba(239,68,68,0.25);font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;display:inline-flex;align-items:center;gap:4px;">
+                          ${icon('alert', 11)} ${choose(`تكرر ${occurrencesCount} مرات`, `${occurrencesCount} occurrences`)}
+                        </span>
+                      ` : ''}
+                      ${affectedUsersCount > 1 ? `
+                        <span class="badge" style="background:rgba(124,58,237,0.1);color:#7c3aed;border:1px solid rgba(124,58,237,0.2);font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;display:inline-flex;align-items:center;gap:4px;">
+                          ${icon('users', 11)} ${choose(`${affectedUsersCount} مستخدمين متأثرين`, `${affectedUsersCount} users affected`)}
+                        </span>
+                      ` : ''}
                     </div>
 
                     <!-- User and Geo summary -->
@@ -380,48 +410,51 @@ export function renderDiagnosticsSection() {
               </div>
 
               <!-- Technical Environment Specs Matrix -->
-              <div style="background:var(--surface-soft);border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin-bottom:14px;display:grid;grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:10px;font-size:12px;">
+              <div class="diag-specs-grid" dir="ltr" style="text-align:left;">
                 <div><span style="color:var(--muted);">${choose('نظام التشغيل:', 'OS:')}</span> <strong>${esc(inc.os || 'macOS')}</strong></div>
                 <div><span style="color:var(--muted);">${choose('المتصفح:', 'Browser:')}</span> <strong>${esc(inc.browser || 'Chrome')}</strong></div>
                 <div><span style="color:var(--muted);">${choose('نوع الجهاز:', 'Device:')}</span> <strong>${esc(inc.deviceType || 'Desktop')}</strong></div>
                 <div><span style="color:var(--muted);">${choose('أبعاد الشاشة:', 'Screen:')}</span> <strong>${esc(inc.screenResolution || '1920x1080')}</strong></div>
                 <div><span style="color:var(--muted);">${choose('ذاكرة الـ Heap:', 'Memory:')}</span> <strong style="color:${inc.memoryMb > 130 ? 'var(--red)' : 'var(--teal)'};">${esc(String(inc.memoryMb))} MB</strong></div>
-                <div><span style="color:var(--muted);">${choose('الشاشة النشطة:', 'Route:')}</span> <strong style="color:var(--teal);font-family:monospace;">${esc(inc.currentView || '#dashboard')}</strong></div>
+                <div><span style="color:var(--muted);">${choose('المسار النشط:', 'Route:')}</span> <strong style="color:var(--teal);font-family:monospace;">${esc(inc.currentView || '#dashboard')}</strong></div>
               </div>
 
               <!-- Error Message & Stack Trace (The exact code location) -->
               <div style="margin-bottom:14px;">
                 <div style="font-size:12px;font-weight:700;color:var(--ink);margin-bottom:6px;display:flex;align-items:center;gap:6px;">
-                  <span style="display:inline-flex;align-items:center;color:var(--teal);">${icon('search', 14)}</span> ${choose('الخطأ البرمجي وموقع الاستثناء في الكود (Stack Trace):', 'Error Message & Call Stack:')}
+                  <span style="display:inline-flex;align-items:center;color:var(--teal);">${icon('search', 14)}</span> ${choose('الخطأ وموقع الاستثناء البرمجي (Stack Trace):', 'Error Message & Call Stack:')}
                 </div>
-                <div style="background:#090d16;color:#f8fafc;border:1px solid #1e293b;border-radius:8px;padding:12px 14px;font-family:Consolas, Monaco, monospace;font-size:12px;overflow-x:auto;">
+                <div class="diag-code-box">
                   <div style="color:#ef4444;font-weight:700;margin-bottom:8px;">${esc(inc.errorMessage)}</div>
                   <pre style="margin:0;color:#94a3b8;font-size:11px;line-height:1.5;white-space:pre-wrap;word-break:break-all;">${esc(inc.stackTrace)}</pre>
                 </div>
               </div>
 
-              <!-- User Breadcrumbs (Step-by-step actions that caused it) -->
+              <!-- User 5D Flight Recorder Timeline -->
               <div style="margin-bottom:14px;">
                 <div style="font-size:12px;font-weight:700;color:var(--ink);margin-bottom:6px;display:flex;align-items:center;gap:6px;">
-                  <span style="display:inline-flex;align-items:center;color:var(--teal);">${icon('footprint', 14)}</span> ${choose('تسلسل خطوات المستخدم قبل حدوث المشكلة (User Breadcrumbs):', 'Step-by-Step User Actions Prior to Error:')}
+                  <span style="display:inline-flex;align-items:center;color:var(--teal);">${icon('footprint', 14)}</span> ${choose('تسلسل خطوات المستخدم قبل الخطأ (5D Flight Recorder Timeline):', 'Step-by-Step Flight Recorder Timeline:')}
                 </div>
-                <div style="background:var(--surface-soft);border:1px solid var(--line);border-radius:8px;padding:10px 14px;">
-                  <ol style="margin:0;padding-right:20px;font-size:12px;color:var(--ink-soft);line-height:1.7;">
-                    ${(inc.breadcrumbs || []).length ? inc.breadcrumbs.map(b => `
-                      <li>
-                        <span style="color:var(--muted);font-family:monospace;">[${esc(b.time)}]</span>
-                        <strong style="color:var(--teal);">${esc(b.category)}:</strong>
-                        <span>${esc(b.message)}</span>
-                      </li>
-                    `).join('') : `<li>${choose('لا توجد خطوات سابقة مسجلة.', 'No prior breadcrumbs.')}</li>`}
-                  </ol>
+                <div class="diag-timeline">
+                  ${(inc.breadcrumbs || []).length ? inc.breadcrumbs.map(b => {
+    const catClass = getBreadcrumbCategoryClass(b.category);
+    return `
+                      <div class="diag-timeline-item ${catClass}">
+                        <span class="diag-badge-category ${catClass}">[${esc(b.category || 'action')}]</span>
+                        <span style="font-family:monospace;color:var(--muted);font-size:11px;">[${esc(b.time || '')}]</span>
+                        <span style="flex:1;">${esc(b.message || '')}</span>
+                      </div>
+                    `;
+  }).join('') : `
+                    <div style="font-size:12px;color:var(--muted);">${choose('لا توجد خطوات سابقة مسجلة.', 'No prior breadcrumbs.')}</div>
+                  `}
                 </div>
               </div>
 
-              <!-- Suggested Automated Resolution -->
-              <div style="background:rgba(16,185,129,0.07);border:1px solid rgba(16,185,129,0.3);border-radius:8px;padding:12px 16px;margin-bottom:12px;">
+              <!-- Suggested Automated Resolution (Runbook Engine) -->
+              <div class="diag-solution-box">
                 <div style="font-size:12px;font-weight:700;color:var(--mint-strong);margin-bottom:4px;display:flex;align-items:center;gap:6px;">
-                  <span style="display:inline-flex;align-items:center;color:var(--teal);">${icon('bulb', 14)}</span> ${choose('التشخيص التلقائي والحل المقترح للمطور:', 'Automated Root Cause Diagnosis & Recommended Fix:')}
+                  <span style="display:inline-flex;align-items:center;color:var(--teal);">${icon('bulb', 14)}</span> ${choose('التشخيص التلقائي والحل الهندسي المقترح (Runbook Engine):', 'Automated Diagnosis & Runbook Recommendation:')}
                 </div>
                 <div style="font-size:12px;color:var(--ink);line-height:1.6;">
                   ${esc(inc.suggestedSolution || choose('تحقق من صحة الكود ومسارات المعالجة.', 'Review code handling.'))}
@@ -429,8 +462,8 @@ export function renderDiagnosticsSection() {
               </div>
 
               <!-- Email Dispatch Status Receipt -->
-              <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;font-size:11px;color:var(--muted);padding-top:10px;border-top:1px dashed var(--line);">
-                <div style="display:flex;align-items:center;gap:6px;">
+              <div class="diag-footer-receipt">
+                <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
                   <span style="display:inline-flex;align-items:center;">${icon('mail', 13)}</span>
                   <span>${choose('حالة إرسال بريد التنبيه للإدارة:', 'Admin Alert Email:')}</span>
                   <strong style="color:var(--teal);">${isDemo ? choose('محاكاة الساندبوكس (معزول)', 'Simulated Sandbox') : (inc.emailAlert?.status === 'delivered' ? choose('تم التسليم للبريد بنجاح', 'Delivered') : choose('تم التحقق والتسجيل في السيرفر', 'Dispatched to Sandbox'))}</strong>

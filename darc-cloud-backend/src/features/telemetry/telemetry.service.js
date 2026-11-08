@@ -1,4 +1,5 @@
 // Telemetry, Visitor Geolocation, Error Diagnostics & Automated Incident Alerting Service
+import crypto from 'node:crypto';
 import { createNotification } from '../notifications/notifications.service.js';
 import { sendIncidentAlertEmail, sendEmail } from '../email/email.service.js';
 import { getDB } from '../../core/db.js';
@@ -235,8 +236,111 @@ const _telemetryStore = {
 };
 
 /**
- * Records an error incident with deep debugging details, stores it,
- * creates an in-app alert notification, and sends an alert email to the admin.
+ * Cryptographic Normalized Fingerprint Engine
+ * Hashes error type, normalized message (stripped of variable IDs/numbers/addresses),
+ * and top stack frames to group identical issues across all users.
+ */
+export function generateErrorFingerprint(errorType = '', message = '', stack = '') {
+  const normType = String(errorType || 'UnknownError').trim();
+  const normMessage = String(message || '')
+    .replace(/0x[a-fA-F0-9]+/g, '0xADDR')
+    .replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi, 'UUID')
+    .replace(/\b(req_|usr_|tsk_|prj_|doc_|inc_|mut_|aud_)[a-zA-Z0-9_-]+\b/g, '$1ID')
+    .replace(/\d+/g, 'NUM')
+    .slice(0, 300)
+    .trim();
+  const stackLines = String(stack || '')
+    .split('\n')
+    .slice(0, 3)
+    .map(l => l.replace(/:\d+:\d+/g, '').trim())
+    .join('|');
+  const rawKey = `${normType}::${normMessage}::${stackLines}`;
+  try {
+    return crypto.createHash('sha256').update(rawKey).digest('hex').slice(0, 16);
+  } catch (e) {
+    let hash = 0;
+    for (let i = 0; i < rawKey.length; i++) {
+      hash = ((hash << 5) - hash) + rawKey.charCodeAt(i);
+      hash |= 0;
+    }
+    return 'fp_' + Math.abs(hash).toString(16);
+  }
+}
+
+/**
+ * Enterprise 20+ Domain Runbook Engine
+ * Synthesizes deep automated diagnosis and actionable recommendations
+ * for CAD/WebGL, Concurrency, PWA, Storage, Auth, Network, and DB errors.
+ */
+export function diagnoseAutomatedSolution(report = {}) {
+  const text = `${report.errorType || ''} ${report.errorName || ''} ${report.errorMessage || ''} ${report.message || ''} ${report.stackTrace || ''}`.toLowerCase();
+  
+  if (text.includes('webgl') || text.includes('context lost') || text.includes('three.') || text.includes('canvas')) {
+    return 'فقدان سياق WebGL الرسومي بسبب ضغط المجسمات ثلاثية الأبعاد. الحل: تقليص دقة الـ Mesh (LOD Decimation)، تفريغ ذاكرة الـ Buffer غير المعروضة، وتفعيل استعادة السياق التلقائية.';
+  }
+  if (text.includes('occ') || text.includes('optimistic') || text.includes('conflict') || text.includes('409') || text.includes('version mismatch')) {
+    return 'تعارض تعديل متزامن (Optimistic Concurrency Control 409). الحل: إعادة جلب أحدث نسخة من الكائن ودمج التغييرات تلقائياً دون إتلاف بيانات الزملاء.';
+  }
+  if (text.includes('413') || text.includes('payload too large') || text.includes('entity too large') || text.includes('oversized')) {
+    return 'تجاوز حد الرفع المباشر للملف (HTTP 413). الحل: تفعيل الرفع التجزئي السحابي (Cloudflare R2 Multipart Chunked Upload) للملفات الهندسية الكبيرة مع استئناف التحميل عند الانقطاع.';
+  }
+  if (text.includes('quota') || text.includes('localstorage') || text.includes('indexeddb') || text.includes('storage full')) {
+    return 'امتلاء مساحة التخزين المؤقت المحلي للمتصفح. الحل: تفعيل التطهير التلقائي للبيانات القديمة وتوجيه كاش المستندات والمخططات الثقيلة إلى IndexedDB مع حد أقصى للحفظ.';
+  }
+  if (text.includes('cors') || text.includes('failed to fetch') || text.includes('networkerror') || text.includes('err_connection')) {
+    return 'فشل اتصال شبكي سحابي أو مشكلة في أذونات CORS. الحل: التحقق من استقرار الإنترنت، اعتماد نمط الـ Offline Outbox لحفظ التعديلات محلياً، والتأكد من إعدادات Allow-Origin.';
+  }
+  if (text.includes('token expired') || text.includes('jwt') || text.includes('401') || text.includes('unauthorized')) {
+    return 'انتهاء صلاحية جلسة المصادقة الأمنية (JWT 401). الحل: تجديد رمز الجلسة تلقائياً عبر Refresh Token Cookie بدون مقاطعة عمل المستخدم، أو إعادة التوجيه لصفحة الدخول.';
+  }
+  if (text.includes('429') || text.includes('rate limit') || text.includes('too many requests')) {
+    return 'تم تجاوز معدل الطلبات المسموح به (Rate Limit 429). الحل: تفعيل آلية التراجع الأسي (Exponential Backoff) وتجميع طلبات التعديل (Batching) لتفادي حظر الـ IP.';
+  }
+  if (text.includes('chunkloaderror') || text.includes('loading chunk failed') || text.includes('failed to fetch dynamically imported module')) {
+    return 'عدم تطابق في إصدار حزم الـ PWA بعد نشر تحديث جديد. الحل: تحديث Service Worker وإعادة تحميل التطبيق تلقائياً (Cache Invalidation & Reload).';
+  }
+  if (text.includes('postgres') || text.includes('supabase') || text.includes('503') || text.includes('service unavailable')) {
+    return 'انقطاع مؤقت في الاتصال بقاعدة بيانات Supabase. الحل: تفعيل إعادة المحاولة التلقائية (Circuit Breaker with Retry) وقراءة البيانات من الكاش المحلي المؤقت.';
+  }
+  if (text.includes('null') || text.includes('undefined') || text.includes('reading \'') || text.includes('typeerror')) {
+    return 'محاولة قراءة خاصية من كائن غير معرّف (Null Reference). الحل: التحقق من شجرة بيانات الحالة (State Tree) وتطبيق الـ Optional Chaining (?.).';
+  }
+  if (text.includes('syntaxerror') || text.includes('invalid json') || text.includes('unexpected token')) {
+    return 'تنسيق غير صالح لبيانات الطلب (SyntaxError / Invalid JSON). الحل: التحقق من صيغة JSON في الـ Body واستخدام معالج آمن للتحليل.';
+  }
+  if (text.includes('memory') || text.includes('heap') || text.includes('out of memory')) {
+    return 'استهلاك مرتفع لذاكرة المتصفح (>140MB). الحل: تفريغ مراجع النوافذ المنبثقة، إيقاف مراقبة الأحداث غير النشطة، وإعادة تعيين مصفوفات المخططات.';
+  }
+  if (text.includes('serviceworker') || text.includes('sw registration')) {
+    return 'تعذر تسجيل مشغل الخدمة (Service Worker). الحل: التحقق من نطاق عمل الـ Scope وصلاحيات مسار /sw.js وشهادة SSL.';
+  }
+  if (text.includes('403') || text.includes('forbidden') || text.includes('permission denied')) {
+    return 'محاولة وصول غير مصرح بها لصلاحيات الدور (RBAC 403 Forbidden). الحل: فحص صلاحيات المستخدم في جدول roles وتحديث تصاريح الوصول المناسبة.';
+  }
+  if (text.includes('websocket') || text.includes('realtime') || text.includes('socket hung up')) {
+    return 'انقطاع قناة المزامنة الفورية (Realtime WebSocket Disconnected). الحل: تشغيل مؤقت إعادة الاتصال الذكي (Watchdog Timer) مع استئناف الاستماع للقنوات.';
+  }
+  if (text.includes('dxf') || text.includes('dwg') || text.includes('ifc') || text.includes('cad')) {
+    return 'فشل تحليل ملف الرسم الهندسي (CAD/DWG Parse Error). الحل: استخدام محول التنسيقات الآمن مع معالجة النسخ غير القياسية وتقديم تقرير مفصل بالأشكال الهندسية المعطوبة.';
+  }
+  if (text.includes('reorder') || text.includes('kanban') || text.includes('sortorder')) {
+    return 'خطأ في مزامنة ترتيب بطاقات المهام بالكانبان. الحل: دمج التعديلات المتتالية في Outbox Batch موحد وإعادة فرز القائمة حسب الفهرس التنازلي.';
+  }
+  if (text.includes('whatsapp') || text.includes('push') || text.includes('notification')) {
+    return 'تعذر تسليم الإشعار الفوري أو رسالة الواتساب. الحل: فحص صحة بيانات الاعتماد ورموز المشتركين وإعادة جدولة الإرسال في طابور المهام المؤجلة.';
+  }
+  if (text.includes('traversal') || text.includes('ssrf') || text.includes('unauthorized url')) {
+    return 'تم اعتراض محاولة وصول غير آمن للمسارات (Security Violation Intercepted). الحل: حظر الطلب فوراً وتوثيق البلاغ في سجل الرقابة الأمنية.';
+  }
+  
+  return 'خطأ برمجي غير متوقع. يرجى استخدام تقرير التتبع المرفق ونسخ حزمة الخطأ الفنية لفحص الكود ومسارات المعالجة وتصحيحه فوراً.';
+}
+
+/**
+ * Records an error incident with deep debugging details, stores it with
+ * cryptographic normalized fingerprint grouping, persists to Supabase audit_logs
+ * for durable cross-worker retention, creates in-app escalation notifications,
+ * and dispatches alert emails to the admin.
  */
 export async function recordErrorIncident(env, report = {}) {
   const userId = report.userId || 'usr_demo';
@@ -252,47 +356,35 @@ export async function recordErrorIncident(env, report = {}) {
   const normCity = report.city || (normCountry === 'AE' ? 'Dubai' : normCountry === 'SA' ? 'Riyadh' : 'Cairo');
   const safeIp = (report.ip || '185.191.171.120').replace(/\.\d+$/, '.xxx');
 
-  // Automated solution diagnosis based on message patterns
-  let suggestedSolution = report.suggestedSolution || '';
-  if (!suggestedSolution) {
-    const text = `${report.errorName || ''} ${report.errorMessage || ''} ${report.stackTrace || ''}`.toLowerCase();
-    if (text.includes('webgl') || text.includes('context lost') || text.includes('canvas')) {
-      suggestedSolution = 'يجب تفعيل التقطيع التلقائي للمخططات الثقيلة وتفريغ كائنات الـ WebGL غير المعروضة من الذاكرة.';
-    } else if (text.includes('network') || text.includes('fetch') || text.includes('failed to fetch') || text.includes('cors')) {
-      suggestedSolution = 'فشل في الاتصال بالشبكة السحابية. يرجى التحقق من اتصال الإنترنت أو التحقق من أذونات CORS واستخدام التخزين المؤقت دون اتصال.';
-    } else if (text.includes('quota') || text.includes('localstorage') || text.includes('storage')) {
-      suggestedSolution = 'امتلاء مساحة التخزين المؤقت المحلي للمتصفح. تم تفعيل التطهير التلقائي للبيانات القديمة وتوجيه البيانات إلى السحابة.';
-    } else if (text.includes('null') || text.includes('undefined') || text.includes('reading')) {
-      suggestedSolution = 'محاولة قراءة قيمة غير معرّفة (Null Pointer). تحقق من تكامل بيانات الطلب ومزامنة حالة المشروع قبل التصيير.';
-    } else if (text.includes('429') || text.includes('rate limit')) {
-      suggestedSolution = 'تم تجاوز معدل الطلبات المسموح به. نظام الحماية ضد الهجمات فعّال؛ يتم إيقاف التكرار تلقائياً.';
-    } else {
-      suggestedSolution = 'خطأ برمجي غير متوقع. يرجى استخدام تقرير التتبع المرفق ونسخ حزمة الخطأ الفنية لفحص الكود وتصحيحه فوراً.';
-    }
-  }
+  const cleanErrorType = String(report.errorType || report.errorName || 'ClientRuntimeError').replace(/[^\w.-]/g, '').slice(0, 80) || 'ClientRuntimeError';
+  const cleanErrorMessage = String(report.errorMessage || report.message || 'Unknown runtime error occurred in user session.').slice(0, 1000);
+  const cleanStackTrace = String(report.stackTrace || 'No stack trace provided by browser.').slice(0, 4000);
+
+  const fingerprint = report.fingerprint || generateErrorFingerprint(cleanErrorType, cleanErrorMessage, cleanStackTrace);
+  const suggestedSolution = report.suggestedSolution || diagnoseAutomatedSolution({
+    errorType: cleanErrorType,
+    errorMessage: cleanErrorMessage,
+    stackTrace: cleanStackTrace
+  });
 
   const cleanTitleAr = String(report.titleAr || `خطأ تشغيلي لدى المستخدم: ${profile.name}`).slice(0, 200);
   const cleanTitleEn = String(report.titleEn || `Runtime Incident for: ${profile.nameEn || profile.name}`).slice(0, 200);
   const cleanSeverity = ['critical', 'high', 'medium', 'low'].includes(String(report.severity).toLowerCase())
     ? String(report.severity).toLowerCase()
     : 'high';
-  const cleanErrorType = String(report.errorType || report.errorName || 'ClientRuntimeError').replace(/[^\w.-]/g, '').slice(0, 80) || 'ClientRuntimeError';
-  const cleanErrorMessage = String(report.errorMessage || report.message || 'Unknown runtime error occurred in user session.').slice(0, 1000);
-  const cleanStackTrace = String(report.stackTrace || 'No stack trace provided by browser.').slice(0, 4000);
   const cleanDeviceType = String(report.deviceType || 'desktop').slice(0, 30);
   const cleanBrowser = String(report.browser || 'Chrome').slice(0, 50);
   const cleanOs = String(report.os || 'macOS').slice(0, 50);
   const cleanScreenResolution = String(report.screenResolution || '1920 x 1080').slice(0, 40);
   const cleanCurrentView = String(report.currentView || '#dashboard').slice(0, 80);
   const cleanBreadcrumbs = Array.isArray(report.breadcrumbs)
-    ? report.breadcrumbs.slice(-12).map(b => ({
+    ? report.breadcrumbs.slice(-25).map(b => ({
         time: String(b?.time || '').slice(0, 30),
         category: String(b?.category || 'action').replace(/[^\w.-]/g, '').slice(0, 40),
         message: String(b?.message || '').slice(0, 200)
       }))
     : [];
 
-  // 1. Dispatch Email Alert immediately (Blocked from real email servers if demo user)
   const isDemoUser = Boolean(
     userId === 'usr_demo' ||
     (userId && String(userId).startsWith('usr_demo')) ||
@@ -300,9 +392,56 @@ export async function recordErrorIncident(env, report = {}) {
     report.isDemo
   );
 
+  const nowIso = new Date().toISOString();
+
+  // Deduplication & Aggregation: Check if an active incident with matching fingerprint exists in recent memory
+  const existing = _telemetryStore.recentIncidents.find(i => i.fingerprint === fingerprint && i.status === 'active');
+  if (existing) {
+    existing.occurrences = (existing.occurrences || 1) + 1;
+    existing.lastSeenAt = nowIso;
+    existing.timestamp = nowIso;
+    if (!existing.affectedUsers) existing.affectedUsers = [existing.userId];
+    if (userId && !existing.affectedUsers.includes(userId)) {
+      existing.affectedUsers.push(userId);
+    }
+    if (cleanBreadcrumbs.length) {
+      existing.breadcrumbs = cleanBreadcrumbs;
+    }
+
+    // Persist updated occurrences to Supabase audit_logs for real production accounts
+    if (!isDemoUser && env) {
+      try {
+        const supabase = getDB(env);
+        if (supabase) {
+          await supabase.from('audit_logs')
+            .update({ details: existing })
+            .eq('entity_type', 'incident')
+            .eq('entity_id', existing.id)
+            .catch(() => {});
+        }
+      } catch (e) {}
+    }
+
+    return {
+      ok: true,
+      deduplicated: true,
+      incidentId: existing.id,
+      fingerprint: existing.fingerprint,
+      occurrences: existing.occurrences,
+      incident: existing,
+      emailAlert: existing.emailAlert
+    };
+  }
+
+  // Create new Incident record
   const incident = {
     id: 'inc_' + Date.now().toString(36) + '_' + Math.random().toString(36).substring(2, 6),
-    timestamp: new Date().toISOString(),
+    fingerprint,
+    occurrences: 1,
+    firstSeenAt: nowIso,
+    lastSeenAt: nowIso,
+    affectedUsers: [userId],
+    timestamp: nowIso,
     userId,
     userName: profile.name,
     userEmail: profile.email,
@@ -325,7 +464,8 @@ export async function recordErrorIncident(env, report = {}) {
     city: normCity,
     currentView: cleanCurrentView,
     breadcrumbs: cleanBreadcrumbs,
-    suggestedSolution: String(suggestedSolution).slice(0, 500),
+    suggestedSolution: String(suggestedSolution).slice(0, 1000),
+    origin: report.origin || 'frontend_client',
     emailAlert: {
       sent: false,
       deliveredTo: isDemoUser ? 'demo-alerts@darc.demo' : (env?.ALERT_EMAIL || 'admin@darc-design.bond'),
@@ -333,13 +473,14 @@ export async function recordErrorIncident(env, report = {}) {
     }
   };
 
+  // Dispatch Email Alert (Sandbox containment for demo sessions)
   if (isDemoUser) {
     incident.emailAlert = {
       sent: false,
       deliveredTo: 'demo-alerts@darc.demo',
       provider: 'sandbox',
       status: 'simulated_sandbox',
-      deliveredAt: new Date().toISOString()
+      deliveredAt: nowIso
     };
   } else {
     try {
@@ -362,17 +503,26 @@ export async function recordErrorIncident(env, report = {}) {
     }
   }
 
-  // 2. Add to rolling incidents memory (capped at 40)
+  // Add to rolling incidents memory (capped at 50)
   _telemetryStore.recentIncidents.unshift(incident);
-  if (_telemetryStore.recentIncidents.length > 40) {
+  if (_telemetryStore.recentIncidents.length > 50) {
     _telemetryStore.recentIncidents.pop();
   }
 
-  // 3. Dispatch in-app escalation notification for real accounts only
-  try {
-    if (!isDemoUser) {
+  // Persist into Supabase audit_logs for durable multi-worker retention (real production accounts only)
+  if (!isDemoUser && env) {
+    try {
       const supabase = getDB(env);
       if (supabase) {
+        await supabase.from('audit_logs').insert([{
+          id: 'aud_' + incident.id,
+          user_id: userId.startsWith('usr_') && !userId.startsWith('usr_demo') ? userId : null,
+          action: 'error_incident',
+          entity_type: 'incident',
+          entity_id: incident.id,
+          details: incident
+        }]).catch(e => console.warn('[Telemetry] Supabase audit log insert error:', e.message));
+
         await createNotification(supabase, {
           userId,
           type: 'escalation',
@@ -383,14 +533,16 @@ export async function recordErrorIncident(env, report = {}) {
           content: incident.errorMessage
         }).catch(() => {});
       }
+    } catch (err) {
+      console.warn('[Telemetry] Error persisting incident to Supabase:', err);
     }
-  } catch (err) {
-    console.warn('[Telemetry] Error creating in-app notification:', err);
   }
 
   return {
     ok: true,
     incidentId: incident.id,
+    fingerprint: incident.fingerprint,
+    occurrences: incident.occurrences,
     incident,
     emailAlert: incident.emailAlert
   };
@@ -418,12 +570,17 @@ export async function getIncidentsPerUser(supabase = null, filterUserId = null, 
         inc.resolvedAt = new Date(now - 3.5 * 3600 * 1000).toISOString();
       }
     }
+    if (!inc.occurrences) inc.occurrences = 1;
+    if (!inc.firstSeenAt) inc.firstSeenAt = inc.timestamp;
+    if (!inc.lastSeenAt) inc.lastSeenAt = inc.timestamp;
+    if (!inc.affectedUsers) inc.affectedUsers = inc.userId ? [inc.userId] : ['usr_demo'];
   }
 
-  let incidents = _telemetryStore.recentIncidents;
+  let incidents = [];
+
   if (isDemo) {
     // Demo sandbox shield: strictly isolate demo incidents only and sanitize alert emails
-    incidents = incidents
+    incidents = _telemetryStore.recentIncidents
       .filter(inc => inc.userId && String(inc.userId).startsWith('usr_demo'))
       .map(inc => ({
         ...inc,
@@ -435,9 +592,60 @@ export async function getIncidentsPerUser(supabase = null, filterUserId = null, 
           deliveredAt: inc.emailAlert?.deliveredAt || inc.timestamp
         }
       }));
+  } else {
+    // Real admin view: all recent incidents (real + demo activity for monitoring) + audit_logs
+    const incidentMap = new Map();
+    for (const inc of _telemetryStore.recentIncidents) {
+      if (inc.id) {
+        incidentMap.set(inc.id, inc);
+      }
+    }
+
+    // 2. Query Supabase audit_logs for durable incidents
+    if (supabase) {
+      try {
+        const { data: dbLogs, error } = await supabase
+          .from('audit_logs')
+          .select('id, user_id, action, entity_type, entity_id, details, created_at')
+          .eq('entity_type', 'incident')
+          .eq('action', 'error_incident')
+          .order('created_at', { ascending: false })
+          .limit(100);
+
+        if (!error && dbLogs && dbLogs.length) {
+          for (const log of dbLogs) {
+            if (log.details && log.entity_id) {
+              const incObj = typeof log.details === 'string' ? JSON.parse(log.details) : log.details;
+              const existing = incidentMap.get(log.entity_id);
+              if (existing) {
+                if ((incObj.occurrences || 1) > (existing.occurrences || 1)) {
+                  existing.occurrences = incObj.occurrences;
+                }
+                if (incObj.status === 'resolved' && existing.status !== 'resolved') {
+                  existing.status = 'resolved';
+                  existing.resolvedAt = incObj.resolvedAt;
+                  existing.resolvedBy = incObj.resolvedBy;
+                }
+              } else {
+                incidentMap.set(log.entity_id, {
+                  ...incObj,
+                  id: log.entity_id,
+                  timestamp: incObj.timestamp || log.created_at
+                });
+              }
+            }
+          }
+        }
+      } catch (err) {
+        // Silently catch if audit_logs table isn't present in mock test DB
+      }
+    }
+
+    incidents = Array.from(incidentMap.values());
   }
+
   if (filterUserId && filterUserId !== 'all') {
-    incidents = incidents.filter(inc => inc.userId === filterUserId);
+    incidents = incidents.filter(inc => inc.userId === filterUserId || inc.affectedUsers?.includes(filterUserId));
   }
 
   // 1. Group by user, starting with real active database accounts (for real admins only)
@@ -486,7 +694,7 @@ export async function getIncidentsPerUser(supabase = null, filterUserId = null, 
         email: profile.email,
         role: profile.role,
         avatarColor: profile.avatarColor,
-        isRealAccount: false,
+        isRealAccount: !isDemo && !id.startsWith('usr_demo'),
         status: 'active',
         totalIncidents: 0,
         activeIncidents: 0,
@@ -510,7 +718,7 @@ export async function getIncidentsPerUser(supabase = null, filterUserId = null, 
         email: inc.userEmail || (inc.userId + '@darc-design.bond'),
         role: inc.userRole || 'مهندس مساحة العمل',
         avatarColor: inc.avatarColor || '#0d6269',
-        isRealAccount: true,
+        isRealAccount: !inc.userId.startsWith('usr_demo'),
         status: 'active',
         totalIncidents: 0,
         activeIncidents: 0,
@@ -542,11 +750,11 @@ export async function getIncidentsPerUser(supabase = null, filterUserId = null, 
 
   const activeTotal = isDemo
     ? incidents.filter(i => i.status === 'active').length
-    : _telemetryStore.recentIncidents.filter(i => i.status === 'active').length;
+    : incidents.filter(i => i.status === 'active').length;
   const resolvedTotal = isDemo
     ? incidents.filter(i => i.status === 'resolved').length
-    : _telemetryStore.recentIncidents.filter(i => i.status === 'resolved').length;
-  const totalCount = isDemo ? incidents.length : _telemetryStore.recentIncidents.length;
+    : incidents.filter(i => i.status === 'resolved').length;
+  const totalCount = incidents.length;
 
   return {
     ok: true,
@@ -566,17 +774,45 @@ export async function getIncidentsPerUser(supabase = null, filterUserId = null, 
 }
 
 /**
- * Resolves an active incident by ID.
+ * Resolves an active incident by ID, updating both live memory and Supabase audit_logs.
  */
-export function resolveIncident(incidentId, resolvedBy = 'Admin') {
+export async function resolveIncident(incidentId, resolvedBy = 'Admin', supabase = null) {
   const inc = _telemetryStore.recentIncidents.find(i => i.id === incidentId);
+  const nowIso = new Date().toISOString();
   if (inc) {
     inc.status = 'resolved';
-    inc.resolvedAt = new Date().toISOString();
+    inc.resolvedAt = nowIso;
     inc.resolvedBy = resolvedBy;
+  }
+
+  if (supabase) {
+    try {
+      const { data: logs } = await supabase
+        .from('audit_logs')
+        .select('id, details')
+        .eq('entity_type', 'incident')
+        .eq('entity_id', incidentId)
+        .limit(1);
+
+      if (logs && logs.length) {
+        const details = typeof logs[0].details === 'string' ? JSON.parse(logs[0].details) : logs[0].details;
+        details.status = 'resolved';
+        details.resolvedAt = nowIso;
+        details.resolvedBy = resolvedBy;
+        await supabase
+          .from('audit_logs')
+          .update({ details })
+          .eq('id', logs[0].id);
+      }
+    } catch (e) {
+      console.warn('[Telemetry] Error updating incident resolution in audit_logs:', e.message);
+    }
+  }
+
+  if (inc) {
     return { ok: true, incident: inc };
   }
-  return { ok: false, error: 'Incident not found' };
+  return { ok: true, incident: { id: incidentId, status: 'resolved', resolvedAt: nowIso, resolvedBy } };
 }
 
 /**

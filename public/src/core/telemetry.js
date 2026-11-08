@@ -9,18 +9,57 @@ let _longTaskCount = 0;
 let _heartbeatTimer = null;
 let _lastSyncTime = Date.now();
 const _breadcrumbs = [];
+const _clientErrorThrottle = new Map(); // key -> lastDispatchedMs
 
-// Breadcrumb recorder (captures the last 15 user actions for debugging)
+const SENSITIVE_KEY_REGEX = /(password|token|secret|authorization|cookie|creditCard|apiKey|turnstile|sessionToken)/i;
+
+/**
+ * Deterministic OWASP PII & Credential Scrubber
+ * Redacts JWT tokens, secrets, passwords, cards, and session identifiers.
+ */
+export function scrubPII(value) {
+  if (value === null || value === undefined) return value;
+  if (typeof value === 'string') {
+    return value
+      .replace(/Bearer\s+[A-Za-z0-9-_=.]+/gi, 'Bearer [REDACTED_JWT]')
+      .replace(/ey[A-Za-z0-9-_=]+\.[A-Za-z0-9-_=]+\.?[A-Za-z0-9-_.+/=]*/g, '[REDACTED_JWT]')
+      .replace(/\b[A-Fa-f0-9]{32,64}\b/g, '[REDACTED_HASH]')
+      .replace(/\b\d{4}[ -]?\d{4}[ -]?\d{4}[ -]?\d{4}\b/g, '[REDACTED_CARD]')
+      .replace(/(password|secret|token|apiKey)=(?:[^\s&]+)/gi, '$1=[REDACTED]');
+  }
+  if (Array.isArray(value)) {
+    return value.map(scrubPII);
+  }
+  if (typeof value === 'object') {
+    const clean = {};
+    for (const [k, v] of Object.entries(value)) {
+      if (SENSITIVE_KEY_REGEX.test(k)) {
+        clean[k] = '[REDACTED]';
+      } else {
+        clean[k] = scrubPII(v);
+      }
+    }
+    return clean;
+  }
+  return value;
+}
+
+// 5D Flight Recorder Breadcrumb recorder (captures the last 25 user actions with ms precision)
 export function recordBreadcrumb(category = 'action', message = '', metadata = null) {
   const d = new Date();
-  const time = d.toTimeString().split(' ')[0]; // HH:mm:ss
+  const time = d.toTimeString().split(' ')[0] + '.' + String(d.getMilliseconds()).padStart(3, '0');
+  const safeMessage = scrubPII(String(message || '').slice(0, 250));
+  const safeMetadata = metadata ? scrubPII(metadata) : null;
+
   _breadcrumbs.push({
     time,
-    category,
-    message: String(message || '').slice(0, 150),
-    metadata: metadata ? JSON.stringify(metadata).slice(0, 200) : null
+    timestamp: d.getTime(),
+    category: String(category).slice(0, 40),
+    message: safeMessage,
+    metadata: safeMetadata ? JSON.stringify(safeMetadata).slice(0, 300) : null
   });
-  if (_breadcrumbs.length > 15) {
+
+  if (_breadcrumbs.length > 25) {
     _breadcrumbs.shift();
   }
 }
@@ -51,6 +90,49 @@ if (typeof window !== 'undefined') {
     console.info('[WebGL Context Guard] WebGL context successfully restored with optimized buffer allocation.');
     recordBreadcrumb('webgl.guard', 'WebGL Context successfully restored with optimized buffer allocation.');
   }, false);
+
+  // 5D Flight Recorder: Navigation & Route Tracking
+  window.addEventListener('hashchange', () => {
+    recordBreadcrumb('navigation', `الانتقال إلى: ${window.location.hash || '#dashboard'}`);
+  });
+
+  // 5D Flight Recorder: UI Click Interception (Buttons, Nav items, Modals)
+  if (typeof document !== 'undefined') {
+    document.addEventListener('click', (e) => {
+      try {
+        const target = e.target.closest('button, a, [data-action], input[type="submit"], .nav-item, .tab-item');
+        if (!target) return;
+        const action = target.getAttribute('data-action') || target.getAttribute('href') || target.className || target.tagName;
+        const text = (target.innerText || target.value || target.title || '').trim().slice(0, 40);
+        recordBreadcrumb('ui.click', `النقر على: ${text ? `"${text}" ` : ''}[${action}]`);
+      } catch (err) {}
+    }, { passive: true, capture: true });
+  }
+
+  // 5D Flight Recorder: Intercept console.warn & console.error
+  if (!window.__DARC_CONSOLE_HOOKED__) {
+    window.__DARC_CONSOLE_HOOKED__ = true;
+    const originalWarn = console.warn;
+    const originalError = console.error;
+    console.warn = (...args) => {
+      try {
+        const msg = args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ');
+        if (!msg.includes('[Telemetry]') && !msg.includes('[WebGL Context Guard]') && !msg.includes('[Offline Outbox]')) {
+          recordBreadcrumb('console.warn', msg.slice(0, 160));
+        }
+      } catch (e) {}
+      originalWarn.apply(console, args);
+    };
+    console.error = (...args) => {
+      try {
+        const msg = args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ');
+        if (!msg.includes('[Telemetry]') && !msg.includes('API Failed')) {
+          recordBreadcrumb('console.error', msg.slice(0, 160));
+        }
+      } catch (e) {}
+      originalError.apply(console, args);
+    };
+  }
 
   // Track long tasks (>50ms CPU blocking) if supported by browser
   try {
@@ -119,9 +201,27 @@ export async function reportClientError(error, context = {}) {
     : 'Unknown';
 
   const errObj = error || {};
-  const errorMessage = String(errObj.message || errObj.reason || errObj || 'Unknown client error');
-  const stackTrace = String(errObj.stack || context.stack || 'No stack trace provided.');
+  const rawErrorMessage = String(errObj.message || errObj.reason || errObj || 'Unknown client error');
+  const rawStackTrace = String(errObj.stack || context.stack || 'No stack trace provided.');
   const errorType = errObj.name || context.errorType || 'ClientRuntimeError';
+
+  const errorMessage = scrubPII(rawErrorMessage);
+  const stackTrace = scrubPII(rawStackTrace);
+
+  // Client Throttle: Prevent flooding if identical error triggers repeatedly in a rapid loop
+  const throttleKey = `${errorType}:${errorMessage.slice(0, 80)}`;
+  const now = Date.now();
+  const lastDispatched = _clientErrorThrottle.get(throttleKey) || 0;
+  if (now - lastDispatched < 15000) {
+    recordBreadcrumb('error.throttled', `${errorType}: ${errorMessage.slice(0, 100)} (Throttled local)`);
+    return { ok: true, throttled: true };
+  }
+  _clientErrorThrottle.set(throttleKey, now);
+  if (_clientErrorThrottle.size > 50) {
+    for (const [k, ts] of _clientErrorThrottle.entries()) {
+      if (now - ts > 60000) _clientErrorThrottle.delete(k);
+    }
+  }
 
   // Record into breadcrumbs
   recordBreadcrumb('error', `${errorType}: ${errorMessage}`);

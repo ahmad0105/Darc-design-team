@@ -174,12 +174,6 @@ app.post('/report-error', async (c) => {
     }
 
     const body = await c.req.json().catch(() => ({}));
-    const rawErrMsg = String(body.errorMessage || body.message || '').slice(0, 500);
-
-    // Deduplication: Suppress repeated email storm if identical error occurs repeatedly
-    if (isDuplicateErrorReport(ip, rawErrMsg)) {
-      return c.json({ ok: true, deduplicated: true, message: 'تم استلام وتوثيق هذا الخطأ مسبقاً.' });
-    }
 
     // Anti-Spoofing: Unauthenticated clients cannot impersonate arbitrary registered users
     const authenticatedUserId = c.get('userId');
@@ -202,7 +196,7 @@ app.post('/report-error', async (c) => {
       os: body.os || os
     });
 
-    return c.json({ ok: true, message: 'تم تسجيل تفاصيل المشكلة بنجاح وإرسال التنبيه البريدي للإدارة.', ...result });
+    return c.json({ ok: true, message: 'تم تسجيل تفاصيل المشكلة بنجاح وتحديث السجل الفني.', ...result });
   } catch (err) {
     return c.json({ ok: false, error: err.message }, 500);
   }
@@ -241,7 +235,8 @@ app.patch('/incidents/:id/resolve', async (c) => {
       }
     });
   }
-  const result = resolveIncident(incidentId, userId);
+  const supabase = c.get('supabase');
+  const result = await resolveIncident(incidentId, userId, supabase);
   return c.json(result);
 });
 
