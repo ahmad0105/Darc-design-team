@@ -721,11 +721,34 @@ app.use('/api/*', async (c, next) => {
         // Broadcast mutation event asynchronously to Supabase Realtime WebSocket subscribers
         if (c.env.SUPABASE_URL && c.env.SUPABASE_SERVICE_ROLE_KEY) {
           const clientMutationId = c.req.header('x-mutation-id') || null;
-          const pathParts = c.req.path.split('/');
-          const entityId = (pathParts.length >= 4 && pathParts[3] && !pathParts[3].includes('?')) ? pathParts[3] : null;
+          const reqPath = c.req.path;
+          const pathParts = reqPath.split('/').filter(Boolean); // e.g. ['api', 'tasks', 'tsk_01']
+          const entityId = (pathParts.length >= 3 && pathParts[2] && !pathParts[2].includes('?') && pathParts[2] !== 'reorder') ? pathParts[2] : null;
 
           // Extract and sanitize granular delta if provided by route handler (Security Shielding)
           let delta = c.get('mutationDelta') || null;
+          if (!delta) {
+            // Automatic Delta Synthesizer: Infer table and action from route path
+            let inferredTable = null;
+            if (reqPath.startsWith('/api/projects')) inferredTable = 'projects';
+            else if (reqPath.includes('/comments')) inferredTable = 'comments';
+            else if (reqPath.startsWith('/api/tasks')) inferredTable = 'tasks';
+            else if (reqPath.startsWith('/api/documents')) inferredTable = 'documents';
+            else if (reqPath.startsWith('/api/users')) inferredTable = 'users';
+            else if (reqPath.startsWith('/api/roles')) inferredTable = 'roles';
+            else if (reqPath.startsWith('/api/reminders')) inferredTable = 'reminders';
+            else if (reqPath.startsWith('/api/templates')) inferredTable = 'templates';
+
+            if (inferredTable) {
+              const action = method === 'POST' ? 'INSERT' : (method === 'DELETE' ? 'DELETE' : 'UPDATE');
+              delta = {
+                table: inferredTable,
+                action,
+                record: entityId ? { id: entityId } : null
+              };
+            }
+          }
+
           if (delta && delta.record && typeof delta.record === 'object') {
             const sanitized = { ...delta.record };
             delete sanitized.password;
@@ -736,19 +759,22 @@ app.use('/api/*', async (c, next) => {
             delta = { ...delta, record: sanitized };
           }
 
-          const broadcastPromise = fetch(`${c.env.SUPABASE_URL}/realtime/v1/api/broadcast`, {
+          const baseUrl = String(c.env.SUPABASE_URL || '').replace(/\/+$/, '');
+          const cleanServiceKey = String(c.env.SUPABASE_SERVICE_ROLE_KEY || '').trim().replace(/^["']|["']$/g, '');
+
+          const broadcastPromise = fetch(`${baseUrl}/realtime/v1/api/broadcast`, {
             method: 'POST',
             headers: {
-              'apikey': c.env.SUPABASE_SERVICE_ROLE_KEY,
-              'Authorization': `Bearer ${c.env.SUPABASE_SERVICE_ROLE_KEY}`,
+              'apikey': cleanServiceKey,
+              'Authorization': `Bearer ${cleanServiceKey}`,
               'Content-Type': 'application/json'
             },
             body: JSON.stringify({
               messages: [{
-                topic: 'realtime:darc_live',
+                topic: 'darc_live',
                 event: 'STATE_MUTATION',
                 payload: {
-                  path: c.req.path,
+                  path: reqPath,
                   method,
                   mutationId: clientMutationId,
                   entityId,
@@ -757,7 +783,13 @@ app.use('/api/*', async (c, next) => {
                 }
               }]
             })
-          }).catch(() => {});
+          }).then(async (res) => {
+            if (!res.ok) {
+              console.warn(`[Realtime Broadcast Error] Status: ${res.status}`, await res.text().catch(() => ''));
+            }
+          }).catch((err) => {
+            console.warn('[Realtime Broadcast Network Failure]', err?.message);
+          });
 
           if (c.executionCtx && typeof c.executionCtx.waitUntil === 'function') {
             c.executionCtx.waitUntil(broadcastPromise);

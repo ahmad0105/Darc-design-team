@@ -247,6 +247,25 @@ export async function loadData(silent = false) {
       // HTTP 304 Not Modified
       if (state.data && state.data.user) {
         // Cache is completely identical and data is in memory: 0ms CPU & 0 DOM ops
+        if (getPendingMutations().length === 0) {
+          let hadPending = false;
+          ['tasks', 'projects', 'comments', 'documents'].forEach(key => {
+            if (Array.isArray(state.data[key])) {
+              state.data[key].forEach(e => {
+                if (e._isOfflinePending) {
+                  delete e._isOfflinePending;
+                  hadPending = true;
+                }
+              });
+            }
+          });
+          if (hadPending) {
+            saveOfflineBootstrap(state.data);
+            if (typeof document !== 'undefined') {
+              document.querySelectorAll('.badge-offline-pending').forEach(badge => badge.remove());
+            }
+          }
+        }
         return;
       }
       // Memory is empty (fresh page load or hard reload): recover from offline storage
@@ -260,6 +279,20 @@ export async function loadData(silent = false) {
       if (!payload || !payload.user) return;
     }
     
+    // Invariant guard: If outbox is empty, wipe any orphan pending badges
+    if (getPendingMutations().length === 0) {
+      ['tasks', 'projects', 'comments', 'documents'].forEach(key => {
+        if (Array.isArray(payload?.[key])) {
+          payload[key].forEach(e => {
+            if (e._isOfflinePending) delete e._isOfflinePending;
+          });
+        }
+      });
+      if (typeof document !== 'undefined') {
+        document.querySelectorAll('.badge-offline-pending').forEach(badge => badge.remove());
+      }
+    }
+
     // Save to offline storage non-blockingly for instant access when offline
     saveOfflineBootstrap(payload);
     state.isOffline = false;

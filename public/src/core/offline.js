@@ -530,8 +530,13 @@ export async function syncPendingMutations(apiFunction) {
       }
     } catch (err) {
       console.error('[Offline Sync] Failed to replay mutation:', item.id, item.path, err.message);
-      const isNetError = (typeof navigator !== 'undefined' && !navigator.onLine) ||
-                         (err.message && (err.message.includes('تعذر الاتصال') || err.message.includes('fetch') || err.message.includes('NetworkError') || err.name === 'TypeError'));
+      const hasHttpStatus = typeof err.status === 'number' && err.status > 0;
+      const isClientReject = hasHttpStatus && err.status >= 400 && err.status < 500;
+      const isNetError = !isClientReject && (
+        (typeof navigator !== 'undefined' && !navigator.onLine) ||
+        (!hasHttpStatus && err.name === 'TypeError') ||
+        (err.message && (err.message.includes('تعذر الاتصال') || err.message.includes('NetworkError')))
+      );
       if (isNetError) {
         // Network dropped mid-replay: preserve this item AND all subsequent items in FIFO order
         const remaining = queue.slice(i);
@@ -541,20 +546,26 @@ export async function syncPendingMutations(apiFunction) {
         stoppedDueToNetwork = true;
         break;
       }
-      // If 4xx client validation or server rejection, drop the poison pill
+      // If 4xx client validation or server rejection, drop the poison pill and log
+      console.warn(`[Offline Sync] Poison pill dropped (HTTP ${err.status || 'Client Error'}):`, item.id, item.path);
     }
   }
 
   if (!stoppedDueToNetwork) {
     clearPendingMutations();
-    // Clean up in-memory pending flags and DOM badges immediately
-    if (state.data?.tasks) {
-      state.data.tasks.forEach(t => {
-        if (t._isOfflinePending) delete t._isOfflinePending;
-      });
-      if (typeof document !== 'undefined') {
-        document.querySelectorAll('.badge-offline-pending').forEach(badge => badge.remove());
+    // Clean up in-memory pending flags and DOM badges immediately across all entities
+    ['tasks', 'projects', 'comments', 'documents'].forEach(key => {
+      if (Array.isArray(state.data?.[key])) {
+        state.data[key].forEach(entity => {
+          if (entity._isOfflinePending) delete entity._isOfflinePending;
+        });
       }
+    });
+    if (state.data) {
+      saveOfflineBootstrap(state.data);
+    }
+    if (typeof document !== 'undefined') {
+      document.querySelectorAll('.badge-offline-pending').forEach(badge => badge.remove());
     }
   }
 

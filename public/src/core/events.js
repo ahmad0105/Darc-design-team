@@ -3211,6 +3211,9 @@ export async function init() {
         _isPollInFlight = true;
         _lastPollTime = Date.now();
         try {
+          if (typeof navigator !== 'undefined' && navigator.onLine && getPendingMutations().length > 0) {
+            await syncPendingMutations(api).catch(() => {});
+          }
           await loadData(true); // Silent ETag 304 refresh
           _pollFailures = 0;    // Reset failure counter on successful handshake
         } catch (e) {

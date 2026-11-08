@@ -240,6 +240,45 @@ export function playNotificationChime() {
 }
 
 /**
+ * Canonical kanban column mapping for all task statuses
+ */
+export function getColumnKeyForStatus(status) {
+  if (!status) return 'not_started';
+  if (['review', 'approval', 'blocked'].includes(status)) return 'review';
+  if (['done', 'completed'].includes(status)) return 'done';
+  if (status === 'in_progress') return 'in_progress';
+  return 'not_started';
+}
+
+if (typeof window !== 'undefined') {
+  window.getColumnKeyForStatus = getColumnKeyForStatus;
+}
+
+/**
+ * Validates whether a task matches active UI filters
+ */
+function taskMatchesCurrentFilters(task) {
+  if (!task || !state) return true;
+  if (state.view !== 'tasks' && state.view !== 'project-detail') return true;
+
+  if (state.taskProjectFilter && state.taskProjectFilter !== 'all' && task.projectId !== state.taskProjectFilter) {
+    return false;
+  }
+  if (state.taskPriorityFilter && state.taskPriorityFilter !== 'all' && task.priority !== state.taskPriorityFilter) {
+    return false;
+  }
+  if (state.taskFilter === 'mine') {
+    const currentUid = state.data?.user?.id;
+    const isAssigned = task.assigneeId === currentUid || (Array.isArray(task.additionalAssignees) && task.additionalAssignees.includes(currentUid));
+    if (!isAssigned) return false;
+  }
+  if (state.taskFilter === 'blocked' && task.status !== 'blocked') {
+    return false;
+  }
+  return true;
+}
+
+/**
  * Surgical in-place DOM patching for task cards and Kanban columns (0ms latency, zero flicker, 90%+ CPU savings)
  */
 function patchTaskDomSurgically(taskId, record, actionType) {
@@ -276,18 +315,35 @@ function patchTaskDomSurgically(taskId, record, actionType) {
   const task = (state.data?.tasks || []).find((t) => t.id === taskId);
   if (!task) return false;
 
+  const currentCol = cardEl.closest('.board-column');
+  const oldColKey = currentCol ? (currentCol.dataset.status || 'not_started') : 'not_started';
+  const newColKey = getColumnKeyForStatus(task.status);
+
+  // If task no longer matches active user filter, remove it cleanly
+  if (!taskMatchesCurrentFilters(task)) {
+    cardEl.remove();
+    if (currentCol) {
+      const currentCountEl = currentCol.querySelector('.board-count');
+      if (currentCountEl) {
+        const curVal = Math.max(0, (parseInt(currentCountEl.textContent, 10) || 1) - 1);
+        currentCountEl.textContent = String(curVal);
+        if (curVal === 0 && !currentCol.querySelector('.task-card')) {
+          const emptyT = (typeof window.t === 'function') ? window.t('noTasks') : 'لا توجد مهام';
+          currentCol.querySelector('.board-cards')?.insertAdjacentHTML('beforeend', `<div class="empty" style="min-height:150px;pointer-events:none;">${emptyT}</div>`);
+        }
+      }
+    }
+    return true;
+  }
+
   // Render fresh card markup via single source of truth taskCard()
   const temp = document.createElement('div');
   temp.innerHTML = taskCard(task);
   const newCard = temp.firstElementChild;
   if (!newCard) return false;
 
-  const currentCol = cardEl.closest('.board-column');
-  const oldStatus = currentCol?.dataset.status;
-  const newStatus = task.status;
-
-  if (currentCol && oldStatus && newStatus && oldStatus !== newStatus) {
-    const targetCol = document.querySelector(`.board-column[data-status="${newStatus}"]`);
+  if (currentCol && oldColKey !== newColKey) {
+    const targetCol = document.querySelector(`.board-column[data-status="${newColKey}"]`);
     if (targetCol) {
       const targetCards = targetCol.querySelector('.board-cards');
       if (targetCards) {
@@ -319,8 +375,13 @@ function patchTaskDomSurgically(taskId, record, actionType) {
       cardEl.replaceWith(newCard);
     }
   } else {
-    // Status didn't change: surgical in-place DOM replacement
+    // Column didn't change: surgical in-place DOM replacement
     cardEl.replaceWith(newCard);
+  }
+
+  // Self-healing: verify board symmetry after moving card across columns
+  if (typeof window !== 'undefined' && typeof window.verifyBoardSymmetry === 'function') {
+    requestAnimationFrame(() => window.verifyBoardSymmetry());
   }
 
   // Subtle pulse highlight for instant collaborator awareness
@@ -369,6 +430,11 @@ function patchBatchReorderSurgically(items) {
 
       cardEls.forEach(el => cardsContainer.appendChild(el));
     });
+  }
+
+  // Auto-correct any column width skew
+  if (typeof window !== 'undefined' && typeof window.verifyBoardSymmetry === 'function') {
+    requestAnimationFrame(() => window.verifyBoardSymmetry());
   }
 
   return anyPatched;
@@ -459,10 +525,16 @@ export function applyGranularDelta(tableName, actionType, rawRecord, rawOldRecor
 
   if (actionType === 'BATCH_REORDER' && Array.isArray(record?.items)) {
     const affectedProjectIds = new Set();
+    const userProjectIds = new Set((state.data?.projects || []).map(p => p.id));
     for (const item of record.items) {
       if (!item?.id) continue;
       const targetItem = collection.find((t) => t.id === item.id);
       if (targetItem) {
+        // Multi-tenant isolation: non-admins only mutate tasks in projects they have access to
+        const pId = targetItem.projectId || item.projectId || item.project_id;
+        if (!isGlobalAdmin && pId && !userProjectIds.has(pId)) {
+          continue;
+        }
         if (item.status && targetItem.status !== item.status) {
           targetItem.status = item.status;
           stateMutated = true;
@@ -774,7 +846,7 @@ function wakeUpFromHibernation(source = 'wake_up') {
       disconnectSupabaseRealtime('zombie_probe_timeout');
       connectSupabaseRealtime();
       triggerImmediateSync('zombie_recovery', true);
-    }, 1200);
+    }, 800);
     _lastHeartbeatSentAt = Date.now();
     sendWsMessage(_ws, 'phoenix', 'heartbeat');
   } else if (!_ws || _ws.readyState === WebSocket.CLOSED || _ws.readyState === WebSocket.CLOSING) {

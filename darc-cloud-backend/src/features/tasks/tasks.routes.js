@@ -303,7 +303,6 @@ app.patch('/reorder', async (c) => {
     const incomingCF = (item.customFields || item.custom_fields || {});
     const sortOrderVal = typeof item.sortOrder === 'number' ? item.sortOrder : (typeof item.sort_order === 'number' ? item.sort_order : 0);
     const existingSortOrder = typeof existingCF.sortOrder === 'number' ? existingCF.sortOrder : (typeof existingCF.sort_order === 'number' ? existingCF.sort_order : 0);
-    const isStatusChanging = Boolean(item.status && item.status !== existing.status);
     const isSortOrderChanging = sortOrderVal !== existingSortOrder;
 
     // High-Throughput Delta Filtering: Only update records that truly changed status or position
@@ -335,7 +334,16 @@ app.patch('/reorder', async (c) => {
       }
       updates.status = item.status;
       const autoP = calculateAutoProgress(item.status);
-      if (autoP !== null) updates.progress = autoP;
+      if (autoP !== null) {
+        updates.progress = autoP;
+        item.progress = autoP;
+      }
+      item.updatedAt = now;
+      item.updated_at = now;
+      if (existing.project_id) {
+        item.projectId = existing.project_id;
+        item.project_id = existing.project_id;
+      }
     }
 
     updatePromises.push(supabase.from('tasks').update(updates).eq('id', item.id));
