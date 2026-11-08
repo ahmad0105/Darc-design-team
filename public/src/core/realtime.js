@@ -38,12 +38,36 @@ let _isHibernating = false;
 let _lastActivityTimestamp = Date.now();
 let _lastActivityThrottle = 0;
 let _renderRaf = null;
+let _lastHeartbeatSentAt = 0;
+let _lastPongLatencyMs = null;
+let _carrierDropsCount = 0;
+let _messagesReceivedCount = 0;
 
 /**
  * Returns true if the WebSocket connection is actively open and receiving live deltas
  */
 export function isRealtimeConnected() {
   return Boolean(_ws && _ws.readyState === 1);
+}
+
+/**
+ * Provides live telemetry metrics on realtime engine health, latency and drops
+ */
+export function getRealtimeDiagnostics() {
+  return {
+    connected: isRealtimeConnected(),
+    hibernating: _isHibernating,
+    reconnectAttempts: _reconnectAttempts,
+    latencyMs: _lastPongLatencyMs,
+    carrierDrops: _carrierDropsCount,
+    messagesReceived: _messagesReceivedCount,
+    lastActivity: _lastActivityTimestamp,
+    socketReadyState: _ws ? _ws.readyState : 3
+  };
+}
+
+if (typeof window !== 'undefined') {
+  window.getRealtimeDiagnostics = getRealtimeDiagnostics;
 }
 
 // Track local client mutations to eliminate redundant echoes & re-renders
@@ -681,6 +705,7 @@ function startWsHeartbeat(ws) {
     const interval = getEffectiveHeartbeatInterval();
     _wsHeartbeatTimer = setTimeout(() => {
       if (ws && ws.readyState === WebSocket.OPEN) {
+        _lastHeartbeatSentAt = Date.now();
         sendWsMessage(ws, 'phoenix', 'heartbeat');
         scheduleNext();
       }
@@ -750,6 +775,7 @@ function wakeUpFromHibernation(source = 'wake_up') {
       connectSupabaseRealtime();
       triggerImmediateSync('zombie_recovery', true);
     }, 1200);
+    _lastHeartbeatSentAt = Date.now();
     sendWsMessage(_ws, 'phoenix', 'heartbeat');
   } else if (!_ws || _ws.readyState === WebSocket.CLOSED || _ws.readyState === WebSocket.CLOSING) {
     connectSupabaseRealtime();
@@ -809,11 +835,18 @@ function connectSupabaseRealtime() {
           clearTimeout(_socketHealthWatchdog);
           _socketHealthWatchdog = null;
         }
+        _messagesReceivedCount++;
         const msg = JSON.parse(event.data);
         const { event: evt, topic, payload } = msg;
 
-        // Ignore internal protocol acknowledgments and heartbeats
-        if (evt === 'phx_reply' || evt === 'phx_close') return;
+        // Ignore internal protocol acknowledgments and heartbeats, but compute latency
+        if (evt === 'phx_reply') {
+          if (_lastHeartbeatSentAt) {
+            _lastPongLatencyMs = Math.max(1, Date.now() - _lastHeartbeatSentAt);
+          }
+          return;
+        }
+        if (evt === 'phx_close') return;
         if (isDemoSession()) return; // Shielded Sandbox: Demo sessions NEVER process live production CDC events
 
         // A. Smart In-Memory Delta Patching (Postgres CDC events): 0 KB HTTP Traffic!
@@ -875,6 +908,11 @@ function connectSupabaseRealtime() {
     ws.onclose = (event) => {
       stopWsHeartbeat();
       _ws = null;
+
+      // Track carrier disconnects
+      if (!_isExplicitlyDisconnected && !_isHibernating && event?.reason !== 'logout' && event?.reason !== 'unauthorized_401') {
+        _carrierDropsCount++;
+      }
 
       // Never reconnect if disconnected intentionally or unauthenticated
       if (_isExplicitlyDisconnected || !isAuthenticated() || _isHibernating) return;

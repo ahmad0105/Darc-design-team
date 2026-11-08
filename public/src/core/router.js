@@ -136,6 +136,14 @@ export function renderView(force = false) {
     }
   }
   
+  if (state.view === 'tasks' || state.view === 'project-detail') {
+    requestAnimationFrame(() => {
+      if (typeof window.verifyBoardSymmetry === 'function') {
+        window.verifyBoardSymmetry();
+      }
+    });
+  }
+  
   if (state.view === 'project-detail' && state.projectTab === 'timeline') {
     setTimeout(() => {
       if (typeof window.drawTimelineArrows === 'function') window.drawTimelineArrows();

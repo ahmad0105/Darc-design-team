@@ -11,7 +11,7 @@
     "build": "node --test test/*.test.js && eslint public/src/ && vite build",
     "preview": "vite preview",
     "start": "vite preview",
-    "deploy": "wrangler deploy",
+    "deploy": "npm run test && npm run lint && vite build && wrangler deploy",
     "deploy:backend": "cd darc-cloud-backend && npx wrangler deploy --config wrangler.toml"
   },
   "engines": {

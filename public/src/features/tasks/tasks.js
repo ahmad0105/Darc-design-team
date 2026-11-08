@@ -78,6 +78,38 @@ export function canUserUploadToTask(task) {
   return false;
 }
 
+export function renderTaskMetaRow(task) {
+  const isPending = !!task._isOfflinePending;
+  const tplCode = esc(task.templateId ? task.templateId.replace('tpl-', '#') : '#CUSTOM');
+  return `
+    <div class="task-card-meta-line">
+      <div class="task-card-code-wrap">
+        <span class="task-drag-handle" title="${choose('اسحب لتحريك المهمة', 'Drag to reorder')}" aria-label="${choose('مقبض السحب', 'Drag handle')}" role="button" tabindex="0"><span class="drag-handle-dots" aria-hidden="true">⋮⋮</span></span>
+        <span class="task-code">${tplCode}</span>
+      </div>
+      ${isPending ? `<span class="badge badge-amber badge-offline-pending" style="font-size:9px;padding:1px 5px;display:inline-flex;align-items:center;gap:3px;border-radius:4px;white-space:nowrap;line-height:1.2;" title="${choose('بانتظار المزامنة مع السيرفر', 'Pending cloud sync')}">${icon('hourglass', 10)} <span>${choose('معلقة', 'Pending')}</span></span>` : ''}
+    </div>
+  `;
+}
+
+export function renderTaskBadgesRow(task, commentCount = 0, docCount = 0, dueBadge = '') {
+  const priorityHtml = task.priority ? `<span class="priority-badge ${esc(task.priority)}">${esc(priorityText(task.priority))}</span>` : '';
+  const countersHtml = (commentCount > 0 || docCount > 0) ? `
+    <div class="task-card-counters" style="display:inline-flex;align-items:center;gap:4px;margin-inline-start:auto;">
+      ${commentCount > 0 ? `<span style="font-size:10px;color:var(--muted);display:inline-flex;align-items:center;gap:2px;" title="${commentCount} ${choose('تعليقات', 'comments')}">${icon('chat', 11)} ${commentCount}</span>` : ''}
+      ${docCount > 0 ? `<span style="font-size:10px;color:var(--muted);display:inline-flex;align-items:center;gap:2px;" title="${docCount} ${choose('مرفقات', 'attachments')}">${icon('link', 11)} ${docCount}</span>` : ''}
+    </div>
+  ` : '';
+
+  return `
+    <div class="task-card-badges-line">
+      ${priorityHtml}
+      ${dueBadge || ''}
+      ${countersHtml}
+    </div>
+  `;
+}
+
 export function taskCard(task) {
   const dueTier = getTaskDueTier(task);
   const overdue = dueTier === 'overdue' || isOverdue(task);
@@ -123,19 +155,10 @@ export function taskCard(task) {
   const taskTitle = choose(task.titleAr, task.titleEn);
 
   return `<article class="task-card ${dueClass} ${!canEditTask ? 'not-draggable' : ''}" draggable="false" tabindex="0" role="button" aria-roledescription="sortable task card" aria-label="${esc(taskTitle)}" data-action="open-task" data-task-id="${esc(task.id)}">
-    <div class="task-card-top">
-      <div class="task-card-code-wrap">
-        <span class="task-drag-handle" title="${choose('اسحب لتحريك المهمة', 'Drag to reorder')}" aria-label="${choose('مقبض السحب', 'Drag handle')}" role="button" tabindex="0"><span class="drag-handle-dots" aria-hidden="true">⋮⋮</span></span>
-        <span class="task-code">${esc(task.templateId ? task.templateId.replace('tpl-', '#') : '#CUSTOM')}</span>
-        ${task._isOfflinePending ? `<span class="badge badge-amber badge-offline-pending" style="font-size:9px;padding:1px 5px;display:inline-flex;align-items:center;gap:3px;border-radius:4px;white-space:nowrap;line-height:1.2;" title="${choose('بانتظار المزامنة مع السيرفر', 'Pending cloud sync')}">${icon('hourglass', 10)} <span>${choose('معلقة', 'Pending')}</span></span>` : ''}
-      </div>
-      <div class="task-card-badges-wrap">
-        ${commentCount > 0 ? `<span style="font-size:10px;color:var(--muted);display:inline-flex;align-items:center;gap:2px;" title="${commentCount} ${choose('تعليقات', 'comments')}">${icon('chat', 11)} ${commentCount}</span>` : ''}
-        ${docCount > 0 ? `<span style="font-size:10px;color:var(--muted);display:inline-flex;align-items:center;gap:2px;" title="${docCount} ${choose('مرفقات', 'attachments')}">${icon('link', 11)} ${docCount}</span>` : ''}
-        ${dueBadge}
-        <span class="priority-badge ${esc(task.priority)}">${esc(priorityText(task.priority))}</span>
-      </div>
-    </div>
+    <header class="task-card-header">
+      ${renderTaskMetaRow(task)}
+      ${renderTaskBadgesRow(task, commentCount, docCount, dueBadge)}
+    </header>
     <h4>${esc(choose(task.titleAr, task.titleEn))}</h4>
     ${(() => {
       const rawDesc = String(choose(task.descriptionAr || task.description, task.descriptionEn || task.description) || '').trim();
@@ -282,11 +305,48 @@ export function renderBoard(tasks, sortMode = getSavedTaskSort()) {
     { key: 'review', dot: 'amber', label: choose('مراجعة / اعتماد', 'Review / approval'), statuses: ['review', 'approval', 'blocked'] },
     { key: 'done', dot: 'green', label: t('done') }
   ];
+  if (typeof requestAnimationFrame === 'function') {
+    requestAnimationFrame(() => {
+      verifyBoardSymmetry();
+    });
+  }
   return `<div class="board">${columns.map((column) => {
     const rawMatches = tasks.filter((task) => (column.statuses || [column.key]).includes(task.status));
     const sortedMatches = sortTasks(rawMatches, sortMode);
     return `<section class="board-column" data-status="${column.key}"><div class="board-column-head"><div class="board-column-title"><span class="column-dot ${column.dot}"></span>${column.label}</div><span class="board-count">${sortedMatches.length}</span></div><div class="board-cards">${sortedMatches.length ? sortedMatches.map(taskCard).join('') : `<div class="empty" style="min-height:150px;pointer-events:none;">${t('noTasks')}</div>`}</div></section>`;
   }).join('')}</div>`;
+}
+
+/**
+ * Self-healing layout auditor: verifies board columns are strictly symmetric
+ * and auto-corrects any sub-pixel or browser layout drift.
+ */
+export function verifyBoardSymmetry() {
+  if (typeof document === 'undefined') return;
+  const board = document.querySelector('.board, .tasks-board');
+  if (!board) return;
+  const columns = Array.from(board.querySelectorAll('.board-column'));
+  if (columns.length < 2) return;
+
+  const widths = columns.map(c => Math.round(c.getBoundingClientRect().width * 10) / 10);
+  const minW = Math.min(...widths);
+  const maxW = Math.max(...widths);
+
+  if (maxW - minW > 2.5) {
+    board.style.display = 'grid';
+    board.style.gridTemplateColumns = `repeat(${columns.length}, minmax(0, 1fr))`;
+    board.style.gridAutoColumns = '1fr';
+    columns.forEach(col => {
+      col.style.width = '100%';
+      col.style.minWidth = '0';
+      col.style.maxWidth = '100%';
+      col.style.flex = '1 1 0px';
+    });
+  }
+}
+
+if (typeof window !== 'undefined') {
+  window.verifyBoardSymmetry = verifyBoardSymmetry;
 }
 
 export function renderCalendar(tasks, project) {

@@ -3,7 +3,8 @@ import { api } from '../../core/api.js';
 import { choose, esc, icon, statusDot, t } from '../../core/utils.js';
 import { showToast } from '../../shared/ui.js';
 import { getClientTelemetrySnapshot } from '../../core/telemetry.js';
-import { isDemoSession } from '../../core/realtime.js';
+import { isDemoSession, getRealtimeDiagnostics } from '../../core/realtime.js';
+import { getPendingMutations } from '../../core/offline.js';
 
 let _cachedDiagnostics = null;
 let _isLoading = false;
@@ -114,6 +115,21 @@ export function renderDiagnosticsSection() {
   }
 
   const selectedUserObj = users.find(u => u.userId === _selectedUserId);
+  const realtimeDiag = typeof getRealtimeDiagnostics === 'function' ? getRealtimeDiagnostics() : { connected: false };
+  const pendingMutationsCount = typeof getPendingMutations === 'function' ? getPendingMutations().length : 0;
+  const isOnline = typeof navigator !== 'undefined' ? navigator.onLine : true;
+  const realtimeStatusLabel = !isOnline 
+    ? choose('غير متصل (أوفلاين)', 'Offline')
+    : realtimeDiag.connected 
+      ? choose('متصل ومستقر', 'Connected')
+      : realtimeDiag.hibernating 
+        ? choose('في وضع التوفير (خامل)', 'Hibernating') 
+        : choose('بانتظار الربط', 'Connecting');
+  const realtimeStatusColor = !isOnline
+    ? 'var(--amber)'
+    : realtimeDiag.connected
+      ? 'var(--mint-strong)'
+      : 'var(--blue)';
 
   return `
     <section class="setting-section" id="diagnostics-dashboard">
@@ -186,6 +202,18 @@ export function renderDiagnosticsSection() {
             <span style="display:inline-flex;align-items:center;">${isDemo ? icon('flask', 14) : icon('mail', 14)}</span> ${isDemo ? choose('محاكاة الساندبوكس (معزول)', 'Sandbox Simulation (Isolated)') : choose('مفعّل ويرسل تلقائياً', 'Active & Auto-Dispatched')}
           </div>
           <div style="font-size:11px;color:var(--muted);font-family:monospace;">${esc(stats.alertEmailRecipient || (isDemo ? 'demo-alerts@darc.demo (بيئة المحاكاة الآمنة)' : 'admin@darc-design.bond'))}</div>
+        </div>
+
+        <div style="background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px;">
+          <div style="font-size:11px;color:var(--muted);font-weight:600;">${choose('مزامنة المولد الفوري (Realtime & Outbox)', 'Live Sync & Outbox')}</div>
+          <div style="font-size:13px;font-weight:700;color:${realtimeStatusColor};margin:6px 0;display:flex;align-items:center;gap:6px;">
+            <span class="column-dot ${realtimeDiag.connected ? 'green' : 'amber'}"></span>
+            ${realtimeStatusLabel}
+            ${realtimeDiag.latencyMs ? `<span style="font-size:10px;color:var(--muted);font-weight:500;">(${realtimeDiag.latencyMs}ms)</span>` : ''}
+          </div>
+          <div style="font-size:11px;color:var(--ink-soft);">
+            ${pendingMutationsCount > 0 ? `<span style="color:var(--amber);font-weight:600;">${pendingMutationsCount} ${choose('عمليات معلقة بالمزامنة', 'mutations pending')}</span>` : `${statusDot('healthy')} ${choose('قائمة الإرسال خالية ومحدثة', 'Outbox queue empty & synced')}`}
+          </div>
         </div>
       </div>
 
