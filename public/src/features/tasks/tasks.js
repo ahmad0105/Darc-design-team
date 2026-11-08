@@ -86,16 +86,16 @@ export function taskCard(task) {
 
   if (dueTier === 'overdue') {
     dueClass = 'is-overdue';
-    dueBadge = `<span class="overdue-tag" style="display:inline-flex;align-items:center;gap:3px;color:var(--red);background:var(--red-soft);padding:2px 6px;border-radius:4px;font-size:10px;font-weight:600;">${icon('alert', 11)} ${t('overdue')}</span>`;
+    dueBadge = `<span class="overdue-tag" style="display:inline-flex;align-items:center;gap:3px;color:var(--red);background:var(--red-soft);padding:2px 6px;border-radius:4px;font-size:10px;font-weight:600;white-space:nowrap;">${icon('alert', 11)} ${choose('متأخرة', 'Overdue')}</span>`;
   } else if (dueTier === 'due_24h') {
     dueClass = 'is-due-24h';
-    dueBadge = `<span class="due-tag-24h" style="display:inline-flex;align-items:center;gap:3px;" title="${choose('متبقي أقل من 24 ساعة على موعد التسليم', 'Due in less than 24 hours')}">${icon('clock', 11)} ${choose('خلال 24 ساعة', 'Due in 24h')}</span>`;
+    dueBadge = `<span class="due-tag-24h" style="display:inline-flex;align-items:center;gap:3px;white-space:nowrap;" title="${choose('متبقي أقل من 24 ساعة على موعد التسليم', 'Due in less than 24 hours')}">${icon('clock', 11)} ${choose('خلال 24 ساعة', 'Due in 24h')}</span>`;
   } else if (dueTier === 'due_48h') {
     dueClass = 'is-due-48h';
-    dueBadge = `<span class="due-tag-48h" style="display:inline-flex;align-items:center;gap:3px;" title="${choose('متبقي أقل من 48 ساعة على موعد التسليم', 'Due within 48 hours')}">${icon('clock', 11)} ${choose('خلال 48 ساعة', 'Due in 48h')}</span>`;
+    dueBadge = `<span class="due-tag-48h" style="display:inline-flex;align-items:center;gap:3px;white-space:nowrap;" title="${choose('متبقي أقل من 48 ساعة على موعد التسليم', 'Due within 48 hours')}">${icon('clock', 11)} ${choose('خلال 48 ساعة', 'Due in 48h')}</span>`;
   } else if (dueTier === 'due_72h') {
     dueClass = 'is-due-72h';
-    dueBadge = `<span class="due-tag-72h" style="display:inline-flex;align-items:center;gap:3px;" title="${choose('متبقي أقل من 72 ساعة على موعد التسليم', 'Due within 72 hours')}">${icon('clock', 11)} ${choose('خلال 72 ساعة', 'Due in 72h')}</span>`;
+    dueBadge = `<span class="due-tag-72h" style="display:inline-flex;align-items:center;gap:3px;white-space:nowrap;" title="${choose('متبقي أقل من 72 ساعة على موعد التسليم', 'Due within 72 hours')}">${icon('clock', 11)} ${choose('خلال 72 ساعة', 'Due in 72h')}</span>`;
   }
 
   const dueDateColor = overdue
@@ -124,12 +124,12 @@ export function taskCard(task) {
 
   return `<article class="task-card ${dueClass} ${!canEditTask ? 'not-draggable' : ''}" draggable="false" tabindex="0" role="button" aria-roledescription="sortable task card" aria-label="${esc(taskTitle)}" data-action="open-task" data-task-id="${esc(task.id)}">
     <div class="task-card-top">
-      <div style="display:flex;align-items:center;gap:6px;">
+      <div class="task-card-code-wrap">
         <span class="task-drag-handle" title="${choose('اسحب لتحريك المهمة', 'Drag to reorder')}" aria-label="${choose('مقبض السحب', 'Drag handle')}" role="button" tabindex="0"><span class="drag-handle-dots" aria-hidden="true">⋮⋮</span></span>
         <span class="task-code">${esc(task.templateId ? task.templateId.replace('tpl-', '#') : '#CUSTOM')}</span>
+        ${task._isOfflinePending ? `<span class="badge badge-amber badge-offline-pending" style="font-size:9px;padding:1px 5px;display:inline-flex;align-items:center;gap:3px;border-radius:4px;white-space:nowrap;line-height:1.2;" title="${choose('بانتظار المزامنة مع السيرفر', 'Pending cloud sync')}">${icon('hourglass', 10)} <span>${choose('معلقة', 'Pending')}</span></span>` : ''}
       </div>
-      <div style="display:flex;align-items:center;gap:6px;">
-        ${task._isOfflinePending ? `<span class="badge badge-amber" style="font-size:9px;padding:1px 5px;display:inline-flex;align-items:center;gap:3px;" title="${choose('بانتظار المزامنة مع السيرفر', 'Pending cloud sync')}">${icon('hourglass', 10)} ${choose('معلقة', 'Pending')}</span>` : ''}
+      <div class="task-card-badges-wrap">
         ${commentCount > 0 ? `<span style="font-size:10px;color:var(--muted);display:inline-flex;align-items:center;gap:2px;" title="${commentCount} ${choose('تعليقات', 'comments')}">${icon('chat', 11)} ${commentCount}</span>` : ''}
         ${docCount > 0 ? `<span style="font-size:10px;color:var(--muted);display:inline-flex;align-items:center;gap:2px;" title="${docCount} ${choose('مرفقات', 'attachments')}">${icon('link', 11)} ${docCount}</span>` : ''}
         ${dueBadge}
