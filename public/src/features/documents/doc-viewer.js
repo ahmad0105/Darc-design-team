@@ -240,6 +240,7 @@ export async function downloadDocument(docId) {
 
     if (blob) {
       const blobUrl = URL.createObjectURL(blob);
+      registerActiveBlobUrl(blobUrl);
       const safeDownloadName = (doc.originalName || 'document').replace(/[/\\:*?"<>|\x00-\x1f]/g, '_');
       const a = document.createElement('a');
       a.href = blobUrl;
@@ -259,6 +260,24 @@ export async function downloadDocument(docId) {
     console.error('[DocViewer] Local download creation failed:', err);
     window.open(`/api/documents/${encodeURIComponent(doc.id)}?download=1`, '_blank');
   }
+}
+
+const _activeBlobUrls = new Set();
+
+export function registerActiveBlobUrl(url) {
+  if (url && typeof url === 'string' && url.startsWith('blob:')) {
+    _activeBlobUrls.add(url);
+  }
+}
+
+export function revokeAllActiveBlobUrls() {
+  if (typeof URL === 'undefined' || typeof URL.revokeObjectURL !== 'function') return;
+  _activeBlobUrls.forEach(url => {
+    try {
+      URL.revokeObjectURL(url);
+    } catch (_) {}
+  });
+  _activeBlobUrls.clear();
 }
 
 /**
@@ -296,7 +315,10 @@ export function closeDocumentPreviewModal() {
     } catch (_) {}
   });
 
-  // 4. Remove keyboard listeners
+  // 4. Revoke all active blob URLs to instantly free memory
+  revokeAllActiveBlobUrls();
+
+  // 5. Remove keyboard listeners
   if (window.__docPreviewKeyHandler) {
     window.removeEventListener('keydown', window.__docPreviewKeyHandler);
     window.__docPreviewKeyHandler = null;

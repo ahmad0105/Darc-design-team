@@ -8,6 +8,7 @@ const DB_VERSION = 1;
 const STORE_NAME = 'cache_store';
 const STORAGE_BOOTSTRAP_KEY = 'darc_offline_bootstrap';
 const STORAGE_QUEUE_KEY = 'darc_offline_mutations_queue';
+const STORAGE_DEAD_LETTER_KEY = 'darc_offline_dead_letter_queue';
 
 let _isSyncing = false;
 let _idbPromise = null;
@@ -302,6 +303,54 @@ export function clearPendingMutations() {
 }
 
 /**
+ * Records unprocessable / poison-pill mutations into the Dead-Letter Queue
+ */
+export function recordDeadLetterMutation(item, reason, status = 400) {
+  if (typeof localStorage === 'undefined' || !item) return;
+  try {
+    const raw = localStorage.getItem(STORAGE_DEAD_LETTER_KEY);
+    const list = raw ? JSON.parse(raw) : [];
+    list.unshift({
+      id: item.id,
+      path: item.path,
+      method: item.method,
+      description: item.description || '',
+      failedAt: new Date().toISOString(),
+      reason: String(reason || 'Client rejection'),
+      status: Number(status || 400)
+    });
+    if (list.length > 20) list.length = 20;
+    localStorage.setItem(STORAGE_DEAD_LETTER_KEY, JSON.stringify(list));
+    if (typeof window !== 'undefined' && typeof window.recordBreadcrumb === 'function') {
+      window.recordBreadcrumb('offline.deadletter', `Rejected: ${item.method} ${item.path} (${status})`);
+    }
+  } catch (e) {
+    console.warn('[Offline DeadLetter] Failed to record:', e.message);
+  }
+}
+
+/**
+ * Retrieves all rejected dead-letter mutations
+ */
+export function getDeadLetterMutations() {
+  if (typeof localStorage === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(STORAGE_DEAD_LETTER_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+/**
+ * Clears the dead-letter mutations archive
+ */
+export function clearDeadLetterMutations() {
+  if (typeof localStorage === 'undefined') return;
+  localStorage.removeItem(STORAGE_DEAD_LETTER_KEY);
+}
+
+/**
  * Optimistically simulates mutation results in memory so users see their actions immediately.
  */
 export function simulateOfflineMutation(path, method, body, state) {
@@ -476,8 +525,22 @@ export function simulateOfflineMutation(path, method, body, state) {
 
 /**
  * Replays all pending mutations in the outbox sequentially (FIFO) with idempotency headers.
+ * Protected by Web Locks API to prevent multi-tab concurrent replay races.
  */
 export async function syncPendingMutations(apiFunction) {
+  if (typeof navigator !== 'undefined' && navigator.locks && typeof navigator.locks.request === 'function') {
+    return await navigator.locks.request('darc_offline_sync_lock', { ifAvailable: true }, async (lock) => {
+      if (!lock) {
+        console.log('[Offline Sync] Another tab is currently synchronizing outbox mutations. Skipping redundant execution.');
+        return { total: 0, synced: 0, failed: 0, locked: true };
+      }
+      return await _internalSyncPendingMutations(apiFunction);
+    });
+  }
+  return await _internalSyncPendingMutations(apiFunction);
+}
+
+async function _internalSyncPendingMutations(apiFunction) {
   if (_isSyncing) return { total: 0, synced: 0, failed: 0 };
   const queue = getPendingMutations();
   if (!queue.length) return { total: 0, synced: 0, failed: 0 };
@@ -496,6 +559,7 @@ export async function syncPendingMutations(apiFunction) {
       const item = queue[i];
       if (!item || !item.path || typeof item.path !== 'string' || !ALLOWED_MUTATION_PATHS.test(item.path) || !ALLOWED_METHODS.has(item.method)) {
         console.warn('[Offline Sync] Dropping unauthorized/malformed queue mutation:', item?.id, item?.path);
+        recordDeadLetterMutation(item, 'Unauthorized or malformed path', 400);
         continue;
       }
       try {
@@ -512,8 +576,9 @@ export async function syncPendingMutations(apiFunction) {
         }
         const res = await apiFunction(item.path, opts);
         if (res && res.error && !res.ok) {
-          // Validation / business error: drop poison pill so queue isn't blocked
+          // Validation / business error: drop poison pill into dead-letter archive so queue isn't blocked
           console.warn('[Offline Sync] Dropping unprocessable mutation:', item.id, res.error);
+          recordDeadLetterMutation(item, res.error, res.status || 422);
         } else {
           syncedCount++;
           if (item.path === '/api/tasks/reorder' && Array.isArray(item.body?.items)) {
@@ -547,8 +612,9 @@ export async function syncPendingMutations(apiFunction) {
           stoppedDueToNetwork = true;
           break;
         }
-        // If 4xx client validation or server rejection, drop the poison pill and log
-        console.warn(`[Offline Sync] Poison pill dropped (HTTP ${err.status || 'Client Error'}):`, item.id, item.path);
+        // If 4xx client validation or server rejection, archive poison pill in dead-letter store and continue
+        console.warn(`[Offline Sync] Poison pill archived in Dead-Letter Queue (HTTP ${err.status || 'Client Error'}):`, item.id, item.path);
+        recordDeadLetterMutation(item, err.message, err.status || 400);
       }
     }
 

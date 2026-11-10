@@ -1255,9 +1255,8 @@ document.addEventListener('pointerup', async (e) => {
   await finalizeDragDrop(e.clientX, e.clientY);
 });
 
-// Guard pointercancel: never abort active touch drag on mobile due to gesture ambiguities
-document.addEventListener('pointercancel', (e) => {
-  if (isPointerDragging) return;
+// Clean up drag state on pointer cancellation (e.g. OS gestures, incoming alerts, window interrupts)
+document.addEventListener('pointercancel', () => {
   cleanDragState();
 });
 

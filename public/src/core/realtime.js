@@ -893,6 +893,9 @@ function wakeUpFromHibernation(source = 'wake_up') {
     }, 2500);
     _lastHeartbeatSentAt = Date.now();
     sendWsMessage(_ws, 'phoenix', 'heartbeat');
+  } else if (_ws && _ws.readyState === WebSocket.CONNECTING) {
+    disconnectSupabaseRealtime('hung_connecting');
+    connectSupabaseRealtime();
   } else if (!_ws || _ws.readyState === WebSocket.CLOSED || _ws.readyState === WebSocket.CLOSING) {
     connectSupabaseRealtime();
   }
