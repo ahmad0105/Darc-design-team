@@ -7,8 +7,9 @@ const AUTH_WINDOW_MS = 60 * 1000; // 1 minute
 const MUTATION_MAX_REQUESTS = 120;
 const MUTATION_WINDOW_MS = 60 * 1000; // 1 minute
 
-const UPLOAD_MAX_SESSIONS = 8; // Strictly capped under 15 per user instruction
-const UPLOAD_WINDOW_MS = 60 * 1000;
+export const UPLOAD_MAX_SESSIONS = 35; // Escalate to 35 for authenticated field engineers
+export const UPLOAD_ANON_MAX_SESSIONS = 5; // Strict cap for unauthenticated requests
+export const UPLOAD_WINDOW_MS = 60 * 1000;
 
 const FORGOT_PW_MAX = 4; // Max 4 password reset requests per 10 minutes per IP
 const FORGOT_PW_WINDOW_MS = 10 * 60 * 1000;
@@ -261,7 +262,7 @@ export function mutationRateLimiter() {
 
 /**
  * Dedicated Rate Limiter for Large File Upload Sessions.
- * Strictly capped at max 8 sessions per minute to prevent Google Drive API exhaustion.
+ * 35 sessions/min for authenticated users; strictly capped at 5 for unauthenticated.
  */
 export function uploadRateLimiter(maxUploads = UPLOAD_MAX_SESSIONS, windowMs = UPLOAD_WINDOW_MS) {
   return async (c, next) => {
@@ -269,6 +270,7 @@ export function uploadRateLimiter(maxUploads = UPLOAD_MAX_SESSIONS, windowMs = U
     maybeCleanup();
 
     const userId = c.get('userId');
+    const effectiveLimit = userId ? maxUploads : Math.min(maxUploads, UPLOAD_ANON_MAX_SESSIONS);
     const rawIp = getClientIp(c);
     const key = userId ? `u:${userId}` : `ip:${getIpRateLimitKey(rawIp)}`;
     const now = Date.now();
@@ -285,19 +287,19 @@ export function uploadRateLimiter(maxUploads = UPLOAD_MAX_SESSIONS, windowMs = U
       entry.count += 1;
     }
 
-    if (edgeBlocked || entry.count > maxUploads) {
+    if (edgeBlocked || entry.count > effectiveLimit) {
       const retryAfterSeconds = Math.max(1, Math.ceil((entry.resetAt - now) / 1000));
       writeEdgeCacheBlock(edgeKey, retryAfterSeconds).catch(() => {});
       return c.json(
         {
-          error: `تم تجاوز الحد المسموح لعمليات الرفع (${maxUploads} جلسات في الدقيقة). يرجى الانتظار ${retryAfterSeconds} ثانية.`,
+          error: `تم تجاوز الحد المسموح لعمليات الرفع (${effectiveLimit} جلسات في الدقيقة). يرجى الانتظار ${retryAfterSeconds} ثانية.`,
           code: 'UPLOAD_RATE_LIMITED',
           retryAfter: retryAfterSeconds
         },
         429,
         {
           'Retry-After': String(retryAfterSeconds),
-          'X-RateLimit-Limit': String(maxUploads),
+          'X-RateLimit-Limit': String(effectiveLimit),
           'X-RateLimit-Remaining': '0'
         }
       );

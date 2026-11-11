@@ -110,7 +110,14 @@ export function saveOfflineBootstrap(data) {
   if (typeof localStorage !== 'undefined') {
     const persistLocalStorage = () => {
       try {
-        localStorage.setItem(STORAGE_BOOTSTRAP_KEY, JSON.stringify(record));
+        const str = JSON.stringify(record);
+        // Quota guard: mobile Safari has a strict 5MB quota. If serialized state exceeds 3.5MB,
+        // bypass localStorage completely and rely exclusively on IndexedDB.
+        if (str.length > 3.5 * 1024 * 1024) {
+          console.warn('[Offline] Payload exceeds 3.5MB, bypassing localStorage and relying exclusively on IndexedDB');
+          return;
+        }
+        localStorage.setItem(STORAGE_BOOTSTRAP_KEY, str);
       } catch (err) {
         console.warn('[Offline] localStorage quota exceeded, relying on IndexedDB:', err.message);
       }

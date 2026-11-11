@@ -21,11 +21,62 @@ export function renderLoading() {
 
 let isClosingModal = false;
 let _closeModalTimer = null;
+let _modalHistoryCount = 0;
+let _ignoreNextPopState = false;
 
-export function closeModal(immediate = false) { 
+export function isAnyModalOpen() {
+  if (typeof document === 'undefined') return false;
+  const modalRoot = document.getElementById('modal-root');
+  if (modalRoot && modalRoot.hasChildNodes() && modalRoot.querySelector('.modal')) return true;
+  if (document.getElementById('omnisearch-modal')) return true;
+  const previewOverlay = document.getElementById('preview-modal-overlay');
+  if (previewOverlay && previewOverlay.style.display !== 'none' && previewOverlay.innerHTML.trim() !== '') return true;
+  const projectPrintOverlay = document.getElementById('project-report-preview-modal');
+  if (projectPrintOverlay && projectPrintOverlay.style.display !== 'none' && projectPrintOverlay.innerHTML.trim() !== '') return true;
+  const auditPrintOverlay = document.getElementById('audit-report-preview-modal');
+  if (auditPrintOverlay && auditPrintOverlay.style.display !== 'none' && auditPrintOverlay.innerHTML.trim() !== '') return true;
+  return false;
+}
+
+export function pushModalHistory(id = '') {
+  if (typeof window !== 'undefined' && window.history && typeof window.history.pushState === 'function') {
+    _modalHistoryCount++;
+    try {
+      window.history.pushState({ darcModal: id || 'active', count: _modalHistoryCount }, '');
+    } catch (e) {}
+  }
+}
+
+export function handleModalPopState() {
+  if (_ignoreNextPopState) {
+    _ignoreNextPopState = false;
+    return;
+  }
+  if (isAnyModalOpen() || _modalHistoryCount > 0) {
+    _modalHistoryCount = Math.max(0, _modalHistoryCount - 1);
+    closeModal(false, true);
+  }
+}
+
+if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+  window.addEventListener('popstate', handleModalPopState);
+}
+
+export function closeModal(immediate = false, fromPopstate = false) { 
   if (_closeModalTimer) {
     clearTimeout(_closeModalTimer);
     _closeModalTimer = null;
+  }
+
+  // Mobile Back-Button Sync: Pop history state if closed via UI button or backdrop
+  if (!fromPopstate && _modalHistoryCount > 0) {
+    _modalHistoryCount--;
+    _ignoreNextPopState = true;
+    if (typeof window !== 'undefined' && window.history && typeof window.history.back === 'function') {
+      try {
+        window.history.back();
+      } catch (e) {}
+    }
   }
 
   const previewOverlay = document.getElementById('preview-modal-overlay');
@@ -94,6 +145,7 @@ export function modalShell(title, subtitle, body, id = '', extraClass = '') {
   }
   isClosingModal = false;
   document.body.style.overflow = 'hidden';
+  pushModalHistory(id);
   return `<div class="modal-backdrop ${id ? `backdrop-${id}` : ''}"><div class="modal ${extraClass}" data-modal="${id}"><div class="modal-head"><div><h2>${esc(title)}</h2><p>${esc(subtitle || '')}</p></div><button class="modal-close" type="button" data-action="close-modal" aria-label="${choose('إغلاق', 'Close')}">${icon('close', 15)}</button></div>${body}</div></div>`;
 }
 
@@ -152,6 +204,19 @@ export function showToast(message, typeOrIsError = 'success') {
     .replace(/\s*[✅🔔🚀⚠️✨✓✕❌📑📊👥🎉]+[\s\uFEFF\xA0]*$/u, '')
     .trim();
 
+  // Enforce Max 3 Toasts cap: smooth eviction of oldest active toast (Anti-Screen Flood)
+  const activeToasts = Array.from(stack.children || []).filter(el => !el.dataset?.evicting);
+  while (activeToasts.length >= 3) {
+    const oldest = activeToasts.shift();
+    if (!oldest) break;
+    oldest.dataset.evicting = 'true';
+    if (oldest._dismissTimer) clearTimeout(oldest._dismissTimer);
+    oldest.classList.add('toast-exit');
+    setTimeout(() => {
+      try { oldest.remove(); } catch (e) {}
+    }, 120);
+  }
+
   const toast = document.createElement('div');
   toast.className = `toast toast-${type} ${type === 'error' ? 'error' : ''}`;
   toast.setAttribute('role', 'alert');
@@ -187,11 +252,13 @@ export function showToast(message, typeOrIsError = 'success') {
   }
 
   autoDismissTimer = setTimeout(dismiss, 4200);
+  toast._dismissTimer = autoDismissTimer;
   toast.addEventListener('mouseenter', () => {
     if (autoDismissTimer) clearTimeout(autoDismissTimer);
   });
   toast.addEventListener('mouseleave', () => {
     autoDismissTimer = setTimeout(dismiss, 2000);
+    toast._dismissTimer = autoDismissTimer;
   });
 
   stack.appendChild(toast);

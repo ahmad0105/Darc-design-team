@@ -96,6 +96,23 @@ export function esc(value) {
   if (!ESC_TEST.test(str)) return str;
   return str.replace(ESC_REGEX, (character) => ESC_MAP[character]);
 }
+
+/**
+ * Universal Arabic & Numeral Normalization Engine
+ * Unifies Alef variations (أ, إ, آ -> ا), Yaa/Alef-Maksura (ى -> ي), Taa-Marbuta (ة -> ه),
+ * removes Tashkeel diacritics, and normalizes Eastern Arabic / Hindi numerals (٠-٩ -> 0-9).
+ */
+export function normalizeArabic(str) {
+  if (!str || typeof str !== 'string') return '';
+  return str
+    .replace(/[أإآ]/g, 'ا')
+    .replace(/ة/g, 'ه')
+    .replace(/ى/g, 'ي')
+    .replace(/[\u064B-\u065F]/g, '')
+    .replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d))
+    .toLowerCase()
+    .trim();
+}
 /**
  * Neutralize CSV / Spreadsheet Formula Injection (CWE-1236)
  * Prepends a single quote to any value starting with formula trigger chars (=, +, -, @, tab, CR)

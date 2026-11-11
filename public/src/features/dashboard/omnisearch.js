@@ -1,5 +1,5 @@
 import { state } from '../../core/state.js';
-import { choose, esc, icon, t, dateLabel, roleName, can, isAdmin } from '../../core/utils.js';
+import { choose, esc, icon, t, dateLabel, roleName, can, isAdmin, normalizeArabic } from '../../core/utils.js';
 import { openTaskModal } from '../tasks/tasks.js';
 import { openProjectModal } from '../projects/projects.js';
 import { switchView, canAccessView } from '../../core/router.js';
@@ -143,7 +143,7 @@ function executeResult(item) {
 }
 
 export function renderOmnisearchResults(rawQuery) {
-  const q = rawQuery.trim().toLowerCase();
+  const q = normalizeArabic(rawQuery);
   const results = [];
   
   // 1. Quick Actions
@@ -190,7 +190,7 @@ export function renderOmnisearchResults(rawQuery) {
   });
 
   for (const act of actions) {
-    if (!q || act.keywords.includes(q) || act.title.toLowerCase().includes(q)) {
+    if (!q || normalizeArabic(act.keywords).includes(q) || normalizeArabic(act.title).includes(q)) {
       results.push(act);
     }
   }
@@ -200,7 +200,8 @@ export function renderOmnisearchResults(rawQuery) {
     const projects = state.data?.projects || [];
     for (const p of projects) {
       if (results.length >= 20) break;
-      const match = !q || `${p.nameAr || ''} ${p.nameEn || ''} ${p.code || ''} ${p.clientAr || ''} ${p.clientEn || ''}`.toLowerCase().includes(q);
+      const target = normalizeArabic(`${p.nameAr || ''} ${p.nameEn || ''} ${p.code || ''} ${p.clientAr || ''} ${p.clientEn || ''}`);
+      const match = !q || target.includes(q);
       if (match) {
         results.push({
           type: 'project',
@@ -220,7 +221,8 @@ export function renderOmnisearchResults(rawQuery) {
     const tasks = state.data?.tasks || [];
     for (const t of tasks) {
       if (results.length >= 20) break;
-      const match = !q || `${t.titleAr || ''} ${t.titleEn || ''} ${t.categoryAr || ''} ${t.categoryEn || ''}`.toLowerCase().includes(q);
+      const target = normalizeArabic(`${t.titleAr || ''} ${t.titleEn || ''} ${t.categoryAr || ''} ${t.categoryEn || ''}`);
+      const match = !q || target.includes(q);
       if (match) {
         results.push({
           type: 'task',
@@ -240,7 +242,8 @@ export function renderOmnisearchResults(rawQuery) {
     const users = state.data?.users || [];
     for (const u of users) {
       if (results.length >= 20) break;
-      const match = !q || `${u.name || ''} ${u.nameEn || ''} ${u.email || ''} ${u.jobTitleAr || ''}`.toLowerCase().includes(q);
+      const target = normalizeArabic(`${u.name || ''} ${u.nameEn || ''} ${u.email || ''} ${u.jobTitleAr || ''}`);
+      const match = !q || target.includes(q);
       if (match) {
         results.push({
           type: 'user',
@@ -297,9 +300,11 @@ export function renderOmnisearchResults(rawQuery) {
   }).join('');
 }
 
-window.__selectOmniItem = (idx) => {
-  if (currentResults[idx]) executeResult(currentResults[idx]);
-};
+if (typeof window !== 'undefined') {
+  window.__selectOmniItem = (idx) => {
+    if (currentResults[idx]) executeResult(currentResults[idx]);
+  };
+}
 
 export function openShortcutsCheatsheet() {
   closeOmnisearch();
