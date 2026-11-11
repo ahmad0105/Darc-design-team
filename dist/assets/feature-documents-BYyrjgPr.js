@@ -1,9 +1,9 @@
-import{t as O}from"./rolldown-runtime-BQ-_32WO.js";import{$ as a,At as _,C as F,Dt as P,Mt as K,Ot as S,Vt as g,X as T,Y as e,Z as E,ct as M,ft as s,lt as j,mt as C,q as z,tt as B,w as Q}from"./core-dragdrop-DDLeulsy.js";var J=O({openUploadDrawingModal:()=>Z,renderDocuments:()=>q});function q(){const $=g.data?.documents||[],x=g.data?.projects||[],b=g.data?.tasks||[],f=(g.searches?.documents||"").trim().toLowerCase(),m=g.docProjectFilter||"all",u=g.docDisciplineFilter||"all",t=g.docStatusFilter||"all",l=g.docSortOrder||"newest",r=g.docViewMode||"grid",o=g.data?.user?.id,v=C(),y=v||z("review_tasks")||z("approve_tasks")||z("edit_tasks"),d=z("upload_documents")||v,h=new Set(b.filter(i=>!i.deletedAt).map(i=>i.id)),w=new Set(x.filter(i=>!i.deletedAt).map(i=>i.id)),n=$.filter(i=>{if(i.deletedAt||i.projectId&&!w.has(i.projectId)||!i.projectId&&i.taskId&&!h.has(i.taskId)||m!=="all"&&i.projectId!==m||u!=="all"&&E(i)!==u||t!=="all"&&(i.status||"draft")!==t)return!1;if(f){const k=(i.originalName||i.name||"").toLowerCase(),I=x.find(R=>R.id===i.projectId),G=(I?.code||"").toLowerCase(),N=e(I?.nameAr,I?.nameEn||"").toLowerCase(),U=(B(i.originalName)||"").toLowerCase(),V=(j(i.originalName,i.mimeType).ext||"").toLowerCase();if(!(k.includes(f)||G.includes(f)||N.includes(f)||U.includes(f)||V.includes(f)))return!1}return!0});n.sort((i,k)=>l==="oldest"?new Date(i.createdAt||0)-new Date(k.createdAt||0):l==="name"?(i.originalName||"").localeCompare(k.originalName||""):l==="size"?(k.size||0)-(i.size||0):new Date(k.createdAt||0)-new Date(i.createdAt||0));const p=n.reduce((i,k)=>i+(k.size||0),0),c=p>1073741824?(p/1073741824).toFixed(1)+" GB":p>1048576?(p/1048576).toFixed(1)+" MB":Math.round(p/1024)+" KB",D=n.filter(i=>i.status==="approved").length,A=n.filter(i=>i.status==="review"||!i.status).length;return`
+import{t as K}from"./rolldown-runtime-BQ-_32WO.js";import{$ as a,At as q,C as P,Dt as T,Mt as Q,Ot as E,Vt as g,X as M,Y as e,Z as B,ct as C,ft as s,lt as A,mt as G,q as z,tt as F,vt as j,w as H}from"./core-dragdrop-BwC34WZu.js";var te=K({openUploadDrawingModal:()=>Y,renderDocuments:()=>W});function W(){const $=g.data?.documents||[],x=g.data?.projects||[],b=g.data?.tasks||[],w=(g.searches?.documents||"").trim().toLowerCase(),m=g.docProjectFilter||"all",u=g.docDisciplineFilter||"all",t=g.docStatusFilter||"all",l=g.docSortOrder||"newest",r=g.docViewMode||"grid",o=g.data?.user?.id,f=G(),y=f||z("review_tasks")||z("approve_tasks")||z("edit_tasks"),d=z("upload_documents")||f,h=new Set(b.filter(i=>!i.deletedAt).map(i=>i.id)),k=new Set(x.filter(i=>!i.deletedAt).map(i=>i.id)),n=$.filter(i=>{if(i.deletedAt||i.projectId&&!k.has(i.projectId)||!i.projectId&&i.taskId&&!h.has(i.taskId)||m!=="all"&&i.projectId!==m||u!=="all"&&B(i)!==u||t!=="all"&&(i.status||"draft")!==t)return!1;if(w){const v=j(w),N=j(i.originalName||i.name||""),S=x.find(_=>_.id===i.projectId),U=j(S?.code||""),V=j(e(S?.nameAr,S?.nameEn||"")),R=j(F(i.originalName)||""),O=(A(i.originalName,i.mimeType).ext||"").toLowerCase();if(!(N.includes(v)||U.includes(v)||V.includes(v)||R.includes(v)||O.includes(v)))return!1}return!0});n.sort((i,v)=>l==="oldest"?new Date(i.createdAt||0)-new Date(v.createdAt||0):l==="name"?(i.originalName||"").localeCompare(v.originalName||""):l==="size"?(v.size||0)-(i.size||0):new Date(v.createdAt||0)-new Date(i.createdAt||0));const p=n.reduce((i,v)=>i+(v.size||0),0),c=p>1073741824?(p/1073741824).toFixed(1)+" GB":p>1048576?(p/1048576).toFixed(1)+" MB":Math.round(p/1024)+" KB",D=n.filter(i=>i.status==="approved").length,I=n.filter(i=>i.status==="review"||!i.status).length;return`
     <!-- Header -->
     <div class="page-head">
       <div>
         <p class="eyebrow">${e("مركز المخرجات والمخططات الهندسية","DELIVERABLES & BLUEPRINTS CENTER")}</p>
-        <h1>${S("documents")}</h1>
+        <h1>${E("documents")}</h1>
         <p>${e("إدارة وتحميل ومعاينة المخططات المعمارية والإنشائية، ومتابعة إصدارات المخرجات (V1, V2, V3) واعتماداتها.","Manage, upload, and preview architectural drawings, track revisions (V1, V2, V3), and engineering approvals.")}</p>
       </div>
       <div class="page-actions">
@@ -33,7 +33,7 @@ import{t as O}from"./rolldown-runtime-BQ-_32WO.js";import{$ as a,At as _,C as F,
       </div>
       <div class="mini-badge" style="padding:6px 12px;background:var(--surface);border:1px solid var(--line);font-size:11px;font-weight:700;display:inline-flex;align-items:center;gap:6px;">
         <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--amber);"></span>
-        <span>${e("قيد المراجعة الفنية:","Under Review:")} <strong>${A}</strong></span>
+        <span>${e("قيد المراجعة الفنية:","Under Review:")} <strong>${I}</strong></span>
       </div>
       <div class="mini-badge" style="padding:6px 12px;background:var(--surface);border:1px solid var(--line);font-size:11px;font-weight:700;display:inline-flex;align-items:center;gap:6px;">
         ${s("folder",12)}
@@ -134,10 +134,10 @@ import{t as O}from"./rolldown-runtime-BQ-_32WO.js";import{$ as a,At as _,C as F,
     </div>
 
     <!-- Active Documents Presentation Mode -->
-    ${r==="grid"?H(n,x,b,y,v,o):W(n,x,b,y,v,o)}
-  `}function H($,x,b,f,m,u){return $.length?`
+    ${r==="grid"?Z(n,x,b,y,f,o):X(n,x,b,y,f,o)}
+  `}function Z($,x,b,w,m,u){return $.length?`
     <div class="documents-grid" style="display:grid;grid-template-columns:repeat(auto-fill, minmax(295px, 1fr));gap:16px;margin-top:14px;">
-      ${$.map(t=>{const l=x.find(c=>c.id===t.projectId),r=b.find(c=>c.id===t.taskId),o=j(t.originalName,t.mimeType),v=B(t.originalName)||"V1",y=E(t),d=M(y),h=t.size>1048576?(t.size/1048576).toFixed(1)+" MB":Math.round((t.size||0)/1024)+" KB",w=m||z("delete_documents")||t.uploaderId===u,n=Q(t),p=F(t);return`
+      ${$.map(t=>{const l=x.find(c=>c.id===t.projectId),r=b.find(c=>c.id===t.taskId),o=A(t.originalName,t.mimeType),f=F(t.originalName)||"V1",y=B(t),d=C(y),h=t.size>1048576?(t.size/1048576).toFixed(1)+" MB":Math.round((t.size||0)/1024)+" KB",k=m||z("delete_documents")||t.uploaderId===u,n=H(t),p=P(t);return`
           <div class="doc-blueprint-card" data-doc-id="${a(t.id)}" style="background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 4px 16px rgba(0,0,0,0.03);transition:transform 0.2s cubic-bezier(0.16,1,0.3,1),box-shadow 0.2s cubic-bezier(0.16,1,0.3,1),border-color 0.2s;">
             
             <!-- Blueprint Thumbnail Banner -->
@@ -171,7 +171,7 @@ import{t as O}from"./rolldown-runtime-BQ-_32WO.js";import{$ as a,At as _,C as F,
                   ${e(d.labelAr,d.labelEn)}
                 </span>
                 <span class="version-badge" style="background:rgba(15,23,42,0.78);color:#ffffff;border:1px solid rgba(255,255,255,0.15);font-size:10px;font-weight:800;padding:2px 8px;border-radius:6px;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);">
-                  ${v}
+                  ${f}
                 </span>
               </div>
 
@@ -199,7 +199,7 @@ import{t as O}from"./rolldown-runtime-BQ-_32WO.js";import{$ as a,At as _,C as F,
                 <div style="display:flex;align-items:center;gap:6px;margin-top:3px;font-size:11px;color:var(--muted);">
                   <span>${h}</span>
                   <span>•</span>
-                  <span>${T(t.createdAt,!0)}</span>
+                  <span>${M(t.createdAt,!0)}</span>
                 </div>
               </div>
 
@@ -234,7 +234,7 @@ import{t as O}from"./rolldown-runtime-BQ-_32WO.js";import{$ as a,At as _,C as F,
 
               <!-- Approval Status Selector / Badge -->
               <div style="margin-top:auto;padding-top:6px;">
-                ${f?`
+                ${w?`
                   <select 
                     class="select-compact doc-status-select" 
                     data-action="change-doc-status" 
@@ -248,7 +248,7 @@ import{t as O}from"./rolldown-runtime-BQ-_32WO.js";import{$ as a,At as _,C as F,
                   </select>
                 `:`
                   <span class="status-badge ${a(t.status||"draft")}" style="font-size:11px;display:inline-block;padding:3px 8px;border-radius:6px;">
-                    ${a(P(t.status||"draft"))}
+                    ${a(T(t.status||"draft"))}
                   </span>
                 `}
               </div>
@@ -295,7 +295,7 @@ import{t as O}from"./rolldown-runtime-BQ-_32WO.js";import{$ as a,At as _,C as F,
                   ${s("download",14)}
                 </button>
 
-                ${w?`
+                ${k?`
                   <button 
                     type="button" 
                     class="btn btn-sm btn-ghost" 
@@ -313,15 +313,15 @@ import{t as O}from"./rolldown-runtime-BQ-_32WO.js";import{$ as a,At as _,C as F,
           </div>
         `}).join("")}
     </div>
-  `:L()}function W($,x,b,f,m,u){return $.length?`
+  `:L()}function X($,x,b,w,m,u){return $.length?`
     <div class="panel" style="margin-top:14px;">
       <div class="table-wrap">
         <table class="data-table documents-table">
           <thead>
             <tr>
               <th>${e("المخطط / المخرج الهندسي","Drawing / Deliverable")}</th>
-              <th>${S("projects")}</th>
-              <th>${S("tasks")}</th>
+              <th>${E("projects")}</th>
+              <th>${E("tasks")}</th>
               <th>${e("الإصدار","Revision")}</th>
               <th>${e("التخصص","Discipline")}</th>
               <th>${e("الحالة الهندسية","Status")}</th>
@@ -331,7 +331,7 @@ import{t as O}from"./rolldown-runtime-BQ-_32WO.js";import{$ as a,At as _,C as F,
             </tr>
           </thead>
           <tbody>
-            ${$.map(t=>{const l=x.find(p=>p.id===t.projectId),r=b.find(p=>p.id===t.taskId),o=j(t.originalName,t.mimeType),v=B(t.originalName)||"V1",y=E(t),d=M(y),h=t.size>1048576?(t.size/1048576).toFixed(1)+" MB":Math.round((t.size||0)/1024)+" KB",w=m||z("delete_documents")||t.uploaderId===u,n=F(t);return`
+            ${$.map(t=>{const l=x.find(p=>p.id===t.projectId),r=b.find(p=>p.id===t.taskId),o=A(t.originalName,t.mimeType),f=F(t.originalName)||"V1",y=B(t),d=C(y),h=t.size>1048576?(t.size/1048576).toFixed(1)+" MB":Math.round((t.size||0)/1024)+" KB",k=m||z("delete_documents")||t.uploaderId===u,n=P(t);return`
                 <tr data-doc-id="${a(t.id)}" class="doc-row">
                   <td>
                     <div style="display:flex;align-items:center;gap:10px;cursor:pointer;" data-action="preview-doc" data-doc-id="${a(t.id)}">
@@ -354,7 +354,7 @@ import{t as O}from"./rolldown-runtime-BQ-_32WO.js";import{$ as a,At as _,C as F,
                   </td>
                   <td>
                     <span class="version-badge" style="display:inline-block;padding:2px 7px;border-radius:6px;font-size:10px;font-weight:800;background:rgba(13,98,105,0.08);color:var(--teal);border:1px solid rgba(13,98,105,0.2);">
-                      ${v}
+                      ${f}
                     </span>
                   </td>
                   <td>
@@ -364,7 +364,7 @@ import{t as O}from"./rolldown-runtime-BQ-_32WO.js";import{$ as a,At as _,C as F,
                   </td>
                   <td>
                     <div class="doc-status-cell">
-                      ${f?`
+                      ${w?`
                         <select class="select-compact doc-status-select" data-action="change-doc-status" data-doc-id="${a(t.id)}" style="font-size:11px;font-weight:700;padding:4px 8px;border-radius:8px;border:1px solid var(--line);background:var(--surface);cursor:pointer;">
                           <option value="draft" ${t.status==="draft"?"selected":""}>${e("مسودة عمل","Draft")}</option>
                           <option value="review" ${t.status==="review"?"selected":""}>${e("قيد المراجعة","Review")}</option>
@@ -373,13 +373,13 @@ import{t as O}from"./rolldown-runtime-BQ-_32WO.js";import{$ as a,At as _,C as F,
                         </select>
                       `:`
                         <span class="status-badge ${a(t.status||"draft")}" style="font-size:11px;">
-                          ${a(P(t.status||"draft"))}
+                          ${a(T(t.status||"draft"))}
                         </span>
                       `}
                     </div>
                   </td>
                   <td style="font-size:12px;color:var(--ink-soft);">${h}</td>
-                  <td style="font-size:12px;color:var(--ink-soft);">${T(t.createdAt,!0)}</td>
+                  <td style="font-size:12px;color:var(--ink-soft);">${M(t.createdAt,!0)}</td>
                   <td style="text-align:end;">
                     <div style="display:inline-flex;align-items:center;gap:4px;">
                       <button class="btn btn-ghost btn-sm" data-action="preview-doc" data-doc-id="${a(t.id)}" style="padding:5px;" title="${e("معاينة","Preview")}">
@@ -391,7 +391,7 @@ import{t as O}from"./rolldown-runtime-BQ-_32WO.js";import{$ as a,At as _,C as F,
                       <button class="btn btn-ghost btn-sm" data-action="download-doc" data-doc-id="${a(t.id)}" style="padding:5px;color:var(--blue);" title="${e("تحميل المخطط","Download")}">
                         ${s("download",14)}
                       </button>
-                      ${w?`
+                      ${k?`
                         <button class="btn btn-ghost btn-sm" data-action="delete-doc" data-doc-id="${a(t.id)}" style="padding:5px;color:var(--red);" title="${e("نقل لسلة المهملات","Move to trash")}">
                           ${s("trash",14)}
                         </button>
@@ -411,14 +411,14 @@ import{t as O}from"./rolldown-runtime-BQ-_32WO.js";import{$ as a,At as _,C as F,
       <p style="margin:0 0 16px;font-size:13px;color:var(--muted);max-width:440px;margin-inline:auto;">
         ${e("لم يتم العثور على أي ملفات تطابق معايير البحث والفلترة المحددة. يمكنك تعديل خيارات التصفية أو رفع مخرج هندسي جديد.","No deliverables match the specified filters. Try adjusting your search or upload a new engineering drawing.")}
       </p>
-      ${z("upload_documents")||C()?`
+      ${z("upload_documents")||G()?`
         <button class="btn btn-primary btn-sm" data-action="open-upload-drawing-modal" style="display:inline-flex;align-items:center;gap:6px;font-weight:700;">
           ${s("upload",14)}
           <span>${e("رفع مخطط جديد الآن","Upload New Drawing")}</span>
         </button>
       `:""}
     </div>
-  `}function Z($=null){const x=g.data?.projects||[],b=$||x[0]?.id||"",f=g.data?.tasks?.filter(t=>t.projectId===b&&!t.deletedAt)||[],m=`
+  `}function Y($=null){const x=g.data?.projects||[],b=$||x[0]?.id||"",w=g.data?.tasks?.filter(t=>t.projectId===b&&!t.deletedAt)||[],m=`
     <form id="upload-drawing-form" style="padding:16px 20px 20px;display:grid;gap:16px;">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
         <div class="field">
@@ -432,7 +432,7 @@ import{t as O}from"./rolldown-runtime-BQ-_32WO.js";import{$ as a,At as _,C as F,
           <label style="font-size:12px;font-weight:700;">${e("المهمة الهندسية (اختياري)","Engineering Task (Optional)")}</label>
           <select id="drawing-upload-task" style="width:100%;min-height:44px;padding:8px 12px 8px 36px;font-size:13px;line-height:1.6;border:1px solid var(--line);border-radius:10px;background-color:var(--surface);color:var(--ink);box-sizing:border-box;">
             <option value="">${e("— مخطط عام لكامل المشروع —","— General Project Drawing —")}</option>
-            ${f.map(t=>`<option value="${a(t.id)}">${a(e(t.titleAr,t.titleEn))}</option>`).join("")}
+            ${w.map(t=>`<option value="${a(t.id)}">${a(e(t.titleAr,t.titleEn))}</option>`).join("")}
           </select>
         </div>
       </div>
@@ -479,7 +479,7 @@ import{t as O}from"./rolldown-runtime-BQ-_32WO.js";import{$ as a,At as _,C as F,
         </button>
       </div>
     </form>
-  `,u=document.getElementById("modal-root");if(u){u.innerHTML=K(e("رفع مخطط أو مخرج هندسي جديد","Upload Architectural Deliverable / Drawing"),e("رفع ملفات CAD و BIM و PDF مع توثيق الإصدارات والتخصص الهندسي.","Upload CAD, BIM, and PDF files with revision numbering and discipline tagging."),m,"upload-drawing","modal-lg");const t=document.getElementById("drawing-upload-project"),l=document.getElementById("drawing-upload-task");t&&l&&t.addEventListener("change",()=>{const n=t.value,p=g.data?.tasks?.filter(c=>c.projectId===n&&!c.deletedAt)||[];l.innerHTML=`<option value="">${e("— مخطط عام لكامل المشروع —","— General Project Drawing —")}</option>`+p.map(c=>`<option value="${a(c.id)}">${a(e(c.titleAr,c.titleEn))}</option>`).join("")});const r=document.getElementById("drawing-dropzone"),o=document.getElementById("drawing-file-input"),v=document.getElementById("drawing-selected-files-list"),y=document.getElementById("start-drawing-upload-btn");let d=[];const h=()=>{if(!d.length){v.innerHTML="",y.disabled=!0;return}y.disabled=!1,v.innerHTML=d.map((n,p)=>{const c=j(n.name,n.type),D=n.size>1048576?(n.size/1048576).toFixed(1)+" MB":Math.round(n.size/1024)+" KB";return`
+  `,u=document.getElementById("modal-root");if(u){u.innerHTML=Q(e("رفع مخطط أو مخرج هندسي جديد","Upload Architectural Deliverable / Drawing"),e("رفع ملفات CAD و BIM و PDF مع توثيق الإصدارات والتخصص الهندسي.","Upload CAD, BIM, and PDF files with revision numbering and discipline tagging."),m,"upload-drawing","modal-lg");const t=document.getElementById("drawing-upload-project"),l=document.getElementById("drawing-upload-task");t&&l&&t.addEventListener("change",()=>{const n=t.value,p=g.data?.tasks?.filter(c=>c.projectId===n&&!c.deletedAt)||[];l.innerHTML=`<option value="">${e("— مخطط عام لكامل المشروع —","— General Project Drawing —")}</option>`+p.map(c=>`<option value="${a(c.id)}">${a(e(c.titleAr,c.titleEn))}</option>`).join("")});const r=document.getElementById("drawing-dropzone"),o=document.getElementById("drawing-file-input"),f=document.getElementById("drawing-selected-files-list"),y=document.getElementById("start-drawing-upload-btn");let d=[];const h=()=>{if(!d.length){f.innerHTML="",y.disabled=!0;return}y.disabled=!1,f.innerHTML=d.map((n,p)=>{const c=A(n.name,n.type),D=n.size>1048576?(n.size/1048576).toFixed(1)+" MB":Math.round(n.size/1024)+" KB";return`
           <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--surface);border:1px solid var(--line);border-radius:8px;font-size:12px;">
             <div style="display:flex;align-items:center;gap:8px;min-width:0;">
               <span class="file-format-badge" style="background:${c.bg};color:${c.color};border:1px solid ${c.border};font-size:9px;font-weight:800;padding:2px 6px;border-radius:4px;">${c.ext}</span>
@@ -488,4 +488,4 @@ import{t as O}from"./rolldown-runtime-BQ-_32WO.js";import{$ as a,At as _,C as F,
             </div>
             <button type="button" data-file-remove="${p}" style="background:transparent;border:0;color:var(--red);cursor:pointer;font-size:16px;">&times;</button>
           </div>
-        `}).join(""),v.querySelectorAll("[data-file-remove]").forEach(n=>{n.addEventListener("click",()=>{const p=parseInt(n.dataset.fileRemove,10);d.splice(p,1),h()})})};r&&o&&(r.addEventListener("click",()=>o.click()),o.addEventListener("change",()=>{o.files?.length&&(d=Array.from(o.files),h())}),r.addEventListener("dragover",n=>{n.preventDefault(),r.style.borderColor="var(--teal)"}),r.addEventListener("dragleave",()=>{r.style.borderColor="var(--line)"}),r.addEventListener("drop",n=>{n.preventDefault(),r.style.borderColor="var(--line)",n.dataTransfer?.files?.length&&(d=Array.from(n.dataTransfer.files),h())}));const w=document.getElementById("upload-drawing-form");w&&w.addEventListener("submit",async n=>{if(n.preventDefault(),!d.length)return;const p=t.value,c=l.value||null,D=document.getElementById("drawing-upload-discipline")?.value||"architectural",A=document.getElementById("drawing-upload-status")?.value||"draft";_(),typeof window.uploadDirectFiles=="function"&&window.uploadDirectFiles({files:d,projectId:p,taskId:c,discipline:D,status:A})})}}export{Z as n,J as t};
+        `}).join(""),f.querySelectorAll("[data-file-remove]").forEach(n=>{n.addEventListener("click",()=>{const p=parseInt(n.dataset.fileRemove,10);d.splice(p,1),h()})})};r&&o&&(r.addEventListener("click",()=>o.click()),o.addEventListener("change",()=>{o.files?.length&&(d=Array.from(o.files),h())}),r.addEventListener("dragover",n=>{n.preventDefault(),r.style.borderColor="var(--teal)"}),r.addEventListener("dragleave",()=>{r.style.borderColor="var(--line)"}),r.addEventListener("drop",n=>{n.preventDefault(),r.style.borderColor="var(--line)",n.dataTransfer?.files?.length&&(d=Array.from(n.dataTransfer.files),h())}));const k=document.getElementById("upload-drawing-form");k&&k.addEventListener("submit",async n=>{if(n.preventDefault(),!d.length)return;const p=t.value,c=l.value||null,D=document.getElementById("drawing-upload-discipline")?.value||"architectural",I=document.getElementById("drawing-upload-status")?.value||"draft";q(),typeof window.uploadDirectFiles=="function"&&window.uploadDirectFiles({files:d,projectId:p,taskId:c,discipline:D,status:I})})}}export{Y as n,te as t};

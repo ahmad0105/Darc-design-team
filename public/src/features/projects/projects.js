@@ -1,7 +1,7 @@
 
 import { state } from '../../core/state.js';
 import { api } from '../../core/api.js';
-import { choose, esc, icon, avatar, statusText, t, can, isAdmin, roleName, sanitizeForSpreadsheet, formatReportDate, formatReportTime, dateLabel, isOverdue, parseEndOfDay, getCompanyBranding, exportXLS } from '../../core/utils.js';
+import { choose, esc, icon, avatar, statusText, t, can, isAdmin, roleName, sanitizeForSpreadsheet, formatReportDate, formatReportTime, dateLabel, isOverdue, parseEndOfDay, getCompanyBranding, exportXLS, normalizeArabic } from '../../core/utils.js';
 import { showToast, modalShell, closeModal } from '../../shared/ui.js';
 import { refreshView } from '../../core/router.js';
 import { renderTaskSortSelect, getSavedTaskSort, renderTimeline, renderBoard } from '../tasks/tasks.js';
@@ -521,10 +521,10 @@ export function renderProjectOverviewTab(project, tasks, members, externalMember
 }
 
 export function renderProjects() {
-  const query = (state.searches?.projects || '').trim().toLowerCase();
+  const query = normalizeArabic(state.searches?.projects || '');
   let projects = (state.data?.projects || [])
     .filter(p => !p.deletedAt && !p.deleted_at)
-    .filter((project) => !query || `${project.nameAr || ''} ${project.nameEn || ''} ${project.code || ''} ${project.clientAr || ''} ${project.clientEn || ''}`.toLowerCase().includes(query));
+    .filter((project) => !query || normalizeArabic(`${project.nameAr || ''} ${project.nameEn || ''} ${project.code || ''} ${project.clientAr || ''} ${project.clientEn || ''}`).includes(query));
 
   // User-defined sorting
   const sort = state.projectSort || 'default';

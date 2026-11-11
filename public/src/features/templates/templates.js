@@ -1,6 +1,6 @@
 import { state } from '../../core/state.js';
 import { api } from '../../core/api.js';
-import { choose, esc, can, t, icon } from '../../core/utils.js';
+import { choose, esc, can, t, icon, normalizeArabic } from '../../core/utils.js';
 import { showToast, modalShell } from '../../shared/ui.js';
 
 export const TEMPLATE_CATEGORIES = [
@@ -18,7 +18,7 @@ export const TEMPLATE_CATEGORIES = [
 ];
 
 export function renderTemplates() {
-  const query = (state.searches?.templates || '').trim().toLowerCase();
+  const query = normalizeArabic(state.searches?.templates || '');
   const sortedTemplates = [...(state.data?.templates || [])].sort((a, b) => (parseInt(a.code, 10) || 0) - (parseInt(b.code, 10) || 0));
 
   const categoryCounts = new Map();
@@ -35,7 +35,7 @@ export function renderTemplates() {
     const items = sortedTemplates.filter(t => {
       if (t.categoryId !== cat.id) return false;
       if (!query) return true;
-      return `${t.nameAr} ${t.nameEn} ${t.code} ${t.typeAr} ${t.typeEn}`.toLowerCase().includes(query);
+      return normalizeArabic(`${t.nameAr} ${t.nameEn} ${t.code} ${t.typeAr} ${t.typeEn}`).includes(query);
     });
 
     if (!items.length) return null;

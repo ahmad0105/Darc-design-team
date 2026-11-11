@@ -15,7 +15,8 @@ import {
   getFileFormatInfo, 
   extractDrawingVersion, 
   detectDocumentDiscipline, 
-  getDisciplineInfo 
+  getDisciplineInfo,
+  normalizeArabic 
 } from '../../core/utils.js';
 import { modalShell, closeModal } from '../../shared/ui.js';
 import { getRealAssetUrl, getDocumentShareableLink } from './doc-viewer.js';
@@ -63,19 +64,20 @@ export function renderDocuments() {
 
     // Search query
     if (searchQuery) {
-      const name = (doc.originalName || doc.name || '').toLowerCase();
+      const q = normalizeArabic(searchQuery);
+      const name = normalizeArabic(doc.originalName || doc.name || '');
       const proj = projects.find(p => p.id === doc.projectId);
-      const projCode = (proj?.code || '').toLowerCase();
-      const projName = choose(proj?.nameAr, proj?.nameEn || '').toLowerCase();
-      const version = (extractDrawingVersion(doc.originalName) || '').toLowerCase();
+      const projCode = normalizeArabic(proj?.code || '');
+      const projName = normalizeArabic(choose(proj?.nameAr, proj?.nameEn || ''));
+      const version = normalizeArabic(extractDrawingVersion(doc.originalName) || '');
       const fmt = getFileFormatInfo(doc.originalName, doc.mimeType);
       const ext = (fmt.ext || '').toLowerCase();
 
-      const match = name.includes(searchQuery) ||
-                    projCode.includes(searchQuery) ||
-                    projName.includes(searchQuery) ||
-                    version.includes(searchQuery) ||
-                    ext.includes(searchQuery);
+      const match = name.includes(q) ||
+                    projCode.includes(q) ||
+                    projName.includes(q) ||
+                    version.includes(q) ||
+                    ext.includes(q);
       if (!match) return false;
     }
 

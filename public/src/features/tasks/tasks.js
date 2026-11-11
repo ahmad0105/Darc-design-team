@@ -1,7 +1,7 @@
 
 import { state } from '../../core/state.js';
 import { api } from '../../core/api.js';
-import { getTaskStatusStyle, esc, choose, avatar, icon, can, isAdmin, t, statusText, formatDateTime, getActiveCalendarSystem, isOverdue, isDueSoon, getTaskDueTier, priorityText, dateLabel, isTaskAssignedToUser, canUserMoveTask, setSavedTaskSort } from '../../core/utils.js';
+import { getTaskStatusStyle, esc, choose, avatar, icon, can, isAdmin, t, statusText, formatDateTime, getActiveCalendarSystem, isOverdue, isDueSoon, getTaskDueTier, priorityText, dateLabel, isTaskAssignedToUser, canUserMoveTask, setSavedTaskSort, normalizeArabic } from '../../core/utils.js';
 import { showToast, modalShell, closeModal } from '../../shared/ui.js';
 
 export { canUserMoveTask, setSavedTaskSort } from '../../core/utils.js';
@@ -508,9 +508,9 @@ if (typeof window !== 'undefined') {
 }
 
 export function filterTasks(tasks) {
-  const query = (state.searches?.tasks || '').trim().toLowerCase();
+  const query = normalizeArabic(state.searches?.tasks || '');
   return tasks.filter((task) => {
-    const matchesQuery = !query || `${task.titleAr || ''} ${task.titleEn || ''} ${task.categoryAr || ''} ${task.categoryEn || ''}`.toLowerCase().includes(query);
+    const matchesQuery = !query || normalizeArabic(`${task.titleAr || ''} ${task.titleEn || ''} ${task.categoryAr || ''} ${task.categoryEn || ''}`).includes(query);
     const matchesFilter = state.taskFilter === 'all' || (state.taskFilter === 'mine' && isTaskAssignedToUser(task, state.data?.user?.id)) || (state.taskFilter === 'due_soon' && isDueSoon(task)) || (state.taskFilter === 'overdue' && isOverdue(task)) || (state.taskFilter === 'blocked' && task.status === 'blocked');
     const matchesProject = state.taskProjectFilter === 'all' || task.projectId === state.taskProjectFilter;
     const matchesPriority = !state.taskPriorityFilter || state.taskPriorityFilter === 'all' || task.priority === state.taskPriorityFilter;

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 
 import { normalizeArabic } from '../public/src/core/utils.js';
 import { renderOmnisearchResults } from '../public/src/features/dashboard/omnisearch.js';
+import { filterTasks } from '../public/src/features/tasks/tasks.js';
 import { state } from '../public/src/core/state.js';
 import { showToast, modalShell, closeModal, handleModalPopState, isAnyModalOpen } from '../public/src/shared/ui.js';
 import { uploadRateLimiter, UPLOAD_MAX_SESSIONS, UPLOAD_ANON_MAX_SESSIONS } from '../darc-cloud-backend/src/core/rate-limit.js';
@@ -91,6 +92,29 @@ test('Field Resilience & Mobile UX Master Verification Suite', async (t) => {
     // Query with Taa-Marbuta 'الخرسانه' (with Haa): should match 'الخرسانة'
     const htmlMarbuta = renderOmnisearchResults('الخرسانه');
     assert.ok(htmlMarbuta.includes('مخططات الإنشائي والخرسانة'), 'Searching with Haa must match Taa-Marbuta');
+  });
+
+  await t.test('2.1 Tasks & Projects local view filters integrate normalizeArabic', () => {
+    state.taskFilter = 'all';
+    state.taskProjectFilter = 'all';
+    state.taskPriorityFilter = 'all';
+
+    const testTasks = [
+      { id: 't1', titleAr: 'صب خرسانة الدور 14', titleEn: 'Floor 14 Pouring', categoryAr: 'إنشائي' },
+      { id: 't2', titleAr: 'تمديد كهرباء المطبخ', titleEn: 'Kitchen Wiring', categoryAr: 'كهرباء' }
+    ];
+
+    // Search with Hindi numerals '١٤'
+    state.searches = { tasks: '١٤' };
+    const filtered1 = filterTasks(testTasks);
+    assert.equal(filtered1.length, 1);
+    assert.equal(filtered1[0].id, 't1');
+
+    // Search with bare Alef 'انشائي' for 'إنشائي'
+    state.searches = { tasks: 'انشائي' };
+    const filtered2 = filterTasks(testTasks);
+    assert.equal(filtered2.length, 1);
+    assert.equal(filtered2[0].id, 't1');
   });
 
   // =========================================================================
