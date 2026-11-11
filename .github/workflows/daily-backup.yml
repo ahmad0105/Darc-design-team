@@ -66,12 +66,24 @@ jobs:
 
           echo "✅ Encrypted artifact ready: ${BACKUP_NAME}.sql.gz.enc ($(du -h "${BACKUP_NAME}.sql.gz.enc" | cut -f1))"
 
-      - name: Upload Encrypted Artifacts to Google Drive (5TB Account)
+      - name: Archive Encrypted Backup as GitHub Artifact (30-day Retention)
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.BACKUP_NAME }}
+          path: |
+            ${{ env.BACKUP_NAME }}.sql.gz.enc
+            ${{ env.BACKUP_NAME }}.sql.gz.enc.sha256
+          retention-days: 30
+          if-no-files-found: error
+
+      - name: Upload Encrypted Artifacts to Google Drive (Dual Auth: 5TB Account / Service Account)
         env:
           GDRIVE_CLIENT_ID: ${{ secrets.GDRIVE_CLIENT_ID }}
           GDRIVE_CLIENT_SECRET: ${{ secrets.GDRIVE_CLIENT_SECRET }}
           GDRIVE_REFRESH_TOKEN: ${{ secrets.GDRIVE_REFRESH_TOKEN }}
           GDRIVE_FOLDER_ID: ${{ secrets.GDRIVE_FOLDER_ID }}
+          GDRIVE_CLIENT_EMAIL: ${{ secrets.GDRIVE_CLIENT_EMAIL }}
+          GDRIVE_PRIVATE_KEY: ${{ secrets.GDRIVE_PRIVATE_KEY }}
         run: |
           node .github/scripts/upload-to-gdrive.mjs "${BACKUP_NAME}.sql.gz.enc" "${BACKUP_NAME}.sql.gz.enc.sha256"
 
