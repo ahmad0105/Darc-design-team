@@ -111,12 +111,16 @@ function renderVaultInner(isDemo, data) {
         </div>
 
         <div style="display:flex; gap:0.75rem; flex-wrap:wrap;">
+          <button id="btn-trigger-backup-now" class="btn btn-secondary" style="background:rgba(255,255,255,0.06); border-color:rgba(255,255,255,0.12); color:#e2e8f0;">
+            ${icon('upload', 'width:15px; height:15px;')}
+            <span>${choose('أخذ نسخة فورية الآن', 'Backup Now')}</span>
+          </button>
           <button id="btn-refresh-vault" class="btn btn-secondary" style="background:rgba(255,255,255,0.06); border-color:rgba(255,255,255,0.12); color:#e2e8f0;">
-            ${icon('refresh', 'width:16px; height:16px;')}
+            ${icon('refresh', 'width:15px; height:15px;')}
             <span>${choose('تحديث القائمة', 'Refresh Vault')}</span>
           </button>
           <button id="btn-open-restore-wizard" class="btn btn-primary" style="background:#059669; border-color:#059669; color:#fff; box-shadow:0 4px 14px rgba(5,150,105,0.4);">
-            ${icon('shield', 'width:16px; height:16px;')}
+            ${icon('shield', 'width:15px; height:15px;')}
             <span>${choose('معالج الاستعادة الآمن', 'Restore Wizard')}</span>
           </button>
         </div>
@@ -210,6 +214,10 @@ function renderVaultInner(isDemo, data) {
                     </span>
                   </td>
                   <td style="padding:1rem 1.25rem; text-align:end;">
+                    <a href="https://drive.google.com/file/d/${esc(b.id)}/view" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-secondary" style="font-size:0.8rem; margin-inline-end:0.4rem; text-decoration:none;">
+                      ${icon('download', 'width:13px; height:13px;')}
+                      <span>${choose('Drive', 'Drive')}</span>
+                    </a>
                     <button class="btn btn-sm btn-secondary btn-copy-cli" data-filename="${esc(b.filename)}" style="font-size:0.8rem; margin-inline-end:0.4rem;">
                       ${icon('copy', 'width:13px; height:13px;')}
                       <span>${choose('أمر CLI', 'CLI Command')}</span>
@@ -230,6 +238,24 @@ function renderVaultInner(isDemo, data) {
 }
 
 export function attachVaultEvents() {
+  const backupBtn = document.getElementById('btn-trigger-backup-now');
+  if (backupBtn) {
+    backupBtn.onclick = async () => {
+      backupBtn.disabled = true;
+      backupBtn.innerHTML = `${icon('refresh', 'width:15px; height:15px; animation:spin 1s linear infinite;')} <span>${choose('جاري الإطلاق...', 'Launching...')}</span>`;
+      try {
+        recordBreadcrumb('vault', 'Triggering backup-now from UI');
+        await api('/api/vault/backup-now', { method: 'POST' });
+        showToast(choose('تم إطلاق مسار النسخ الاحتياطي المشفر على GitHub بنجاح', 'Encrypted backup dispatched to GitHub successfully'));
+      } catch (err) {
+        showToast(err.message || 'Failed to dispatch backup', 'error');
+      } finally {
+        backupBtn.disabled = false;
+        backupBtn.innerHTML = `${icon('upload', 'width:15px; height:15px;')} <span>${choose('أخذ نسخة فورية الآن', 'Backup Now')}</span>`;
+      }
+    };
+  }
+
   const refreshBtn = document.getElementById('btn-refresh-vault');
   if (refreshBtn) {
     refreshBtn.onclick = async () => {

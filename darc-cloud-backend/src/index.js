@@ -437,8 +437,8 @@ app.use('/api/*', async (c, next) => {
   const path = c.req.path;
   const method = c.req.method;
 
-  // 1. Allow routes specifically wired for demo: /api/bootstrap, /api/demo/reset, /api/tasks, /api/telemetry, /api/audit, /api/notifications, and document uploads
-  if (path.startsWith('/api/bootstrap') || path.startsWith('/api/demo') || path.startsWith('/api/tasks') || path.startsWith('/api/notifications') || (path.startsWith('/api/documents') && method !== 'GET') || path.startsWith('/api/telemetry') || path.startsWith('/api/audit')) {
+  // 1. Allow routes specifically wired for demo: /api/bootstrap, /api/demo/reset, /api/tasks, /api/telemetry, /api/audit, /api/notifications, /api/vault, and document uploads
+  if (path.startsWith('/api/bootstrap') || path.startsWith('/api/demo') || path.startsWith('/api/tasks') || path.startsWith('/api/notifications') || (path.startsWith('/api/documents') && method !== 'GET') || path.startsWith('/api/telemetry') || path.startsWith('/api/audit') || path.startsWith('/api/vault')) {
     return next();
   }
 

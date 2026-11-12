@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { fetchVaultBackups, triggerDisasterRecovery, getVaultWorkflowRuns } from './vault.service.js';
+import { fetchVaultBackups, triggerDisasterRecovery, triggerDisasterBackup, getVaultWorkflowRuns } from './vault.service.js';
 
 const vaultApp = new Hono();
 
@@ -69,6 +69,28 @@ vaultApp.get('/backups', async (c) => {
     return c.json({
       error: err.message || 'فشل في استرجاع قائمة النسخ الاحتياطية',
       code: 'VAULT_E03_DRIVE_UNREACHABLE'
+    }, 500);
+  }
+});
+
+// POST /api/vault/backup-now - Trigger instant database backup to Google Drive
+vaultApp.post('/backup-now', async (c) => {
+  const isDemo = c.get('isDemo');
+  if (isDemo) {
+    return c.json({
+      ok: true,
+      message: 'تم إطلاق النسخ الاحتياطي في بيئة العرض (محاكاة)'
+    });
+  }
+
+  try {
+    const result = await triggerDisasterBackup(c.env);
+    return c.json(result);
+  } catch (err) {
+    console.error('[Vault Backup Error]:', err);
+    return c.json({
+      error: err.message || 'فشل في إطلاق مسار النسخ الاحتياطي',
+      code: 'VAULT_E08_BACKUP_DISPATCH_FAILED'
     }, 500);
   }
 });

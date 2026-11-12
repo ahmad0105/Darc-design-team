@@ -103,6 +103,41 @@ export async function fetchVaultBackups(env, force = false) {
 }
 
 /**
+ * Trigger GitHub Actions Backup Workflow (Create instant backup)
+ */
+export async function triggerDisasterBackup(env) {
+  const token = env.GITHUB_PERSONAL_ACCESS_TOKEN;
+  if (!token) {
+    throw new Error('GITHUB_PERSONAL_ACCESS_TOKEN is missing on server environment');
+  }
+
+  const repo = 'ahmad0105/Darc-design-team';
+  const dispatchUrl = `https://api.github.com/repos/${repo}/actions/workflows/database-backup.yml/dispatches`;
+
+  const res = await fetch(dispatchUrl, {
+    method: 'POST',
+    headers: {
+      'User-Agent': 'DARC-Cloud-Backend',
+      'Authorization': `Bearer ${token}`,
+      'Accept': 'application/vnd.github.v3+json',
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ ref: 'main' })
+  });
+
+  if (res.status !== 204 && res.status !== 200 && res.status !== 201) {
+    const errText = await res.text();
+    throw new Error(`GitHub Actions backup dispatch failed (HTTP ${res.status}): ${errText}`);
+  }
+
+  return {
+    ok: true,
+    dispatchedAt: new Date().toISOString(),
+    status: 'initiated'
+  };
+}
+
+/**
  * Trigger GitHub Actions Disaster Recovery Workflow
  */
 export async function triggerDisasterRecovery(env, { backupFilename = 'latest', dryRun = false, confirmationPhrase = '' }) {

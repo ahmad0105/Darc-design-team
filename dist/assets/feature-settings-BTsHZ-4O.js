@@ -1,6 +1,6 @@
-import{t as Ee}from"./rolldown-runtime-BQ-_32WO.js";import{$ as t,A as Fe,Dt as W,Et as U,G as ce,J as Ue,K as se,M as He,Mt as fe,Ot as c,Pt as C,Q as Ge,Rt as he,St as B,Vt as o,X as re,Y as e,_t as Se,at as $e,c as we,et as We,ft as n,gt as X,i as Te,it as ze,j as Ve,mt as _,n as O,nt as me,o as oe,ot as qe,pt as Ae,q as k,rt as De,u as V,ut as Je,xt as H,yt as pe}from"./core-dragdrop-Sc3qVl0H.js";var pt=Ee({attentionItem:()=>_e,metricCard:()=>ae,projectProgress:()=>Re,projectRow:()=>Ce,pulseChart:()=>je,renderDashboard:()=>Qe,teamMetrics:()=>ye,teamRow:()=>Ie});function ae(a,s,r,d,m,g=""){return`<article class="metric-card ${d}"><div class="metric-top"><span class="metric-label">${t(a)}</span><span class="metric-icon">${n(m,15)}</span></div><div class="metric-value">${t(s)}</div><span class="metric-note ${g}">${t(r)}</span></article>`}function Re(a){const s=a.health==="off_track"?"red":a.health==="at_risk"?"amber":"";return`<div class="progress-cell"><div class="progress-meta"><span>${c("weightedProgress")}</span><strong>${a.progress}%</strong></div><div class="progress-track"><div class="progress-fill ${s}" style="width:${Math.min(100,a.progress)}%"></div></div></div>`}function Ce(a){return`<div class="project-row"><div class="project-main"><span class="project-symbol">${n("building",17)}</span><div class="project-name"><strong>${t(e(a.nameAr,a.nameEn))}</strong><span>${t(a.code)} · ${t(e(a.clientAr,a.clientEn))}</span></div></div>${Re(a)}<div class="project-owner">${se(a.manager)}<span>${t(a.manager?e(a.manager.name,a.manager.nameEn||a.manager.name):"—")}</span></div><button class="project-arrow" data-action="open-project" data-project-id="${t(a.id)}" aria-label="${c("viewDetails")}">${n(o.lang==="ar"?"arrowLeft":"arrow",14)}</button></div>`}function _e(a){const s=X(a)||a.status==="blocked"?"red":"amber",r=X(a)?e("متأخرة","Overdue"):a.status==="blocked"?e("متوقفة","Blocked"):e("تستحق قريبًا","Due soon"),d=e(a.titleAr,a.titleEn);return`<button type="button" class="attention-item" data-action="open-task" data-task-id="${t(a.id)}" title="${t(d)}"><span class="attention-icon ${s}">${n(X(a)||a.status==="blocked"?"alert":"clock",14)}</span><span class="attention-copy"><strong style="color:var(--${s})">${t(d)}</strong><span>${t(r)} · ${t(Ge(a.dueDate))}</span></span></button>`}function ye(a,s){const r=s.filter(g=>Se(g,a)),d=r.reduce((g,h)=>g+Number(h.weight||1),0),m=d?Math.round(r.reduce((g,h)=>g+h.progress*Number(h.weight||1),0)/d):0;return{tasks:r.length,progress:m,overdue:r.filter(X).length}}function Ie(a,s){const r=ye(a.id,s);return`<div class="team-row"><div class="team-member">${se(a)}<div class="team-member-copy"><strong>${t(e(a.name,a.nameEn||a.name))}</strong><span>${t(e(a.jobTitleAr,a.jobTitleEn||a.jobTitleAr))}</span></div></div><div class="team-stat"><strong>${r.tasks}</strong> ${c("tasks")}</div><div class="team-progress"><div class="progress-meta"><span>${c("progress")}</span><strong>${r.progress}%</strong></div><div class="progress-track"><div class="progress-fill" style="width:${r.progress}%"></div></div></div><button class="team-menu" data-action="open-user" data-user-id="${t(a.id)}">${n("more",15)}</button></div>`}function je(){const a=[38,48,45,62,55,72,68],s=o.lang==="ar"?["أحد","اثن","ثلث","أربع","خمس","جمع","سبت"]:["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];return`<div class="pulse">${a.map((r,d)=>`<div class="pulse-col"><div class="pulse-bars"><span class="pulse-bar" style="height:${Math.max(12,r-22)}%"></span><span class="pulse-bar ${d===a.length-1?"current":""}" style="height:${r}%"></span></div><span>${s[d]}</span></div>`).join("")}</div>`}function Qe(){const a=o.data?.stats||{},s=o.data?.projects||[],r=o.data?.tasks||[],d=o.data?.users||[],m=o.data?.user||{},g=m.name||m.email||e("مستخدم","User"),h=s.reduce((l,f)=>l+(Number(f.totalWeight)||0),0),w=h?Math.round(s.reduce((l,f)=>l+(Number(f.progress)||0)*(Number(f.totalWeight)||0),0)/h):0,v=[...r].filter(l=>{if(X(l)||l.status==="blocked")return!0;if(l.dueDate){const f=pe(l.dueDate);if(f){const E=(f-new Date)/864e5;return E>=0&&E<=7}}return!1}).sort((l,f)=>(l.dueDate?pe(l.dueDate)?.getTime()??1/0:1/0)-(f.dueDate?pe(f.dueDate)?.getTime()??1/0:1/0)).slice(0,5),A=d.filter(l=>l.status!=="inactive"),z=a.projectCount??s.length,i=a.myTasks??r.filter(l=>Se(l,m.id)).length,x=a.overdueTasks??r.filter(X).length,$=a.dueSoon??0,D=a.completedTasks??r.filter(l=>l.status==="done").length;return`<div class="welcome-banner"><div class="welcome-copy"><p class="eyebrow">${e("لوحة قيادة المشاريع","PROJECT COMMAND CENTER")}</p><h1>${Je()}، ${t(e(g.replace(/^م\.\s?/,""),m.nameEn||g))}</h1><p>${c("welcomeText")}</p></div><div class="welcome-status"><span>${c("portfolioHealth")}</span><strong>${w}%</strong><small>${e("إنجاز المحفظة الموزون","Weighted portfolio progress")}</small></div></div>
+import{t as Ee}from"./rolldown-runtime-BQ-_32WO.js";import{$ as t,A as Fe,Dt as W,Et as U,G as ce,J as Ue,K as se,M as He,Mt as fe,Ot as c,Pt as R,Q as Ge,Rt as he,St as N,Vt as o,X as oe,Y as e,_t as Se,at as $e,c as we,et as We,ft as n,gt as X,i as Te,it as ze,j as Ve,mt as _,n as P,nt as me,o as ne,ot as qe,pt as Ae,q as k,rt as De,u as V,ut as Je,xt as H,yt as pe}from"./core-dragdrop-Sc3qVl0H.js";var pt=Ee({attentionItem:()=>_e,metricCard:()=>ae,projectProgress:()=>Re,projectRow:()=>Ce,pulseChart:()=>je,renderDashboard:()=>Qe,teamMetrics:()=>ye,teamRow:()=>Ie});function ae(a,s,r,l,m,g=""){return`<article class="metric-card ${l}"><div class="metric-top"><span class="metric-label">${t(a)}</span><span class="metric-icon">${n(m,15)}</span></div><div class="metric-value">${t(s)}</div><span class="metric-note ${g}">${t(r)}</span></article>`}function Re(a){const s=a.health==="off_track"?"red":a.health==="at_risk"?"amber":"";return`<div class="progress-cell"><div class="progress-meta"><span>${c("weightedProgress")}</span><strong>${a.progress}%</strong></div><div class="progress-track"><div class="progress-fill ${s}" style="width:${Math.min(100,a.progress)}%"></div></div></div>`}function Ce(a){return`<div class="project-row"><div class="project-main"><span class="project-symbol">${n("building",17)}</span><div class="project-name"><strong>${t(e(a.nameAr,a.nameEn))}</strong><span>${t(a.code)} · ${t(e(a.clientAr,a.clientEn))}</span></div></div>${Re(a)}<div class="project-owner">${se(a.manager)}<span>${t(a.manager?e(a.manager.name,a.manager.nameEn||a.manager.name):"—")}</span></div><button class="project-arrow" data-action="open-project" data-project-id="${t(a.id)}" aria-label="${c("viewDetails")}">${n(o.lang==="ar"?"arrowLeft":"arrow",14)}</button></div>`}function _e(a){const s=X(a)||a.status==="blocked"?"red":"amber",r=X(a)?e("متأخرة","Overdue"):a.status==="blocked"?e("متوقفة","Blocked"):e("تستحق قريبًا","Due soon"),l=e(a.titleAr,a.titleEn);return`<button type="button" class="attention-item" data-action="open-task" data-task-id="${t(a.id)}" title="${t(l)}"><span class="attention-icon ${s}">${n(X(a)||a.status==="blocked"?"alert":"clock",14)}</span><span class="attention-copy"><strong style="color:var(--${s})">${t(l)}</strong><span>${t(r)} · ${t(Ge(a.dueDate))}</span></span></button>`}function ye(a,s){const r=s.filter(g=>Se(g,a)),l=r.reduce((g,h)=>g+Number(h.weight||1),0),m=l?Math.round(r.reduce((g,h)=>g+h.progress*Number(h.weight||1),0)/l):0;return{tasks:r.length,progress:m,overdue:r.filter(X).length}}function Ie(a,s){const r=ye(a.id,s);return`<div class="team-row"><div class="team-member">${se(a)}<div class="team-member-copy"><strong>${t(e(a.name,a.nameEn||a.name))}</strong><span>${t(e(a.jobTitleAr,a.jobTitleEn||a.jobTitleAr))}</span></div></div><div class="team-stat"><strong>${r.tasks}</strong> ${c("tasks")}</div><div class="team-progress"><div class="progress-meta"><span>${c("progress")}</span><strong>${r.progress}%</strong></div><div class="progress-track"><div class="progress-fill" style="width:${r.progress}%"></div></div></div><button class="team-menu" data-action="open-user" data-user-id="${t(a.id)}">${n("more",15)}</button></div>`}function je(){const a=[38,48,45,62,55,72,68],s=o.lang==="ar"?["أحد","اثن","ثلث","أربع","خمس","جمع","سبت"]:["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];return`<div class="pulse">${a.map((r,l)=>`<div class="pulse-col"><div class="pulse-bars"><span class="pulse-bar" style="height:${Math.max(12,r-22)}%"></span><span class="pulse-bar ${l===a.length-1?"current":""}" style="height:${r}%"></span></div><span>${s[l]}</span></div>`).join("")}</div>`}function Qe(){const a=o.data?.stats||{},s=o.data?.projects||[],r=o.data?.tasks||[],l=o.data?.users||[],m=o.data?.user||{},g=m.name||m.email||e("مستخدم","User"),h=s.reduce((d,f)=>d+(Number(f.totalWeight)||0),0),w=h?Math.round(s.reduce((d,f)=>d+(Number(f.progress)||0)*(Number(f.totalWeight)||0),0)/h):0,v=[...r].filter(d=>{if(X(d)||d.status==="blocked")return!0;if(d.dueDate){const f=pe(d.dueDate);if(f){const E=(f-new Date)/864e5;return E>=0&&E<=7}}return!1}).sort((d,f)=>(d.dueDate?pe(d.dueDate)?.getTime()??1/0:1/0)-(f.dueDate?pe(f.dueDate)?.getTime()??1/0:1/0)).slice(0,5),A=l.filter(d=>d.status!=="inactive"),z=a.projectCount??s.length,i=a.myTasks??r.filter(d=>Se(d,m.id)).length,x=a.overdueTasks??r.filter(X).length,$=a.dueSoon??0,D=a.completedTasks??r.filter(d=>d.status==="done").length;return`<div class="welcome-banner"><div class="welcome-copy"><p class="eyebrow">${e("لوحة قيادة المشاريع","PROJECT COMMAND CENTER")}</p><h1>${Je()}، ${t(e(g.replace(/^م\.\s?/,""),m.nameEn||g))}</h1><p>${c("welcomeText")}</p></div><div class="welcome-status"><span>${c("portfolioHealth")}</span><strong>${w}%</strong><small>${e("إنجاز المحفظة الموزون","Weighted portfolio progress")}</small></div></div>
     <div class="metrics-grid">${ae(c("activeProjects"),a.activeProjects||0,e(`${z} مشاريع إجمالًا`,`${z} projects total`),"teal","building","up")}${ae(c("openTasks"),a.openTasks??r.length,e(`${i} مسندة لك`,`${i} assigned to you`),"blue","checklist")}${ae(c("overdue"),x,e("تحتاج تصعيدًا ومتابعة","Needs escalation and follow-up"),"red",x?"alert":"check",x?"alert":"")}${ae(c("dueThisWeek"),$,e("موعد قريب","Near-term due dates"),"amber","clock")}</div>
-    <div class="content-grid"><div class="stack"><section class="panel"><div class="panel-head"><div><h2 class="panel-title">${c("projectProgress")}</h2><p class="panel-subtitle">${c("projectProgressSub")}</p></div>${k("view_projects")?`<button class="text-link" data-view="projects">${c("seeAll")} ${n(o.lang==="ar"?"arrowLeft":"arrow",12)}</button>`:""}</div><div class="project-list">${s.length?s.slice(0,5).map(Ce).join(""):`<div class="empty">${n("building",18)}<span>${c("noProjects")}</span></div>`}</div></section>${_()||k("manage_users")?`<section class="panel"><div class="panel-head"><div><h2 class="panel-title">${c("teamProgress")}</h2><p class="panel-subtitle">${c("teamProgressSub")}</p></div><button class="text-link" data-view="team">${c("seeAll")} ${n(o.lang==="ar"?"arrowLeft":"arrow",12)}</button></div><div class="team-table">${A.slice(0,6).map(l=>Ie(l,r)).join("")}</div></section>`:""}</div><div class="stack"><section class="panel"><div class="panel-head"><div><h2 class="panel-title">${c("attention")}</h2><p class="panel-subtitle">${c("attentionSub")}</p></div><span class="mini-badge badge-attention" style="padding:6px 8px;">${v.length}</span></div><div class="attention-list">${v.length?v.map(_e).join(""):`<div class="empty">${n("check",18)}<span>${c("noAttention")}</span></div>`}</div></section><section class="panel"><div class="panel-head"><div><h2 class="panel-title">${c("recentPulse")}</h2><p class="panel-subtitle">${c("recentPulseSub")}</p></div><span class="mini-badge badge-pulse" style="padding:6px 8px;">${D} ${c("done")}</span></div>${je()}</section></div></div>`}var M=null,ge=!1;function Le(){return{isDemo:!0,stats:{totalVisits:1482,uniqueVisitors:628,activeSessions:14,avgTimeSpentFormattedAr:"9 دقائق و 15 ثانية",avgTimeSpentFormattedEn:"9m 15s",healthScore:"100%",crashFreeRate:"99.9%",bounceRate:"11.8%",returnRate:"72.4%",edgeLatency:"24ms",activeAnomaliesCount:0,totalAnomaliesLogged:1},countries:[{code:"AE",nameAr:"الإمارات العربية المتحدة",nameEn:"United Arab Emirates",visits:652,percent:44},{code:"SA",nameAr:"المملكة العربية السعودية",nameEn:"Saudi Arabia",visits:485,percent:32.7},{code:"QA",nameAr:"دولة قطر",nameEn:"Qatar",visits:148,percent:10},{code:"KW",nameAr:"دولة الكويت",nameEn:"Kuwait",visits:95,percent:6.4},{code:"BH",nameAr:"مملكة البحرين",nameEn:"Bahrain",visits:58,percent:3.9},{code:"OM",nameAr:"سلطنة عمان",nameEn:"Oman",visits:44,percent:3}],cities:[{name:"Dubai",visits:420},{name:"Riyadh",visits:310},{name:"Abu Dhabi",visits:232},{name:"Doha",visits:148},{name:"Jeddah",visits:125},{name:"Kuwait City",visits:95}],os:{macOS:680,Windows:490,iOS:212,Android:100},recentAnomalies:[{id:"anom_demo_01",type:"HighMemorySpike",severity:"medium",status:"resolved",descriptionAr:"ارتفاع مؤقت في استهلاك الذاكرة (142MB) أثناء معالجة ملف DWG ثلاثي الأبعاد - تم تقطيع العناصر تلقائياً وتفريغ الذاكرة بنجاح.",descriptionEn:"Transient memory spike (142MB) during 3D DWG parsing - elements automatically LOD decimated and memory purged.",timestamp:new Date(Date.now()-72e5).toISOString()}]}}async function Ye(a=!1){if(M&&!a)return M;ge=!0;try{const s=await O("/api/telemetry/analytics",{silent:!0});s&&s.data&&(M=s.data)}catch(s){console.warn("[Analytics] Failed to fetch remote analytics:",s),V()&&(M=Le())}finally{ge=!1}return M}function Pe(){const a=V(),s=a&&(!M||!M.isDemo)?Le():M,r=Te();!s&&!ge&&Ye().then(()=>{if(o.view==="settings"&&o.settingsSection==="analytics"){const v=document.querySelector(".settings-content");v&&(v.innerHTML=Pe())}});const d=s?.stats||{totalVisits:384,uniqueVisitors:162,activeSessions:8,avgTimeSpentFormattedAr:"8 دقائق و 24 ثانية",avgTimeSpentFormattedEn:"8m 24s",healthScore:"100%",crashFreeRate:"99.8%",bounceRate:"11.4%",returnRate:"68.4%",edgeLatency:"32ms",activeAnomaliesCount:0,totalAnomaliesLogged:2},m=s?.countries||[{code:"AE",nameAr:"الإمارات العربية المتحدة",nameEn:"United Arab Emirates",visits:165,percent:43},{code:"SA",nameAr:"المملكة العربية السعودية",nameEn:"Saudi Arabia",visits:112,percent:29.2},{code:"EG",nameAr:"جمهورية مصر العربية",nameEn:"Egypt",visits:48,percent:12.5},{code:"QA",nameAr:"دولة قطر",nameEn:"Qatar",visits:24,percent:6.3},{code:"KW",nameAr:"دولة الكويت",nameEn:"Kuwait",visits:18,percent:4.7},{code:"OM",nameAr:"سلطنة عمان",nameEn:"Oman",visits:9,percent:2.3},{code:"BH",nameAr:"مملكة البحرين",nameEn:"Bahrain",visits:8,percent:2}],g=s?.cities||[{name:"Dubai",visits:110},{name:"Riyadh",visits:78},{name:"Abu Dhabi",visits:55},{name:"Cairo",visits:48},{name:"Jeddah",visits:34},{name:"Doha",visits:24}];s?.os;const h=s?.recentAnomalies||[],w=r.memoryMb||45;return`
+    <div class="content-grid"><div class="stack"><section class="panel"><div class="panel-head"><div><h2 class="panel-title">${c("projectProgress")}</h2><p class="panel-subtitle">${c("projectProgressSub")}</p></div>${k("view_projects")?`<button class="text-link" data-view="projects">${c("seeAll")} ${n(o.lang==="ar"?"arrowLeft":"arrow",12)}</button>`:""}</div><div class="project-list">${s.length?s.slice(0,5).map(Ce).join(""):`<div class="empty">${n("building",18)}<span>${c("noProjects")}</span></div>`}</div></section>${_()||k("manage_users")?`<section class="panel"><div class="panel-head"><div><h2 class="panel-title">${c("teamProgress")}</h2><p class="panel-subtitle">${c("teamProgressSub")}</p></div><button class="text-link" data-view="team">${c("seeAll")} ${n(o.lang==="ar"?"arrowLeft":"arrow",12)}</button></div><div class="team-table">${A.slice(0,6).map(d=>Ie(d,r)).join("")}</div></section>`:""}</div><div class="stack"><section class="panel"><div class="panel-head"><div><h2 class="panel-title">${c("attention")}</h2><p class="panel-subtitle">${c("attentionSub")}</p></div><span class="mini-badge badge-attention" style="padding:6px 8px;">${v.length}</span></div><div class="attention-list">${v.length?v.map(_e).join(""):`<div class="empty">${n("check",18)}<span>${c("noAttention")}</span></div>`}</div></section><section class="panel"><div class="panel-head"><div><h2 class="panel-title">${c("recentPulse")}</h2><p class="panel-subtitle">${c("recentPulseSub")}</p></div><span class="mini-badge badge-pulse" style="padding:6px 8px;">${D} ${c("done")}</span></div>${je()}</section></div></div>`}var B=null,ge=!1;function Le(){return{isDemo:!0,stats:{totalVisits:1482,uniqueVisitors:628,activeSessions:14,avgTimeSpentFormattedAr:"9 دقائق و 15 ثانية",avgTimeSpentFormattedEn:"9m 15s",healthScore:"100%",crashFreeRate:"99.9%",bounceRate:"11.8%",returnRate:"72.4%",edgeLatency:"24ms",activeAnomaliesCount:0,totalAnomaliesLogged:1},countries:[{code:"AE",nameAr:"الإمارات العربية المتحدة",nameEn:"United Arab Emirates",visits:652,percent:44},{code:"SA",nameAr:"المملكة العربية السعودية",nameEn:"Saudi Arabia",visits:485,percent:32.7},{code:"QA",nameAr:"دولة قطر",nameEn:"Qatar",visits:148,percent:10},{code:"KW",nameAr:"دولة الكويت",nameEn:"Kuwait",visits:95,percent:6.4},{code:"BH",nameAr:"مملكة البحرين",nameEn:"Bahrain",visits:58,percent:3.9},{code:"OM",nameAr:"سلطنة عمان",nameEn:"Oman",visits:44,percent:3}],cities:[{name:"Dubai",visits:420},{name:"Riyadh",visits:310},{name:"Abu Dhabi",visits:232},{name:"Doha",visits:148},{name:"Jeddah",visits:125},{name:"Kuwait City",visits:95}],os:{macOS:680,Windows:490,iOS:212,Android:100},recentAnomalies:[{id:"anom_demo_01",type:"HighMemorySpike",severity:"medium",status:"resolved",descriptionAr:"ارتفاع مؤقت في استهلاك الذاكرة (142MB) أثناء معالجة ملف DWG ثلاثي الأبعاد - تم تقطيع العناصر تلقائياً وتفريغ الذاكرة بنجاح.",descriptionEn:"Transient memory spike (142MB) during 3D DWG parsing - elements automatically LOD decimated and memory purged.",timestamp:new Date(Date.now()-72e5).toISOString()}]}}async function Ye(a=!1){if(B&&!a)return B;ge=!0;try{const s=await P("/api/telemetry/analytics",{silent:!0});s&&s.data&&(B=s.data)}catch(s){console.warn("[Analytics] Failed to fetch remote analytics:",s),V()&&(B=Le())}finally{ge=!1}return B}function Pe(){const a=V(),s=a&&(!B||!B.isDemo)?Le():B,r=Te();!s&&!ge&&Ye().then(()=>{if(o.view==="settings"&&o.settingsSection==="analytics"){const v=document.querySelector(".settings-content");v&&(v.innerHTML=Pe())}});const l=s?.stats||{totalVisits:384,uniqueVisitors:162,activeSessions:8,avgTimeSpentFormattedAr:"8 دقائق و 24 ثانية",avgTimeSpentFormattedEn:"8m 24s",healthScore:"100%",crashFreeRate:"99.8%",bounceRate:"11.4%",returnRate:"68.4%",edgeLatency:"32ms",activeAnomaliesCount:0,totalAnomaliesLogged:2},m=s?.countries||[{code:"AE",nameAr:"الإمارات العربية المتحدة",nameEn:"United Arab Emirates",visits:165,percent:43},{code:"SA",nameAr:"المملكة العربية السعودية",nameEn:"Saudi Arabia",visits:112,percent:29.2},{code:"EG",nameAr:"جمهورية مصر العربية",nameEn:"Egypt",visits:48,percent:12.5},{code:"QA",nameAr:"دولة قطر",nameEn:"Qatar",visits:24,percent:6.3},{code:"KW",nameAr:"دولة الكويت",nameEn:"Kuwait",visits:18,percent:4.7},{code:"OM",nameAr:"سلطنة عمان",nameEn:"Oman",visits:9,percent:2.3},{code:"BH",nameAr:"مملكة البحرين",nameEn:"Bahrain",visits:8,percent:2}],g=s?.cities||[{name:"Dubai",visits:110},{name:"Riyadh",visits:78},{name:"Abu Dhabi",visits:55},{name:"Cairo",visits:48},{name:"Jeddah",visits:34},{name:"Doha",visits:24}];s?.os;const h=s?.recentAnomalies||[],w=r.memoryMb||45;return`
     <section class="setting-section">
       ${a?`
         <div class="demo-analytics-banner" style="background:linear-gradient(90deg, rgba(13,98,105,0.08), rgba(74,199,209,0.12));border:1.5px solid var(--border);border-radius:12px;padding:12px 18px;margin-bottom:20px;display:flex;align-items:center;gap:12px;font-size:12px;color:var(--ink);">
@@ -47,11 +47,11 @@ import{t as Ee}from"./rolldown-runtime-BQ-_32WO.js";import{$ as t,A as Fe,Dt as 
             <span style="background:var(--teal-soft,#e3f6f0);color:var(--teal);padding:4px;border-radius:8px;display:flex;">${n("user",14)}</span>
           </div>
           <div style="display:flex;align-items:baseline;gap:8px;">
-            <div style="font-size:26px;font-weight:800;color:var(--ink);">${(d.totalVisits||384).toLocaleString()}</div>
-            <span style="font-size:12px;color:var(--teal);font-weight:700;">(${(d.uniqueVisitors||162).toLocaleString()} ${e("زائر مستقل","uniques")})</span>
+            <div style="font-size:26px;font-weight:800;color:var(--ink);">${(l.totalVisits||384).toLocaleString()}</div>
+            <span style="font-size:12px;color:var(--teal);font-weight:700;">(${(l.uniqueVisitors||162).toLocaleString()} ${e("زائر مستقل","uniques")})</span>
           </div>
           <div style="font-size:11px;color:var(--mint-strong);font-weight:600;display:flex;align-items:center;gap:4px;">
-            <span>${U("active")} ${d.activeSessions||1} ${e("جلسات نشطة الآن","live sessions right now")}</span>
+            <span>${U("active")} ${l.activeSessions||1} ${e("جلسات نشطة الآن","live sessions right now")}</span>
           </div>
         </div>
 
@@ -61,8 +61,8 @@ import{t as Ee}from"./rolldown-runtime-BQ-_32WO.js";import{$ as t,A as Fe,Dt as 
             <span style="font-size:12px;font-weight:600;color:var(--ink-soft);">${e("متوسط مدة الزيارة الصافية (Dwell Time)","Avg Active Dwell Time")}</span>
             <span style="background:var(--blue-soft,#eaf1fb);color:var(--blue);padding:4px;border-radius:8px;display:flex;">${n("clock",14)}</span>
           </div>
-          <div style="font-size:22px;font-weight:800;color:var(--ink);">${e(d.avgTimeSpentFormattedAr,d.avgTimeSpentFormattedEn)}</div>
-          <div style="font-size:11px;color:var(--muted);">${e(`معدل الارتداد السريع: ${d.bounceRate||"11.4%"}`,`Bounce Rate: ${d.bounceRate||"11.4%"}`)}</div>
+          <div style="font-size:22px;font-weight:800;color:var(--ink);">${e(l.avgTimeSpentFormattedAr,l.avgTimeSpentFormattedEn)}</div>
+          <div style="font-size:11px;color:var(--muted);">${e(`معدل الارتداد السريع: ${l.bounceRate||"11.4%"}`,`Bounce Rate: ${l.bounceRate||"11.4%"}`)}</div>
         </div>
 
         <!-- بطاقة صحة الموارد واستقرار الأجهزة -->
@@ -72,8 +72,8 @@ import{t as Ee}from"./rolldown-runtime-BQ-_32WO.js";import{$ as t,A as Fe,Dt as 
             <span style="background:#e8f5e9;color:#2e7d32;padding:4px;border-radius:8px;display:flex;">${n("shield",14)}</span>
           </div>
           <div style="display:flex;align-items:baseline;gap:8px;">
-            <div style="font-size:26px;font-weight:800;color:#2e7d32;">${d.healthScore||"100%"}</div>
-            <span style="font-size:11px;color:var(--mint-strong);font-weight:700;display:inline-flex;align-items:center;gap:4px;">${U("healthy")} ${d.crashFreeRate||"99.8%"} ${e("خالية من الأعطال","Crash-Free")}</span>
+            <div style="font-size:26px;font-weight:800;color:#2e7d32;">${l.healthScore||"100%"}</div>
+            <span style="font-size:11px;color:var(--mint-strong);font-weight:700;display:inline-flex;align-items:center;gap:4px;">${U("healthy")} ${l.crashFreeRate||"99.8%"} ${e("خالية من الأعطال","Crash-Free")}</span>
           </div>
           <div style="font-size:11px;color:var(--ink-soft);">${e(`ذاكرة جهازك الحالية: ${w}MB (آمنة)`,`Current Device Memory: ${w}MB (Healthy)`)}</div>
         </div>
@@ -85,8 +85,8 @@ import{t as Ee}from"./rolldown-runtime-BQ-_32WO.js";import{$ as t,A as Fe,Dt as 
             <span style="background:var(--amber-soft,#fff1dc);color:var(--amber);padding:4px;border-radius:8px;display:flex;">${n("trendingUp",14)}</span>
           </div>
           <div style="display:flex;align-items:baseline;gap:8px;">
-            <div style="font-size:26px;font-weight:800;color:var(--ink);">${d.edgeLatency||"32ms"}</div>
-            <span style="font-size:12px;color:var(--teal);font-weight:700;">${d.returnRate||"68.4%"} ${e("عودة دورية","Return Rate")}</span>
+            <div style="font-size:26px;font-weight:800;color:var(--ink);">${l.edgeLatency||"32ms"}</div>
+            <span style="font-size:12px;color:var(--teal);font-weight:700;">${l.returnRate||"68.4%"} ${e("عودة دورية","Return Rate")}</span>
           </div>
           <div style="font-size:11px;color:var(--muted);">${e("شبكة سحابية فائقة السرعة على حافة الويب","Sub-50ms Cloudflare Edge Workers")}</div>
         </div>
@@ -227,7 +227,7 @@ import{t as Ee}from"./rolldown-runtime-BQ-_32WO.js";import{$ as t,A as Fe,Dt as 
         </div>
       </div>
     </section>
-  `}var ie=null,ve=!1,P="all",F="all",K="all";async function Ke(a=!1){if(ie&&!a)return ie;ve=!0;try{const s=await O("/api/telemetry/incidents",{silent:!0});s&&s.users&&(ie=s)}catch(s){console.warn("[Diagnostics] Failed to fetch incidents:",s)}finally{ve=!1}return ie}function mt(a){P=a}function gt(a){F=a}function vt(a){K=a}function Xe(a=""){const s=String(a).toLowerCase();return s.includes("http")||s.includes("api")?"cat-http":s.includes("nav")?"cat-nav":s.includes("ui")||s.includes("click")||s.includes("drop")?"cat-ui":s.includes("ws")||s.includes("socket")||s.includes("realtime")?"cat-ws":s.includes("err")?"cat-err":s.includes("warn")?"cat-warn":"cat-ui"}function Me(){const a=V(),s=ie;Te(),!s&&!ve&&Ke().then(()=>{if(o.view==="settings"&&(o.settingsSection==="diagnostics"||o.settingsSection==="analytics")){const i=document.querySelector(".settings-content");i&&(i.innerHTML=Me())}});let r=s?.users||[];a?(r=r.filter(i=>i.userId&&String(i.userId).startsWith("usr_demo")),!r.length&&o.data?.users&&(r=o.data.users.filter(i=>i.id&&String(i.id).startsWith("usr_demo")).map(i=>({userId:i.id,name:i.name,nameEn:i.nameEn||i.name,email:i.email,role:i.jobTitleAr||(i.roleId==="admin"?"مدير النظام (عرض تجريبي)":i.roleId||"عضو فريق"),avatarColor:i.avatarColor||"#0d6269",isRealAccount:!1,status:i.status||"active",totalIncidents:0,activeIncidents:0,resolvedIncidents:0,incidents:[]})))):!r.length&&o.data?.users&&o.data.users.length&&(r=o.data.users.map(i=>({userId:i.id,name:i.name,nameEn:i.nameEn||i.name,email:i.email,role:i.jobTitleAr||(i.roleId==="admin"?"مدير النظام (كامل الصلاحيات)":i.roleId||"عضو فريق"),avatarColor:i.avatarColor||"#0d6269",isRealAccount:!0,status:i.status||"active",totalIncidents:0,activeIncidents:0,resolvedIncidents:0,incidents:[]})));let d=s?.incidents||[];a&&(d=d.filter(i=>i.userId&&String(i.userId).startsWith("usr_demo")));const m=s?.stats||{totalIncidents:a?d.length:3,activeIncidents:0,resolvedIncidents:a?d.length:3,totalUsersMonitored:r.length||6,alertEmailRecipient:a?"demo-alerts@darc.demo (بيئة المحاكاة الآمنة)":"admin@darc-design.bond"};P!=="all"&&(d=d.filter(i=>i.userId===P||i.affectedUsers?.includes(P))),F!=="all"&&(d=d.filter(i=>i.severity===F)),K!=="all"&&(d=d.filter(i=>i.status===K));const g=r.find(i=>i.userId===P),h=typeof we=="function"?we():{connected:!1},w=typeof he=="function"?he().length:0,v=typeof navigator<"u"?navigator.onLine:!0,A=v?h.connected?e("متصل ومستقر","Connected"):h.hibernating?e("في وضع التوفير (خامل)","Hibernating"):e("بانتظار الربط","Connecting"):e("غير متصل (أوفلاين)","Offline"),z=v?h.connected?"var(--mint-strong)":"var(--blue)":"var(--amber)";return`
+  `}var ie=null,ve=!1,M="all",F="all",K="all";async function Ke(a=!1){if(ie&&!a)return ie;ve=!0;try{const s=await P("/api/telemetry/incidents",{silent:!0});s&&s.users&&(ie=s)}catch(s){console.warn("[Diagnostics] Failed to fetch incidents:",s)}finally{ve=!1}return ie}function mt(a){M=a}function gt(a){F=a}function vt(a){K=a}function Xe(a=""){const s=String(a).toLowerCase();return s.includes("http")||s.includes("api")?"cat-http":s.includes("nav")?"cat-nav":s.includes("ui")||s.includes("click")||s.includes("drop")?"cat-ui":s.includes("ws")||s.includes("socket")||s.includes("realtime")?"cat-ws":s.includes("err")?"cat-err":s.includes("warn")?"cat-warn":"cat-ui"}function Me(){const a=V(),s=ie;Te(),!s&&!ve&&Ke().then(()=>{if(o.view==="settings"&&(o.settingsSection==="diagnostics"||o.settingsSection==="analytics")){const i=document.querySelector(".settings-content");i&&(i.innerHTML=Me())}});let r=s?.users||[];a?(r=r.filter(i=>i.userId&&String(i.userId).startsWith("usr_demo")),!r.length&&o.data?.users&&(r=o.data.users.filter(i=>i.id&&String(i.id).startsWith("usr_demo")).map(i=>({userId:i.id,name:i.name,nameEn:i.nameEn||i.name,email:i.email,role:i.jobTitleAr||(i.roleId==="admin"?"مدير النظام (عرض تجريبي)":i.roleId||"عضو فريق"),avatarColor:i.avatarColor||"#0d6269",isRealAccount:!1,status:i.status||"active",totalIncidents:0,activeIncidents:0,resolvedIncidents:0,incidents:[]})))):!r.length&&o.data?.users&&o.data.users.length&&(r=o.data.users.map(i=>({userId:i.id,name:i.name,nameEn:i.nameEn||i.name,email:i.email,role:i.jobTitleAr||(i.roleId==="admin"?"مدير النظام (كامل الصلاحيات)":i.roleId||"عضو فريق"),avatarColor:i.avatarColor||"#0d6269",isRealAccount:!0,status:i.status||"active",totalIncidents:0,activeIncidents:0,resolvedIncidents:0,incidents:[]})));let l=s?.incidents||[];a&&(l=l.filter(i=>i.userId&&String(i.userId).startsWith("usr_demo")));const m=s?.stats||{totalIncidents:a?l.length:3,activeIncidents:0,resolvedIncidents:a?l.length:3,totalUsersMonitored:r.length||6,alertEmailRecipient:a?"demo-alerts@darc.demo (بيئة المحاكاة الآمنة)":"admin@darc-design.bond"};M!=="all"&&(l=l.filter(i=>i.userId===M||i.affectedUsers?.includes(M))),F!=="all"&&(l=l.filter(i=>i.severity===F)),K!=="all"&&(l=l.filter(i=>i.status===K));const g=r.find(i=>i.userId===M),h=typeof we=="function"?we():{connected:!1},w=typeof he=="function"?he().length:0,v=typeof navigator<"u"?navigator.onLine:!0,A=v?h.connected?e("متصل ومستقر","Connected"):h.hibernating?e("في وضع التوفير (خامل)","Hibernating"):e("بانتظار الربط","Connecting"):e("غير متصل (أوفلاين)","Offline"),z=v?h.connected?"var(--mint-strong)":"var(--blue)":"var(--amber)";return`
     <section class="setting-section diag-section" id="diagnostics-dashboard">
       ${a?`
         <div class="diag-banner">
@@ -319,7 +319,7 @@ import{t as Ee}from"./rolldown-runtime-BQ-_32WO.js";import{$ as t,A as Fe,Dt as 
           <h3 style="margin:0;font-size:14px;font-weight:700;display:flex;align-items:center;gap:6px;">
             <span style="display:inline-flex;align-items:center;">${n("users",14)}</span> ${e("حالة واستقرار حسابات المستخدمين (انقر للفلترة السريعة):","User Health & Incidents (Click to Filter):")}
           </h3>
-          ${P!=="all"?`
+          ${M!=="all"?`
             <button type="button" class="btn btn-xs btn-soft" data-action="clear-diagnostics-user-filter" style="font-size:11px;">
               ${e("إلغاء الفلترة وعرض الجميع","Clear Filter & Show All")}
             </button>
@@ -328,7 +328,7 @@ import{t as Ee}from"./rolldown-runtime-BQ-_32WO.js";import{$ as t,A as Fe,Dt as 
 
         <div class="diag-users-grid">
           <div 
-            class="diag-user-card user-diag-card ${P==="all"?"is-active":""}" 
+            class="diag-user-card user-diag-card ${M==="all"?"is-active":""}" 
             data-action="filter-diagnostics-user" 
             data-user-id="all"
           >
@@ -336,12 +336,12 @@ import{t as Ee}from"./rolldown-runtime-BQ-_32WO.js";import{$ as t,A as Fe,Dt as 
               <span style="display:inline-flex;align-items:center;color:var(--teal);">${n("globe",18)}</span>
               <div style="flex:1;">
                 <div style="font-size:12px;font-weight:700;color:var(--ink);">${e("جميع المستخدمين","All Users")}</div>
-                <div style="font-size:11px;color:var(--muted);">${d.length} ${e("حوادث","records")}</div>
+                <div style="font-size:11px;color:var(--muted);">${l.length} ${e("حوادث","records")}</div>
               </div>
             </div>
           </div>
 
-          ${r.map(i=>{const x=P===i.userId,$=i.activeIncidents>0;return`
+          ${r.map(i=>{const x=M===i.userId,$=i.activeIncidents>0;return`
               <div 
                 class="diag-user-card user-diag-card ${x?"is-active":""}" 
                 data-action="filter-diagnostics-user" 
@@ -396,14 +396,14 @@ import{t as Ee}from"./rolldown-runtime-BQ-_32WO.js";import{$ as t,A as Fe,Dt as 
         </div>
 
         <div style="font-size:12px;color:var(--muted);">
-          ${e(`عرض ${d.length} حادث مسجل`,`Showing ${d.length} incidents`)}
+          ${e(`عرض ${l.length} حادث مسجل`,`Showing ${l.length} incidents`)}
           ${g?` (${e("للمستخدم:","for user:")} <strong>${g.name}</strong>)`:""}
         </div>
       </div>
 
       <!-- 5. Detailed Incident Cards -->
       <div style="display:flex;flex-direction:column;gap:16px;">
-        ${d.length?d.map(i=>{const x=i.severity==="critical",$=i.status==="resolved",D=i.occurrences||1,l=i.affectedUsers&&i.affectedUsers.length||1,f=i.origin==="backend_worker"?"Backend Server (Worker)":"Frontend Client (SPA)",E=JSON.stringify({incidentId:i.id,fingerprint:i.fingerprint||null,occurrences:D,affectedUsersCount:l,origin:i.origin||"frontend_client",timestamp:i.timestamp,user:{id:i.userId,name:i.userName,email:i.userEmail,role:i.userRole},client:{device:i.deviceType,browser:i.browser,os:i.os,resolution:i.screenResolution,memoryMb:i.memoryMb,ip:i.ip,location:`${i.city}, ${i.country}`},error:{type:i.errorType,message:i.errorMessage,stack:i.stackTrace},breadcrumbs:i.breadcrumbs,suggestedFix:i.suggestedSolution},null,2);return`
+        ${l.length?l.map(i=>{const x=i.severity==="critical",$=i.status==="resolved",D=i.occurrences||1,d=i.affectedUsers&&i.affectedUsers.length||1,f=i.origin==="backend_worker"?"Backend Server (Worker)":"Frontend Client (SPA)",E=JSON.stringify({incidentId:i.id,fingerprint:i.fingerprint||null,occurrences:D,affectedUsersCount:d,origin:i.origin||"frontend_client",timestamp:i.timestamp,user:{id:i.userId,name:i.userName,email:i.userEmail,role:i.userRole},client:{device:i.deviceType,browser:i.browser,os:i.os,resolution:i.screenResolution,memoryMb:i.memoryMb,ip:i.ip,location:`${i.city}, ${i.country}`},error:{type:i.errorType,message:i.errorMessage,stack:i.stackTrace},breadcrumbs:i.breadcrumbs,suggestedFix:i.suggestedSolution},null,2);return`
             <article class="diag-incident-card ${x?"is-critical":i.severity==="high"?"is-warning":""}">
               
               <!-- Incident Head -->
@@ -429,9 +429,9 @@ import{t as Ee}from"./rolldown-runtime-BQ-_32WO.js";import{$ as t,A as Fe,Dt as 
                           ${n("alert",11)} ${e(`تكرر ${D} مرات`,`${D} occurrences`)}
                         </span>
                       `:""}
-                      ${l>1?`
+                      ${d>1?`
                         <span class="badge" style="background:rgba(124,58,237,0.1);color:#7c3aed;border:1px solid rgba(124,58,237,0.2);font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;display:inline-flex;align-items:center;gap:4px;">
-                          ${n("users",11)} ${e(`${l} مستخدمين متأثرين`,`${l} users affected`)}
+                          ${n("users",11)} ${e(`${d} مستخدمين متأثرين`,`${d} users affected`)}
                         </span>
                       `:""}
                     </div>
@@ -541,7 +541,7 @@ import{t as Ee}from"./rolldown-runtime-BQ-_32WO.js";import{$ as t,A as Fe,Dt as 
         `}
       </div>
     </section>
-  `}var G=null,le=!1,Y=null,ne=0;async function Oe(a=!1){if(G&&!a)return G;le=!0;try{oe("vault","Fetching vault backups from Google Drive API");const s=await O("/api/vault/backups"+(a?"?force=true":""),{silent:!0});s&&s.backups&&(G=s)}catch(s){console.warn("[Vault] Failed to fetch vault backups:",s),oe("vault","Fetch error: "+(s.message||"unknown"))}finally{le=!1}return G}function Ze(){const a=V(),s=G;return!s&&!le&&Oe().then(()=>{const r=document.getElementById("vault-content-area");r&&(r.innerHTML=ue(a,G),be())}),`
+  `}var G=null,le=!1,Y=null,re=0;async function Be(a=!1){if(G&&!a)return G;le=!0;try{ne("vault","Fetching vault backups from Google Drive API");const s=await P("/api/vault/backups"+(a?"?force=true":""),{silent:!0});s&&s.backups&&(G=s)}catch(s){console.warn("[Vault] Failed to fetch vault backups:",s),ne("vault","Fetch error: "+(s.message||"unknown"))}finally{le=!1}return G}function Ze(){const a=V(),s=G;return!s&&!le&&Be().then(()=>{const r=document.getElementById("vault-content-area");r&&(r.innerHTML=ue(a,G),be())}),`
     <div class="settings-vault-wrap" id="vault-content-area">
       ${ue(a,s)}
     </div>
@@ -555,7 +555,7 @@ import{t as Ee}from"./rolldown-runtime-BQ-_32WO.js";import{$ as t,A as Fe,Dt as 
           ${e("يتم الاتصال عبر مصادقة Google OAuth2 المشفرة","Connecting via secure Google OAuth2 handshake")}
         </p>
       </div>
-    `;const r=s?.total||0,d=s?.latestBackup,m=s?.backups||[];return`
+    `;const r=s?.total||0,l=s?.latestBackup,m=s?.backups||[];return`
     <!-- Top Hero Banner: Karim Al-Hakim Serenity & High Resilience -->
     <div class="vault-hero-card" style="
       background: linear-gradient(135deg, rgba(16, 24, 39, 0.95), rgba(15, 23, 42, 0.98));
@@ -595,12 +595,16 @@ import{t as Ee}from"./rolldown-runtime-BQ-_32WO.js";import{$ as t,A as Fe,Dt as 
         </div>
 
         <div style="display:flex; gap:0.75rem; flex-wrap:wrap;">
+          <button id="btn-trigger-backup-now" class="btn btn-secondary" style="background:rgba(255,255,255,0.06); border-color:rgba(255,255,255,0.12); color:#e2e8f0;">
+            ${n("upload","width:15px; height:15px;")}
+            <span>${e("أخذ نسخة فورية الآن","Backup Now")}</span>
+          </button>
           <button id="btn-refresh-vault" class="btn btn-secondary" style="background:rgba(255,255,255,0.06); border-color:rgba(255,255,255,0.12); color:#e2e8f0;">
-            ${n("refresh","width:16px; height:16px;")}
+            ${n("refresh","width:15px; height:15px;")}
             <span>${e("تحديث القائمة","Refresh Vault")}</span>
           </button>
           <button id="btn-open-restore-wizard" class="btn btn-primary" style="background:#059669; border-color:#059669; color:#fff; box-shadow:0 4px 14px rgba(5,150,105,0.4);">
-            ${n("shield","width:16px; height:16px;")}
+            ${n("shield","width:15px; height:15px;")}
             <span>${e("معالج الاستعادة الآمن","Restore Wizard")}</span>
           </button>
         </div>
@@ -623,7 +627,7 @@ import{t as Ee}from"./rolldown-runtime-BQ-_32WO.js";import{$ as t,A as Fe,Dt as 
           ${e("تاريخ آخر نسخة ناجحة","Latest Backup Timestamp")}
         </span>
         <div style="font-size:1.1rem; font-weight:700; color:var(--text-main); margin-top:0.6rem;">
-          ${d?me(d.createdAt):e("لا توجد نسخ","None")}
+          ${l?me(l.createdAt):e("لا توجد نسخ","None")}
         </div>
       </div>
 
@@ -641,7 +645,7 @@ import{t as Ee}from"./rolldown-runtime-BQ-_32WO.js";import{$ as t,A as Fe,Dt as 
           ${e("حجم أرشيف قاعدة البيانات","Latest Archive Size")}
         </span>
         <div style="font-size:1.4rem; font-weight:800; color:var(--text-main); margin-top:0.5rem;">
-          ${d?.sizeFormatted||"—"}
+          ${l?.sizeFormatted||"—"}
         </div>
       </div>
     </div>
@@ -694,6 +698,10 @@ import{t as Ee}from"./rolldown-runtime-BQ-_32WO.js";import{$ as t,A as Fe,Dt as 
                     </span>
                   </td>
                   <td style="padding:1rem 1.25rem; text-align:end;">
+                    <a href="https://drive.google.com/file/d/${t(g.id)}/view" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-secondary" style="font-size:0.8rem; margin-inline-end:0.4rem; text-decoration:none;">
+                      ${n("download","width:13px; height:13px;")}
+                      <span>${e("Drive","Drive")}</span>
+                    </a>
                     <button class="btn btn-sm btn-secondary btn-copy-cli" data-filename="${t(g.filename)}" style="font-size:0.8rem; margin-inline-end:0.4rem;">
                       ${n("copy","width:13px; height:13px;")}
                       <span>${e("أمر CLI","CLI Command")}</span>
@@ -710,7 +718,7 @@ import{t as Ee}from"./rolldown-runtime-BQ-_32WO.js";import{$ as t,A as Fe,Dt as 
         </div>
       `}
     </div>
-  `}function be(){const a=document.getElementById("btn-refresh-vault");a&&(a.onclick=async()=>{a.disabled=!0,a.innerHTML=`${n("refresh","width:16px; height:16px; animation:spin 1s linear infinite;")} ${e("جاري الفحص...","Scanning...")}`,await Oe(!0);const r=document.getElementById("vault-content-area");r&&(r.innerHTML=ue(V(),G),be()),C(e("تم تحديث قائمة النسخ من Google Drive بنجاح","Vault list refreshed successfully"))});const s=document.getElementById("btn-open-restore-wizard");s&&(s.onclick=()=>ke("latest")),document.querySelectorAll(".btn-restore-target").forEach(r=>{r.onclick=()=>{ke(r.getAttribute("data-filename"))}}),document.querySelectorAll(".btn-copy-cli").forEach(r=>{r.onclick=()=>{const d=`openssl enc -d -aes-256-cbc -pbkdf2 -iter 100000 -pass pass:"$BACKUP_ENCRYPTION_KEY" -in "${r.getAttribute("data-filename")}" | gunzip | psql "$SUPABASE_DB_URL"`;navigator.clipboard.writeText(d),C(e("تم نسخ أمر فك التشفير والاستعادة إلى الحافظة","Decryption & restore command copied to clipboard"))}})}function ke(a="latest"){oe("vault","Opened disaster recovery wizard modal",{targetFilename:a});const s=`
+  `}function be(){const a=document.getElementById("btn-trigger-backup-now");a&&(a.onclick=async()=>{a.disabled=!0,a.innerHTML=`${n("refresh","width:15px; height:15px; animation:spin 1s linear infinite;")} <span>${e("جاري الإطلاق...","Launching...")}</span>`;try{ne("vault","Triggering backup-now from UI"),await P("/api/vault/backup-now",{method:"POST"}),R(e("تم إطلاق مسار النسخ الاحتياطي المشفر على GitHub بنجاح","Encrypted backup dispatched to GitHub successfully"))}catch(l){R(l.message||"Failed to dispatch backup","error")}finally{a.disabled=!1,a.innerHTML=`${n("upload","width:15px; height:15px;")} <span>${e("أخذ نسخة فورية الآن","Backup Now")}</span>`}});const s=document.getElementById("btn-refresh-vault");s&&(s.onclick=async()=>{s.disabled=!0,s.innerHTML=`${n("refresh","width:16px; height:16px; animation:spin 1s linear infinite;")} ${e("جاري الفحص...","Scanning...")}`,await Be(!0);const l=document.getElementById("vault-content-area");l&&(l.innerHTML=ue(V(),G),be()),R(e("تم تحديث قائمة النسخ من Google Drive بنجاح","Vault list refreshed successfully"))});const r=document.getElementById("btn-open-restore-wizard");r&&(r.onclick=()=>ke("latest")),document.querySelectorAll(".btn-restore-target").forEach(l=>{l.onclick=()=>{ke(l.getAttribute("data-filename"))}}),document.querySelectorAll(".btn-copy-cli").forEach(l=>{l.onclick=()=>{const m=`openssl enc -d -aes-256-cbc -pbkdf2 -iter 100000 -pass pass:"$BACKUP_ENCRYPTION_KEY" -in "${l.getAttribute("data-filename")}" | gunzip | psql "$SUPABASE_DB_URL"`;navigator.clipboard.writeText(m),R(e("تم نسخ أمر فك التشفير والاستعادة إلى الحافظة","Decryption & restore command copied to clipboard"))}})}function ke(a="latest"){ne("vault","Opened disaster recovery wizard modal",{targetFilename:a});const s=`
     <div class="restore-wizard-dialog" style="max-width:540px; margin:0 auto; padding:1.5rem 0;">
       <div style="text-align:center; margin-bottom:1.5rem;">
         <div style="width:56px; height:56px; border-radius:50%; background:rgba(217,119,6,0.12); color:#d97706; display:inline-flex; align-items:center; justify-content:center; margin-bottom:1rem;">
@@ -785,10 +793,10 @@ import{t as Ee}from"./rolldown-runtime-BQ-_32WO.js";import{$ as t,A as Fe,Dt as 
 
       <div id="restore-live-feedback" style="display:none; margin-top:1rem; padding:1rem; border-radius:0.5rem; background:rgba(0,0,0,0.2); font-family:monospace; font-size:0.85rem;"></div>
     </div>
-  `,r=document.getElementById("modal-root");if(!r){console.error("[Vault] modal-root element not found in DOM");return}r.innerHTML=fe(e("غرفة عمليات التعافي من الكوارث","Disaster Recovery Ops"),e("نظام استعادة آمن محمي بلقطة استباقية وتجميد الـ Triggers","Secure recovery protected by pre-flight snapshot & trigger freeze"),s,"restore-wizard","modal-lg");const d=document.getElementById("mode-dryrun"),m=document.getElementById("mode-real"),g=document.getElementById("real-confirm-box"),h=document.getElementById("hold-btn-text"),w=document.getElementById("btn-hold-restore");if(!d||!m||!w){console.warn("[Vault] Wizard modal elements not ready in DOM");return}const v=()=>{const $=d.checked;g&&(g.style.display=$?"none":"block"),w&&(w.style.background=$?"#059669":"#dc2626"),h&&($?h.innerHTML=`${n("play","width:18px; height:18px;")} <span>${e("اضغط مطولاً لبدء المحاكاة التجريبية (3.5 ثوانٍ)","Hold 3.5s to Execute Rehearsal")}</span>`:h.innerHTML=`${n("alert-triangle","width:18px; height:18px;")} <span>${e("اضغط مطولاً لتأكيد الاستعادة الحية (3.5 ثوانٍ)","Hold 3.5s to Trigger LIVE Restore")}</span>`)};d.onchange=v,m.onchange=v;const A=document.getElementById("hold-progress-bar");let z=0;const i=()=>{const $=d.checked;if(!$&&(document.getElementById("input-confirm-phrase")?.value||"").trim()!=="RESTORE_PRODUCTION_DATABASE"){C(e("يجب كتابة عبارة التأكيد RESTORE_PRODUCTION_DATABASE أولاً","Please enter confirmation phrase first"),"error");return}z=Date.now(),ne=0,A.style.width="0%",Y=setInterval(()=>{const D=Date.now()-z;ne=Math.min(D/3500*100,100),A.style.width=ne+"%",ne>=100&&(clearInterval(Y),Y=null,et(a,$))},50)},x=()=>{Y&&(clearInterval(Y),Y=null,A.style.width="0%")};w.addEventListener("mousedown",i),w.addEventListener("mouseup",x),w.addEventListener("mouseleave",x),w.addEventListener("touchstart",i,{passive:!0}),w.addEventListener("touchend",x)}async function et(a,s){const r=document.getElementById("restore-live-feedback"),d=document.getElementById("btn-hold-restore");d&&(d.disabled=!0),r&&(r.style.display="block",r.innerHTML=`
+  `,r=document.getElementById("modal-root");if(!r){console.error("[Vault] modal-root element not found in DOM");return}r.innerHTML=fe(e("غرفة عمليات التعافي من الكوارث","Disaster Recovery Ops"),e("نظام استعادة آمن محمي بلقطة استباقية وتجميد الـ Triggers","Secure recovery protected by pre-flight snapshot & trigger freeze"),s,"restore-wizard","modal-lg");const l=document.getElementById("mode-dryrun"),m=document.getElementById("mode-real"),g=document.getElementById("real-confirm-box"),h=document.getElementById("hold-btn-text"),w=document.getElementById("btn-hold-restore");if(!l||!m||!w){console.warn("[Vault] Wizard modal elements not ready in DOM");return}const v=()=>{const $=l.checked;g&&(g.style.display=$?"none":"block"),w&&(w.style.background=$?"#059669":"#dc2626"),h&&($?h.innerHTML=`${n("play","width:18px; height:18px;")} <span>${e("اضغط مطولاً لبدء المحاكاة التجريبية (3.5 ثوانٍ)","Hold 3.5s to Execute Rehearsal")}</span>`:h.innerHTML=`${n("alert-triangle","width:18px; height:18px;")} <span>${e("اضغط مطولاً لتأكيد الاستعادة الحية (3.5 ثوانٍ)","Hold 3.5s to Trigger LIVE Restore")}</span>`)};l.onchange=v,m.onchange=v;const A=document.getElementById("hold-progress-bar");let z=0;const i=()=>{const $=l.checked;if(!$&&(document.getElementById("input-confirm-phrase")?.value||"").trim()!=="RESTORE_PRODUCTION_DATABASE"){R(e("يجب كتابة عبارة التأكيد RESTORE_PRODUCTION_DATABASE أولاً","Please enter confirmation phrase first"),"error");return}z=Date.now(),re=0,A.style.width="0%",Y=setInterval(()=>{const D=Date.now()-z;re=Math.min(D/3500*100,100),A.style.width=re+"%",re>=100&&(clearInterval(Y),Y=null,et(a,$))},50)},x=()=>{Y&&(clearInterval(Y),Y=null,A.style.width="0%")};w.addEventListener("mousedown",i),w.addEventListener("mouseup",x),w.addEventListener("mouseleave",x),w.addEventListener("touchstart",i,{passive:!0}),w.addEventListener("touchend",x)}async function et(a,s){const r=document.getElementById("restore-live-feedback"),l=document.getElementById("btn-hold-restore");l&&(l.disabled=!0),r&&(r.style.display="block",r.innerHTML=`
       <div style="color:#10b981; display:flex; align-items:center; gap:0.4rem;">${n("play","width:14px; height:14px;")} <span>${e("جاري إطلاق مسار التعافي على GitHub Actions...","Dispatching Disaster Recovery on GitHub Actions...")}</span></div>
       <div style="color:var(--text-muted); margin-top:0.4rem;">Mode: ${s?"DRY_RUN (Safe Rehearsal)":"PRODUCTION_RESTORE"}</div>
-    `);try{oe("vault","Triggering restore API call",{backupFilename:a,isDryRun:s}),await O("/api/vault/restore",{method:"POST",body:JSON.stringify({backupFilename:a,dryRun:s,confirmationPhrase:s?"DRY_RUN_REHEARSAL":"RESTORE_PRODUCTION_DATABASE"})}),r&&(r.innerHTML+=`
+    `);try{ne("vault","Triggering restore API call",{backupFilename:a,isDryRun:s}),await P("/api/vault/restore",{method:"POST",body:JSON.stringify({backupFilename:a,dryRun:s,confirmationPhrase:s?"DRY_RUN_REHEARSAL":"RESTORE_PRODUCTION_DATABASE"})}),r&&(r.innerHTML+=`
         <div style="color:#10b981; margin-top:0.6rem; display:flex; align-items:center; gap:0.4rem;">${n("check","width:14px; height:14px;")} <span>${e("تم قبول العملية وتشغيل المسار المعزول بنجاح!","Workflow dispatched successfully!")}</span></div>
         <div style="color:var(--text-muted); margin-top:0.4rem;">Status: Initiated via GitHub Actions Runner</div>
         <div style="margin-top:0.75rem;">
@@ -796,9 +804,9 @@ import{t as Ee}from"./rolldown-runtime-BQ-_32WO.js";import{$ as t,A as Fe,Dt as 
             ${e("متابعة التنفيذ الحي على GitHub ↗","Watch Live Run on GitHub ↗")}
           </a>
         </div>
-      `),C(e("تم إطلاق مسار التعافي بنجاح","Disaster recovery launched successfully"))}catch(m){r&&(r.innerHTML+=`
+      `),R(e("تم إطلاق مسار التعافي بنجاح","Disaster recovery launched successfully"))}catch(m){r&&(r.innerHTML+=`
         <div style="color:#ef4444; margin-top:0.6rem; display:flex; align-items:center; gap:0.4rem;">${n("alert-triangle","width:14px; height:14px;")} <span>${e("خطأ في إطلاق المسار:","Dispatch Error:")} ${t(m.message)}</span></div>
-      `),C(m.message||"Error triggering restore","error")}}var ut=Ee({FULL_PERMISSIONS_CATALOG:()=>Be,canAccessSettingsSection:()=>L,exportAuditLogsXLS:()=>it,fetchFullAuditHistory:()=>nt,openRoleModal:()=>ot,openUserModal:()=>lt,printAuditReport:()=>st,renderAuditForProject:()=>at,renderSettings:()=>rt,renderTeam:()=>tt,renderUserActivityCell:()=>Ne});function tt(){if(!_()&&!k("manage_users"))return`<section class="panel"><div class="empty">${n("alert",18)}<span>${e("غير مصرح لك بعرض هذه الصفحة.","You are not authorized to view this page.")}</span></div></section>`;const a=o.data?.user?.id;let s=(o.data?.users||[]).filter(r=>r.status!=="inactive");return a!=="usr_ahmad"?s=s.filter(r=>r.id!=="usr_ahmad"):s=[...s].sort((r,d)=>r.id==="usr_ahmad"?-1:d.id==="usr_ahmad"?1:0),`
+      `),R(m.message||"Error triggering restore","error")}}var ut=Ee({FULL_PERMISSIONS_CATALOG:()=>Ne,canAccessSettingsSection:()=>L,exportAuditLogsXLS:()=>it,fetchFullAuditHistory:()=>nt,openRoleModal:()=>ot,openUserModal:()=>lt,printAuditReport:()=>st,renderAuditForProject:()=>at,renderSettings:()=>rt,renderTeam:()=>tt,renderUserActivityCell:()=>Oe});function tt(){if(!_()&&!k("manage_users"))return`<section class="panel"><div class="empty">${n("alert",18)}<span>${e("غير مصرح لك بعرض هذه الصفحة.","You are not authorized to view this page.")}</span></div></section>`;const a=o.data?.user?.id;let s=(o.data?.users||[]).filter(r=>r.status!=="inactive");return a!=="usr_ahmad"?s=s.filter(r=>r.id!=="usr_ahmad"):s=[...s].sort((r,l)=>r.id==="usr_ahmad"?-1:l.id==="usr_ahmad"?1:0),`
     <div class="page-head">
       <div>
         <p class="eyebrow">${e("الأشخاص والمسؤوليات","PEOPLE & OWNERSHIP")}</p>
@@ -810,7 +818,7 @@ import{t as Ee}from"./rolldown-runtime-BQ-_32WO.js";import{$ as t,A as Fe,Dt as 
       </div>
     </div>
     <div class="team-grid">
-      ${s.map(r=>{const d=ye(r.id,o.data?.tasks||[]),m=r.id==="usr_ahmad";return`
+      ${s.map(r=>{const l=ye(r.id,o.data?.tasks||[]),m=r.id==="usr_ahmad";return`
           <article class="member-card ${m?"system-developer-card":""}" style="${m?"border:2px solid var(--brand-teal);box-shadow:0 6px 20px rgba(13,148,136,0.12);":""}">
             <div class="member-card-head">
               <div class="member-card-person">
@@ -826,24 +834,24 @@ import{t as Ee}from"./rolldown-runtime-BQ-_32WO.js";import{$ as t,A as Fe,Dt as 
               <span class="status-badge ${r.status==="active"?"done":"not_started"}">${t(H(r))}</span>
             </div>
             <div class="member-card-stats">
-              <span>${c("progress")} <strong>${d.progress}%</strong></span>
-              <span>${d.tasks} ${c("tasks")}</span>
+              <span>${c("progress")} <strong>${l.progress}%</strong></span>
+              <span>${l.tasks} ${c("tasks")}</span>
             </div>
             <div class="member-email">${r.email?t(r.email):c("noEmail")}</div>
           </article>
         `}).join("")}
     </div>
-  `}function at(a){const s=(o.data?.auditLogs||[]).filter(r=>r.details?.projectId===a||r.entityType==="project"&&r.entityId===a);return s.length?`<div class="audit-list">${s.map(r=>`<div class="audit-row"><span class="audit-dot"></span><div class="audit-copy"><strong>${t(r.user?e(r.user.name,r.user.nameEn||r.user.name):"DARC")} · ${t(r.action)}</strong><span>${t(r.entityType)} · ${re(r.createdAt,!0)}</span></div></div>`).join("")}</div>`:`<div class="empty">${n("check",18)}<span>${e("لا توجد تغييرات مسجلة بعد.","No changes recorded yet.")}</span></div>`}function Ne(a){const s=a.lastActiveAt||a.customFields?.lastActiveAt,r=a.lastLoginAt||a.customFields?.lastLoginAt;if(!s&&!r)return`<span class="activity-never">${e("لم يسجل دخول بعد","Never logged in")}</span>`;const d=Date.now(),m=s?new Date(s).getTime():0,g=a.id===o.data?.user?.id?0:m&&!isNaN(m)?Math.floor((d-m)/6e4):999999,h=g>=0&&g<=5;let w="";if(h)w=`<span class="activity-pill online"><span class="activity-dot online"></span> ${e("نشط الآن","Online")}</span>`;else if(g<60)w=`<span class="activity-pill recent"><span class="activity-dot recent"></span> ${e(`منذ ${g} دقيقة`,`${g}m ago`)}</span>`;else if(g<1440){const A=Math.floor(g/60);w=`<span class="activity-pill idle"><span class="activity-dot idle"></span> ${e(`منذ ${A} ساعة`,`${A}h ago`)}</span>`}else m>0&&(w=`<span class="activity-pill idle"><span class="activity-dot idle"></span> ${re(s,!1)}</span>`);const v=r?`<span class="activity-sub" title="${t(r)}">${e("دخول:","Login:")} ${re(r,!0)}</span>`:"";return`<div class="activity-wrapper">${w}${v}</div>`}function xe(a){return me(a,{includeSeconds:!0})}function de(a){const s=a.action||"",r=a.entityType||a.entity_type||"",d=a.details||{};let m="badge-neutral",g=s,h=r;s==="login"?(m="badge-teal",g=e("تسجيل دخول","Sign In"),h=e("جلسة نظام","System Session")):s==="create"?(m="badge-mint",g=e("إنشاء جديد","Created")):s==="update"?(m="badge-blue",g=e("تعديل بيانات","Updated")):s==="delete"?(m="badge-red",g=e("نقل للمهملات","Moved to Trash")):s==="status_change"?(m="badge-amber",g=e("تغيير حالة","Status Changed")):s==="export_report"?(m="badge-teal",g=e("تصدير تقرير","Exported Report")):s==="restore"?(m="badge-mint",g=e("استعادة","Restored")):s==="purge"?(m="badge-danger",g=e("حذف نهائي","Purged")):s==="invite"&&(m="badge-blue",g=e("دعوة مستخدم","Invite Sent")),r==="task"?h=e("مهمة","Task"):r==="project"?h=e("مشروع","Project"):r==="document"?h=e("مستند","Document"):r==="user"?h=e("مستخدم","User"):r==="report"?h=e("تقرير","Report"):r==="role"&&(h=e("دور وصلاحيات","Role"));let w="—";return d.title||d.name?w=`<strong>${t(d.title||d.name)}</strong>`:s==="status_change"&&(d.oldStatus||d.newStatus)?w=`<span>${t(W(d.oldStatus))} → <strong>${t(W(d.newStatus))}</strong></span>`:a.entityId&&(w=`<code style="font-size:11px;color:var(--muted);">${t(a.entityId)}</code>`),{badgeClass:m,actionLabel:g,entityLabel:h,detailHtml:w}}function it(a=null){if(!k("view_audit_logs")&&!_()){C(e("ليس لديك صلاحية لتصدير سجل الرقابة.","You do not have permission to export audit logs."),!0);return}const s=a||o._lastFilteredAuditLogs||o.data?.auditLogs||[];if(!s.length){C(e("لا توجد عمليات لتصديرها.","No logs to export."),!0);return}const r=qe(),d=r.displayName,m=r.logoUrl,g=o.data?.user||{},h=e(g.name,g.nameEn||g.name)||"Admin",w=De(),v=ze();let A=`
+  `}function at(a){const s=(o.data?.auditLogs||[]).filter(r=>r.details?.projectId===a||r.entityType==="project"&&r.entityId===a);return s.length?`<div class="audit-list">${s.map(r=>`<div class="audit-row"><span class="audit-dot"></span><div class="audit-copy"><strong>${t(r.user?e(r.user.name,r.user.nameEn||r.user.name):"DARC")} · ${t(r.action)}</strong><span>${t(r.entityType)} · ${oe(r.createdAt,!0)}</span></div></div>`).join("")}</div>`:`<div class="empty">${n("check",18)}<span>${e("لا توجد تغييرات مسجلة بعد.","No changes recorded yet.")}</span></div>`}function Oe(a){const s=a.lastActiveAt||a.customFields?.lastActiveAt,r=a.lastLoginAt||a.customFields?.lastLoginAt;if(!s&&!r)return`<span class="activity-never">${e("لم يسجل دخول بعد","Never logged in")}</span>`;const l=Date.now(),m=s?new Date(s).getTime():0,g=a.id===o.data?.user?.id?0:m&&!isNaN(m)?Math.floor((l-m)/6e4):999999,h=g>=0&&g<=5;let w="";if(h)w=`<span class="activity-pill online"><span class="activity-dot online"></span> ${e("نشط الآن","Online")}</span>`;else if(g<60)w=`<span class="activity-pill recent"><span class="activity-dot recent"></span> ${e(`منذ ${g} دقيقة`,`${g}m ago`)}</span>`;else if(g<1440){const A=Math.floor(g/60);w=`<span class="activity-pill idle"><span class="activity-dot idle"></span> ${e(`منذ ${A} ساعة`,`${A}h ago`)}</span>`}else m>0&&(w=`<span class="activity-pill idle"><span class="activity-dot idle"></span> ${oe(s,!1)}</span>`);const v=r?`<span class="activity-sub" title="${t(r)}">${e("دخول:","Login:")} ${oe(r,!0)}</span>`:"";return`<div class="activity-wrapper">${w}${v}</div>`}function xe(a){return me(a,{includeSeconds:!0})}function de(a){const s=a.action||"",r=a.entityType||a.entity_type||"",l=a.details||{};let m="badge-neutral",g=s,h=r;s==="login"?(m="badge-teal",g=e("تسجيل دخول","Sign In"),h=e("جلسة نظام","System Session")):s==="create"?(m="badge-mint",g=e("إنشاء جديد","Created")):s==="update"?(m="badge-blue",g=e("تعديل بيانات","Updated")):s==="delete"?(m="badge-red",g=e("نقل للمهملات","Moved to Trash")):s==="status_change"?(m="badge-amber",g=e("تغيير حالة","Status Changed")):s==="export_report"?(m="badge-teal",g=e("تصدير تقرير","Exported Report")):s==="restore"?(m="badge-mint",g=e("استعادة","Restored")):s==="purge"?(m="badge-danger",g=e("حذف نهائي","Purged")):s==="invite"&&(m="badge-blue",g=e("دعوة مستخدم","Invite Sent")),r==="task"?h=e("مهمة","Task"):r==="project"?h=e("مشروع","Project"):r==="document"?h=e("مستند","Document"):r==="user"?h=e("مستخدم","User"):r==="report"?h=e("تقرير","Report"):r==="role"&&(h=e("دور وصلاحيات","Role"));let w="—";return l.title||l.name?w=`<strong>${t(l.title||l.name)}</strong>`:s==="status_change"&&(l.oldStatus||l.newStatus)?w=`<span>${t(W(l.oldStatus))} → <strong>${t(W(l.newStatus))}</strong></span>`:a.entityId&&(w=`<code style="font-size:11px;color:var(--muted);">${t(a.entityId)}</code>`),{badgeClass:m,actionLabel:g,entityLabel:h,detailHtml:w}}function it(a=null){if(!k("view_audit_logs")&&!_()){R(e("ليس لديك صلاحية لتصدير سجل الرقابة.","You do not have permission to export audit logs."),!0);return}const s=a||o._lastFilteredAuditLogs||o.data?.auditLogs||[];if(!s.length){R(e("لا توجد عمليات لتصديرها.","No logs to export."),!0);return}const r=qe(),l=r.displayName,m=r.logoUrl,g=o.data?.user||{},h=e(g.name,g.nameEn||g.name)||"Admin",w=De(),v=ze();let A=`
     <table>
       <tr>
         <th colspan="7" class="title" style="font-size:18px;font-weight:bold;background:#0d6269;color:#ffffff;text-align:center;padding:12px;">
           ${m?`<img src="${t(m)}" height="38" style="vertical-align:middle;margin-inline-end:10px;" />`:""}
-          <span style="vertical-align:middle;">${e("سجل الرقابة والتدقيق الأمني والعمليات — "+d,"Audit & Security Trail Report — "+d)}</span>
+          <span style="vertical-align:middle;">${e("سجل الرقابة والتدقيق الأمني والعمليات — "+l,"Audit & Security Trail Report — "+l)}</span>
         </th>
       </tr>
       <tr>
         <th colspan="7" class="subtitle" style="font-size:13px;background:#eef2f2;color:#1e293b;text-align:center;padding:8px;">
-          ${e("المؤسسة:","Company:")} ${t(d)} | ${e("المشرف المستخرج:","Exported by:")} ${t(h)} | ${e("تاريخ التصدير:","Export Date:")} ${t(w)} ${t(v)}
+          ${e("المؤسسة:","Company:")} ${t(l)} | ${e("المشرف المستخرج:","Exported by:")} ${t(h)} | ${e("تاريخ التصدير:","Export Date:")} ${t(w)} ${t(v)}
         </th>
       </tr>
       <tr>
@@ -861,17 +869,17 @@ import{t as Ee}from"./rolldown-runtime-BQ-_32WO.js";import{$ as t,A as Fe,Dt as 
         <th style="padding:8px;border:1px solid #cbd5e1;">${e("نوع العنصر","Entity")}</th>
         <th style="padding:8px;border:1px solid #cbd5e1;">${e("التفاصيل والتغييرات","Details / Context")}</th>
       </tr>
-  `;s.forEach((i,x)=>{const $=i.user||(i.userId?(o.data?.users||[]).find(I=>I.id===i.userId):null),D=$?e($.name,$.nameEn||$.name):e("النظام","System"),l=$?H($):"—",f=xe(i.createdAt),{actionLabel:E,entityLabel:y}=de(i);let T="";i.details?.title||i.details?.name?T=i.details.title||i.details.name:i.action==="status_change"?T=`${W(i.details?.oldStatus)} → ${W(i.details?.newStatus)}`:typeof i.details=="object"?T=JSON.stringify(i.details):T=String(i.details||i.entityId||"—");const b=x%2===0?"#ffffff":"#f8fafc";A+=`
+  `;s.forEach((i,x)=>{const $=i.user||(i.userId?(o.data?.users||[]).find(I=>I.id===i.userId):null),D=$?e($.name,$.nameEn||$.name):e("النظام","System"),d=$?H($):"—",f=xe(i.createdAt),{actionLabel:E,entityLabel:y}=de(i);let T="";i.details?.title||i.details?.name?T=i.details.title||i.details.name:i.action==="status_change"?T=`${W(i.details?.oldStatus)} → ${W(i.details?.newStatus)}`:typeof i.details=="object"?T=JSON.stringify(i.details):T=String(i.details||i.entityId||"—");const b=x%2===0?"#ffffff":"#f8fafc";A+=`
       <tr style="background:${b};font-size:11px;vertical-align:middle;">
-        <td style="padding:6px 8px;border:1px solid #e2e8f0;font-family:monospace;text-align:center;">${t(B(i.id||"—"))}</td>
-        <td style="padding:6px 8px;border:1px solid #e2e8f0;text-align:center;">${t(B(`${f.date} ${f.time}`))}</td>
-        <td style="padding:6px 8px;border:1px solid #e2e8f0;font-weight:bold;">${t(B(D))}</td>
-        <td style="padding:6px 8px;border:1px solid #e2e8f0;">${t(B(l))}</td>
-        <td style="padding:6px 8px;border:1px solid #e2e8f0;text-align:center;">${t(B(E))}</td>
-        <td style="padding:6px 8px;border:1px solid #e2e8f0;text-align:center;">${t(B(y))}</td>
-        <td style="padding:6px 8px;border:1px solid #e2e8f0;">${t(B(T))}</td>
+        <td style="padding:6px 8px;border:1px solid #e2e8f0;font-family:monospace;text-align:center;">${t(N(i.id||"—"))}</td>
+        <td style="padding:6px 8px;border:1px solid #e2e8f0;text-align:center;">${t(N(`${f.date} ${f.time}`))}</td>
+        <td style="padding:6px 8px;border:1px solid #e2e8f0;font-weight:bold;">${t(N(D))}</td>
+        <td style="padding:6px 8px;border:1px solid #e2e8f0;">${t(N(d))}</td>
+        <td style="padding:6px 8px;border:1px solid #e2e8f0;text-align:center;">${t(N(E))}</td>
+        <td style="padding:6px 8px;border:1px solid #e2e8f0;text-align:center;">${t(N(y))}</td>
+        <td style="padding:6px 8px;border:1px solid #e2e8f0;">${t(N(T))}</td>
       </tr>
-    `}),A+="</table>";const z=new Date().toISOString().split("T")[0];We(`DARC_Audit_Trail_${z}`,A),C(e("تم تصدير ملف سجل التدقيق بنجاح.","Audit trail exported successfully.")),O("/api/audit",{method:"POST",body:JSON.stringify({action:"export_report",entityType:"report",entityId:`rep_audit_${z}`,details:{reportType:"Audit_Logs_Excel",count:s.length}})}).catch(()=>{})}function st(a=null){const s=a||o._lastFilteredAuditLogs||o.data?.auditLogs||[];if(!s.length){C(e("لا توجد عمليات لطباعتها.","No logs to print."),!0);return}const r=o.data?.company||{},d=e(r.nameAr||r.name,r.nameEn||r.name)||"DARC Design Team";let m=r.logoUrl||"";m.startsWith("/")&&typeof window<"u"&&window.location?.origin&&(m=`${window.location.origin}${m}`);const g=o.data?.user||{},h=e(g.name,g.nameEn||g.name)||"Admin",w=De(),v=ze(),A=s.length,z=s.filter(y=>y.action==="create").length,i=s.filter(y=>y.action==="update"||y.action==="status_change").length,x=s.filter(y=>y.action==="delete"||y.action==="purge"||y.action==="trash").length;let $="";s.forEach((y,T)=>{const b=y.user||(y.userId?(o.data?.users||[]).find(N=>N.id===y.userId):null),I=b?e(b.name,b.nameEn||b.name):e("النظام","System"),Z=b?H(b):"—",p=xe(y.createdAt),{actionLabel:u,entityLabel:S}=de(y);let R="";y.details?.title||y.details?.name?R=y.details.title||y.details.name:y.action==="status_change"?R=`${W(y.details?.oldStatus)} → ${W(y.details?.newStatus)}`:typeof y.details=="object"?R=JSON.stringify(y.details):R=String(y.details||y.entityId||"—"),$+=`
+    `}),A+="</table>";const z=new Date().toISOString().split("T")[0];We(`DARC_Audit_Trail_${z}`,A),R(e("تم تصدير ملف سجل التدقيق بنجاح.","Audit trail exported successfully.")),P("/api/audit",{method:"POST",body:JSON.stringify({action:"export_report",entityType:"report",entityId:`rep_audit_${z}`,details:{reportType:"Audit_Logs_Excel",count:s.length}})}).catch(()=>{})}function st(a=null){const s=a||o._lastFilteredAuditLogs||o.data?.auditLogs||[];if(!s.length){R(e("لا توجد عمليات لطباعتها.","No logs to print."),!0);return}const r=o.data?.company||{},l=e(r.nameAr||r.name,r.nameEn||r.name)||"DARC Design Team";let m=r.logoUrl||"";m.startsWith("/")&&typeof window<"u"&&window.location?.origin&&(m=`${window.location.origin}${m}`);const g=o.data?.user||{},h=e(g.name,g.nameEn||g.name)||"Admin",w=De(),v=ze(),A=s.length,z=s.filter(y=>y.action==="create").length,i=s.filter(y=>y.action==="update"||y.action==="status_change").length,x=s.filter(y=>y.action==="delete"||y.action==="purge"||y.action==="trash").length;let $="";s.forEach((y,T)=>{const b=y.user||(y.userId?(o.data?.users||[]).find(O=>O.id===y.userId):null),I=b?e(b.name,b.nameEn||b.name):e("النظام","System"),Z=b?H(b):"—",p=xe(y.createdAt),{actionLabel:u,entityLabel:S}=de(y);let C="";y.details?.title||y.details?.name?C=y.details.title||y.details.name:y.action==="status_change"?C=`${W(y.details?.oldStatus)} → ${W(y.details?.newStatus)}`:typeof y.details=="object"?C=JSON.stringify(y.details):C=String(y.details||y.entityId||"—"),$+=`
       <tr>
         <td style="font-family:monospace;font-size:10px;color:#64748b;text-align:center;">${t(y.id||String(T+1))}</td>
         <td style="font-weight:bold;white-space:nowrap;">${t(p.date)} <span style="font-size:10px;font-weight:normal;color:#64748b;">${t(p.time)}</span></td>
@@ -883,7 +891,7 @@ import{t as Ee}from"./rolldown-runtime-BQ-_32WO.js";import{$ as t,A as Fe,Dt as 
           <span class="print-badge">${t(u)}</span>
         </td>
         <td style="text-align:center;font-weight:600;">${t(S)}</td>
-        <td style="font-size:11px;color:#334155;">${t(R)}</td>
+        <td style="font-size:11px;color:#334155;">${t(C)}</td>
       </tr>
     `});const D=`
     <!DOCTYPE html>
@@ -1034,7 +1042,7 @@ import{t as Ee}from"./rolldown-runtime-BQ-_32WO.js";import{$ as t,A as Fe,Dt as 
       <header class="report-header">
         <div>
           ${m?`<img src="${t(m)}" alt="Logo" style="height:44px;object-fit:contain;margin-bottom:6px;display:block;" />`:""}
-          <h1 class="brand-title">${t(d)}</h1>
+          <h1 class="brand-title">${t(l)}</h1>
           <div class="report-subtitle">${e("تقرير الرقابة والتدقيق الأمني وسجل العمليات الإدارية","Official Security Audit & Governance Operations Trail")}</div>
         </div>
         <div class="report-meta-box">
@@ -1095,7 +1103,7 @@ import{t as Ee}from"./rolldown-runtime-BQ-_32WO.js";import{$ as t,A as Fe,Dt as 
       </footer>
     </body>
     </html>
-  `;let l=document.getElementById("audit-report-preview-modal");l||(l=document.createElement("div"),l.id="audit-report-preview-modal",l.style.position="fixed",l.style.inset="0",l.style.background="rgba(0, 0, 0, 0.7)",l.style.backdropFilter="blur(4px)",l.style.zIndex="999999",l.style.display="none",l.style.alignItems="center",l.style.justifyContent="center",l.style.padding="15px",document.body.appendChild(l)),l.innerHTML=`
+  `;let d=document.getElementById("audit-report-preview-modal");d||(d=document.createElement("div"),d.id="audit-report-preview-modal",d.style.position="fixed",d.style.inset="0",d.style.background="rgba(0, 0, 0, 0.7)",d.style.backdropFilter="blur(4px)",d.style.zIndex="999999",d.style.display="none",d.style.alignItems="center",d.style.justifyContent="center",d.style.padding="15px",document.body.appendChild(d)),d.innerHTML=`
     <div style="background:var(--surface, #ffffff);color:var(--ink);width:95%;max-width:1150px;height:92vh;border-radius:12px;box-shadow:0 25px 50px rgba(0,0,0,0.4);overflow:hidden;display:flex;flex-direction:column;border:1px solid var(--line);">
       <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 20px;border-bottom:1px solid var(--line);background:var(--surface-soft);flex-wrap:wrap;gap:8px;">
         <strong style="color:var(--brand-teal);font-size:14px;">${e("معاينة التقرير الرقابي الرسمي (Audit Trail PDF Preview)","Official Audit Trail Report (PDF Preview)")}</strong>
@@ -1110,7 +1118,7 @@ import{t as Ee}from"./rolldown-runtime-BQ-_32WO.js";import{$ as t,A as Fe,Dt as 
         <iframe id="audit-print-preview-iframe" style="width:100%;height:100%;border:none;background:#ffffff;" srcdoc="${t(D)}"></iframe>
       </div>
     </div>
-  `,l.style.display="flex";const f=()=>{l.style.display="none",l.innerHTML="",window.removeEventListener("keydown",E)},E=y=>{y.key==="Escape"&&f()};window.addEventListener("keydown",E),document.getElementById("btn-close-audit-print-modal")?.addEventListener("click",f),document.getElementById("btn-print-audit-iframe")?.addEventListener("click",()=>{const y=document.getElementById("audit-print-preview-iframe");y&&y.contentWindow&&(y.contentWindow.focus(),y.contentWindow.print())}),O("/api/audit",{method:"POST",body:JSON.stringify({action:"export_report",entityType:"report",entityId:`rep_audit_print_${Date.now()}`,details:{reportType:"Audit_Logs_Print_PDF",count:s.length}})}).catch(()=>{})}async function nt(){try{C(e("جاري تحميل سجل التدقيق التاريخي الكامل...","Loading complete audit history..."));const a=await O("/api/audit?limit=1000");a&&a.logs&&(o.data.auditLogs=a.logs,o.auditFullHistoryLoaded=!0,renderView(),C(e(`تم جلب ${a.logs.length} عملية بنجاح.`,`Loaded ${a.logs.length} audit logs.`)))}catch(a){C(a.message||e("فشل جلب السجل التاريخي.","Failed to fetch audit history."),!0)}}function L(a){const s=_();return a==="profile"||a==="security"||a==="notifications"?!0:a==="company"?s||k("manage_settings"):a==="whatsapp"?s||k("manage_settings"):a==="roles"?s||k("manage_roles"):a==="accounts"?s||k("manage_users")||k("manage_existing_account_permissions")||k("view_user_activity"):a==="trash"?s||k("manage_trash"):a==="audit"?s||k("view_audit_logs"):a==="analytics"?s||k("manage_settings")||k("view_audit_logs"):a==="diagnostics"?s||k("manage_settings"):a==="vault"?s:!1}function rt(){const a=o.data?.user?.id,s=_(),r=L("company"),d=L("whatsapp"),m=L("roles"),g=L("accounts"),h=L("trash"),w=L("audit"),v=L("analytics"),A=L("diagnostics"),z=L("vault"),i=[["profile",e("الملف الشخصي","Profile")],["notifications",e("الإشعارات والتنبيهات","Notifications & Alerts")],...r?[["company",c("company")]]:[],...d?[["whatsapp",e("تنبيهات واتساب","WhatsApp Alerts")]]:[],...m?[["roles",c("roles")]]:[],...g?[["accounts",c("accounts")]]:[],["security",e("الأمان","Security")],...h?[["trash",e("سلة المهملات","Trash")]]:[],...w?[["audit",c("audit")]]:[],...v?[["analytics",e("المراقبة والزيارات والأداء","Observability & Analytics")]]:[],...A?[["diagnostics",e("تشخيص الأعطال والمستخدمين","Error Logs & User Diagnostics")]]:[],...z?[["vault",e("مركز النسخ والتعافي من الكوارث","Disaster Recovery & Vault")]]:[]];i.some(([l])=>l===o.settingsSection)||(o.settingsSection=i[0]?.[0]||"profile");const x=o.data?.user||{};let $="";if(o.settingsSection==="profile"&&($=`
+  `,d.style.display="flex";const f=()=>{d.style.display="none",d.innerHTML="",window.removeEventListener("keydown",E)},E=y=>{y.key==="Escape"&&f()};window.addEventListener("keydown",E),document.getElementById("btn-close-audit-print-modal")?.addEventListener("click",f),document.getElementById("btn-print-audit-iframe")?.addEventListener("click",()=>{const y=document.getElementById("audit-print-preview-iframe");y&&y.contentWindow&&(y.contentWindow.focus(),y.contentWindow.print())}),P("/api/audit",{method:"POST",body:JSON.stringify({action:"export_report",entityType:"report",entityId:`rep_audit_print_${Date.now()}`,details:{reportType:"Audit_Logs_Print_PDF",count:s.length}})}).catch(()=>{})}async function nt(){try{R(e("جاري تحميل سجل التدقيق التاريخي الكامل...","Loading complete audit history..."));const a=await P("/api/audit?limit=1000");a&&a.logs&&(o.data.auditLogs=a.logs,o.auditFullHistoryLoaded=!0,renderView(),R(e(`تم جلب ${a.logs.length} عملية بنجاح.`,`Loaded ${a.logs.length} audit logs.`)))}catch(a){R(a.message||e("فشل جلب السجل التاريخي.","Failed to fetch audit history."),!0)}}function L(a){const s=_();return a==="profile"||a==="security"||a==="notifications"?!0:a==="company"?s||k("manage_settings"):a==="whatsapp"?s||k("manage_settings"):a==="roles"?s||k("manage_roles"):a==="accounts"?s||k("manage_users")||k("manage_existing_account_permissions")||k("view_user_activity"):a==="trash"?s||k("manage_trash"):a==="audit"?s||k("view_audit_logs"):a==="analytics"?s||k("manage_settings")||k("view_audit_logs"):a==="diagnostics"?s||k("manage_settings"):a==="vault"?s:!1}function rt(){const a=o.data?.user?.id,s=_(),r=L("company"),l=L("whatsapp"),m=L("roles"),g=L("accounts"),h=L("trash"),w=L("audit"),v=L("analytics"),A=L("diagnostics"),z=L("vault"),i=[["profile",e("الملف الشخصي","Profile")],["notifications",e("الإشعارات والتنبيهات","Notifications & Alerts")],...r?[["company",c("company")]]:[],...l?[["whatsapp",e("تنبيهات واتساب","WhatsApp Alerts")]]:[],...m?[["roles",c("roles")]]:[],...g?[["accounts",c("accounts")]]:[],["security",e("الأمان","Security")],...h?[["trash",e("سلة المهملات","Trash")]]:[],...w?[["audit",c("audit")]]:[],...v?[["analytics",e("المراقبة والزيارات والأداء","Observability & Analytics")]]:[],...A?[["diagnostics",e("تشخيص الأعطال والمستخدمين","Error Logs & User Diagnostics")]]:[],...z?[["vault",e("مركز النسخ والتعافي من الكوارث","Disaster Recovery & Vault")]]:[]];i.some(([d])=>d===o.settingsSection)||(o.settingsSection=i[0]?.[0]||"profile");const x=o.data?.user||{};let $="";if(o.settingsSection==="profile"&&($=`
       <section class="setting-section">
         <div class="panel-head">
           <div>
@@ -1183,7 +1191,7 @@ import{t as Ee}from"./rolldown-runtime-BQ-_32WO.js";import{$ as t,A as Fe,Dt as 
           </div>
         </form>
       </section>
-    `),o.settingsSection==="company"&&(s||k("manage_settings"))){const l=o.data?.company||{};$=`
+    `),o.settingsSection==="company"&&(s||k("manage_settings"))){const d=o.data?.company||{};$=`
       <section class="setting-section">
         <div class="panel-head">
           <div>
@@ -1195,7 +1203,7 @@ import{t as Ee}from"./rolldown-runtime-BQ-_32WO.js";import{$ as t,A as Fe,Dt as 
         <div class="company-preview">
           <label for="company-logo-file-input" class="logo-upload-trigger" id="company-logo-preview" role="button" tabindex="0" title="${e("انقر لرفع وتعديل شعار الشركة","Click to upload and change company logo")}">
             <div class="logo-upload-box">
-              ${l.logoUrl?`<img src="${t(l.logoUrl)}" alt="Logo" class="logo-upload-img" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" /><span class="brand-mark" style="display:none;">${n("building",24)}</span>`:`<span class="brand-mark">${n("building",24)}</span>`}
+              ${d.logoUrl?`<img src="${t(d.logoUrl)}" alt="Logo" class="logo-upload-img" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" /><span class="brand-mark" style="display:none;">${n("building",24)}</span>`:`<span class="brand-mark">${n("building",24)}</span>`}
               <div class="logo-upload-overlay">
                 ${n("upload",16)}
                 <span>${e("تعديل","Edit")}</span>
@@ -1203,7 +1211,7 @@ import{t as Ee}from"./rolldown-runtime-BQ-_32WO.js";import{$ as t,A as Fe,Dt as 
             </div>
           </label>
           <div class="company-preview-meta">
-            <strong class="company-name">${t(l.name||"DARC Design Team")}</strong>
+            <strong class="company-name">${t(d.name||"DARC Design Team")}</strong>
             <span class="company-sub">${e("العربية افتراضيًا · دعم الإنجليزية · توقيت الرياض","Arabic default · English support · Riyadh timezone")}</span>
             <div class="company-upload-actions">
               <input type="file" id="company-logo-file-input" accept="image/png,image/jpeg,image/webp,image/svg+xml" style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0;opacity:0;pointer-events:none;" />
@@ -1219,11 +1227,11 @@ import{t as Ee}from"./rolldown-runtime-BQ-_32WO.js";import{$ as t,A as Fe,Dt as 
           <div class="form-grid">
             <div class="field">
               <label>${c("nameAr")}</label>
-              <input name="nameAr" value="${t(l.nameAr||"")}" required />
+              <input name="nameAr" value="${t(d.nameAr||"")}" required />
             </div>
             <div class="field">
               <label>${c("nameEn")}</label>
-              <input name="nameEn" value="${t(l.nameEn||"")}" />
+              <input name="nameEn" value="${t(d.nameEn||"")}" />
             </div>
             <div class="field full">
               <label>${c("emailStatus")}</label>
@@ -1272,7 +1280,7 @@ import{t as Ee}from"./rolldown-runtime-BQ-_32WO.js";import{$ as t,A as Fe,Dt as 
           <button class="btn btn-danger btn-sm" data-action="logout-all">${e("تسجيل خروج للكل","Sign out all")}</button>
         </div>
       </section>
-    `),o.settingsSection==="notifications"){const l=Fe(),f=Ve()&&!He(),E=l==="granted",y=l==="denied",T=f?`<span class="mini-badge" style="background:var(--mint);color:var(--teal);font-weight:700;">${e("مدعومة عبر تطبيق الويب (PWA)","Supported via Web App (PWA)")}</span>`:`<span class="mini-badge" style="background:${E?"var(--mint)":y?"var(--red-soft)":"var(--surface-soft)"};color:${E?"var(--teal)":y?"var(--red)":"var(--muted)"};font-weight:700;">
+    `),o.settingsSection==="notifications"){const d=Fe(),f=Ve()&&!He(),E=d==="granted",y=d==="denied",T=f?`<span class="mini-badge" style="background:var(--mint);color:var(--teal);font-weight:700;">${e("مدعومة عبر تطبيق الويب (PWA)","Supported via Web App (PWA)")}</span>`:`<span class="mini-badge" style="background:${E?"var(--mint)":y?"var(--red-soft)":"var(--surface-soft)"};color:${E?"var(--teal)":y?"var(--red)":"var(--muted)"};font-weight:700;">
           ${E?e("مفعلة على هذا المتصفح","Enabled on this browser"):y?e("محظورة من إعدادات المتصفح","Blocked in browser settings"):e("بانتظار الموافقة","Permission pending")}
         </span>`,b=f?`<button type="button" class="btn btn-primary btn-sm" data-action="show-ios-notification-guide">${n("bell",14)} ${e("طريقة التفعيل على iPhone","iPhone Setup Guide")}</button>`:E?`<button type="button" class="btn btn-ghost btn-sm" data-action="test-browser-notification" style="color:var(--teal);">${n("check",14)} ${e("فحص إشعار المتصفح","Test Browser Alert")}</button>`:`<button type="button" class="btn btn-primary btn-sm" data-action="enable-browser-notifications">${n("check",14)} ${e("تفعيل الإشعارات الآن","Enable Notifications")}</button>`;$=`
       <section class="setting-section">
@@ -1352,7 +1360,7 @@ import{t as Ee}from"./rolldown-runtime-BQ-_32WO.js";import{$ as t,A as Fe,Dt as 
           </div>
         </div>
       </section>
-    `}if(o.settingsSection==="accounts"&&g){const l=_()||k("view_user_activity"),f=_()||k("manage_users"),E=_()||k("manage_existing_account_permissions")||k("manage_users"),y=_()&&!V();let T=o.data?.users||[];a!=="usr_ahmad"&&(T=T.filter(b=>b.id!=="usr_ahmad")),$=`
+    `}if(o.settingsSection==="accounts"&&g){const d=_()||k("view_user_activity"),f=_()||k("manage_users"),E=_()||k("manage_existing_account_permissions")||k("manage_users"),y=_()&&!V();let T=o.data?.users||[];a!=="usr_ahmad"&&(T=T.filter(b=>b.id!=="usr_ahmad")),$=`
       <section class="setting-section">
         <div class="panel-head">
           <div>
@@ -1369,7 +1377,7 @@ import{t as Ee}from"./rolldown-runtime-BQ-_32WO.js";import{$ as t,A as Fe,Dt as 
                 <th>${c("role")}</th>
                 <th>${c("email")}</th>
                 <th>${c("accountStatus")}</th>
-                ${l?`<th>${e("آخر ظهور ونشاط","Last Seen & Activity")}</th>`:""}
+                ${d?`<th>${e("آخر ظهور ونشاط","Last Seen & Activity")}</th>`:""}
                 ${E?"<th></th>":""}
               </tr>
             </thead>
@@ -1395,9 +1403,9 @@ import{t as Ee}from"./rolldown-runtime-BQ-_32WO.js";import{$ as t,A as Fe,Dt as 
                     <td>
                       <span class="status-badge ${b.status==="active"?"done":"not_started"}">${b.status==="active"?c("activeAccount"):c("pendingAccount")}</span>
                     </td>
-                    ${l?`
+                    ${d?`
                       <td>
-                        ${Ne(b)}
+                        ${Oe(b)}
                       </td>
                     `:""}
                     ${E?`
@@ -1433,25 +1441,25 @@ import{t as Ee}from"./rolldown-runtime-BQ-_32WO.js";import{$ as t,A as Fe,Dt as 
           ${s||k("manage_roles")?`<button class="btn btn-primary btn-sm" data-action="new-role">${n("plus",14)} ${c("addRole")}</button>`:""}
         </div>
         <div class="role-list">
-          ${(o.data?.roles||[]).map(l=>`
+          ${(o.data?.roles||[]).map(d=>`
             <div class="role-row">
               <div class="role-copy">
                 <div class="role-title-row">
-                  <strong class="role-name">${t(e(l.nameAr,l.nameEn))}</strong>
-                  ${l.builtIn?`<span class="role-system-badge">${n("shield",11)} ${c("builtIn")}</span>`:""}
+                  <strong class="role-name">${t(e(d.nameAr,d.nameEn))}</strong>
+                  ${d.builtIn?`<span class="role-system-badge">${n("shield",11)} ${c("builtIn")}</span>`:""}
                 </div>
-                <p class="role-desc">${t(e(l.descriptionAr,l.descriptionEn))}</p>
-                <div class="role-meta">${l.permissions.includes("*")?e("صلاحية كاملة","Full access"):`${l.permissions.length} ${c("permissionCount")}`}</div>
+                <p class="role-desc">${t(e(d.descriptionAr,d.descriptionEn))}</p>
+                <div class="role-meta">${d.permissions.includes("*")?e("صلاحية كاملة","Full access"):`${d.permissions.length} ${c("permissionCount")}`}</div>
               </div>
               <div class="role-actions">
-                <button class="btn btn-soft btn-sm" data-action="open-role" data-role-id="${t(l.id)}">${n("edit",13)} ${c("edit")}</button>
-                ${l.builtIn?"":`<button class="btn btn-danger btn-sm" data-action="delete-role" data-role-id="${t(l.id)}">${n("trash",13)}</button>`}
+                <button class="btn btn-soft btn-sm" data-action="open-role" data-role-id="${t(d.id)}">${n("edit",13)} ${c("edit")}</button>
+                ${d.builtIn?"":`<button class="btn btn-danger btn-sm" data-action="delete-role" data-role-id="${t(d.id)}">${n("trash",13)}</button>`}
               </div>
             </div>
           `).join("")}
         </div>
       </section>
-    `),o.settingsSection==="trash"&&h){if(!o.trash&&typeof sessionStorage<"u")try{const p=sessionStorage.getItem("darc_trash_cache");p&&(o.trash=JSON.parse(p))}catch{}!o.trashLoaded&&!o._trashFetching&&(o._trashFetching=!0,O("/api/trash").then(p=>{o.trash=Array.isArray(p)?p:p.trash||[...(p.projects||[]).map(u=>({...u,type:"project"})),...(p.tasks||[]).map(u=>({...u,type:"task"})),...(p.documents||[]).map(u=>({...u,type:"document"}))],o.trashLoaded=!0,o._trashFetching=!1;try{typeof sessionStorage<"u"&&sessionStorage.setItem("darc_trash_cache",JSON.stringify(o.trash))}catch{}typeof window.renderView=="function"&&window.renderView()}).catch(p=>{o._trashFetching=!1,console.error("[Trash fetch error]",p)}));const l=o.trash||[],f=o.trashFilter||"all",E=(o.trashQuery||"").trim().toLowerCase(),y=l.filter(p=>{if(f!=="all"&&p.type!==f)return!1;if(!E)return!0;const u=(e(p.nameAr||p.titleAr,p.nameEn||p.titleEn)||p.name||p.title||p.originalName||"").toLowerCase(),S=(p.code||p.projectCode||"").toLowerCase(),R=(p.projectNameAr||p.projectNameEn||"").toLowerCase();return u.includes(E)||S.includes(E)||R.includes(E)}),T=l.filter(p=>p.type==="project").length,b=l.filter(p=>p.type==="task").length,I=l.filter(p=>p.type==="document").length,Z=l.length?`
+    `),o.settingsSection==="trash"&&h){if(!o.trash&&typeof sessionStorage<"u")try{const p=sessionStorage.getItem("darc_trash_cache");p&&(o.trash=JSON.parse(p))}catch{}!o.trashLoaded&&!o._trashFetching&&(o._trashFetching=!0,P("/api/trash").then(p=>{o.trash=Array.isArray(p)?p:p.trash||[...(p.projects||[]).map(u=>({...u,type:"project"})),...(p.tasks||[]).map(u=>({...u,type:"task"})),...(p.documents||[]).map(u=>({...u,type:"document"}))],o.trashLoaded=!0,o._trashFetching=!1;try{typeof sessionStorage<"u"&&sessionStorage.setItem("darc_trash_cache",JSON.stringify(o.trash))}catch{}typeof window.renderView=="function"&&window.renderView()}).catch(p=>{o._trashFetching=!1,console.error("[Trash fetch error]",p)}));const d=o.trash||[],f=o.trashFilter||"all",E=(o.trashQuery||"").trim().toLowerCase(),y=d.filter(p=>{if(f!=="all"&&p.type!==f)return!1;if(!E)return!0;const u=(e(p.nameAr||p.titleAr,p.nameEn||p.titleEn)||p.name||p.title||p.originalName||"").toLowerCase(),S=(p.code||p.projectCode||"").toLowerCase(),C=(p.projectNameAr||p.projectNameEn||"").toLowerCase();return u.includes(E)||S.includes(E)||C.includes(E)}),T=d.filter(p=>p.type==="project").length,b=d.filter(p=>p.type==="task").length,I=d.filter(p=>p.type==="document").length,Z=d.length?`
       <div class="trash-notice-banner">
         <div class="trash-notice-icon">${n("info",16)}</div>
         <div class="trash-notice-text">
@@ -1465,7 +1473,7 @@ import{t as Ee}from"./rolldown-runtime-BQ-_32WO.js";import{$ as t,A as Fe,Dt as 
           <button type="button" class="btn btn-sm ${f==="all"?"btn-primary":"btn-ghost"}" data-action="filter-trash" data-filter="all">
             ${n("layers",14)}
             <span>${e("الكل","All")}</span>
-            <span class="badge ${f==="all"?"badge-on-primary":"badge-neutral"}">${l.length}</span>
+            <span class="badge ${f==="all"?"badge-on-primary":"badge-neutral"}">${d.length}</span>
           </button>
           <button type="button" class="btn btn-sm ${f==="project"?"btn-primary":"btn-ghost"}" data-action="filter-trash" data-filter="project">
             ${n("building",14)}
@@ -1503,7 +1511,7 @@ import{t as Ee}from"./rolldown-runtime-BQ-_32WO.js";import{$ as t,A as Fe,Dt as 
               </tr>
             </thead>
             <tbody>
-              ${y.map(p=>{const u=p.type==="project",S=p.type==="task",R=p.type==="document",N=e(p.nameAr||p.titleAr,p.nameEn||p.titleEn)||p.name||p.title||p.originalName||p.code||e("عنصر محذوف","Deleted item"),j=!u&&p.projectId?(o.data?.projects||[]).find(te=>te.id===p.projectId):null,q=p.projectNameAr||p.projectNameEn||(j?e(j.nameAr,j.nameEn||j.nameAr):null),J=p.projectCode||j?.code,Q=R&&p.size?p.size>1048576?(p.size/1048576).toFixed(1)+" MB":Math.round(p.size/1024)+" KB":"",ee=s||k("manage_trash")||p.uploaderId===a;return`
+              ${y.map(p=>{const u=p.type==="project",S=p.type==="task",C=p.type==="document",O=e(p.nameAr||p.titleAr,p.nameEn||p.titleEn)||p.name||p.title||p.originalName||p.code||e("عنصر محذوف","Deleted item"),j=!u&&p.projectId?(o.data?.projects||[]).find(te=>te.id===p.projectId):null,q=p.projectNameAr||p.projectNameEn||(j?e(j.nameAr,j.nameEn||j.nameAr):null),J=p.projectCode||j?.code,Q=C&&p.size?p.size>1048576?(p.size/1048576).toFixed(1)+" MB":Math.round(p.size/1024)+" KB":"",ee=s||k("manage_trash")||p.uploaderId===a;return`
                   <tr class="trash-row">
                     <td>
                       <div class="trash-item-cell">
@@ -1511,9 +1519,9 @@ import{t as Ee}from"./rolldown-runtime-BQ-_32WO.js";import{$ as t,A as Fe,Dt as 
                           ${n(u?"building":S?"checklist":"document",14)}
                         </div>
                         <div>
-                          <strong class="trash-item-title">${t(N)}</strong>
+                          <strong class="trash-item-title">${t(O)}</strong>
                           ${p.code||u?`<span class="trash-item-code">${t(p.code||p.id)}</span>`:""}
-                          ${R&&Q?`<span class="trash-item-code" style="color:var(--muted);">${Q}</span>`:""}
+                          ${C&&Q?`<span class="trash-item-code" style="color:var(--muted);">${Q}</span>`:""}
                         </div>
                       </div>
                     </td>
@@ -1525,7 +1533,7 @@ import{t as Ee}from"./rolldown-runtime-BQ-_32WO.js";import{$ as t,A as Fe,Dt as 
                     </td>
                     <td>
                       <span class="trash-parent-badge">
-                        ${u?`<span class="mini-badge" style="background:var(--mint);color:var(--teal);">${e("مشروع رئيسي","Primary Project")}</span>`:q?`${n("building",11)} <span>${t(q)}${J?` (${t(J)})`:""}</span>${R&&p.taskTitleAr?` <span style="font-size:11px;color:var(--muted)">· ${t(p.taskTitleAr)}</span>`:""}`:'<span style="color:var(--muted)">—</span>'}
+                        ${u?`<span class="mini-badge" style="background:var(--mint);color:var(--teal);">${e("مشروع رئيسي","Primary Project")}</span>`:q?`${n("building",11)} <span>${t(q)}${J?` (${t(J)})`:""}</span>${C&&p.taskTitleAr?` <span style="font-size:11px;color:var(--muted)">· ${t(p.taskTitleAr)}</span>`:""}`:'<span style="color:var(--muted)">—</span>'}
                       </span>
                     </td>
                     <td>
@@ -1533,7 +1541,7 @@ import{t as Ee}from"./rolldown-runtime-BQ-_32WO.js";import{$ as t,A as Fe,Dt as 
                     </td>
                     <td>
                       <span class="trash-date" title="${t(p.deletedAt||"")}">
-                        ${re(p.deletedAt,!0)}
+                        ${oe(p.deletedAt,!0)}
                       </span>
                     </td>
                     <td style="text-align:${o.lang==="ar"?"left":"right"}">
@@ -1559,7 +1567,7 @@ import{t as Ee}from"./rolldown-runtime-BQ-_32WO.js";import{$ as t,A as Fe,Dt as 
           <span>${e("لا توجد نتائج تطابق بحثك في سلة المهملات.","No items match your search in trash.")}</span>
         </div>
       `}
-    `:!o.trashLoaded&&!l.length?`
+    `:!o.trashLoaded&&!d.length?`
       <div style="padding:48px 20px;text-align:center;">
         <div style="width:32px;height:32px;margin:0 auto 14px;border:3px solid var(--line);border-top-color:var(--teal);border-radius:50%;animation:spin 0.75s linear infinite;"></div>
         <div style="font-size:14px;font-weight:700;color:var(--ink);">${e("جاري فحص واسترجاع عناصر سلة المهملات...","Loading recycle bin items...")}</div>
@@ -1577,12 +1585,12 @@ import{t as Ee}from"./rolldown-runtime-BQ-_32WO.js";import{$ as t,A as Fe,Dt as 
             <div style="display:flex;align-items:center;gap:10px;">
               <h2>${e("سلة المهملات","Recycle Bin")}</h2>
               <span class="mini-badge badge-neutral" style="padding:3px 9px;font-size:10px;font-weight:700;">
-                ${!o.trashLoaded&&!l.length?e("جاري التحميل...","Loading..."):`${l.length} ${e("عناصر","items")}`}
+                ${!o.trashLoaded&&!d.length?e("جاري التحميل...","Loading..."):`${d.length} ${e("عناصر","items")}`}
               </span>
             </div>
             <p>${e("استعراض واستعادة المشاريع والمهام والمستندات المحذوفة مؤقتاً، أو حذفها نهائياً.","Review, restore, or permanently purge temporarily deleted projects, tasks, and documents.")}</p>
           </div>
-          ${(s||k("manage_trash"))&&l.length>0?`
+          ${(s||k("manage_trash"))&&d.length>0?`
             <div class="page-actions">
               <button class="btn btn-danger btn-sm" data-action="empty-trash" title="${e("حذف كافة العناصر المحذوفة نهائياً من قاعدة البيانات","Permanently erase all deleted items")}">
                 ${n("trash",13)} ${e("إفراغ سلة المهملات","Empty Trash")}
@@ -1592,7 +1600,7 @@ import{t as Ee}from"./rolldown-runtime-BQ-_32WO.js";import{$ as t,A as Fe,Dt as 
         </div>
         ${Z}
       </section>
-    `}if(o.settingsSection==="audit"&&(s||k("view_audit_logs"))){const l=[...o.data?.auditLogs||[]].sort((u,S)=>new Date(S.createdAt).getTime()-new Date(u.createdAt).getTime()),f=o.auditFilterAction||"all",E=o.auditFilterEntity||"all",y=o.auditFilterUser||"all",T=(o.auditSearchQuery||"").trim().toLowerCase(),b=l.filter(u=>{if(f!=="all"&&u.action!==f||E!=="all"&&(u.entityType||u.entity_type)!==E||y!=="all"&&(u.userId||u.user_id||u.user?.id)!==y)return!1;if(T){const S=u.user||(u.userId?(o.data?.users||[]).find(te=>te.id===u.userId):null),R=(S&&e(S.name,S.nameEn||S.name)||"").toLowerCase(),{actionLabel:N,entityLabel:j}=de(u),q=(N||u.action||"").toLowerCase(),J=(j||u.entityType||"").toLowerCase(),Q=(u.id||u.entityId||"").toLowerCase(),ee=typeof u.details=="object"?JSON.stringify(u.details).toLowerCase():String(u.details||"").toLowerCase();if(!(R.includes(T)||q.includes(T)||J.includes(T)||Q.includes(T)||ee.includes(T)))return!1}return!0});o._lastFilteredAuditLogs=b;const I=[["all",e("كافة العمليات","All Actions")],["create",e("إنشاء جديد","Create")],["update",e("تعديل بيانات","Update")],["status_change",e("تغيير حالة","Status Change")],["delete",e("نقل للمهملات","Delete / Trash")],["restore",e("استعادة","Restore")],["purge",e("حذف نهائي","Purge")],["export_report",e("تصدير تقرير","Export Report")],["login",e("تسجيل دخول","Sign In")],["invite",e("دعوة مستخدم","Invite")]],Z=[["all",e("كافة العناصر","All Entities")],["project",e("المشاريع","Projects")],["task",e("المهام","Tasks")],["document",e("المستندات","Documents")],["user",e("المستخدمين","Users")],["role",e("الأدوار والصلاحيات","Roles")],["company",e("إعدادات الشركة","Company Settings")],["report",e("التقارير","Reports")]],p=f!=="all"||E!=="all"||y!=="all"||!!T;$=`
+    `}if(o.settingsSection==="audit"&&(s||k("view_audit_logs"))){const d=[...o.data?.auditLogs||[]].sort((u,S)=>new Date(S.createdAt).getTime()-new Date(u.createdAt).getTime()),f=o.auditFilterAction||"all",E=o.auditFilterEntity||"all",y=o.auditFilterUser||"all",T=(o.auditSearchQuery||"").trim().toLowerCase(),b=d.filter(u=>{if(f!=="all"&&u.action!==f||E!=="all"&&(u.entityType||u.entity_type)!==E||y!=="all"&&(u.userId||u.user_id||u.user?.id)!==y)return!1;if(T){const S=u.user||(u.userId?(o.data?.users||[]).find(te=>te.id===u.userId):null),C=(S&&e(S.name,S.nameEn||S.name)||"").toLowerCase(),{actionLabel:O,entityLabel:j}=de(u),q=(O||u.action||"").toLowerCase(),J=(j||u.entityType||"").toLowerCase(),Q=(u.id||u.entityId||"").toLowerCase(),ee=typeof u.details=="object"?JSON.stringify(u.details).toLowerCase():String(u.details||"").toLowerCase();if(!(C.includes(T)||q.includes(T)||J.includes(T)||Q.includes(T)||ee.includes(T)))return!1}return!0});o._lastFilteredAuditLogs=b;const I=[["all",e("كافة العمليات","All Actions")],["create",e("إنشاء جديد","Create")],["update",e("تعديل بيانات","Update")],["status_change",e("تغيير حالة","Status Change")],["delete",e("نقل للمهملات","Delete / Trash")],["restore",e("استعادة","Restore")],["purge",e("حذف نهائي","Purge")],["export_report",e("تصدير تقرير","Export Report")],["login",e("تسجيل دخول","Sign In")],["invite",e("دعوة مستخدم","Invite")]],Z=[["all",e("كافة العناصر","All Entities")],["project",e("المشاريع","Projects")],["task",e("المهام","Tasks")],["document",e("المستندات","Documents")],["user",e("المستخدمين","Users")],["role",e("الأدوار والصلاحيات","Roles")],["company",e("إعدادات الشركة","Company Settings")],["report",e("التقارير","Reports")]],p=f!=="all"||E!=="all"||y!=="all"||!!T;$=`
       <section class="setting-section">
         <div class="panel-head" style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;">
           <div>
@@ -1603,7 +1611,7 @@ import{t as Ee}from"./rolldown-runtime-BQ-_32WO.js";import{$ as t,A as Fe,Dt as 
               </span>
               ${p?`
                 <span class="mini-badge" style="padding:3px 8px;font-size:10px;background:var(--surface-soft);color:var(--muted);border:1px solid var(--line);">
-                  ${e("من أصل","out of")} ${l.length}
+                  ${e("من أصل","out of")} ${d.length}
                 </span>
               `:""}
             </div>
@@ -1660,14 +1668,14 @@ import{t as Ee}from"./rolldown-runtime-BQ-_32WO.js";import{$ as t,A as Fe,Dt as 
                 </tr>
               </thead>
               <tbody>
-                ${b.map(u=>{const S=u.user||(u.userId?(o.data?.users||[]).find(te=>te.id===u.userId):null),R=S?e(S.name,S.nameEn||S.name):e("النظام","System"),N=S?H(S):e("تلقائي","Automated"),j=xe(u.createdAt),{badgeClass:q,actionLabel:J,entityLabel:Q,detailHtml:ee}=de(u);return`
+                ${b.map(u=>{const S=u.user||(u.userId?(o.data?.users||[]).find(te=>te.id===u.userId):null),C=S?e(S.name,S.nameEn||S.name):e("النظام","System"),O=S?H(S):e("تلقائي","Automated"),j=xe(u.createdAt),{badgeClass:q,actionLabel:J,entityLabel:Q,detailHtml:ee}=de(u);return`
                     <tr style="border-bottom:1px solid var(--line);transition:background 0.15s ease;">
                       <td style="padding:12px 14px;vertical-align:middle;">
                         <div style="display:flex;align-items:center;gap:10px;">
                           ${se(S)}
                           <div>
-                            <div style="font-size:12.5px;font-weight:700;color:var(--ink);">${t(R)}</div>
-                            <div style="font-size:10.5px;color:var(--muted);">${t(N)}</div>
+                            <div style="font-size:12.5px;font-weight:700;color:var(--ink);">${t(C)}</div>
+                            <div style="font-size:10.5px;color:var(--muted);">${t(O)}</div>
                           </div>
                         </div>
                       </td>
@@ -1706,9 +1714,9 @@ import{t as Ee}from"./rolldown-runtime-BQ-_32WO.js";import{$ as t,A as Fe,Dt as 
           </div>
         `}
       </section>
-    `}if(o.settingsSection==="analytics"&&v&&($=Pe()),o.settingsSection==="diagnostics"&&A&&($=Me()),o.settingsSection==="vault"&&z&&($=Ze(),requestAnimationFrame(()=>{be()})),o.settingsSection==="whatsapp"&&d){const l=V(),f=o.data?.company?.customFields?.whatsapp||o.data?.company?.custom_fields?.whatsapp||{};$=`
+    `}if(o.settingsSection==="analytics"&&v&&($=Pe()),o.settingsSection==="diagnostics"&&A&&($=Me()),o.settingsSection==="vault"&&z&&($=Ze(),requestAnimationFrame(()=>{be()})),o.settingsSection==="whatsapp"&&l){const d=V(),f=o.data?.company?.customFields?.whatsapp||o.data?.company?.custom_fields?.whatsapp||{};$=`
       <section class="setting-section">
-        ${l?`
+        ${d?`
           <div class="demo-whatsapp-banner" style="background:rgba(13,98,105,0.08);border:1px solid rgba(13,98,105,0.25);border-radius:10px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;gap:12px;">
             <span style="color:var(--teal);display:flex;align-items:center;">${n("shield",22)}</span>
             <div style="flex:1;">
@@ -1823,13 +1831,13 @@ import{t as Ee}from"./rolldown-runtime-BQ-_32WO.js";import{$ as t,A as Fe,Dt as 
     </div>
     <div class="settings-layout">
       <aside class="settings-nav">
-        ${i.map(([l,f])=>`<button class="${o.settingsSection===l?"active":""}" data-action="settings-section" data-section="${l}">${f}</button>`).join("")}
+        ${i.map(([d,f])=>`<button class="${o.settingsSection===d?"active":""}" data-action="settings-section" data-section="${d}">${f}</button>`).join("")}
       </aside>
       <div class="settings-content">${$}</div>
     </div>
-  `}var Be=[{id:"view_projects",category:"projects",categoryAr:"المشاريع والفرق",categoryEn:"Projects & Teams",nameAr:"عرض المشاريع",nameEn:"View Projects"},{id:"create_projects",category:"projects",categoryAr:"المشاريع والفرق",categoryEn:"Projects & Teams",nameAr:"إنشاء مشاريع جديدة",nameEn:"Create Projects"},{id:"edit_projects",category:"projects",categoryAr:"المشاريع والفرق",categoryEn:"Projects & Teams",nameAr:"تعديل بيانات ومراحل المشاريع",nameEn:"Edit Projects"},{id:"delete_projects",category:"projects",categoryAr:"المشاريع والفرق",categoryEn:"Projects & Teams",nameAr:"حذف المشاريع",nameEn:"Delete Projects"},{id:"manage_project_members",category:"projects",categoryAr:"المشاريع والفرق",categoryEn:"Projects & Teams",nameAr:"إدارة وتعيين أعضاء المشروع",nameEn:"Manage Project Members"},{id:"create_tasks",category:"tasks",categoryAr:"المهام والتنفيذ",categoryEn:"Tasks & Execution",nameAr:"إنشاء المهام والمخرجات",nameEn:"Create Tasks"},{id:"edit_tasks",category:"tasks",categoryAr:"المهام والتنفيذ",categoryEn:"Tasks & Execution",nameAr:"تعديل تفاصيل وحالة المهام",nameEn:"Edit Tasks"},{id:"delete_tasks",category:"tasks",categoryAr:"المهام والتنفيذ",categoryEn:"Tasks & Execution",nameAr:"حذف المهام",nameEn:"Delete Tasks"},{id:"assign_tasks",category:"tasks",categoryAr:"المهام والتنفيذ",categoryEn:"Tasks & Execution",nameAr:"إسناد وتوزيع المهام للمنفذين",nameEn:"Assign Tasks"},{id:"review_tasks",category:"tasks",categoryAr:"المهام والتنفيذ",categoryEn:"Tasks & Execution",nameAr:"مراجعة المخرجات الهندسية",nameEn:"Review Deliverables"},{id:"approve_tasks",category:"tasks",categoryAr:"المهام والتنفيذ",categoryEn:"Tasks & Execution",nameAr:"اعتماد وتوقيع المخرجات الهندسية",nameEn:"Approve Deliverables"},{id:"manage_reminders",category:"tasks",categoryAr:"المهام والتنفيذ",categoryEn:"Tasks & Execution",nameAr:"إدارة التذكيرات والمتابعات",nameEn:"Manage Reminders"},{id:"upload_documents",category:"documents",categoryAr:"المخططات والمكتبة القياسية",categoryEn:"Drawings & Deliverables Library",nameAr:"رفع وإدارة المخططات والمستندات",nameEn:"Upload Documents"},{id:"delete_documents",category:"documents",categoryAr:"المخططات والمكتبة القياسية",categoryEn:"Drawings & Deliverables Library",nameAr:"حذف المخططات والمستندات",nameEn:"Delete Documents"},{id:"manage_templates",category:"documents",categoryAr:"المخططات والمكتبة القياسية",categoryEn:"Drawings & Deliverables Library",nameAr:"إدارة مكتبة القوالب والمخرجات القياسية",nameEn:"Manage Templates Library"},{id:"view_dashboard",category:"reports",categoryAr:"المؤشرات والتقارير",categoryEn:"Analytics & Reports",nameAr:"عرض لوحة التحكم والمؤشرات",nameEn:"View Dashboard"},{id:"view_reports",category:"reports",categoryAr:"المؤشرات والتقارير",categoryEn:"Analytics & Reports",nameAr:"عرض صفحة التقارير والمؤشرات",nameEn:"View Reports"},{id:"export_reports",category:"reports",categoryAr:"المؤشرات والتقارير",categoryEn:"Analytics & Reports",nameAr:"تصدير التقارير (Excel)",nameEn:"Export Reports (Excel)"},{id:"manage_users",category:"admin",categoryAr:"النظام والأمان",categoryEn:"Administration & Governance",nameAr:"إدارة ودعوة وتفعيل حسابات المستخدمين",nameEn:"Manage Users"},{id:"manage_existing_account_permissions",category:"admin",categoryAr:"النظام والأمان",categoryEn:"Administration & Governance",nameAr:"تعديل أدوار وصلاحيات الحسابات الموجودة",nameEn:"Manage Existing Account Permissions"},{id:"view_user_activity",category:"admin",categoryAr:"النظام والأمان",categoryEn:"Administration & Governance",nameAr:"متابعة أوقات دخول ونشاط المستخدمين",nameEn:"View User Logins & Activity Timestamps"},{id:"manage_roles",category:"admin",categoryAr:"النظام والأمان",categoryEn:"Administration & Governance",nameAr:"إنشاء وتعديل الأدوار والصلاحيات",nameEn:"Manage Roles & Permissions"},{id:"manage_settings",category:"admin",categoryAr:"النظام والأمان",categoryEn:"Administration & Governance",nameAr:"إدارة إعدادات النظام والشركة ومساحة العمل",nameEn:"Manage Company & Settings"},{id:"manage_trash",category:"admin",categoryAr:"النظام والأمان",categoryEn:"Administration & Governance",nameAr:"إدارة واستعادة سلة المهملات",nameEn:"Manage Trash"},{id:"view_audit_logs",category:"admin",categoryAr:"النظام والأمان",categoryEn:"Administration & Governance",nameAr:"استعراض سجل الرقابة والعمليات الأمنية",nameEn:"View Audit Logs"}];function ot(a=null){const s=o.data?.permissionsCatalog&&o.data.permissionsCatalog.length>=10?o.data.permissionsCatalog:Be,r=new Map;s.forEach(v=>{const A=v.category||"general",z=e(v.categoryAr||A,v.categoryEn||A);r.has(A)||r.set(A,{name:z,items:[]}),r.get(A).items.push(v)});const d=a?.id==="admin"||a?.permissions&&a.permissions.includes("*"),m=Array.from(r.entries()).map(([v,A])=>{const z=A.items.map(i=>{const x=i.id||i.key,$=e(i.nameAr||i.ar,i.nameEn||i.en||x),D=d||a?.permissions&&(a.permissions.includes(x)||typeof ce<"u"&&ce[x]&&a.permissions.includes(ce[x])),l=d?"disabled":"";return`
-        <label class="permission-option" style="cursor:${d?"default":"pointer"};">
-          <input type="checkbox" name="permissions" value="${t(x)}" ${D?"checked":""} ${l} />
+  `}var Ne=[{id:"view_projects",category:"projects",categoryAr:"المشاريع والفرق",categoryEn:"Projects & Teams",nameAr:"عرض المشاريع",nameEn:"View Projects"},{id:"create_projects",category:"projects",categoryAr:"المشاريع والفرق",categoryEn:"Projects & Teams",nameAr:"إنشاء مشاريع جديدة",nameEn:"Create Projects"},{id:"edit_projects",category:"projects",categoryAr:"المشاريع والفرق",categoryEn:"Projects & Teams",nameAr:"تعديل بيانات ومراحل المشاريع",nameEn:"Edit Projects"},{id:"delete_projects",category:"projects",categoryAr:"المشاريع والفرق",categoryEn:"Projects & Teams",nameAr:"حذف المشاريع",nameEn:"Delete Projects"},{id:"manage_project_members",category:"projects",categoryAr:"المشاريع والفرق",categoryEn:"Projects & Teams",nameAr:"إدارة وتعيين أعضاء المشروع",nameEn:"Manage Project Members"},{id:"create_tasks",category:"tasks",categoryAr:"المهام والتنفيذ",categoryEn:"Tasks & Execution",nameAr:"إنشاء المهام والمخرجات",nameEn:"Create Tasks"},{id:"edit_tasks",category:"tasks",categoryAr:"المهام والتنفيذ",categoryEn:"Tasks & Execution",nameAr:"تعديل تفاصيل وحالة المهام",nameEn:"Edit Tasks"},{id:"delete_tasks",category:"tasks",categoryAr:"المهام والتنفيذ",categoryEn:"Tasks & Execution",nameAr:"حذف المهام",nameEn:"Delete Tasks"},{id:"assign_tasks",category:"tasks",categoryAr:"المهام والتنفيذ",categoryEn:"Tasks & Execution",nameAr:"إسناد وتوزيع المهام للمنفذين",nameEn:"Assign Tasks"},{id:"review_tasks",category:"tasks",categoryAr:"المهام والتنفيذ",categoryEn:"Tasks & Execution",nameAr:"مراجعة المخرجات الهندسية",nameEn:"Review Deliverables"},{id:"approve_tasks",category:"tasks",categoryAr:"المهام والتنفيذ",categoryEn:"Tasks & Execution",nameAr:"اعتماد وتوقيع المخرجات الهندسية",nameEn:"Approve Deliverables"},{id:"manage_reminders",category:"tasks",categoryAr:"المهام والتنفيذ",categoryEn:"Tasks & Execution",nameAr:"إدارة التذكيرات والمتابعات",nameEn:"Manage Reminders"},{id:"upload_documents",category:"documents",categoryAr:"المخططات والمكتبة القياسية",categoryEn:"Drawings & Deliverables Library",nameAr:"رفع وإدارة المخططات والمستندات",nameEn:"Upload Documents"},{id:"delete_documents",category:"documents",categoryAr:"المخططات والمكتبة القياسية",categoryEn:"Drawings & Deliverables Library",nameAr:"حذف المخططات والمستندات",nameEn:"Delete Documents"},{id:"manage_templates",category:"documents",categoryAr:"المخططات والمكتبة القياسية",categoryEn:"Drawings & Deliverables Library",nameAr:"إدارة مكتبة القوالب والمخرجات القياسية",nameEn:"Manage Templates Library"},{id:"view_dashboard",category:"reports",categoryAr:"المؤشرات والتقارير",categoryEn:"Analytics & Reports",nameAr:"عرض لوحة التحكم والمؤشرات",nameEn:"View Dashboard"},{id:"view_reports",category:"reports",categoryAr:"المؤشرات والتقارير",categoryEn:"Analytics & Reports",nameAr:"عرض صفحة التقارير والمؤشرات",nameEn:"View Reports"},{id:"export_reports",category:"reports",categoryAr:"المؤشرات والتقارير",categoryEn:"Analytics & Reports",nameAr:"تصدير التقارير (Excel)",nameEn:"Export Reports (Excel)"},{id:"manage_users",category:"admin",categoryAr:"النظام والأمان",categoryEn:"Administration & Governance",nameAr:"إدارة ودعوة وتفعيل حسابات المستخدمين",nameEn:"Manage Users"},{id:"manage_existing_account_permissions",category:"admin",categoryAr:"النظام والأمان",categoryEn:"Administration & Governance",nameAr:"تعديل أدوار وصلاحيات الحسابات الموجودة",nameEn:"Manage Existing Account Permissions"},{id:"view_user_activity",category:"admin",categoryAr:"النظام والأمان",categoryEn:"Administration & Governance",nameAr:"متابعة أوقات دخول ونشاط المستخدمين",nameEn:"View User Logins & Activity Timestamps"},{id:"manage_roles",category:"admin",categoryAr:"النظام والأمان",categoryEn:"Administration & Governance",nameAr:"إنشاء وتعديل الأدوار والصلاحيات",nameEn:"Manage Roles & Permissions"},{id:"manage_settings",category:"admin",categoryAr:"النظام والأمان",categoryEn:"Administration & Governance",nameAr:"إدارة إعدادات النظام والشركة ومساحة العمل",nameEn:"Manage Company & Settings"},{id:"manage_trash",category:"admin",categoryAr:"النظام والأمان",categoryEn:"Administration & Governance",nameAr:"إدارة واستعادة سلة المهملات",nameEn:"Manage Trash"},{id:"view_audit_logs",category:"admin",categoryAr:"النظام والأمان",categoryEn:"Administration & Governance",nameAr:"استعراض سجل الرقابة والعمليات الأمنية",nameEn:"View Audit Logs"}];function ot(a=null){const s=o.data?.permissionsCatalog&&o.data.permissionsCatalog.length>=10?o.data.permissionsCatalog:Ne,r=new Map;s.forEach(v=>{const A=v.category||"general",z=e(v.categoryAr||A,v.categoryEn||A);r.has(A)||r.set(A,{name:z,items:[]}),r.get(A).items.push(v)});const l=a?.id==="admin"||a?.permissions&&a.permissions.includes("*"),m=Array.from(r.entries()).map(([v,A])=>{const z=A.items.map(i=>{const x=i.id||i.key,$=e(i.nameAr||i.ar,i.nameEn||i.en||x),D=l||a?.permissions&&(a.permissions.includes(x)||typeof ce<"u"&&ce[x]&&a.permissions.includes(ce[x])),d=l?"disabled":"";return`
+        <label class="permission-option" style="cursor:${l?"default":"pointer"};">
+          <input type="checkbox" name="permissions" value="${t(x)}" ${D?"checked":""} ${d} />
           <span style="font-weight:500;">${t($)}</span>
         </label>
       `}).join("");return`
@@ -1842,7 +1850,7 @@ import{t as Ee}from"./rolldown-runtime-BQ-_32WO.js";import{$ as t,A as Fe,Dt as 
           ${z}
         </div>
       </div>
-    `}).join(""),g=d?"":`
+    `}).join(""),g=l?"":`
     <div style="display:flex;justify-content:space-between;align-items:center;margin:15px 0 8px;">
       <p class="field-hint" style="margin:0;font-weight:600;color:var(--ink);">${c("permissions")} <span style="font-weight:normal;color:var(--muted);font-size:11px;">(${s.length} ${e("صلاحية متاحة","available permissions")})</span></p>
       <div style="display:inline-flex;gap:6px;">
@@ -1866,7 +1874,7 @@ import{t as Ee}from"./rolldown-runtime-BQ-_32WO.js";import{$ as t,A as Fe,Dt as 
           <textarea name="descriptionAr" rows="2">${t(a?.descriptionAr||"")}</textarea>
         </div>
       </div>
-      ${d?`
+      ${l?`
         <div class="role-modal-note" style="margin-top:15px;">
           ${e("مدير النظام يملك صلاحيات الإدارة الشاملة [*] الكاملة على كافة جوانب النظام والشركة ولا يمكن تقليصها.","The system administrator always keeps full root privileges [*] across all aspects of the system.")}
         </div>
@@ -1881,4 +1889,4 @@ import{t as Ee}from"./rolldown-runtime-BQ-_32WO.js";import{$ as t,A as Fe,Dt as 
         <button type="submit" class="btn btn-primary">${n("check",14)} ${a?c("save"):c("create")}</button>
       </div>
     </form>
-  `;document.getElementById("modal-root").innerHTML=fe(a?e("تعديل الدور والصلاحيات","Edit role & permissions"):c("addRole"),e("تحديد الصلاحيات الدقيقة لهذا الدور ومجالات الوصول في النظام.","Define granular permissions and workspace access levels for this role."),h,"role","modal-lg");const w=document.getElementById("modal-root");if(w){const v=w.querySelector("#btn-perm-select-all"),A=w.querySelector("#btn-perm-deselect-all");v&&v.addEventListener("click",()=>{w.querySelectorAll('input[name="permissions"]:not(:disabled)').forEach(z=>z.checked=!0)}),A&&A.addEventListener("click",()=>{w.querySelectorAll('input[name="permissions"]:not(:disabled)').forEach(z=>z.checked=!1)})}}function lt(a=null){if(a?.id==="usr_ahmad"&&o.data?.user?.id!=="usr_ahmad")return C(e("لا يمكن تعديل حساب مدير ومطور النظام.","System Developer account is protected."),!0);if(!a&&!_())return C(c("adminOnly"),!0);const s=!_(),r=s?"disabled":"",d=(o.data?.roles||[]).filter(g=>_()||g.id!=="admin"),m=`<form id="user-form" data-user-id="${t(a?.id||"")}" data-permission-only="${s}"><div class="form-grid"><div class="field full"><label>${c("nameAr")}</label><input name="name" value="${t(a?.name||"")}" ${r} required /></div><div class="field"><label>${c("nameEn")}</label><input name="nameEn" value="${t(a?.nameEn||"")}" ${r} /></div><div class="field"><label>${c("jobTitle")}</label><input name="jobTitleAr" value="${t(a?.jobTitleAr||"")}" ${r} /></div><div class="field"><label>${c("email")}</label><input name="email" type="email" value="${t(a?.email||"")}" placeholder="name@darc.com" ${r} /></div><div class="field"><label>${e("رقم الواتساب للتنبيهات","WhatsApp Phone")}</label><input name="phone" type="tel" dir="ltr" value="${t(a?.phone||a?.customFields?.phone||"")}" placeholder="مثال: +966501234567" pattern="^\\+?[0-9]{7,16}$" ${r} /></div><div class="field"><label>${c("role")}</label><select name="roleId">${d.map(g=>`<option value="${t(g.id)}" ${a?.roleId===g.id?"selected":""}>${t(e(g.nameAr,g.nameEn))}</option>`).join("")}</select></div></div><div class="field-hint">${s?e("يمكنك هنا تغيير دور الحساب الموجود فقط. إدارة الاسم والبريد والحذف وإضافة الحسابات محصورة بأحمد مدير النظام.","Here you can change the role of an existing account only. Names, email, deletion, and account creation remain restricted to Ahmed, the system administrator."):e("إذا تركت البريد فارغًا يبقى الحساب مسجلًا داخل الفريق بانتظار دعوة. عند إضافة بريد يمكنك إرسال دعوة من قائمة الحسابات.","If email is left blank, the member remains in the team directory awaiting an invite. Add an email to send an invitation from Accounts.")}</div><div class="modal-actions"><button type="button" class="btn btn-ghost" data-action="close-modal">${c("cancel")}</button><button type="submit" class="btn btn-primary">${n("check",14)} ${a?s?e("حفظ الصلاحية","Save permission"):c("save"):c("create")}</button></div></form>`;document.getElementById("modal-root").innerHTML=fe(a?s?e("تعديل صلاحية الحساب","Change account permission"):e("تعديل حساب العضو","Edit member account"):c("addMember"),e("الصلاحية تحدد ما يستطيع العضو رؤيته وتعديله داخل المشاريع.","The role defines what this member can see and change across projects."),m,"user")}export{lt as a,ut as c,Ke as d,gt as f,pt as g,Ye as h,ot as i,be as l,mt as m,it as n,st as o,vt as p,nt as r,at as s,L as t,Oe as u};
+  `;document.getElementById("modal-root").innerHTML=fe(a?e("تعديل الدور والصلاحيات","Edit role & permissions"):c("addRole"),e("تحديد الصلاحيات الدقيقة لهذا الدور ومجالات الوصول في النظام.","Define granular permissions and workspace access levels for this role."),h,"role","modal-lg");const w=document.getElementById("modal-root");if(w){const v=w.querySelector("#btn-perm-select-all"),A=w.querySelector("#btn-perm-deselect-all");v&&v.addEventListener("click",()=>{w.querySelectorAll('input[name="permissions"]:not(:disabled)').forEach(z=>z.checked=!0)}),A&&A.addEventListener("click",()=>{w.querySelectorAll('input[name="permissions"]:not(:disabled)').forEach(z=>z.checked=!1)})}}function lt(a=null){if(a?.id==="usr_ahmad"&&o.data?.user?.id!=="usr_ahmad")return R(e("لا يمكن تعديل حساب مدير ومطور النظام.","System Developer account is protected."),!0);if(!a&&!_())return R(c("adminOnly"),!0);const s=!_(),r=s?"disabled":"",l=(o.data?.roles||[]).filter(g=>_()||g.id!=="admin"),m=`<form id="user-form" data-user-id="${t(a?.id||"")}" data-permission-only="${s}"><div class="form-grid"><div class="field full"><label>${c("nameAr")}</label><input name="name" value="${t(a?.name||"")}" ${r} required /></div><div class="field"><label>${c("nameEn")}</label><input name="nameEn" value="${t(a?.nameEn||"")}" ${r} /></div><div class="field"><label>${c("jobTitle")}</label><input name="jobTitleAr" value="${t(a?.jobTitleAr||"")}" ${r} /></div><div class="field"><label>${c("email")}</label><input name="email" type="email" value="${t(a?.email||"")}" placeholder="name@darc.com" ${r} /></div><div class="field"><label>${e("رقم الواتساب للتنبيهات","WhatsApp Phone")}</label><input name="phone" type="tel" dir="ltr" value="${t(a?.phone||a?.customFields?.phone||"")}" placeholder="مثال: +966501234567" pattern="^\\+?[0-9]{7,16}$" ${r} /></div><div class="field"><label>${c("role")}</label><select name="roleId">${l.map(g=>`<option value="${t(g.id)}" ${a?.roleId===g.id?"selected":""}>${t(e(g.nameAr,g.nameEn))}</option>`).join("")}</select></div></div><div class="field-hint">${s?e("يمكنك هنا تغيير دور الحساب الموجود فقط. إدارة الاسم والبريد والحذف وإضافة الحسابات محصورة بأحمد مدير النظام.","Here you can change the role of an existing account only. Names, email, deletion, and account creation remain restricted to Ahmed, the system administrator."):e("إذا تركت البريد فارغًا يبقى الحساب مسجلًا داخل الفريق بانتظار دعوة. عند إضافة بريد يمكنك إرسال دعوة من قائمة الحسابات.","If email is left blank, the member remains in the team directory awaiting an invite. Add an email to send an invitation from Accounts.")}</div><div class="modal-actions"><button type="button" class="btn btn-ghost" data-action="close-modal">${c("cancel")}</button><button type="submit" class="btn btn-primary">${n("check",14)} ${a?s?e("حفظ الصلاحية","Save permission"):c("save"):c("create")}</button></div></form>`;document.getElementById("modal-root").innerHTML=fe(a?s?e("تعديل صلاحية الحساب","Change account permission"):e("تعديل حساب العضو","Edit member account"):c("addMember"),e("الصلاحية تحدد ما يستطيع العضو رؤيته وتعديله داخل المشاريع.","The role defines what this member can see and change across projects."),m,"user")}export{lt as a,ut as c,Ke as d,gt as f,pt as g,Ye as h,ot as i,be as l,mt as m,it as n,st as o,vt as p,nt as r,at as s,L as t,Be as u};

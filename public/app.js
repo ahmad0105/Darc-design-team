@@ -3,7 +3,13 @@
 import { state } from './src/core/state.js';
 import { api } from './src/core/api.js';
 
-window.state = state;
+// Protect runtime state from arbitrary external tampering while preserving read compatibility
+Object.defineProperty(window, 'state', {
+  value: state,
+  writable: false,
+  configurable: true,
+  enumerable: false
+});
 
 document.documentElement.dataset.theme = state.theme;
 document.documentElement.lang = state.lang;
@@ -16,38 +22,57 @@ if (state.lang === 'en') {
 
 import * as UI from './src/shared/ui.js';
 import { showToast, closeModal } from './src/shared/ui.js';
-Object.assign(window, UI);
 import * as Navbar from './src/shared/navbar.js';
-Object.assign(window, Navbar);
 import * as Sidebar from './src/shared/sidebar.js';
-Object.assign(window, Sidebar);
 import * as Auth from './src/features/auth/auth.js';
-Object.assign(window, Auth);
 import * as Dashboard from './src/features/dashboard/dashboard.js';
-Object.assign(window, Dashboard);
 import * as Projects from './src/features/projects/projects.js';
-Object.assign(window, Projects);
 import * as Tasks from './src/features/tasks/tasks.js';
 import { drawTimelineArrows } from './src/features/tasks/tasks.js';
-Object.assign(window, Tasks);
 import * as Templates from './src/features/templates/templates.js';
-Object.assign(window, Templates);
 import * as Documents from './src/features/documents/documents.js';
-Object.assign(window, Documents);
 import * as Settings from './src/features/settings/settings.js';
-Object.assign(window, Settings);
 import * as Reports from './src/features/reports/reports.js';
-Object.assign(window, Reports);
 import * as Notifications from './src/features/notifications/notifications.js';
-Object.assign(window, Notifications);
 import * as Router from './src/core/router.js';
-Object.assign(window, Router);
 import * as Events from './src/core/events.js';
 import { handleClick, handleSubmit, handleInput, handleChange, init } from './src/core/events.js';
-Object.assign(window, Events);
 import * as Utils from './src/core/utils.js';
-Object.assign(window, Utils);
 import { setupGlobalShortcuts } from './src/features/dashboard/omnisearch.js';
+
+// Enterprise Modular Registry: cleanly encapsulate all sub-modules
+export const DarcApp = Object.freeze({
+  UI, Navbar, Sidebar, Auth, Dashboard, Projects, Tasks,
+  Templates, Documents, Settings, Reports, Notifications,
+  Router, Events, Utils, state, api
+});
+
+// Non-enumerable, tamper-resistant internal namespace for telemetry & debugging
+Object.defineProperty(window, '__darc', {
+  value: DarcApp,
+  writable: false,
+  configurable: false,
+  enumerable: false
+});
+
+// Dual-layer Bridge: non-enumerable fallback access to prevent legacy DOM breakage
+// while eliminating global enumerable pollution and third-party extension harvesting.
+const _legacyBridge = {
+  ...UI, ...Navbar, ...Sidebar, ...Auth, ...Dashboard, ...Projects, ...Tasks,
+  ...Templates, ...Documents, ...Settings, ...Reports, ...Notifications,
+  ...Router, ...Events, ...Utils
+};
+
+for (const [key, value] of Object.entries(_legacyBridge)) {
+  if (!(key in window)) {
+    Object.defineProperty(window, key, {
+      value,
+      writable: true,
+      configurable: true,
+      enumerable: false
+    });
+  }
+}
 
 import './src/core/dragdrop.js';
 
