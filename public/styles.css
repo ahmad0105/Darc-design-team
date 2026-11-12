@@ -4711,5 +4711,49 @@ html, body {
   }
 }
 
+/* ========================================================
+   DARC Enterprise Vault & Disaster Recovery Responsive Design
+   Karim Al-Hakim Sensory Styling (Desktop, Tablet & Mobile)
+   ======================================================== */
+.settings-vault-wrap {
+  width: 100%;
+  animation: fadeIn 0.25s ease-out;
+}
+
+@media (max-width: 768px) {
+  .vault-hero-card {
+    padding: 1.25rem 1rem !important;
+  }
+  .vault-hero-card > div:first-child {
+    flex-direction: column;
+  }
+  .vault-hero-card > div:first-child > div:last-child {
+    width: 100%;
+  }
+  .vault-hero-card > div:first-child > div:last-child .btn {
+    flex: 1;
+    min-height: 44px;
+    justify-content: center;
+  }
+  .vault-metrics-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.75rem !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .vault-metrics-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .restore-wizard-dialog {
+    padding: 0.5rem 0 !important;
+  }
+  #btn-hold-restore {
+    height: 56px !important;
+    font-size: 0.95rem !important;
+  }
+}
+
+
 
 
