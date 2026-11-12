@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { fetchVaultBackups, triggerDisasterRecovery, triggerDisasterBackup, getVaultWorkflowRuns } from './vault.service.js';
+import { getDB } from '../../core/db.js';
 
 const vaultApp = new Hono();
 
@@ -11,10 +12,15 @@ vaultApp.use('*', async (c, next) => {
   const isAhmad = userId === 'usr_ahmad';
   const isAdmin = roleId === 'admin' || roleId === 'owner' || roleId === 'superadmin' || isAhmad || c.get('isAdmin');
 
+  const traceId = c.req.header('x-darc-trace-id') || `darc_vault_${Date.now()}`;
+  c.set('traceId', traceId);
+  c.header('x-darc-trace-id', traceId);
+
   if (!isDemo && !isAdmin) {
     return c.json({
       error: 'غير مصرح: الوصول لمركز النسخ الاحتياطي والتعافي محصور بمدير النظام فقط',
-      code: 'VAULT_E01_UNAUTHORIZED'
+      code: 'VAULT_E01_UNAUTHORIZED',
+      traceId
     }, 403);
   }
 
@@ -76,21 +82,41 @@ vaultApp.get('/backups', async (c) => {
 // POST /api/vault/backup-now - Trigger instant database backup to Google Drive
 vaultApp.post('/backup-now', async (c) => {
   const isDemo = c.get('isDemo');
+  const userId = c.get('userId') || 'system';
+  const traceId = c.get('traceId');
+
   if (isDemo) {
     return c.json({
       ok: true,
+      traceId,
       message: 'تم إطلاق النسخ الاحتياطي في بيئة العرض (محاكاة)'
     });
   }
 
   try {
     const result = await triggerDisasterBackup(c.env);
-    return c.json(result);
+
+    // Audit Log recording (non-blocking)
+    if (c.env.SUPABASE_URL) {
+      try {
+        const supabase = getDB(c.env);
+        supabase.from('audit_logs').insert([{
+          user_id: userId,
+          action: 'instant_backup_dispatched',
+          entity_type: 'vault',
+          entity_id: 'db_backup',
+          details: { traceId, dispatchedAt: result.dispatchedAt }
+        }]).then(() => {}).catch(() => {});
+      } catch (e) {}
+    }
+
+    return c.json({ ...result, traceId });
   } catch (err) {
     console.error('[Vault Backup Error]:', err);
     return c.json({
       error: err.message || 'فشل في إطلاق مسار النسخ الاحتياطي',
-      code: 'VAULT_E08_BACKUP_DISPATCH_FAILED'
+      code: 'VAULT_E08_BACKUP_DISPATCH_FAILED',
+      traceId
     }, 500);
   }
 });
@@ -98,6 +124,8 @@ vaultApp.post('/backup-now', async (c) => {
 // POST /api/vault/restore - Trigger automated disaster recovery / dry-run
 vaultApp.post('/restore', async (c) => {
   const isDemo = c.get('isDemo');
+  const userId = c.get('userId') || 'system';
+  const traceId = c.get('traceId');
   const body = await c.req.json().catch(() => ({}));
   const { backupFilename, dryRun, confirmationPhrase } = body;
 
@@ -106,6 +134,7 @@ vaultApp.post('/restore', async (c) => {
       ok: true,
       dryRun: Boolean(dryRun),
       backupFilename: backupFilename || 'latest',
+      traceId,
       message: 'تمت المحاكاة التجريبية بنجاح في جلسة العرض (Demo)'
     });
   }
@@ -113,7 +142,8 @@ vaultApp.post('/restore', async (c) => {
   if (!dryRun && confirmationPhrase !== 'RESTORE_PRODUCTION_DATABASE') {
     return c.json({
       error: 'عبارة التأكيد غير صحيحة. لحماية النظام، يجب كتابة: RESTORE_PRODUCTION_DATABASE',
-      code: 'VAULT_E02_CONFIRMATION_INVALID'
+      code: 'VAULT_E02_CONFIRMATION_INVALID',
+      traceId
     }, 400);
   }
 
@@ -123,12 +153,28 @@ vaultApp.post('/restore', async (c) => {
       dryRun: Boolean(dryRun),
       confirmationPhrase
     });
-    return c.json(result);
+
+    // Audit Log recording (non-blocking)
+    if (c.env.SUPABASE_URL) {
+      try {
+        const supabase = getDB(c.env);
+        supabase.from('audit_logs').insert([{
+          user_id: userId,
+          action: dryRun ? 'disaster_recovery_rehearsal' : 'disaster_recovery_live',
+          entity_type: 'vault',
+          entity_id: backupFilename || 'latest',
+          details: { traceId, backupFilename, dryRun: Boolean(dryRun), dispatchedAt: result.dispatchedAt }
+        }]).then(() => {}).catch(() => {});
+      } catch (e) {}
+    }
+
+    return c.json({ ...result, traceId });
   } catch (err) {
     console.error('[Vault Restore Error]:', err);
     return c.json({
       error: err.message || 'فشل في إطلاق مسار التعافي من الكوارث',
-      code: 'VAULT_E07_RESTORE_FAILED'
+      code: 'VAULT_E07_RESTORE_FAILED',
+      traceId
     }, 500);
   }
 });

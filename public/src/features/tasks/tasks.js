@@ -323,11 +323,24 @@ export function renderBoard(tasks, sortMode = getSavedTaskSort()) {
  */
 export function verifyBoardSymmetry() {
   if (typeof document === 'undefined') return;
-  if (typeof window !== 'undefined' && window.innerWidth <= 880) return;
   const board = document.querySelector('.board, .tasks-board');
   if (!board) return;
   const columns = Array.from(board.querySelectorAll('.board-column'));
   if (columns.length < 2) return;
+
+  if (typeof window !== 'undefined' && window.innerWidth <= 880) {
+    // Clean up desktop inline overrides so CSS mobile carousel rules take over cleanly
+    board.style.display = '';
+    board.style.gridTemplateColumns = '';
+    board.style.gridAutoColumns = '';
+    columns.forEach(col => {
+      col.style.width = '';
+      col.style.minWidth = '';
+      col.style.maxWidth = '';
+      col.style.flex = '';
+    });
+    return;
+  }
 
   const widths = columns.map(c => Math.round(c.getBoundingClientRect().width * 10) / 10);
   const minW = Math.min(...widths);
@@ -344,6 +357,18 @@ export function verifyBoardSymmetry() {
       col.style.flex = '1 1 0px';
     });
   }
+}
+
+// Dynamic window resize binding: seamlessly adapts board between desktop grid and mobile carousel
+if (typeof window !== 'undefined' && !window._boardResizeBound) {
+  window._boardResizeBound = true;
+  let _boardResizeRaf = null;
+  window.addEventListener('resize', () => {
+    if (_boardResizeRaf) cancelAnimationFrame(_boardResizeRaf);
+    _boardResizeRaf = requestAnimationFrame(() => {
+      verifyBoardSymmetry();
+    });
+  }, { passive: true });
 }
 
 if (typeof window !== 'undefined') {
@@ -435,68 +460,187 @@ export function renderTimeline(tasks) {
   let minTime = Math.min(...scheduledTasks.map(t => new Date(t.startDate).getTime()));
   let maxTime = Math.max(...scheduledTasks.map(t => new Date(t.dueDate).getTime()));
 
-  // Add 3 days padding on each side
-  const padding = 3 * 86400000;
-  minTime -= padding;
-  maxTime += padding;
-
-  const totalDays = Math.max(7, Math.ceil((maxTime - minTime) / 86400000));
+  const totalRawDays = Math.max(7, Math.ceil((maxTime - minTime) / 86400000));
+  const scale = state.timelineScale || (totalRawDays > 45 ? 'month' : (totalRawDays > 14 ? 'week' : 'day'));
 
   let headerHtml = '';
-  for (let i = 0; i < totalDays; i++) {
-    const d = new Date(minTime + i * 86400000);
-    const isWeekend = d.getDay() === 5 || d.getDay() === 6; // Friday/Saturday in Arab world
+  let gridColumnsCss = '';
+  let minGridWidth = 600;
+  let getTaskStartCol = (startDate) => 1;
+  let getTaskDurationCols = (startDate, dueDate) => 1;
+
+  if (scale === 'month') {
+    // Month-level Granularity: Groups timeline into calendar months
+    const startD = new Date(minTime);
+    startD.setDate(1);
+    const endD = new Date(maxTime);
+    endD.setMonth(endD.getMonth() + 1);
+    endD.setDate(0);
+
+    const months = [];
+    const cur = new Date(startD);
+    while (cur <= endD) {
+      months.push(new Date(cur));
+      cur.setMonth(cur.getMonth() + 1);
+    }
+    const totalMonths = Math.max(1, months.length);
+    gridColumnsCss = `repeat(${totalMonths}, minmax(90px, 1fr))`;
+    minGridWidth = totalMonths * 90;
+
     const calSystem = getActiveCalendarSystem();
-    const monthLocale = calSystem === 'hijri'
-      ? (state.lang === 'ar' ? 'ar-SA-u-ca-islamic-umalqura' : 'en-u-ca-islamic-umalqura')
-      : (state.lang === 'ar' ? 'ar-u-ca-gregory' : 'en-GB-u-ca-gregory');
-    const monthShort = new Intl.DateTimeFormat(monthLocale, { month: 'short' }).format(d);
-    headerHtml += `<div style="padding:10px 5px;text-align:center;font-size:10px;color:var(--ink-soft);border-right:1px solid var(--line);background:${isWeekend ? 'var(--surface-soft)' : 'transparent'};border-bottom:1px solid var(--line)">${d.getDate()}<br>${monthShort}</div>`;
+    headerHtml = months.map(m => {
+      const monthLocale = calSystem === 'hijri'
+        ? (state.lang === 'ar' ? 'ar-SA-u-ca-islamic-umalqura' : 'en-u-ca-islamic-umalqura')
+        : (state.lang === 'ar' ? 'ar-u-ca-gregory' : 'en-GB-u-ca-gregory');
+      const label = new Intl.DateTimeFormat(monthLocale, { month: 'short', year: 'numeric' }).format(m);
+      return `<div style="padding:10px 6px;text-align:center;font-size:11px;font-weight:700;color:var(--ink-soft);border-right:1px solid var(--line);border-bottom:1px solid var(--line);background:var(--surface-soft);">${esc(label)}</div>`;
+    }).join('');
+
+    getTaskStartCol = (startDate) => {
+      const d = new Date(startDate);
+      const mDiff = (d.getFullYear() - startD.getFullYear()) * 12 + (d.getMonth() - startD.getMonth());
+      return Math.max(1, mDiff + 1);
+    };
+    getTaskDurationCols = (startDate, dueDate) => {
+      const d1 = new Date(startDate);
+      const d2 = new Date(dueDate);
+      const mDiff = (d2.getFullYear() - d1.getFullYear()) * 12 + (d2.getMonth() - d1.getMonth());
+      return Math.max(1, mDiff + 1);
+    };
+  } else if (scale === 'week') {
+    // Week-level Granularity
+    const padding = 7 * 86400000;
+    minTime -= padding;
+    maxTime += padding;
+    const totalWeeks = Math.max(4, Math.ceil((maxTime - minTime) / (7 * 86400000)));
+    gridColumnsCss = `repeat(${totalWeeks}, minmax(65px, 1fr))`;
+    minGridWidth = totalWeeks * 65;
+
+    for (let i = 0; i < totalWeeks; i++) {
+      const d = new Date(minTime + i * 7 * 86400000);
+      const monthShort = new Intl.DateTimeFormat(state.lang === 'ar' ? 'ar-SA' : 'en-GB', { month: 'short', day: 'numeric' }).format(d);
+      headerHtml += `<div style="padding:10px 4px;text-align:center;font-size:10px;font-weight:600;color:var(--ink-soft);border-right:1px solid var(--line);border-bottom:1px solid var(--line);">${choose('أسبوع', 'W')} ${i + 1}<br><span style="font-size:9px;color:var(--muted);">${monthShort}</span></div>`;
+    }
+
+    getTaskStartCol = (startDate) => Math.max(1, Math.floor((new Date(startDate).getTime() - minTime) / (7 * 86400000)) + 1);
+    getTaskDurationCols = (startDate, dueDate) => Math.max(1, Math.ceil((new Date(dueDate).getTime() - new Date(startDate).getTime()) / (7 * 86400000)) + 1);
+  } else {
+    // Day-level Granularity
+    const padding = 3 * 86400000;
+    minTime -= padding;
+    maxTime += padding;
+    const totalDays = Math.max(7, Math.ceil((maxTime - minTime) / 86400000));
+    gridColumnsCss = `repeat(${totalDays}, minmax(40px, 1fr))`;
+    minGridWidth = totalDays * 40;
+
+    for (let i = 0; i < totalDays; i++) {
+      const d = new Date(minTime + i * 86400000);
+      const isWeekend = d.getDay() === 5 || d.getDay() === 6;
+      const calSystem = getActiveCalendarSystem();
+      const monthLocale = calSystem === 'hijri'
+        ? (state.lang === 'ar' ? 'ar-SA-u-ca-islamic-umalqura' : 'en-u-ca-islamic-umalqura')
+        : (state.lang === 'ar' ? 'ar-u-ca-gregory' : 'en-GB-u-ca-gregory');
+      const monthShort = new Intl.DateTimeFormat(monthLocale, { month: 'short' }).format(d);
+      headerHtml += `<div style="padding:10px 5px;text-align:center;font-size:10px;color:var(--ink-soft);border-right:1px solid var(--line);background:${isWeekend ? 'var(--surface-soft)' : 'transparent'};border-bottom:1px solid var(--line)">${d.getDate()}<br>${monthShort}</div>`;
+    }
+
+    getTaskStartCol = (startDate) => Math.max(1, Math.floor((new Date(startDate).getTime() - minTime) / 86400000) + 1);
+    getTaskDurationCols = (startDate, dueDate) => Math.max(1, Math.ceil((new Date(dueDate).getTime() - new Date(startDate).getTime()) / 86400000) + 1);
   }
 
-  const rowsHtml = scheduledTasks.map((task, index) => {
-    const startDay = Math.floor((new Date(task.startDate).getTime() - minTime) / 86400000) + 1;
-    const duration = Math.max(1, Math.ceil((new Date(task.dueDate).getTime() - new Date(task.startDate).getTime()) / 86400000) + 1);
-    const endDay = startDay + duration;
+  // Sticky Left Tree Task Hierarchy Items (Asana & Monday.com standard)
+  const leftItemsHtml = scheduledTasks.map((task, index) => {
+    const style = getTaskStatusStyle(task);
+    return `
+      <div class="timeline-task-cell" data-action="open-task" data-task-id="${task.id}" style="height:48px;padding:6px 12px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px;cursor:pointer;background:var(--surface);" title="${esc(choose(task.titleAr, task.titleEn))}">
+        <span style="width:8px;height:8px;border-radius:50%;background:${style.color};flex-shrink:0;"></span>
+        <div style="min-width:0;flex:1;display:flex;flex-direction:column;gap:1px;">
+          <div style="display:flex;align-items:center;gap:4px;">
+            <span style="font-size:10px;font-weight:700;color:var(--ink-soft);">${esc(task.templateId ? task.templateId.replace('tpl-', '#') : '#')}</span>
+            <span style="font-size:11px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink);">${esc(choose(task.titleAr, task.titleEn))}</span>
+          </div>
+          <span style="font-size:9px;color:var(--muted);">${style.label}</span>
+        </div>
+      </div>
+    `;
+  }).join('');
 
-    // Status colors synchronized with Calendar view
+  // Timeline Gantt Bars
+  const rowsHtml = scheduledTasks.map((task, index) => {
+    const startCol = getTaskStartCol(task.startDate);
+    const duration = getTaskDurationCols(task.startDate, task.dueDate);
+    const endCol = startCol + duration;
     const style = getTaskStatusStyle(task);
 
     return `<div style="display:contents" class="timeline-row" data-task-id="${task.id}" data-row="${index}">
-      <div style="grid-column: 1 / -1; border-bottom: 1px solid var(--line); pointer-events:none;"></div>
-      <div class="timeline-bar" data-action="open-task" data-task-id="${task.id}" style="grid-column: ${startDay} / ${endDay}; margin: 8px 4px; background: ${style.color}; border: 1px solid ${style.borderColor}; border-radius: 6px; padding: 6px 10px; color: #fff; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.12); position:relative; z-index: 2; transition: transform 0.2s, opacity 0.2s" title="${esc(choose(task.titleAr, task.titleEn))} — ${style.label}">
-        <span style="font-weight:600;opacity:0.9">${esc(task.templateId ? task.templateId.replace('tpl-', '#') : '#')}</span> ${esc(choose(task.titleAr, task.titleEn))}
-        ${task.dependencies && task.dependencies.length ? `<span style="float:${state.lang === 'ar' ? 'left' : 'right'};opacity:0.8">${icon('link', 10)}</span>` : ''}
+      <div style="grid-column: 1 / -1; height:48px; border-bottom: 1px solid var(--line); pointer-events:none;"></div>
+      <div class="timeline-bar" data-action="open-task" data-task-id="${task.id}" style="grid-column: ${startCol} / ${endCol}; margin: 8px 4px; height:32px; display:flex; align-items:center; background: ${style.color}; border: 1px solid ${style.borderColor}; border-radius: 6px; padding: 4px 10px; color: #fff; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.12); position:relative; z-index: 2; transition: transform 0.2s, opacity 0.2s" title="${esc(choose(task.titleAr, task.titleEn))} — ${style.label}">
+        <span style="font-weight:700;opacity:0.95;margin-inline-end:4px;">${esc(task.templateId ? task.templateId.replace('tpl-', '#') : '#')}</span> ${esc(choose(task.titleAr, task.titleEn))}
+        ${task.dependencies && task.dependencies.length ? `<span style="margin-inline-start:auto;opacity:0.85">${icon('link', 10)}</span>` : ''}
       </div>
     </div>`;
   }).join('');
 
-  return `<div class="timeline-container" style="overflow-x:auto; background:var(--surface); border-radius:12px; border:1px solid var(--line);">
-    <div style="display:grid; grid-template-columns: repeat(${totalDays}, minmax(40px, 1fr)); min-width: ${totalDays * 40}px; position: relative;">
-      ${headerHtml}
-      ${rowsHtml}
-      <svg class="timeline-svg" style="position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:1"></svg>
+  return `
+    <div class="timeline-split-wrapper" style="display:flex;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--surface);">
+      <!-- Left Sticky Task Hierarchy Column -->
+      <div class="timeline-left-column" style="width:230px;min-width:180px;flex-shrink:0;border-inline-end:1px solid var(--line);background:var(--surface);z-index:5;">
+        <div style="height:41px;padding:10px 12px;font-size:11px;font-weight:700;color:var(--ink-soft);background:var(--surface-soft);border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;">
+          <span>${choose('المهام والجدول', 'Tasks & Timeline')}</span>
+          <span class="badge badge-sm" style="font-size:10px;">${scheduledTasks.length}</span>
+        </div>
+        <div style="overflow-y:hidden;">
+          ${leftItemsHtml}
+        </div>
+      </div>
+
+      <!-- Right Scrollable Gantt Flow -->
+      <div class="timeline-container" style="flex:1;min-width:0;overflow-x:auto;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y;position:relative;">
+        <div style="display:grid; grid-template-columns: ${gridColumnsCss}; min-width: ${minGridWidth}px; position: relative;">
+          ${headerHtml}
+          ${rowsHtml}
+          <svg class="timeline-svg" style="position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:1"></svg>
+        </div>
+      </div>
     </div>
-  </div>`;
+  `;
 }
 
 export function renderTimelinePanel(tasks, project) {
   const currentMode = state.timelineView || 'gantt';
+  const currentScale = state.timelineScale || 'month';
 
   return `
     <div class="panel">
       <div class="panel-head" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
         <div>
           <h2 class="panel-title">${choose('المخطط الزمني والتقويم', 'Timeline & Calendar')}</h2>
-          <p class="panel-subtitle">${choose('متابعة تسلسل المهام ومواعيد التسليم بالصيغة الأنسب لك.', 'Track task flow and milestone deadlines in your preferred format.')}</p>
+          <p class="panel-subtitle">${choose('متابعة تسلسل المهام ومواعيد التسليم وفق المعايير المعمارية العالمية.', 'Track task flow and milestone deadlines using global engineering standards.')}</p>
         </div>
-        <div class="segmented-control" style="display:inline-flex;background:var(--surface-soft);border:1px solid var(--line);border-radius:8px;padding:3px;gap:3px;">
-          <button class="btn btn-sm ${currentMode === 'gantt' ? 'btn-primary' : 'btn-ghost'}" data-action="toggle-timeline-view" data-view-mode="gantt" style="font-size:11px;padding:4px 10px;">
-            ${icon('clock', 12)} ${choose('مخطط جانت', 'Gantt Chart')}
-          </button>
-          <button class="btn btn-sm ${currentMode === 'calendar' ? 'btn-primary' : 'btn-ghost'}" data-action="toggle-timeline-view" data-view-mode="calendar" style="font-size:11px;padding:4px 10px;">
-            ${icon('calendar', 12)} ${choose('عرض التقويم', 'Calendar View')}
-          </button>
+        
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          ${currentMode === 'gantt' ? `
+            <div class="segmented-control" style="display:inline-flex;background:var(--surface-soft);border:1px solid var(--line);border-radius:8px;padding:2px;gap:2px;">
+              <button class="btn btn-xs ${currentScale === 'day' ? 'btn-primary' : 'btn-ghost'}" data-action="toggle-timeline-scale" data-scale="day" style="font-size:10px;padding:3px 8px;">
+                ${choose('يومي', 'Day')}
+              </button>
+              <button class="btn btn-xs ${currentScale === 'week' ? 'btn-primary' : 'btn-ghost'}" data-action="toggle-timeline-scale" data-scale="week" style="font-size:10px;padding:3px 8px;">
+                ${choose('أسبوعي', 'Week')}
+              </button>
+              <button class="btn btn-xs ${currentScale === 'month' ? 'btn-primary' : 'btn-ghost'}" data-action="toggle-timeline-scale" data-scale="month" style="font-size:10px;padding:3px 8px;">
+                ${choose('شهري', 'Month')}
+              </button>
+            </div>
+          ` : ''}
+
+          <div class="segmented-control" style="display:inline-flex;background:var(--surface-soft);border:1px solid var(--line);border-radius:8px;padding:3px;gap:3px;">
+            <button class="btn btn-sm ${currentMode === 'gantt' ? 'btn-primary' : 'btn-ghost'}" data-action="toggle-timeline-view" data-view-mode="gantt" style="font-size:11px;padding:4px 10px;">
+              ${icon('clock', 12)} ${choose('مخطط جانت', 'Gantt Chart')}
+            </button>
+            <button class="btn btn-sm ${currentMode === 'calendar' ? 'btn-primary' : 'btn-ghost'}" data-action="toggle-timeline-view" data-view-mode="calendar" style="font-size:11px;padding:4px 10px;">
+              ${icon('calendar', 12)} ${choose('عرض التقويم', 'Calendar View')}
+            </button>
+          </div>
         </div>
       </div>
       

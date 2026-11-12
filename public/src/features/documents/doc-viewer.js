@@ -425,6 +425,83 @@ function ensureDocViewerStyles() {
 }
 
 /**
+ * Lightweight, non-blocking ASCII DXF parser for AutoCAD blueprints
+ */
+export function parseDxfAscii(text) {
+  if (!text || typeof text !== 'string') return null;
+  const lines = text.split(/\r?\n/);
+  if (lines.length < 4) return null;
+
+  const entities = [];
+  const layers = new Set();
+  let inEntities = false;
+  let currentEntity = null;
+
+  for (let i = 0; i < lines.length - 1; i += 2) {
+    const rawCode = lines[i].trim();
+    const rawVal = lines[i + 1]?.trim() || '';
+    const c = parseInt(rawCode, 10);
+    if (isNaN(c)) continue;
+
+    if (c === 0) {
+      if (rawVal === 'SECTION') {
+        // Section start
+      } else if (rawVal === 'ENDSEC') {
+        if (inEntities && currentEntity) entities.push(currentEntity);
+        currentEntity = null;
+        inEntities = false;
+      } else if (rawVal === 'EOF') {
+        break;
+      } else if (inEntities) {
+        if (currentEntity) entities.push(currentEntity);
+        currentEntity = { type: rawVal, layer: '0' };
+      }
+    } else if (c === 2 && rawVal === 'ENTITIES') {
+      inEntities = true;
+    } else if (inEntities && currentEntity) {
+      if (c === 8) {
+        currentEntity.layer = rawVal;
+        layers.add(rawVal);
+      } else if (c === 10) currentEntity.x1 = parseFloat(rawVal);
+      else if (c === 20) currentEntity.y1 = parseFloat(rawVal);
+      else if (c === 11) currentEntity.x2 = parseFloat(rawVal);
+      else if (c === 21) currentEntity.y2 = parseFloat(rawVal);
+      else if (c === 40) currentEntity.radius = parseFloat(rawVal);
+      else if (c === 50) currentEntity.startAngle = parseFloat(rawVal);
+      else if (c === 51) currentEntity.endAngle = parseFloat(rawVal);
+      else if (c === 62) currentEntity.colorIndex = parseInt(rawVal, 10);
+      else if (c === 1) currentEntity.text = rawVal;
+    }
+  }
+  if (inEntities && currentEntity) entities.push(currentEntity);
+  return { entities, layers: Array.from(layers) };
+}
+
+export function computeDxfBounds(entities) {
+  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+  for (const e of entities) {
+    if (!isNaN(e.x1)) {
+      minX = Math.min(minX, e.x1);
+      maxX = Math.max(maxX, e.x1);
+    }
+    if (!isNaN(e.y1)) {
+      minY = Math.min(minY, e.y1);
+      maxY = Math.max(maxY, e.y1);
+    }
+    if (!isNaN(e.x2)) {
+      minX = Math.min(minX, e.x2);
+      maxX = Math.max(maxX, e.x2);
+    }
+    if (!isNaN(e.y2)) {
+      minY = Math.min(minY, e.y2);
+      maxY = Math.max(maxY, e.y2);
+    }
+  }
+  if (!isFinite(minX)) return { minX: -20, maxX: 20, minY: -15, maxY: 15, width: 40, height: 30 };
+  return { minX, maxX, minY, maxY, width: Math.max(1, maxX - minX), height: Math.max(1, maxY - minY) };
+}
+
+/**
  * World-Class Universal Document Preview Modal
  * Delivers zero-latency, cross-device native interactive viewers for all critical formats:
  * - PDF Blueprints (Architectural & Engineering drawings)
@@ -952,6 +1029,33 @@ export async function openDocumentPreviewModal(docId) {
   // 4. RENDER AUTOCAD DWG / DXF & 3D BIM VECTOR BLUEPRINTS
   // ═════════════════════════════════════════════════════════════════════════════
   if (isCad || isBim) {
+    let parsedDxf = null;
+    const assetUrl = getRealAssetUrl(doc);
+
+    const layerColors = {
+      'WALLS': '#4ade80',
+      'COLUMNS': '#f87171',
+      'AXES': '#38bdf8',
+      'DIMS': '#f472b6',
+      'DOORS': '#facc15',
+      'WINDOWS': '#60a5fa'
+    };
+
+    const defaultLayersHtml = `
+      <label style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;color:#38bdf8;">
+        <input type="checkbox" id="layer-axes" checked style="cursor:pointer;" /> ${choose('المحاور (Axes)', 'Axes')}
+      </label>
+      <label style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;color:#4ade80;">
+        <input type="checkbox" id="layer-columns" checked style="cursor:pointer;" /> ${choose('الأعمدة (Columns)', 'Columns')}
+      </label>
+      <label style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;color:#facc15;">
+        <input type="checkbox" id="layer-walls" checked style="cursor:pointer;" /> ${choose('الجدران والكمرات (Walls)', 'Walls')}
+      </label>
+      <label style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;color:#f472b6;">
+        <input type="checkbox" id="layer-dims" checked style="cursor:pointer;" /> ${choose('الأبعاد (Dimensions)', 'Dimensions')}
+      </label>
+    `;
+
     viewport.innerHTML = `
       <div style="width:100%;height:100%;position:relative;display:flex;flex-direction:column;background:#0c1015;user-select:none;">
         <!-- CAD Inspection Top Bar -->
@@ -975,20 +1079,9 @@ export async function openDocumentPreviewModal(docId) {
         </div>
 
         <!-- Layer Toggles Bar -->
-        <div style="padding:6px 16px;background:rgba(12,16,21,0.9);border-bottom:1px solid #1e293b;display:flex;align-items:center;gap:12px;font-size:11px;color:#94a3b8;overflow-x:auto;" class="touch-scroll">
+        <div class="cad-layer-bar touch-scroll" style="padding:6px 16px;background:rgba(12,16,21,0.9);border-bottom:1px solid #1e293b;display:flex;align-items:center;gap:12px;font-size:11px;color:#94a3b8;overflow-x:auto;">
           <span style="font-weight:700;color:#cbd5e1;">${choose('الطبقات:', 'Layers:')}</span>
-          <label style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;color:#38bdf8;">
-            <input type="checkbox" id="layer-axes" checked style="cursor:pointer;" /> ${choose('المحاور (Axes)', 'Axes')}
-          </label>
-          <label style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;color:#4ade80;">
-            <input type="checkbox" id="layer-columns" checked style="cursor:pointer;" /> ${choose('الأعمدة (Columns)', 'Columns')}
-          </label>
-          <label style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;color:#facc15;">
-            <input type="checkbox" id="layer-walls" checked style="cursor:pointer;" /> ${choose('الجدران والكمرات (Walls)', 'Walls')}
-          </label>
-          <label style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;color:#f472b6;">
-            <input type="checkbox" id="layer-dims" checked style="cursor:pointer;" /> ${choose('الأبعاد (Dimensions)', 'Dimensions')}
-          </label>
+          ${defaultLayersHtml}
         </div>
 
         <!-- Interactive 2D Vector CAD Canvas -->
@@ -1015,6 +1108,35 @@ export async function openDocumentPreviewModal(docId) {
       const layerCols = document.getElementById('layer-columns');
       const layerWalls = document.getElementById('layer-walls');
       const layerDims = document.getElementById('layer-dims');
+
+      // Async Vector DXF Fetch & Parse Pipeline
+      if (assetUrl && typeof window !== 'undefined' && window.fetch) {
+        fetch(assetUrl)
+          .then(r => r.ok ? r.text() : '')
+          .then(textRes => {
+            if (textRes && (textRes.includes('SECTION') || textRes.includes('ENTITIES'))) {
+              const parsed = parseDxfAscii(textRes);
+              if (parsed && parsed.layers && parsed.layers.length > 0) {
+                parsedDxf = parsed;
+                const toggleBar = viewport.querySelector('.cad-layer-bar');
+                if (toggleBar) {
+                  toggleBar.innerHTML = `<span style="font-weight:700;color:#cbd5e1;">${choose('الطبقات:', 'Layers:')}</span>` +
+                    parsed.layers.map((layer, idx) => {
+                      const color = layerColors[layer.toUpperCase()] || `hsl(${(idx * 75) % 360}, 85%, 65%)`;
+                      return `
+                        <label style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;color:${color};font-weight:700;">
+                          <input type="checkbox" class="cad-layer-chk" data-cad-layer="${esc(layer)}" checked style="cursor:pointer;" /> ${esc(layer)}
+                        </label>
+                      `;
+                    }).join('');
+                  toggleBar.querySelectorAll('.cad-layer-chk').forEach(chk => chk.addEventListener('change', drawCad));
+                }
+                drawCad();
+              }
+            }
+          })
+          .catch(() => {});
+      }
 
       function resizeCanvas() {
         const dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -1072,7 +1194,41 @@ export async function openDocumentPreviewModal(docId) {
           ctx.stroke();
         }
 
-        // Structural Elements Data
+        // If Real Parsed DXF Entities exist: Render Real Geometry!
+        if (parsedDxf && parsedDxf.entities && parsedDxf.entities.length > 0) {
+          const activeLayers = new Set();
+          viewport.querySelectorAll('.cad-layer-chk:checked').forEach(cb => activeLayers.add(cb.dataset.cadLayer));
+
+          parsedDxf.entities.forEach(e => {
+            if (!activeLayers.has(e.layer)) return;
+            const color = layerColors[e.layer.toUpperCase()] || '#38bdf8';
+            if (e.type === 'LINE') {
+              ctx.beginPath();
+              ctx.moveTo(e.x1 * 20, -e.y1 * 20);
+              ctx.lineTo(e.x2 * 20, -e.y2 * 20);
+              ctx.strokeStyle = color;
+              ctx.lineWidth = Math.max(1, 2.5 / cadScale);
+              ctx.stroke();
+            } else if (e.type === 'POINT') {
+              ctx.fillStyle = color;
+              ctx.strokeStyle = '#ffffff';
+              ctx.lineWidth = 1 / cadScale;
+              const ptSize = Math.max(6, 12 / cadScale);
+              ctx.fillRect(e.x1 * 20 - ptSize/2, -e.y1 * 20 - ptSize/2, ptSize, ptSize);
+              ctx.strokeRect(e.x1 * 20 - ptSize/2, -e.y1 * 20 - ptSize/2, ptSize, ptSize);
+            } else if (e.type === 'CIRCLE') {
+              ctx.beginPath();
+              ctx.arc(e.x1 * 20, -e.y1 * 20, (e.radius || 1) * 20, 0, Math.PI * 2);
+              ctx.strokeStyle = color;
+              ctx.lineWidth = Math.max(1, 2 / cadScale);
+              ctx.stroke();
+            }
+          });
+          ctx.restore();
+          return;
+        }
+
+        // Fallback: Structural Elements Procedural Data
         const axesX = [
           { label: '1', x: -240 },
           { label: '2', x: -120 },
@@ -1209,7 +1365,7 @@ export async function openDocumentPreviewModal(docId) {
       setTimeout(resizeCanvas, 50);
 
       // Layer change redraw
-      [layerAxes, layerCols, layerWalls, layerDims].forEach(chk => {
+      viewport.querySelectorAll('.cad-layer-chk, #layer-axes, #layer-columns, #layer-walls, #layer-dims').forEach(chk => {
         chk?.addEventListener('change', drawCad);
       });
 

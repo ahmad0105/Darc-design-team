@@ -10,7 +10,9 @@ import {
   getDocumentShareableLink, 
   getRealAssetUrl, 
   GDRIVE_ROOT_FOLDER_ID, 
-  GDRIVE_ROOT_FOLDER_URL 
+  GDRIVE_ROOT_FOLDER_URL,
+  parseDxfAscii,
+  computeDxfBounds
 } from '../public/src/features/documents/doc-viewer.js';
 
 console.log('--- Running Universal Document Viewer & Multi-Format Cross-Platform Test Suite ---');
@@ -134,7 +136,21 @@ async function runTests() {
   }
   console.log('✓ Test 6: Engineering discipline taxonomy (Architectural, Structural, MEP, BOQ, Contracts) verified (10/10)');
 
-  console.log('--- All Universal Document Viewer & Responsive Cross-Platform Tests Passed (29/29) ---');
+  // 7. Test Real Architectural Vector DXF Parser & Bounds Computation
+  const sampleDxfText = `0\nSECTION\n2\nENTITIES\n0\nLINE\n8\nWALLS\n10\n0.0\n20\n0.0\n11\n30.0\n21\n0.0\n0\nPOINT\n8\nCOLUMNS\n10\n15.0\n20\n10.0\n0\nENDSEC\n0\nEOF`;
+  const parsedDxf = parseDxfAscii(sampleDxfText);
+  assert.ok(parsedDxf, 'DXF parser must return parsed result');
+  assert.strictEqual(parsedDxf.entities.length, 2, 'Should parse 2 entities');
+  assert.deepStrictEqual(parsedDxf.layers, ['WALLS', 'COLUMNS'], 'Should extract WALLS and COLUMNS layers');
+  
+  const bounds = computeDxfBounds(parsedDxf.entities);
+  assert.strictEqual(bounds.minX, 0);
+  assert.strictEqual(bounds.maxX, 30);
+  assert.strictEqual(bounds.minY, 0);
+  assert.strictEqual(bounds.maxY, 10);
+  console.log('✓ Test 7: Real Vector DXF Parser & Bounds Computation verified (1/1)');
+
+  console.log('--- All Universal Document Viewer & Responsive Cross-Platform Tests Passed (30/30) ---');
 }
 
 runTests().catch(err => {

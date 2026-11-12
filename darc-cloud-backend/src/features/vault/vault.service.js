@@ -4,6 +4,8 @@
  * Integrates directly with Google Drive API v3 and GitHub Actions API.
  */
 
+import crypto from 'node:crypto';
+
 let _backupsCache = null;
 let _backupsCacheTime = 0;
 const CACHE_TTL_MS = 180000; // 3 minutes
@@ -15,35 +17,91 @@ function formatBytes(bytes) {
   return (b / 1024).toFixed(2) + ' KB';
 }
 
+// Service Account JWT Generator (Fallback when OAuth token expires or is unavailable)
+async function getGoogleAccessTokenViaServiceAccount(clientEmail, privateKeyRaw) {
+  if (!clientEmail || !privateKeyRaw) return null;
+  try {
+    const privateKey = privateKeyRaw.replace(/\\n/g, '\n');
+    const now = Math.floor(Date.now() / 1000);
+    const header = { alg: 'RS256', typ: 'JWT' };
+    const claim = {
+      iss: clientEmail,
+      scope: 'https://www.googleapis.com/auth/drive.readonly',
+      aud: 'https://oauth2.googleapis.com/token',
+      exp: now + 3600,
+      iat: now
+    };
+
+    const b64Url = str => Buffer.from(str).toString('base64url');
+    const headerB64 = b64Url(JSON.stringify(header));
+    const claimB64 = b64Url(JSON.stringify(claim));
+    const signatureInput = `${headerB64}.${claimB64}`;
+
+    const sign = crypto.createSign('RSA-SHA256');
+    sign.update(signatureInput);
+    sign.end();
+    const signature = sign.sign(privateKey, 'base64url');
+    const assertion = `${signatureInput}.${signature}`;
+
+    const res = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+        assertion
+      })
+    });
+
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.access_token || null;
+  } catch (err) {
+    console.warn('[Vault] Service account auth fallback caught:', err.message);
+    return null;
+  }
+}
+
 // Multi-Auth OAuth2 / Service Account resolver for Google Drive
 async function getGoogleDriveAccessToken(env) {
   const clean = val => (val || '').trim().replace(/^["']|["']$/g, '');
   const clientId = clean(env.GDRIVE_CLIENT_ID);
   const clientSecret = clean(env.GDRIVE_CLIENT_SECRET);
   const refreshToken = clean(env.GDRIVE_REFRESH_TOKEN);
+  const clientEmail = clean(env.GDRIVE_CLIENT_EMAIL);
+  const privateKey = (env.GDRIVE_PRIVATE_KEY || '').trim();
 
-  if (!clientId || !clientSecret || !refreshToken) {
-    throw new Error('Vault credentials missing on server environment');
+  // Tier 1: Try Primary OAuth2 Refresh Token (5TB Account)
+  if (clientId && clientSecret && refreshToken) {
+    try {
+      const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          client_id: clientId,
+          client_secret: clientSecret,
+          refresh_token: refreshToken,
+          grant_type: 'refresh_token'
+        })
+      });
+
+      if (tokenRes.ok) {
+        const data = await tokenRes.json();
+        if (data.access_token) return data.access_token;
+      } else {
+        console.warn(`[Vault] OAuth2 token refresh failed (${tokenRes.status}). Attempting Service Account fallback.`);
+      }
+    } catch (e) {
+      console.warn('[Vault] OAuth2 fetch error. Attempting Service Account fallback:', e.message);
+    }
   }
 
-  const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({
-      client_id: clientId,
-      client_secret: clientSecret,
-      refresh_token: refreshToken,
-      grant_type: 'refresh_token'
-    })
-  });
-
-  if (!tokenRes.ok) {
-    const errText = await tokenRes.text();
-    throw new Error(`Google OAuth token refresh rejected (${tokenRes.status}): ${errText}`);
+  // Tier 2: Fallback to Google Service Account
+  if (clientEmail && privateKey) {
+    const saToken = await getGoogleAccessTokenViaServiceAccount(clientEmail, privateKey);
+    if (saToken) return saToken;
   }
 
-  const data = await tokenRes.json();
-  return data.access_token;
+  throw new Error('فشل المصادقة مع Google Drive: تأكد من صحة بيانات OAuth2 أو Service Account');
 }
 
 /**
