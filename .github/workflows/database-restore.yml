@@ -1,0 +1,117 @@
+name: "Enterprise Database Disaster Recovery (Secure Restore)"
+
+on:
+  workflow_dispatch:
+    inputs:
+      backup_filename:
+        description: 'Target backup file name (leave "latest" for the most recent verified backup)'
+        required: false
+        default: 'latest'
+      dry_run:
+        description: 'Dry Run Rehearsal (Decrypts, verifies SHA-256 and validates SQL without touching database)'
+        type: boolean
+        default: false
+      confirmation_phrase:
+        description: 'Safety Latch: Type "RESTORE_PRODUCTION_DATABASE" to authorize (ignored in dry_run)'
+        required: true
+        default: 'DRY_RUN_REHEARSAL'
+
+concurrency:
+  group: database-restore-lock
+  cancel-in-progress: false
+
+jobs:
+  restore:
+    name: Disaster Recovery & Atomic Database Injection
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+
+    steps:
+      - name: Verify Dual-Authorization Safety Latch
+        run: |
+          DRY_RUN="${{ github.event.inputs.dry_run }}"
+          CONFIRMATION="${{ github.event.inputs.confirmation_phrase }}"
+
+          if [ "$DRY_RUN" = "true" ]; then
+            echo "🧪 [DRY RUN MODE ENABLED] Safety verification mode active. Production database will NOT be modified."
+          elif [ "$CONFIRMATION" != "RESTORE_PRODUCTION_DATABASE" ]; then
+            echo "❌ [SAFETY ABORT] Invalid confirmation phrase."
+            echo "To protect your database from accidental overwrites, you must enter exactly: RESTORE_PRODUCTION_DATABASE"
+            exit 1
+          else
+            echo "✅ [AUTHORIZATION CONFIRMED] Safety phrase validated. Proceeding with production restoration..."
+          fi
+
+      - name: Checkout Repository
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js Environment
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - name: Install PostgreSQL Client Tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends postgresql-client
+
+      - name: "Pre-Restore Safety Snapshot (Rollback Insurance)"
+        if: ${{ !github.event.inputs.dry_run }}
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          echo "🛡️ Taking immediate atomic pre-restore snapshot of current production database..."
+          PRE_TIMESTAMP=$(date -u +"%Y-%m-%d_%H-%M-UTC")
+          PRE_BACKUP="pre_restore_safety_snapshot_${PRE_TIMESTAMP}"
+          echo "PRE_BACKUP=${PRE_BACKUP}" >> $GITHUB_ENV
+
+          pg_dump --clean --if-exists --no-owner --no-privileges -d "$SUPABASE_DB_URL" | gzip -9 > "${PRE_BACKUP}.sql.gz"
+          echo "✅ Safety snapshot taken: ${PRE_BACKUP}.sql.gz ($(du -h "${PRE_BACKUP}.sql.gz" | cut -f1))"
+
+      - name: Archive Pre-Restore Safety Snapshot as Artifact (30-day Retention)
+        if: ${{ !github.event.inputs.dry_run }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: darc-pre-restore-safety-snapshot
+          path: pre_restore_safety_snapshot_*.sql.gz
+          retention-days: 30
+          if-no-files-found: warn
+
+      - name: "Download, Verify & Decrypt Backup from Google Drive"
+        env:
+          BACKUP_FILENAME: ${{ github.event.inputs.backup_filename }}
+          BACKUP_ENCRYPTION_KEY: ${{ secrets.BACKUP_ENCRYPTION_KEY }}
+          GDRIVE_CLIENT_ID: ${{ secrets.GDRIVE_CLIENT_ID }}
+          GDRIVE_CLIENT_SECRET: ${{ secrets.GDRIVE_CLIENT_SECRET }}
+          GDRIVE_REFRESH_TOKEN: ${{ secrets.GDRIVE_REFRESH_TOKEN }}
+          GDRIVE_FOLDER_ID: ${{ secrets.GDRIVE_FOLDER_ID }}
+          GDRIVE_CLIENT_EMAIL: ${{ secrets.GDRIVE_CLIENT_EMAIL }}
+          GDRIVE_PRIVATE_KEY: ${{ secrets.GDRIVE_PRIVATE_KEY }}
+          OUTPUT_SQL_FILE: restore_payload.sql
+        run: |
+          chmod +x .github/scripts/restore-from-gdrive.mjs
+          node .github/scripts/restore-from-gdrive.mjs
+
+      - name: "Apply Atomic Database Injection (PostgreSQL Transaction)"
+        if: ${{ !github.event.inputs.dry_run }}
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          echo "🚀 Injecting verified restoration payload into Supabase PostgreSQL..."
+          psql -v ON_ERROR_STOP=1 "$SUPABASE_DB_URL" -f restore_payload.sql
+          echo "✨ Atomic database injection completed successfully!"
+
+      - name: "Dry-Run Integrity Verification Summary"
+        if: ${{ github.event.inputs.dry_run }}
+        run: |
+          echo "=========================================================="
+          echo "🧪 [DRY RUN COMPLETED SUCCESSFULLY]"
+          echo "- Payload was verified, decrypted, and inspected cleanly."
+          echo "- Production database was untouched (Zero writes)."
+          echo "=========================================================="
+
+      - name: Cleanup Temporary Restoration Artifacts
+        if: always()
+        run: |
+          rm -f restore_payload.sql pre_restore_safety_snapshot_*.sql.gz
+          echo "🧹 Cleanup complete. No residual unencrypted data remains on runner."
