@@ -1,12 +1,12 @@
 name: Daily Encrypted Database Backup to Google Drive
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/daily-backup.yml'
   workflow_dispatch:
-    inputs:
-      trigger_reason:
-        description: 'Manual Trigger Reason'
-        required: false
-        default: 'Manual Backup Verification'
   schedule:
     # Runs daily at 02:00 AM UTC (5:00 AM Riyadh / 6:00 AM Dubai)
     - cron: '0 2 * * *'
