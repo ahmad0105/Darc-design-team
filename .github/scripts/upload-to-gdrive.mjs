@@ -121,13 +121,12 @@ async function getGoogleAccessTokenViaServiceAccount(clientEmail, privateKeyRaw)
 
 // 3. Resilient Multi-Auth Resolver
 async function resolveGoogleAccessToken(env) {
-  const {
-    GDRIVE_CLIENT_ID: clientId,
-    GDRIVE_CLIENT_SECRET: clientSecret,
-    GDRIVE_REFRESH_TOKEN: refreshToken,
-    GDRIVE_CLIENT_EMAIL: clientEmail,
-    GDRIVE_PRIVATE_KEY: privateKey
-  } = env;
+  const clean = val => (val || '').trim().replace(/^["']|["']$/g, '');
+  const clientId = clean(env.GDRIVE_CLIENT_ID);
+  const clientSecret = clean(env.GDRIVE_CLIENT_SECRET);
+  const refreshToken = clean(env.GDRIVE_REFRESH_TOKEN);
+  const clientEmail = clean(env.GDRIVE_CLIENT_EMAIL);
+  const privateKey = (env.GDRIVE_PRIVATE_KEY || '').trim();
 
   // Step A: Attempt OAuth2 User Refresh Token (5TB Account)
   if (clientId && clientSecret && refreshToken) {
