@@ -350,7 +350,19 @@ export function openRestoreWizardModal(targetFilename = 'latest') {
     </div>
   `;
 
-  modalShell(choose('غرفة عمليات التعافي من الكوارث', 'Disaster Recovery Ops'), modalHtml);
+  const modalRoot = document.getElementById('modal-root');
+  if (!modalRoot) {
+    console.error('[Vault] modal-root element not found in DOM');
+    return;
+  }
+
+  modalRoot.innerHTML = modalShell(
+    choose('غرفة عمليات التعافي من الكوارث', 'Disaster Recovery Ops'),
+    choose('نظام استعادة آمن محمي بلقطة استباقية وتجميد الـ Triggers', 'Secure recovery protected by pre-flight snapshot & trigger freeze'),
+    modalHtml,
+    'restore-wizard',
+    'modal-lg'
+  );
 
   // Setup Dynamic Mode Toggle
   const radioDry = document.getElementById('mode-dryrun');
@@ -359,16 +371,21 @@ export function openRestoreWizardModal(targetFilename = 'latest') {
   const btnText = document.getElementById('hold-btn-text');
   const holdBtn = document.getElementById('btn-hold-restore');
 
+  if (!radioDry || !radioReal || !holdBtn) {
+    console.warn('[Vault] Wizard modal elements not ready in DOM');
+    return;
+  }
+
   const updateModeUi = () => {
     const isDry = radioDry.checked;
-    if (isDry) {
-      confirmBox.style.display = 'none';
-      holdBtn.style.background = '#059669';
-      btnText.innerHTML = `${icon('play', 'width:18px; height:18px;')} <span>${choose('اضغط مطولاً لبدء المحاكاة التجريبية (3.5 ثوانٍ)', 'Hold 3.5s to Execute Rehearsal')}</span>`;
-    } else {
-      confirmBox.style.display = 'block';
-      holdBtn.style.background = '#dc2626';
-      btnText.innerHTML = `${icon('alert-triangle', 'width:18px; height:18px;')} <span>${choose('اضغط مطولاً لتأكيد الاستعادة الحية (3.5 ثوانٍ)', 'Hold 3.5s to Trigger LIVE Restore')}</span>`;
+    if (confirmBox) confirmBox.style.display = isDry ? 'none' : 'block';
+    if (holdBtn) holdBtn.style.background = isDry ? '#059669' : '#dc2626';
+    if (btnText) {
+      if (isDry) {
+        btnText.innerHTML = `${icon('play', 'width:18px; height:18px;')} <span>${choose('اضغط مطولاً لبدء المحاكاة التجريبية (3.5 ثوانٍ)', 'Hold 3.5s to Execute Rehearsal')}</span>`;
+      } else {
+        btnText.innerHTML = `${icon('alert-triangle', 'width:18px; height:18px;')} <span>${choose('اضغط مطولاً لتأكيد الاستعادة الحية (3.5 ثوانٍ)', 'Hold 3.5s to Trigger LIVE Restore')}</span>`;
+      }
     }
   };
 

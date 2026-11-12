@@ -104,4 +104,11 @@ test('--- Enterprise Vault & Disaster Recovery Verification Suite ---', async (t
       assert.ok(combined.includes(code), `Error code ${code} should be defined in codebase`);
     }
   });
+
+  await t.test('7. Wizard Modal correctly targets modal-root without null dereference', () => {
+    const vaultCode = fs.readFileSync('public/src/features/settings/vault.js', 'utf8');
+    assert.ok(vaultCode.includes("document.getElementById('modal-root')"));
+    assert.ok(vaultCode.includes('modalRoot.innerHTML = modalShell('));
+    assert.ok(vaultCode.includes('if (!radioDry || !radioReal || !holdBtn)'));
+  });
 });
