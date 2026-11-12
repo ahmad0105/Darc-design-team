@@ -23,6 +23,7 @@ import bootstrapApp, { generateBootstrapPayloadForUser } from './features/bootst
 import auditApp         from './features/audit/audit.routes.js';
 import telemetryApp     from './features/telemetry/telemetry.routes.js';
 import whatsappApp      from './features/whatsapp/whatsapp.routes.js';
+import vaultApp         from './features/vault/vault.routes.js';
 import { processWhatsAppQueue } from './features/whatsapp/whatsapp.service.js';
 import { processDueReminders } from './features/reminders/reminders.service.js';
 
@@ -834,6 +835,7 @@ app.route('/api/trash',         trashApp);
 app.route('/api/bootstrap',     bootstrapApp);
 app.route('/api/telemetry',     telemetryApp);
 app.route('/api/whatsapp',      whatsappApp);
+app.route('/api/vault',         vaultApp);
 
 export default {
   fetch: app.fetch,

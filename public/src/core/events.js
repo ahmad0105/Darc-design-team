@@ -13,6 +13,7 @@ import { exportPortfolioXLS, exportProjectXLS, exportProjectPDF, exportPortfolio
 import { exportAuditLogsXLS, printAuditReport, fetchFullAuditHistory, canAccessSettingsSection, openUserModal, openRoleModal } from '../features/settings/settings.js';
 import { fetchAnalyticsData } from '../features/settings/analytics.js';
 import { fetchDiagnosticsData, setDiagnosticsUserFilter, setDiagnosticsSeverityFilter, setDiagnosticsStatusFilter } from '../features/settings/diagnostics.js';
+import { fetchVaultData, attachVaultEvents } from '../features/settings/vault.js';
 import { renderActivation, renderLogin, renderResetPassword, openForcePasswordModal } from '../features/auth/auth.js';
 import { playNotificationChime, isDemoSession } from './realtime.js';
 import { openTemplateModal, getNextAvailableTemplateCode, isTemplateCodeReserved } from '../features/templates/templates.js';
@@ -1432,6 +1433,13 @@ export async function handleClick(event) {
       fetchAnalyticsData(true).then(() => {
         renderView();
         resetScroll();
+      }).catch(() => {});
+    }
+    if (state.settingsSection === 'vault') {
+      fetchVaultData(true).then(() => {
+        renderView();
+        resetScroll();
+        attachVaultEvents();
       }).catch(() => {});
     }
     if (state.settingsSection === 'trash' && !state.trashLoaded) {

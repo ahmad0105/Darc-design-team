@@ -5,6 +5,7 @@ import { showToast, modalShell, closeModal } from '../../shared/ui.js';
 import { isDemoSession } from '../../core/realtime.js';
 import { renderAnalyticsSection, fetchAnalyticsData } from './analytics.js';
 import { renderDiagnosticsSection, fetchDiagnosticsData } from './diagnostics.js';
+import { renderVaultSection, fetchVaultData, attachVaultEvents } from './vault.js';
 import { teamMetrics } from '../dashboard/dashboard.js';
 import { getNotificationPermission, isIOSDevice, isStandalonePWA } from '../notifications/notification-manager.js';
 
@@ -633,6 +634,7 @@ export function canAccessSettingsSection(sectionKey) {
   if (sectionKey === 'audit') return userIsAdmin || can('view_audit_logs');
   if (sectionKey === 'analytics') return userIsAdmin || can('manage_settings') || can('view_audit_logs');
   if (sectionKey === 'diagnostics') return userIsAdmin || can('manage_settings');
+  if (sectionKey === 'vault') return userIsAdmin;
   return false;
 }
 
@@ -647,6 +649,7 @@ export function renderSettings() {
   const canAccessAudit = canAccessSettingsSection('audit');
   const canAccessAnalytics = canAccessSettingsSection('analytics');
   const canAccessDiagnostics = canAccessSettingsSection('diagnostics');
+  const canAccessVault = canAccessSettingsSection('vault');
 
   // Granular settings tabs strictly gated by permissions
   const sections = [
@@ -660,7 +663,8 @@ export function renderSettings() {
     ...(canAccessTrash ? [['trash', choose('سلة المهملات', 'Trash')]] : []),
     ...(canAccessAudit ? [['audit', t('audit')]] : []),
     ...(canAccessAnalytics ? [['analytics', choose('المراقبة والزيارات والأداء', 'Observability & Analytics')]] : []),
-    ...(canAccessDiagnostics ? [['diagnostics', choose('تشخيص الأعطال والمستخدمين', 'Error Logs & User Diagnostics')]] : [])
+    ...(canAccessDiagnostics ? [['diagnostics', choose('تشخيص الأعطال والمستخدمين', 'Error Logs & User Diagnostics')]] : []),
+    ...(canAccessVault ? [['vault', choose('مركز النسخ والتعافي من الكوارث', 'Disaster Recovery & Vault')]] : [])
   ];
 
   if (!sections.some(([k]) => k === state.settingsSection)) {
@@ -1497,6 +1501,14 @@ export function renderSettings() {
   // USER ERROR DIAGNOSTICS & INCIDENTS SECTION (Strictly gated by manage_settings or admin)
   if (state.settingsSection === 'diagnostics' && canAccessDiagnostics) {
     content = renderDiagnosticsSection();
+  }
+
+  // DISASTER RECOVERY & ENTERPRISE VAULT SECTION (Strictly gated by super-admin)
+  if (state.settingsSection === 'vault' && canAccessVault) {
+    content = renderVaultSection();
+    requestAnimationFrame(() => {
+      attachVaultEvents();
+    });
   }
 
   // WHATSAPP ALERTS SECTION

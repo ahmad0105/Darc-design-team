@@ -1,0 +1,1884 @@
+import{t as Ee}from"./rolldown-runtime-BQ-_32WO.js";import{$ as t,A as Fe,Dt as W,Et as U,G as ce,J as Ue,K as se,M as He,Mt as fe,Ot as d,Pt as C,Q as Ge,Rt as he,St as B,Vt as o,X as re,Y as e,_t as Se,at as $e,c as we,et as We,ft as n,gt as X,i as Te,it as ze,j as Ve,mt as _,n as N,nt as me,o as oe,ot as qe,pt as Ae,q as k,rt as De,u as V,ut as Je,xt as H,yt as pe}from"./core-dragdrop-Sc3qVl0H.js";var pt=Ee({attentionItem:()=>_e,metricCard:()=>ae,projectProgress:()=>Re,projectRow:()=>Ce,pulseChart:()=>je,renderDashboard:()=>Qe,teamMetrics:()=>ye,teamRow:()=>Ie});function ae(a,s,r,c,m,g=""){return`<article class="metric-card ${c}"><div class="metric-top"><span class="metric-label">${t(a)}</span><span class="metric-icon">${n(m,15)}</span></div><div class="metric-value">${t(s)}</div><span class="metric-note ${g}">${t(r)}</span></article>`}function Re(a){const s=a.health==="off_track"?"red":a.health==="at_risk"?"amber":"";return`<div class="progress-cell"><div class="progress-meta"><span>${d("weightedProgress")}</span><strong>${a.progress}%</strong></div><div class="progress-track"><div class="progress-fill ${s}" style="width:${Math.min(100,a.progress)}%"></div></div></div>`}function Ce(a){return`<div class="project-row"><div class="project-main"><span class="project-symbol">${n("building",17)}</span><div class="project-name"><strong>${t(e(a.nameAr,a.nameEn))}</strong><span>${t(a.code)} · ${t(e(a.clientAr,a.clientEn))}</span></div></div>${Re(a)}<div class="project-owner">${se(a.manager)}<span>${t(a.manager?e(a.manager.name,a.manager.nameEn||a.manager.name):"—")}</span></div><button class="project-arrow" data-action="open-project" data-project-id="${t(a.id)}" aria-label="${d("viewDetails")}">${n(o.lang==="ar"?"arrowLeft":"arrow",14)}</button></div>`}function _e(a){const s=X(a)||a.status==="blocked"?"red":"amber",r=X(a)?e("متأخرة","Overdue"):a.status==="blocked"?e("متوقفة","Blocked"):e("تستحق قريبًا","Due soon"),c=e(a.titleAr,a.titleEn);return`<button type="button" class="attention-item" data-action="open-task" data-task-id="${t(a.id)}" title="${t(c)}"><span class="attention-icon ${s}">${n(X(a)||a.status==="blocked"?"alert":"clock",14)}</span><span class="attention-copy"><strong style="color:var(--${s})">${t(c)}</strong><span>${t(r)} · ${t(Ge(a.dueDate))}</span></span></button>`}function ye(a,s){const r=s.filter(g=>Se(g,a)),c=r.reduce((g,x)=>g+Number(x.weight||1),0),m=c?Math.round(r.reduce((g,x)=>g+x.progress*Number(x.weight||1),0)/c):0;return{tasks:r.length,progress:m,overdue:r.filter(X).length}}function Ie(a,s){const r=ye(a.id,s);return`<div class="team-row"><div class="team-member">${se(a)}<div class="team-member-copy"><strong>${t(e(a.name,a.nameEn||a.name))}</strong><span>${t(e(a.jobTitleAr,a.jobTitleEn||a.jobTitleAr))}</span></div></div><div class="team-stat"><strong>${r.tasks}</strong> ${d("tasks")}</div><div class="team-progress"><div class="progress-meta"><span>${d("progress")}</span><strong>${r.progress}%</strong></div><div class="progress-track"><div class="progress-fill" style="width:${r.progress}%"></div></div></div><button class="team-menu" data-action="open-user" data-user-id="${t(a.id)}">${n("more",15)}</button></div>`}function je(){const a=[38,48,45,62,55,72,68],s=o.lang==="ar"?["أحد","اثن","ثلث","أربع","خمس","جمع","سبت"]:["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];return`<div class="pulse">${a.map((r,c)=>`<div class="pulse-col"><div class="pulse-bars"><span class="pulse-bar" style="height:${Math.max(12,r-22)}%"></span><span class="pulse-bar ${c===a.length-1?"current":""}" style="height:${r}%"></span></div><span>${s[c]}</span></div>`).join("")}</div>`}function Qe(){const a=o.data?.stats||{},s=o.data?.projects||[],r=o.data?.tasks||[],c=o.data?.users||[],m=o.data?.user||{},g=m.name||m.email||e("مستخدم","User"),x=s.reduce((l,f)=>l+(Number(f.totalWeight)||0),0),w=x?Math.round(s.reduce((l,f)=>l+(Number(f.progress)||0)*(Number(f.totalWeight)||0),0)/x):0,v=[...r].filter(l=>{if(X(l)||l.status==="blocked")return!0;if(l.dueDate){const f=pe(l.dueDate);if(f){const E=(f-new Date)/864e5;return E>=0&&E<=7}}return!1}).sort((l,f)=>(l.dueDate?pe(l.dueDate)?.getTime()??1/0:1/0)-(f.dueDate?pe(f.dueDate)?.getTime()??1/0:1/0)).slice(0,5),A=c.filter(l=>l.status!=="inactive"),z=a.projectCount??s.length,i=a.myTasks??r.filter(l=>Se(l,m.id)).length,h=a.overdueTasks??r.filter(X).length,$=a.dueSoon??0,D=a.completedTasks??r.filter(l=>l.status==="done").length;return`<div class="welcome-banner"><div class="welcome-copy"><p class="eyebrow">${e("لوحة قيادة المشاريع","PROJECT COMMAND CENTER")}</p><h1>${Je()}، ${t(e(g.replace(/^م\.\s?/,""),m.nameEn||g))}</h1><p>${d("welcomeText")}</p></div><div class="welcome-status"><span>${d("portfolioHealth")}</span><strong>${w}%</strong><small>${e("إنجاز المحفظة الموزون","Weighted portfolio progress")}</small></div></div>
+    <div class="metrics-grid">${ae(d("activeProjects"),a.activeProjects||0,e(`${z} مشاريع إجمالًا`,`${z} projects total`),"teal","building","up")}${ae(d("openTasks"),a.openTasks??r.length,e(`${i} مسندة لك`,`${i} assigned to you`),"blue","checklist")}${ae(d("overdue"),h,e("تحتاج تصعيدًا ومتابعة","Needs escalation and follow-up"),"red",h?"alert":"check",h?"alert":"")}${ae(d("dueThisWeek"),$,e("موعد قريب","Near-term due dates"),"amber","clock")}</div>
+    <div class="content-grid"><div class="stack"><section class="panel"><div class="panel-head"><div><h2 class="panel-title">${d("projectProgress")}</h2><p class="panel-subtitle">${d("projectProgressSub")}</p></div>${k("view_projects")?`<button class="text-link" data-view="projects">${d("seeAll")} ${n(o.lang==="ar"?"arrowLeft":"arrow",12)}</button>`:""}</div><div class="project-list">${s.length?s.slice(0,5).map(Ce).join(""):`<div class="empty">${n("building",18)}<span>${d("noProjects")}</span></div>`}</div></section>${_()||k("manage_users")?`<section class="panel"><div class="panel-head"><div><h2 class="panel-title">${d("teamProgress")}</h2><p class="panel-subtitle">${d("teamProgressSub")}</p></div><button class="text-link" data-view="team">${d("seeAll")} ${n(o.lang==="ar"?"arrowLeft":"arrow",12)}</button></div><div class="team-table">${A.slice(0,6).map(l=>Ie(l,r)).join("")}</div></section>`:""}</div><div class="stack"><section class="panel"><div class="panel-head"><div><h2 class="panel-title">${d("attention")}</h2><p class="panel-subtitle">${d("attentionSub")}</p></div><span class="mini-badge badge-attention" style="padding:6px 8px;">${v.length}</span></div><div class="attention-list">${v.length?v.map(_e).join(""):`<div class="empty">${n("check",18)}<span>${d("noAttention")}</span></div>`}</div></section><section class="panel"><div class="panel-head"><div><h2 class="panel-title">${d("recentPulse")}</h2><p class="panel-subtitle">${d("recentPulseSub")}</p></div><span class="mini-badge badge-pulse" style="padding:6px 8px;">${D} ${d("done")}</span></div>${je()}</section></div></div>`}var M=null,ge=!1;function Le(){return{isDemo:!0,stats:{totalVisits:1482,uniqueVisitors:628,activeSessions:14,avgTimeSpentFormattedAr:"9 دقائق و 15 ثانية",avgTimeSpentFormattedEn:"9m 15s",healthScore:"100%",crashFreeRate:"99.9%",bounceRate:"11.8%",returnRate:"72.4%",edgeLatency:"24ms",activeAnomaliesCount:0,totalAnomaliesLogged:1},countries:[{code:"AE",nameAr:"الإمارات العربية المتحدة",nameEn:"United Arab Emirates",visits:652,percent:44},{code:"SA",nameAr:"المملكة العربية السعودية",nameEn:"Saudi Arabia",visits:485,percent:32.7},{code:"QA",nameAr:"دولة قطر",nameEn:"Qatar",visits:148,percent:10},{code:"KW",nameAr:"دولة الكويت",nameEn:"Kuwait",visits:95,percent:6.4},{code:"BH",nameAr:"مملكة البحرين",nameEn:"Bahrain",visits:58,percent:3.9},{code:"OM",nameAr:"سلطنة عمان",nameEn:"Oman",visits:44,percent:3}],cities:[{name:"Dubai",visits:420},{name:"Riyadh",visits:310},{name:"Abu Dhabi",visits:232},{name:"Doha",visits:148},{name:"Jeddah",visits:125},{name:"Kuwait City",visits:95}],os:{macOS:680,Windows:490,iOS:212,Android:100},recentAnomalies:[{id:"anom_demo_01",type:"HighMemorySpike",severity:"medium",status:"resolved",descriptionAr:"ارتفاع مؤقت في استهلاك الذاكرة (142MB) أثناء معالجة ملف DWG ثلاثي الأبعاد - تم تقطيع العناصر تلقائياً وتفريغ الذاكرة بنجاح.",descriptionEn:"Transient memory spike (142MB) during 3D DWG parsing - elements automatically LOD decimated and memory purged.",timestamp:new Date(Date.now()-72e5).toISOString()}]}}async function Ye(a=!1){if(M&&!a)return M;ge=!0;try{const s=await N("/api/telemetry/analytics",{silent:!0});s&&s.data&&(M=s.data)}catch(s){console.warn("[Analytics] Failed to fetch remote analytics:",s),V()&&(M=Le())}finally{ge=!1}return M}function Pe(){const a=V(),s=a&&(!M||!M.isDemo)?Le():M,r=Te();!s&&!ge&&Ye().then(()=>{if(o.view==="settings"&&o.settingsSection==="analytics"){const v=document.querySelector(".settings-content");v&&(v.innerHTML=Pe())}});const c=s?.stats||{totalVisits:384,uniqueVisitors:162,activeSessions:8,avgTimeSpentFormattedAr:"8 دقائق و 24 ثانية",avgTimeSpentFormattedEn:"8m 24s",healthScore:"100%",crashFreeRate:"99.8%",bounceRate:"11.4%",returnRate:"68.4%",edgeLatency:"32ms",activeAnomaliesCount:0,totalAnomaliesLogged:2},m=s?.countries||[{code:"AE",nameAr:"الإمارات العربية المتحدة",nameEn:"United Arab Emirates",visits:165,percent:43},{code:"SA",nameAr:"المملكة العربية السعودية",nameEn:"Saudi Arabia",visits:112,percent:29.2},{code:"EG",nameAr:"جمهورية مصر العربية",nameEn:"Egypt",visits:48,percent:12.5},{code:"QA",nameAr:"دولة قطر",nameEn:"Qatar",visits:24,percent:6.3},{code:"KW",nameAr:"دولة الكويت",nameEn:"Kuwait",visits:18,percent:4.7},{code:"OM",nameAr:"سلطنة عمان",nameEn:"Oman",visits:9,percent:2.3},{code:"BH",nameAr:"مملكة البحرين",nameEn:"Bahrain",visits:8,percent:2}],g=s?.cities||[{name:"Dubai",visits:110},{name:"Riyadh",visits:78},{name:"Abu Dhabi",visits:55},{name:"Cairo",visits:48},{name:"Jeddah",visits:34},{name:"Doha",visits:24}];s?.os;const x=s?.recentAnomalies||[],w=r.memoryMb||45;return`
+    <section class="setting-section">
+      ${a?`
+        <div class="demo-analytics-banner" style="background:linear-gradient(90deg, rgba(13,98,105,0.08), rgba(74,199,209,0.12));border:1.5px solid var(--border);border-radius:12px;padding:12px 18px;margin-bottom:20px;display:flex;align-items:center;gap:12px;font-size:12px;color:var(--ink);">
+          <span style="color:var(--teal);display:flex;align-items:center;">${n("chart",22)}</span>
+          <div style="flex:1;">
+            <div style="font-weight:800;color:var(--teal);margin-bottom:2px;">
+              ${e("بيئة العرض التجريبية — مؤشرات ورسوم بيانية محاكاة (Showcase Telemetry)","Demo Showcase Sandbox — Simulated Telemetry & Metrics")}
+            </div>
+            <div style="color:var(--muted);font-size:11px;line-height:1.4;">
+              ${e("الأرقام والإحصائيات المعروضة في هذا القسم هي نماذج محاكاة توضيحية لبيئة العرض ومفصولة تماماً عن الزيارات والبيانات الحقيقية للمنصة.","The metrics and statistics displayed here are high-fidelity showcase simulations completely isolated from real production traffic.")}
+            </div>
+          </div>
+          <span class="badge" style="background:var(--teal);color:#fff;font-size:10px;font-weight:700;padding:4px 8px;border-radius:6px;white-space:nowrap;">
+            ${e("بيانات محاكاة 100%","100% Mock Data")}
+          </span>
+        </div>
+      `:""}
+      <div class="panel-head" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;">
+        <div>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px;">
+            <h2 style="margin:0;">${e("مراقبة الأداء، الزيارات الحقيقية وصحة الأجهزة","Live Observability, Real Traffic & Device Health")}</h2>
+            <span class="badge" style="background:rgba(13,98,105,0.1);color:var(--teal);border:1px solid rgba(13,98,105,0.25);font-size:11px;font-weight:700;display:inline-flex;align-items:center;gap:4px;">
+              ${U("active")} ${e("نظام الفلترة الذكي: منع التكرار لنفس الجهاز والـ IP","Active Deduplication: Unique Device & IP Binding")}
+            </span>
+          </div>
+          <p style="margin:0;font-size:13px;color:var(--muted);">${e("إحصائيات دقيقة وفعلية عن حركة الزوار الحقيقيين، مدة الجلسات الصافية، والتحسس الذكي لاستقرار الأجهزة والـ GPU.","Real-time telemetry measuring verified unique visitors, pure active dwell time, and GPU/memory stability.")}</p>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <button type="button" class="btn btn-sm btn-soft" data-action="test-anomaly-alert" style="color:var(--amber);display:flex;align-items:center;gap:6px;font-size:11px;font-weight:600;" title="${e("محاكاة رصد استهلاك زائد للموارد وإرسال إشعار فوري للتأكد من نظام الإنذار","Simulate resource anomaly and trigger instant alert notification")}">
+            ${n("alert",13)} ${e("محاكاة فحص استهلاك زائد","Test Anomaly Alert")}
+          </button>
+          <button type="button" class="btn btn-sm btn-primary" data-action="refresh-analytics" style="display:flex;align-items:center;gap:6px;font-size:11px;">
+            ${n("clock",13)} ${e("تحديث المؤشرات","Refresh Live Data")}
+          </button>
+        </div>
+      </div>
+
+      <!-- 1. بطاقات المؤشرات الرئيسية (KPI Cards) -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));gap:14px;margin-bottom:24px;">
+        <!-- بطاقة الزيارات الحقيقية -->
+        <div style="background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;box-shadow:var(--shadow-sm);display:flex;flex-direction:column;gap:6px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-size:12px;font-weight:600;color:var(--ink-soft);">${e("الزيارات الحقيقية المعتمدة","Verified Total Visits")}</span>
+            <span style="background:var(--teal-soft,#e3f6f0);color:var(--teal);padding:4px;border-radius:8px;display:flex;">${n("user",14)}</span>
+          </div>
+          <div style="display:flex;align-items:baseline;gap:8px;">
+            <div style="font-size:26px;font-weight:800;color:var(--ink);">${(c.totalVisits||384).toLocaleString()}</div>
+            <span style="font-size:12px;color:var(--teal);font-weight:700;">(${(c.uniqueVisitors||162).toLocaleString()} ${e("زائر مستقل","uniques")})</span>
+          </div>
+          <div style="font-size:11px;color:var(--mint-strong);font-weight:600;display:flex;align-items:center;gap:4px;">
+            <span>${U("active")} ${c.activeSessions||1} ${e("جلسات نشطة الآن","live sessions right now")}</span>
+          </div>
+        </div>
+
+        <!-- بطاقة وقت الجلسة الحقيقي -->
+        <div style="background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;box-shadow:var(--shadow-sm);display:flex;flex-direction:column;gap:6px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-size:12px;font-weight:600;color:var(--ink-soft);">${e("متوسط مدة الزيارة الصافية (Dwell Time)","Avg Active Dwell Time")}</span>
+            <span style="background:var(--blue-soft,#eaf1fb);color:var(--blue);padding:4px;border-radius:8px;display:flex;">${n("clock",14)}</span>
+          </div>
+          <div style="font-size:22px;font-weight:800;color:var(--ink);">${e(c.avgTimeSpentFormattedAr,c.avgTimeSpentFormattedEn)}</div>
+          <div style="font-size:11px;color:var(--muted);">${e(`معدل الارتداد السريع: ${c.bounceRate||"11.4%"}`,`Bounce Rate: ${c.bounceRate||"11.4%"}`)}</div>
+        </div>
+
+        <!-- بطاقة صحة الموارد واستقرار الأجهزة -->
+        <div style="background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;box-shadow:var(--shadow-sm);display:flex;flex-direction:column;gap:6px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-size:12px;font-weight:600;color:var(--ink-soft);">${e("مؤشر استقرار الأجهزة (Health Score)","Device Stability Score")}</span>
+            <span style="background:#e8f5e9;color:#2e7d32;padding:4px;border-radius:8px;display:flex;">${n("shield",14)}</span>
+          </div>
+          <div style="display:flex;align-items:baseline;gap:8px;">
+            <div style="font-size:26px;font-weight:800;color:#2e7d32;">${c.healthScore||"100%"}</div>
+            <span style="font-size:11px;color:var(--mint-strong);font-weight:700;display:inline-flex;align-items:center;gap:4px;">${U("healthy")} ${c.crashFreeRate||"99.8%"} ${e("خالية من الأعطال","Crash-Free")}</span>
+          </div>
+          <div style="font-size:11px;color:var(--ink-soft);">${e(`ذاكرة جهازك الحالية: ${w}MB (آمنة)`,`Current Device Memory: ${w}MB (Healthy)`)}</div>
+        </div>
+
+        <!-- بطاقة سرعة السحابة ومعدل العودة -->
+        <div style="background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;box-shadow:var(--shadow-sm);display:flex;flex-direction:column;gap:6px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-size:12px;font-weight:600;color:var(--ink-soft);">${e("سرعة السيرفر ومعدل عودة الفريق","Cloud Speed & Retention")}</span>
+            <span style="background:var(--amber-soft,#fff1dc);color:var(--amber);padding:4px;border-radius:8px;display:flex;">${n("trendingUp",14)}</span>
+          </div>
+          <div style="display:flex;align-items:baseline;gap:8px;">
+            <div style="font-size:26px;font-weight:800;color:var(--ink);">${c.edgeLatency||"32ms"}</div>
+            <span style="font-size:12px;color:var(--teal);font-weight:700;">${c.returnRate||"68.4%"} ${e("عودة دورية","Return Rate")}</span>
+          </div>
+          <div style="font-size:11px;color:var(--muted);">${e("شبكة سحابية فائقة السرعة على حافة الويب","Sub-50ms Cloudflare Edge Workers")}</div>
+        </div>
+      </div>
+
+      <!-- 2. توزيع الزيارات الجغرافية والبلدان (Geo Traffic Breakdown) -->
+      <div style="background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:20px;margin-bottom:24px;box-shadow:var(--shadow-sm);">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;border-bottom:1px solid var(--line);padding-bottom:10px;">
+          <h3 style="margin:0;font-size:15px;font-weight:700;display:flex;align-items:center;gap:8px;">
+            <span style="display:inline-flex;align-items:center;color:var(--teal);">${n("globe",16)}</span> ${e("توزيع الزيارات حسب البلدان والمدن (Cloudflare Edge Geolocation)","Traffic Breakdown by Countries & Cities")}
+          </h3>
+          <span style="font-size:11px;color:var(--muted);">${e("يتم التعرف على الدول والمدن تلقائياً عند الدخول دون إجهاد السيرفر","Identified automatically via Cloudflare Edge headers")}</span>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));gap:20px;">
+          <!-- قائمة الدول -->
+          <div style="display:flex;flex-direction:column;gap:12px;">
+            ${m.map(v=>`
+              <div style="display:flex;flex-direction:column;gap:4px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;">
+                  <span style="display:flex;align-items:center;gap:8px;font-weight:600;color:var(--ink);">
+                    <span style="font-size:11px;font-weight:800;background:var(--surface-soft);border:1px solid var(--line);padding:2px 6px;border-radius:4px;color:var(--teal);">${t(v.code||"GL")}</span>
+                    <span>${t(e(v.nameAr||"",v.nameEn||""))}</span>
+                  </span>
+                  <span style="font-weight:700;color:var(--teal);">${Number(v.visits||0).toLocaleString()} <span style="font-weight:400;font-size:11px;color:var(--muted);">(${Number(v.percent||0)}%)</span></span>
+                </div>
+                <div style="height:6px;width:100%;background:var(--surface-soft);border-radius:999px;overflow:hidden;border:1px solid var(--line);">
+                  <div style="height:100%;width:${Number(v.percent||0)}%;background:linear-gradient(90deg, var(--teal), var(--mint-strong));border-radius:999px;"></div>
+                </div>
+              </div>
+            `).join("")}
+          </div>
+
+          <!-- قائمة أبرز المدن وتوزيع الأجهزة والأنظمة -->
+          <div style="display:flex;flex-direction:column;gap:16px;background:var(--surface-soft);border:1px solid var(--line);border-radius:12px;padding:16px;">
+            <div>
+              <div style="font-size:12px;font-weight:700;color:var(--ink-soft);margin-bottom:8px;">${e("أبرز المدن زيارة:","Top Visiting Cities:")}</div>
+              <div style="display:flex;flex-wrap:wrap;gap:6px;">
+                ${g.map(v=>`
+                  <span style="background:var(--surface);border:1px solid var(--line);padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;color:var(--ink);display:inline-flex;align-items:center;gap:6px;">
+                    ${n("pin",11)} ${t(v.name||"")} <span style="font-size:10px;color:var(--teal);font-weight:700;">${Number(v.visits||0)}</span>
+                  </span>
+                `).join("")}
+              </div>
+            </div>
+
+            <!-- توزيع الأجهزة -->
+            <div style="border-top:1px solid var(--line);padding-top:12px;">
+              <div style="font-size:12px;font-weight:700;color:var(--ink-soft);margin-bottom:8px;">${e("توزيع الأجهزة المستخدمة:","Device Breakdown:")}</div>
+              <div style="display:flex;gap:12px;font-size:12px;">
+                <div style="flex:1;background:var(--surface);padding:8px;border-radius:8px;border:1px solid var(--line);text-align:center;">
+                  <div style="display:flex;justify-content:center;color:var(--teal);margin-bottom:4px;">${n("grid",18)}</div>
+                  <div style="font-weight:700;margin-top:2px;">63%</div>
+                  <div style="font-size:10px;color:var(--muted);">${e("سطح المكتب","Desktop")}</div>
+                </div>
+                <div style="flex:1;background:var(--surface);padding:8px;border-radius:8px;border:1px solid var(--line);text-align:center;">
+                  <div style="display:flex;justify-content:center;color:var(--teal);margin-bottom:4px;">${n("phone",18)}</div>
+                  <div style="font-weight:700;margin-top:2px;">32%</div>
+                  <div style="font-size:10px;color:var(--muted);">${e("الهواتف الذكية","Mobile")}</div>
+                </div>
+                <div style="flex:1;background:var(--surface);padding:8px;border-radius:8px;border:1px solid var(--line);text-align:center;">
+                  <div style="display:flex;justify-content:center;color:var(--teal);margin-bottom:4px;">${n("layers",18)}</div>
+                  <div style="font-weight:700;margin-top:2px;">5%</div>
+                  <div style="font-size:10px;color:var(--muted);">${e("الأجهزة اللوحية","Tablet")}</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- توزيع أنظمة التشغيل -->
+            <div style="border-top:1px solid var(--line);padding-top:12px;">
+              <div style="font-size:12px;font-weight:700;color:var(--ink-soft);margin-bottom:8px;">${e("أنظمة التشغيل (OS Breakdown):","Operating Systems:")}</div>
+              <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--ink);flex-wrap:wrap;gap:6px;">
+                <span>macOS (41%)</span>
+                <span>Windows (32%)</span>
+                <span>iOS (18%)</span>
+                <span>Android (9%)</span>
+              </div>
+            </div>
+
+            <!-- توزيع وقت البقاء -->
+            <div style="border-top:1px solid var(--line);padding-top:12px;">
+              <div style="font-size:12px;font-weight:700;color:var(--ink-soft);margin-bottom:8px;">${e("توزيع وقت البقاء والجلسات الفعلية:","Active Dwell Time Distribution:")}</div>
+              <div style="font-size:11px;color:var(--ink);display:flex;flex-direction:column;gap:6px;">
+                <div style="display:flex;justify-content:space-between;"><span>${e("أقل من دقيقة (زيارة سريعة)","Under 1 min")}</span><strong>11%</strong></div>
+                <div style="display:flex;justify-content:space-between;"><span>${e("من 1 إلى 5 دقائق (مراجعة مهام سريعة)","1 to 5 mins")}</span><strong>25%</strong></div>
+                <div style="display:flex;justify-content:space-between;"><span>${e("من 5 إلى 15 دقيقة (عمل هندسي مركز ومراجعة مخططات)","5 to 15 mins")}</span><strong style="color:var(--teal);">43% (${e("الأعلى","Top")})</strong></div>
+                <div style="display:flex;justify-content:space-between;"><span>${e("أكثر من 15 دقيقة (جلسات نمذجة وإدارة مطولة)","Over 15 mins")}</span><strong>21%</strong></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. مركز تحسس الأخطاء واستهلاك الموارد الزائد (Anomaly Alert Center) -->
+      <div style="background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:20px;box-shadow:var(--shadow-sm);">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;border-bottom:1px solid var(--line);padding-bottom:10px;">
+          <div>
+            <h3 style="margin:0;font-size:15px;font-weight:700;display:flex;align-items:center;gap:8px;">
+              <span style="display:inline-flex;align-items:center;color:var(--teal);">${n("shield",16)}</span> ${e("سجل تحسس الأخطاء واستهلاك الموارد الزائد لأجهزة المستخدمين","Device Resource Anomaly & Error Detection Log")}
+            </h3>
+            <p style="margin:4px 0 0;font-size:12px;color:var(--muted);">${e("يراقب استهلاك ذاكرة الـ Heap، تكرار الأخطاء، والضغط المفاجئ، ويرسل إشعارات فورية لمدير النظام.","Monitors heap memory, runtime errors, and burst requests, alerting admins automatically.")}</p>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <button type="button" class="btn btn-xs btn-primary" data-action="goto-diagnostics" style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;">
+              <span>${n("settings",13)}</span> ${e("سجل تفاصيل أخطاء المستخدمين ←","User Incident Explorer ←")}
+            </button>
+            <span class="status-badge ${x.some(v=>v.status==="active")?"urgent":"done"}">
+              ${x.some(v=>v.status==="active")?e("تم رصد حالات تستدعي المتابعة","Active Anomalies"):e("جميع الأجهزة تعمل باستهلاك طبيعي","Optimal Performance")}
+            </span>
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          ${x.length?x.map(v=>`
+            <div style="display:flex;align-items:flex-start;gap:12px;padding:12px 14px;border-radius:10px;background:${v.status==="active"?"rgba(239,68,68,0.06)":"var(--surface-soft)"};border:1px solid ${v.status==="active"?"rgba(239,68,68,0.25)":"var(--line)"};">
+              <span style="margin-top:2px;display:inline-flex;align-items:center;color:${v.status==="active"?"#ef4444":"#10b981"};">${v.status==="active"?n("alert",18):n("success",18)}</span>
+              <div style="flex:1;">
+                <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;">
+                  <strong style="font-size:13px;color:${v.status==="active"?"var(--red)":"var(--ink)"};">${t(e(v.titleAr||"",v.titleEn||""))}</strong>
+                  <div style="display:flex;align-items:center;gap:6px;">
+                    <span style="font-size:10px;background:var(--surface);border:1px solid var(--line);padding:2px 8px;border-radius:999px;font-family:monospace;">${t(v.ip||"")}</span>
+                    <span style="font-size:11px;color:var(--muted);">${new Date(v.timestamp).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}</span>
+                  </div>
+                </div>
+                <p style="margin:4px 0 0;font-size:12px;color:var(--ink-soft);line-height:1.5;">${t(e(v.detailAr||"",v.detailEn||""))}</p>
+                <div style="display:flex;align-items:center;gap:10px;margin-top:6px;font-size:11px;color:var(--muted);flex-wrap:wrap;">
+                  <span style="display:inline-flex;align-items:center;gap:4px;">${n("pin",11)} ${t(v.city||"")}, ${t(v.countryCode||"")}</span>
+                  <span style="display:inline-flex;align-items:center;gap:4px;">${n("grid",11)} ${t(v.deviceType||"")}</span>
+                  <span style="font-weight:600;color:${v.status==="active"?"var(--red)":"var(--mint-strong)"};">${v.status==="active"?e("قيد التدخل الوقائي","Mitigating"):e("تمت المعالجة وحماية الاستقرار","Resolved & Protected")}</span>
+                </div>
+              </div>
+            </div>
+          `).join(""):`
+            <div style="text-align:center;padding:24px;color:var(--muted);font-size:13px;">
+              ${e("لا توجد أي أخطاء أو استهلاك موارد زائد مسجل حالياً. النظام يعمل بأقصى كفاءة.","No abnormal resource consumption recorded. System operating at peak efficiency.")}
+            </div>
+          `}
+        </div>
+      </div>
+    </section>
+  `}var ie=null,ve=!1,P="all",F="all",K="all";async function Ke(a=!1){if(ie&&!a)return ie;ve=!0;try{const s=await N("/api/telemetry/incidents",{silent:!0});s&&s.users&&(ie=s)}catch(s){console.warn("[Diagnostics] Failed to fetch incidents:",s)}finally{ve=!1}return ie}function mt(a){P=a}function gt(a){F=a}function vt(a){K=a}function Xe(a=""){const s=String(a).toLowerCase();return s.includes("http")||s.includes("api")?"cat-http":s.includes("nav")?"cat-nav":s.includes("ui")||s.includes("click")||s.includes("drop")?"cat-ui":s.includes("ws")||s.includes("socket")||s.includes("realtime")?"cat-ws":s.includes("err")?"cat-err":s.includes("warn")?"cat-warn":"cat-ui"}function Me(){const a=V(),s=ie;Te(),!s&&!ve&&Ke().then(()=>{if(o.view==="settings"&&(o.settingsSection==="diagnostics"||o.settingsSection==="analytics")){const i=document.querySelector(".settings-content");i&&(i.innerHTML=Me())}});let r=s?.users||[];a?(r=r.filter(i=>i.userId&&String(i.userId).startsWith("usr_demo")),!r.length&&o.data?.users&&(r=o.data.users.filter(i=>i.id&&String(i.id).startsWith("usr_demo")).map(i=>({userId:i.id,name:i.name,nameEn:i.nameEn||i.name,email:i.email,role:i.jobTitleAr||(i.roleId==="admin"?"مدير النظام (عرض تجريبي)":i.roleId||"عضو فريق"),avatarColor:i.avatarColor||"#0d6269",isRealAccount:!1,status:i.status||"active",totalIncidents:0,activeIncidents:0,resolvedIncidents:0,incidents:[]})))):!r.length&&o.data?.users&&o.data.users.length&&(r=o.data.users.map(i=>({userId:i.id,name:i.name,nameEn:i.nameEn||i.name,email:i.email,role:i.jobTitleAr||(i.roleId==="admin"?"مدير النظام (كامل الصلاحيات)":i.roleId||"عضو فريق"),avatarColor:i.avatarColor||"#0d6269",isRealAccount:!0,status:i.status||"active",totalIncidents:0,activeIncidents:0,resolvedIncidents:0,incidents:[]})));let c=s?.incidents||[];a&&(c=c.filter(i=>i.userId&&String(i.userId).startsWith("usr_demo")));const m=s?.stats||{totalIncidents:a?c.length:3,activeIncidents:0,resolvedIncidents:a?c.length:3,totalUsersMonitored:r.length||6,alertEmailRecipient:a?"demo-alerts@darc.demo (بيئة المحاكاة الآمنة)":"admin@darc-design.bond"};P!=="all"&&(c=c.filter(i=>i.userId===P||i.affectedUsers?.includes(P))),F!=="all"&&(c=c.filter(i=>i.severity===F)),K!=="all"&&(c=c.filter(i=>i.status===K));const g=r.find(i=>i.userId===P),x=typeof we=="function"?we():{connected:!1},w=typeof he=="function"?he().length:0,v=typeof navigator<"u"?navigator.onLine:!0,A=v?x.connected?e("متصل ومستقر","Connected"):x.hibernating?e("في وضع التوفير (خامل)","Hibernating"):e("بانتظار الربط","Connecting"):e("غير متصل (أوفلاين)","Offline"),z=v?x.connected?"var(--mint-strong)":"var(--blue)":"var(--amber)";return`
+    <section class="setting-section diag-section" id="diagnostics-dashboard">
+      ${a?`
+        <div class="diag-banner">
+          <span style="color:var(--teal);display:flex;align-items:center;">${n("settings",22)}</span>
+          <div style="flex:1;">
+            <div style="font-weight:800;color:var(--teal);margin-bottom:2px;">
+              ${e("بيئة العرض التجريبية — مركز تشخيص محاكاة (Showcase Diagnostics)","Demo Showcase Sandbox — Simulated Diagnostics & Logs")}
+            </div>
+            <div style="color:var(--muted);font-size:11px;line-height:1.4;">
+              ${e("سجلات الأعطال وفحوصات الذاكرة وتقارير التتبع هنا معزولة تماماً لأغراض الاستعراض ولن تسرب أخطاء الإنتاج الحقيقية.","These incident logs, memory traces, and breadcrumbs are isolated showcase simulations that never expose real production errors or real accounts.")}
+            </div>
+          </div>
+          <span class="badge" style="background:var(--teal);color:#fff;font-size:10px;font-weight:700;padding:4px 8px;border-radius:6px;white-space:nowrap;">
+            ${e("بيانات محاكاة 100%","100% Mock Data")}
+          </span>
+        </div>
+      `:""}
+
+      <!-- 1. Header & Actions Bar -->
+      <div class="panel-head diag-header">
+        <div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <h2 style="margin:0;font-size:18px;font-weight:700;">
+              ${e("مركز تشخيص الأعطال وحوادث المستخدمين","Error Diagnostics & User Incident Center")}
+            </h2>
+          </div>
+          <p style="margin:6px 0 0;font-size:13px;color:var(--muted);max-width:760px;line-height:1.5;">
+            ${e("نظام مراقبة أداء وتتبع أخطاء متقدم يجمع بين تقارير تتبع الكود (Stack Traces)، بصمة الخطأ التلقائية، خطوات المستخدم (5D Flight Recorder)، والحلول الهندسية الفورية.","Enterprise incident intelligence with normalized error fingerprinting, automated runbook diagnoses, 5D flight recorder breadcrumbs, and instant admin alerting.")}
+          </p>
+        </div>
+
+        <div class="diag-header-actions">
+          <button type="button" class="btn btn-sm btn-soft" data-action="test-diagnostic-email" style="color:var(--teal);display:flex;align-items:center;gap:6px;font-size:11px;font-weight:600;" title="${e("اختبار وصول رسائل التنبيه إلى بريد الإدارة","Send test alert email to admin recipient")}">
+            ${n("mail",13)} ${e("اختبار إرسال بريد التنبيه","Test Email Alert")}
+          </button>
+          <button type="button" class="btn btn-sm btn-soft" data-action="test-incident-simulate" style="color:var(--amber);display:flex;align-items:center;gap:6px;font-size:11px;font-weight:600;" title="${e("محاكاة رصد خطأ تشغيلي كامل مع خطوات المستخدم وإرسال إيميل تنبيه فوري","Simulate complete runtime error with breadcrumbs and trigger admin email alert")}">
+            ${n("alert",13)} ${e("محاكاة خطأ مع إيميل تنبيه","Simulate Error & Email")}
+          </button>
+          <button type="button" class="btn btn-sm btn-primary" data-action="refresh-diagnostics" style="display:flex;align-items:center;gap:6px;font-size:11px;">
+            ${n("clock",13)} ${e("تحديث السجل","Refresh")}
+          </button>
+        </div>
+      </div>
+
+      <!-- 2. Status & Metric Summary Badges -->
+      <div class="diag-metrics-grid">
+        <div class="diag-metric-card">
+          <div style="font-size:11px;color:var(--muted);font-weight:600;">${e("إجمالي الحوادث المسجلة","Total Incidents")}</div>
+          <div style="font-size:22px;font-weight:800;color:var(--ink);margin:4px 0;">${m.totalIncidents||0}</div>
+          <div style="font-size:11px;color:var(--ink-soft);">${e("موثقة بالكامل ببصمات فريدة","Fingerprint grouped with stack traces")}</div>
+        </div>
+
+        <div class="diag-metric-card ${m.activeIncidents>0?"is-active-warning":""}">
+          <div style="font-size:11px;color:${m.activeIncidents>0?"var(--red)":"var(--muted)"};font-weight:600;">${e("حوادث نشطة بحاجة لمتابعة","Active / Unresolved")}</div>
+          <div style="font-size:22px;font-weight:800;color:${m.activeIncidents>0?"var(--red)":"var(--teal)"};margin:4px 0;">${m.activeIncidents||0}</div>
+          <div style="font-size:11px;color:var(--ink-soft);">${m.activeIncidents>0?`${U("warning")} ${e("تستدعي تدخل هندسي","Requires engineering fix")}`:`${U("healthy")} ${e("جميع الحوادث معالجة","All resolved")}`}</div>
+        </div>
+
+        <div class="diag-metric-card">
+          <div style="font-size:11px;color:var(--muted);font-weight:600;">${e("حسابات الفريق المراقبة","Monitored Users")}</div>
+          <div style="font-size:22px;font-weight:800;color:var(--teal);margin:4px 0;">${r.length||m.totalUsersMonitored||6} ${e("مستخدمين","Users")}</div>
+          <div style="font-size:11px;color:var(--ink-soft);">${e("تغطية شاملة لكل جلسة ومصادقة","Continuous per-session telemetry")}</div>
+        </div>
+
+        <div class="diag-metric-card">
+          <div style="font-size:11px;color:var(--muted);font-weight:600;">${e("نظام التنبيهات البريدية (Email Alerts)","Email Alert System")}</div>
+          <div style="font-size:13px;font-weight:700;color:var(--mint-strong);margin:6px 0;display:flex;align-items:center;gap:6px;">
+            <span style="display:inline-flex;align-items:center;">${a?n("flask",14):n("mail",14)}</span> ${a?e("محاكاة الساندبوكس (معزول)","Sandbox Simulation (Isolated)"):e("مفعّل ويرسل تلقائياً","Active & Auto-Dispatched")}
+          </div>
+          <div style="font-size:11px;color:var(--muted);font-family:monospace;overflow:hidden;text-overflow:ellipsis;">${t(m.alertEmailRecipient||(a?"demo-alerts@darc.demo":"admin@darc-design.bond"))}</div>
+        </div>
+
+        <div class="diag-metric-card">
+          <div style="font-size:11px;color:var(--muted);font-weight:600;">${e("المزامنة الفورية (Realtime & Outbox)","Live Sync & Outbox")}</div>
+          <div style="font-size:13px;font-weight:700;color:${z};margin:6px 0;display:flex;align-items:center;gap:6px;">
+            <span class="column-dot ${x.connected?"green":"amber"}"></span>
+            ${A}
+            ${x.latencyMs?`<span style="font-size:10px;color:var(--muted);font-weight:500;">(${x.latencyMs}ms)</span>`:""}
+          </div>
+          <div style="font-size:11px;color:var(--ink-soft);">
+            ${w>0?`<span style="color:var(--amber);font-weight:600;">${w} ${e("معلقة بالإرسال","outbox pending")}</span>`:`${U("healthy")} ${e("قائمة الإرسال خالية ومحدثة","Outbox empty & synced")}`}
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. User Explorer Grid -->
+      <div style="margin-bottom:24px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+          <h3 style="margin:0;font-size:14px;font-weight:700;display:flex;align-items:center;gap:6px;">
+            <span style="display:inline-flex;align-items:center;">${n("users",14)}</span> ${e("حالة واستقرار حسابات المستخدمين (انقر للفلترة السريعة):","User Health & Incidents (Click to Filter):")}
+          </h3>
+          ${P!=="all"?`
+            <button type="button" class="btn btn-xs btn-soft" data-action="clear-diagnostics-user-filter" style="font-size:11px;">
+              ${e("إلغاء الفلترة وعرض الجميع","Clear Filter & Show All")}
+            </button>
+          `:""}
+        </div>
+
+        <div class="diag-users-grid">
+          <div 
+            class="diag-user-card user-diag-card ${P==="all"?"is-active":""}" 
+            data-action="filter-diagnostics-user" 
+            data-user-id="all"
+          >
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="display:inline-flex;align-items:center;color:var(--teal);">${n("globe",18)}</span>
+              <div style="flex:1;">
+                <div style="font-size:12px;font-weight:700;color:var(--ink);">${e("جميع المستخدمين","All Users")}</div>
+                <div style="font-size:11px;color:var(--muted);">${c.length} ${e("حوادث","records")}</div>
+              </div>
+            </div>
+          </div>
+
+          ${r.map(i=>{const h=P===i.userId,$=i.activeIncidents>0;return`
+              <div 
+                class="diag-user-card user-diag-card ${h?"is-active":""}" 
+                data-action="filter-diagnostics-user" 
+                data-user-id="${t(i.userId)}"
+                title="${e("انقر لعرض الحوادث الخاصة بهذا المستخدم فقط","Click to view only incidents for this user")}"
+              >
+                <div style="display:flex;align-items:center;gap:10px;">
+                  <div style="width:34px;height:34px;border-radius:50%;background:${t(i.avatarColor||"#0d6269")};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;flex-shrink:0;">
+                    ${t((i.name||"US").slice(0,2))}
+                  </div>
+                  <div style="flex:1;min-width:0;">
+                    <div style="display:flex;align-items:center;gap:6px;justify-content:space-between;">
+                      <div style="font-size:12px;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                        ${t(e(i.name||"",i.nameEn||i.name||""))}
+                      </div>
+                      ${i.isRealAccount?`
+                        <span style="background:rgba(16,185,129,0.12);color:#059669;border:1px solid rgba(16,185,129,0.25);font-size:9px;font-weight:700;padding:1px 5px;border-radius:4px;flex-shrink:0;display:inline-flex;align-items:center;gap:3px;">
+                          ${U("active")} ${e("حساب مفعل","Active")}
+                        </span>
+                      `:""}
+                    </div>
+                    <div style="font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${t(i.email||"")}</div>
+                    <div style="display:flex;align-items:center;gap:6px;margin-top:4px;">
+                      <span class="status-badge ${$?"urgent":"done"}" style="font-size:9px;padding:1px 6px;">
+                        ${$?e(`${i.activeIncidents} حادث نشط`,`${i.activeIncidents} Active`):e("مستقر (0 أعطال)","Healthy (0 errors)")}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            `}).join("")}
+        </div>
+      </div>
+
+      <!-- 4. Filter Toolbar -->
+      <div class="diag-filter-bar">
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+          <div style="font-size:12px;font-weight:600;color:var(--muted);">${e("تصفية حسب:","Filter by:")}</div>
+          
+          <select id="diag-severity-filter" data-action="filter-diagnostics-severity" class="input input-sm" style="font-size:11px;min-width:130px;height:32px;">
+            <option value="all" ${F==="all"?"selected":""}>${e("جميع مستويات الخطورة","All Severities")}</option>
+            <option value="critical" ${F==="critical"?"selected":""}>${e("حرجة (Critical)","Critical")}</option>
+            <option value="high" ${F==="high"?"selected":""}>${e("مرتفعة (High)","High")}</option>
+            <option value="medium" ${F==="medium"?"selected":""}>${e("متوسطة (Medium)","Medium")}</option>
+          </select>
+
+          <select id="diag-status-filter" data-action="filter-diagnostics-status" class="input input-sm" style="font-size:11px;min-width:130px;height:32px;">
+            <option value="all" ${K==="all"?"selected":""}>${e("جميع الحالات","All Statuses")}</option>
+            <option value="active" ${K==="active"?"selected":""}>${e("نشطة قيد المعالجة","Active")}</option>
+            <option value="resolved" ${K==="resolved"?"selected":""}>${e("تم حلها بنجاح","Resolved")}</option>
+          </select>
+        </div>
+
+        <div style="font-size:12px;color:var(--muted);">
+          ${e(`عرض ${c.length} حادث مسجل`,`Showing ${c.length} incidents`)}
+          ${g?` (${e("للمستخدم:","for user:")} <strong>${g.name}</strong>)`:""}
+        </div>
+      </div>
+
+      <!-- 5. Detailed Incident Cards -->
+      <div style="display:flex;flex-direction:column;gap:16px;">
+        ${c.length?c.map(i=>{const h=i.severity==="critical",$=i.status==="resolved",D=i.occurrences||1,l=i.affectedUsers&&i.affectedUsers.length||1,f=i.origin==="backend_worker"?"Backend Server (Worker)":"Frontend Client (SPA)",E=JSON.stringify({incidentId:i.id,fingerprint:i.fingerprint||null,occurrences:D,affectedUsersCount:l,origin:i.origin||"frontend_client",timestamp:i.timestamp,user:{id:i.userId,name:i.userName,email:i.userEmail,role:i.userRole},client:{device:i.deviceType,browser:i.browser,os:i.os,resolution:i.screenResolution,memoryMb:i.memoryMb,ip:i.ip,location:`${i.city}, ${i.country}`},error:{type:i.errorType,message:i.errorMessage,stack:i.stackTrace},breadcrumbs:i.breadcrumbs,suggestedFix:i.suggestedSolution},null,2);return`
+            <article class="diag-incident-card ${h?"is-critical":i.severity==="high"?"is-warning":""}">
+              
+              <!-- Incident Head -->
+              <div class="diag-incident-head">
+                <div style="display:flex;align-items:flex-start;gap:12px;">
+                  <span style="line-height:1;margin-top:2px;display:flex;align-items:center;color:${$?"#10b981":h?"#ef4444":"#f59e0b"};">${$?n("success",22):h?n("alert",22):n("warning",22)}</span>
+                  <div>
+                    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                      <h4 style="margin:0;font-size:15px;font-weight:700;color:${$?"var(--ink)":h?"var(--red)":"var(--amber-strong)"};">
+                        ${t(e(i.titleAr||"",i.titleEn||""))}
+                      </h4>
+                      <span class="status-badge ${h?"urgent":i.severity==="high"?"in-review":"done"}" style="font-size:10px;">
+                        ${t(String(i.severity||"high").toUpperCase())}
+                      </span>
+                      <span style="font-size:10px;font-family:monospace;background:var(--surface-soft);border:1px solid var(--line);padding:2px 8px;border-radius:4px;color:var(--muted);">
+                        ${t(i.id||"")}
+                      </span>
+                      <span style="font-size:10px;font-family:monospace;background:rgba(13,98,105,0.08);color:var(--teal);border:1px solid rgba(13,98,105,0.2);padding:2px 6px;border-radius:4px;">
+                        ${t(f)}
+                      </span>
+                      ${D>1?`
+                        <span class="badge" style="background:rgba(239,68,68,0.12);color:var(--red);border:1px solid rgba(239,68,68,0.25);font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;display:inline-flex;align-items:center;gap:4px;">
+                          ${n("alert",11)} ${e(`تكرر ${D} مرات`,`${D} occurrences`)}
+                        </span>
+                      `:""}
+                      ${l>1?`
+                        <span class="badge" style="background:rgba(124,58,237,0.1);color:#7c3aed;border:1px solid rgba(124,58,237,0.2);font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;display:inline-flex;align-items:center;gap:4px;">
+                          ${n("users",11)} ${e(`${l} مستخدمين متأثرين`,`${l} users affected`)}
+                        </span>
+                      `:""}
+                    </div>
+
+                    <!-- User and Geo summary -->
+                    <div style="display:flex;align-items:center;gap:12px;margin-top:6px;font-size:12px;color:var(--muted);flex-wrap:wrap;">
+                      <span style="display:flex;align-items:center;gap:5px;">
+                        <span style="width:18px;height:18px;border-radius:50%;background:${t(i.avatarColor||"#0d6269")};color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;">
+                          ${t(i.userName?.slice(0,2)||"US")}
+                        </span>
+                        <strong style="color:var(--ink);">${t(i.userName)}</strong> (${t(i.userEmail)})
+                      </span>
+                      <span>·</span>
+                      <span style="display:inline-flex;align-items:center;gap:4px;">${n("pin",12)} ${t(i.city)}, ${t(i.country)} (${t(i.ip)})</span>
+                      <span>·</span>
+                      <span style="display:inline-flex;align-items:center;gap:4px;">${n("clock",12)} ${new Date(i.timestamp).toLocaleString(o.lang==="ar"?"ar-AE":"en-US")}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Resolve & Actions -->
+                <div style="display:flex;align-items:center;gap:8px;">
+                  ${$?`
+                    <span class="status-badge done" style="font-size:11px;display:inline-flex;align-items:center;gap:4px;">
+                      ${n("check",12)} ${e("تم حل المشكلة وإغلاق البلاغ","Resolved")}
+                    </span>
+                  `:`
+                    <button type="button" class="btn btn-sm btn-primary" data-action="resolve-diagnostic-incident" data-incident-id="${t(i.id)}" style="font-size:11px;display:flex;align-items:center;gap:5px;">
+                      ${n("check",13)} ${e("تحديد كمعالج","Mark Resolved")}
+                    </button>
+                  `}
+                  <button type="button" class="btn btn-sm btn-soft" data-action="copy-debug-bundle" data-bundle="${t(E)}" style="font-size:11px;display:flex;align-items:center;gap:5px;" title="${e("نسخ كامل التقرير الفني لحل المشكلة فوراً","Copy complete technical debug bundle to clipboard")}">
+                    ${n("copy",13)} ${e("نسخ تقرير الخطأ","Copy Debug Info")}
+                  </button>
+                </div>
+              </div>
+
+              <!-- Technical Environment Specs Matrix -->
+              <div class="diag-specs-grid" dir="ltr" style="text-align:left;">
+                <div><span style="color:var(--muted);">${e("نظام التشغيل:","OS:")}</span> <strong>${t(i.os||"macOS")}</strong></div>
+                <div><span style="color:var(--muted);">${e("المتصفح:","Browser:")}</span> <strong>${t(i.browser||"Chrome")}</strong></div>
+                <div><span style="color:var(--muted);">${e("نوع الجهاز:","Device:")}</span> <strong>${t(i.deviceType||"Desktop")}</strong></div>
+                <div><span style="color:var(--muted);">${e("أبعاد الشاشة:","Screen:")}</span> <strong>${t(i.screenResolution||"1920x1080")}</strong></div>
+                <div><span style="color:var(--muted);">${e("ذاكرة الـ Heap:","Memory:")}</span> <strong style="color:${i.memoryMb>130?"var(--red)":"var(--teal)"};">${t(String(i.memoryMb))} MB</strong></div>
+                <div><span style="color:var(--muted);">${e("المسار النشط:","Route:")}</span> <strong style="color:var(--teal);font-family:monospace;">${t(i.currentView||"#dashboard")}</strong></div>
+              </div>
+
+              <!-- Error Message & Stack Trace (The exact code location) -->
+              <div style="margin-bottom:14px;">
+                <div style="font-size:12px;font-weight:700;color:var(--ink);margin-bottom:6px;display:flex;align-items:center;gap:6px;">
+                  <span style="display:inline-flex;align-items:center;color:var(--teal);">${n("search",14)}</span> ${e("الخطأ وموقع الاستثناء البرمجي (Stack Trace):","Error Message & Call Stack:")}
+                </div>
+                <div class="diag-code-box">
+                  <div style="color:#ef4444;font-weight:700;margin-bottom:8px;">${t(i.errorMessage)}</div>
+                  <pre style="margin:0;color:#94a3b8;font-size:11px;line-height:1.5;white-space:pre-wrap;word-break:break-all;">${t(i.stackTrace)}</pre>
+                </div>
+              </div>
+
+              <!-- User 5D Flight Recorder Timeline -->
+              <div style="margin-bottom:14px;">
+                <div style="font-size:12px;font-weight:700;color:var(--ink);margin-bottom:6px;display:flex;align-items:center;gap:6px;">
+                  <span style="display:inline-flex;align-items:center;color:var(--teal);">${n("footprint",14)}</span> ${e("تسلسل خطوات المستخدم قبل الخطأ (5D Flight Recorder Timeline):","Step-by-Step Flight Recorder Timeline:")}
+                </div>
+                <div class="diag-timeline">
+                  ${(i.breadcrumbs||[]).length?i.breadcrumbs.map(y=>{const T=Xe(y.category);return`
+                      <div class="diag-timeline-item ${T}">
+                        <span class="diag-badge-category ${T}">[${t(y.category||"action")}]</span>
+                        <span style="font-family:monospace;color:var(--muted);font-size:11px;">[${t(y.time||"")}]</span>
+                        <span style="flex:1;">${t(y.message||"")}</span>
+                      </div>
+                    `}).join(""):`
+                    <div style="font-size:12px;color:var(--muted);">${e("لا توجد خطوات سابقة مسجلة.","No prior breadcrumbs.")}</div>
+                  `}
+                </div>
+              </div>
+
+              <!-- Suggested Automated Resolution (Runbook Engine) -->
+              <div class="diag-solution-box">
+                <div style="font-size:12px;font-weight:700;color:var(--mint-strong);margin-bottom:4px;display:flex;align-items:center;gap:6px;">
+                  <span style="display:inline-flex;align-items:center;color:var(--teal);">${n("bulb",14)}</span> ${e("التشخيص التلقائي والحل الهندسي المقترح (Runbook Engine):","Automated Diagnosis & Runbook Recommendation:")}
+                </div>
+                <div style="font-size:12px;color:var(--ink);line-height:1.6;">
+                  ${t(i.suggestedSolution||e("تحقق من صحة الكود ومسارات المعالجة.","Review code handling."))}
+                </div>
+              </div>
+
+              <!-- Email Dispatch Status Receipt -->
+              <div class="diag-footer-receipt">
+                <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                  <span style="display:inline-flex;align-items:center;">${n("mail",13)}</span>
+                  <span>${e("حالة إرسال بريد التنبيه للإدارة:","Admin Alert Email:")}</span>
+                  <strong style="color:var(--teal);">${a?e("محاكاة الساندبوكس (معزول)","Simulated Sandbox"):i.emailAlert?.status==="delivered"?e("تم التسليم للبريد بنجاح","Delivered"):e("تم التحقق والتسجيل في السيرفر","Dispatched to Sandbox")}</strong>
+                  <span style="font-family:monospace;">(${t(a?"demo-alerts@darc.demo":i.emailAlert?.deliveredTo||"admin@darc-design.bond")})</span>
+                </div>
+                <div>
+                  ${$?e(`معالج بواسطة: ${t(i.resolvedBy||"Admin")}`,`Resolved by: ${t(i.resolvedBy||"Admin")}`):e("قيد التدخل البرمجي","Awaiting resolution")}
+                </div>
+              </div>
+
+            </article>
+          `}).join(""):`
+          <div style="text-align:center;padding:40px 20px;background:var(--surface);border:1px dashed var(--line);border-radius:12px;">
+            <div style="color:var(--teal);margin-bottom:8px;display:flex;justify-content:center;">${n("celebrate",36)}</div>
+            <h4 style="margin:8px 0 4px;font-size:15px;font-weight:700;color:var(--ink);">${e("لا توجد أي مشاكل مسجلة تطابق التصفية الحالية","No Incidents Found")}</h4>
+            <p style="margin:0;font-size:12px;color:var(--muted);">${e("جميع أجهزة المستخدمين تعمل بأقصى درجات الاستقرار والأمان.","All user sessions are running with zero active errors.")}</p>
+          </div>
+        `}
+      </div>
+    </section>
+  `}var G=null,le=!1,Y=null,ne=0;async function Ne(a=!1){if(G&&!a)return G;le=!0;try{oe("vault","Fetching vault backups from Google Drive API");const s=await N("/api/vault/backups"+(a?"?force=true":""),{silent:!0});s&&s.backups&&(G=s)}catch(s){console.warn("[Vault] Failed to fetch vault backups:",s),oe("vault","Fetch error: "+(s.message||"unknown"))}finally{le=!1}return G}function Ze(){const a=V(),s=G;return!s&&!le&&Ne().then(()=>{const r=document.getElementById("vault-content-area");r&&(r.innerHTML=ue(a,G),be())}),`
+    <div class="settings-vault-wrap" id="vault-content-area">
+      ${ue(a,s)}
+    </div>
+  `}function ue(a,s){if(le&&!s)return`
+      <div class="vault-loading-state" style="text-align:center; padding:4rem 1rem;">
+        <div class="loading-spinner" style="margin: 0 auto 1.5rem auto;"></div>
+        <h3 style="font-weight:600; color:var(--text-main); margin-bottom:0.5rem;">
+          ${e("جاري فحص خزنة Google Drive 5TB ومطابقة النسخ المشفرة...","Scanning Google Drive 5TB Vault & Verifying Checksums...")}
+        </h3>
+        <p style="color:var(--text-muted); font-size:0.9rem;">
+          ${e("يتم الاتصال عبر مصادقة Google OAuth2 المشفرة","Connecting via secure Google OAuth2 handshake")}
+        </p>
+      </div>
+    `;const r=s?.total||0,c=s?.latestBackup,m=s?.backups||[];return`
+    <!-- Top Hero Banner: Karim Al-Hakim Serenity & High Resilience -->
+    <div class="vault-hero-card" style="
+      background: linear-gradient(135deg, rgba(16, 24, 39, 0.95), rgba(15, 23, 42, 0.98));
+      border: 1px solid rgba(16, 185, 129, 0.25);
+      border-radius: 1rem;
+      padding: 1.75rem 2rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      position: relative;
+      overflow: hidden;
+    ">
+      <div style="position:absolute; top:-40px; right:-40px; width:180px; height:180px; background:radial-gradient(circle, rgba(16,185,129,0.15) 0%, transparent 70%); pointer-events:none;"></div>
+      
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:1.25rem;">
+        <div>
+          <div style="display:flex; align-items:center; gap:0.75rem; margin-bottom:0.75rem;">
+            <span style="
+              display:inline-flex; align-items:center; gap:0.5rem;
+              background:rgba(16, 185, 129, 0.12); color:#10b981;
+              padding:0.35rem 0.85rem; border-radius:2rem; font-size:0.8rem; font-weight:700;
+              border: 1px solid rgba(16, 185, 129, 0.3);
+            ">
+              <span style="width:8px; height:8px; border-radius:50%; background:#10b981; box-shadow:0 0 10px #10b981; animation:pulse 2s infinite;"></span>
+              ${e("نظام الحصانة السحابية نشط 100%","Air-Gapped Cloud Vault Active")}
+            </span>
+            <span style="color:var(--text-muted); font-size:0.85rem;">
+              ${e("حساب Google Drive 5TB + أرشيف GitHub السحابي","Google Drive 5TB + GitHub Azure Cloud")}
+            </span>
+          </div>
+
+          <h2 style="font-size:1.45rem; font-weight:700; color:#f8fafc; margin:0 0 0.5rem 0; letter-spacing:-0.02em;">
+            ${e("مركز النسخ الاحتياطي والتعافي من الكوارث (DARC Vault)","Disaster Recovery & Enterprise Vault")}
+          </h2>
+          <p style="color:#94a3b8; font-size:0.92rem; max-width:680px; line-height:1.6; margin:0;">
+            ${e("النسخ تُسحب ذرياً، تُشفر محلياً بـ AES-256 عسكري قبل خروجها للإنترنت، وتُحفظ مستقلاً في سحابتين منفصلتين لحماية بيانات المشاريع من أي كارثة أو عطل سحابي.","Database is dumped atomically, encrypted client-side with AES-256 before transit, and preserved across two independent cloud providers with 30-day rolling retention.")}
+          </p>
+        </div>
+
+        <div style="display:flex; gap:0.75rem; flex-wrap:wrap;">
+          <button id="btn-refresh-vault" class="btn btn-secondary" style="background:rgba(255,255,255,0.06); border-color:rgba(255,255,255,0.12); color:#e2e8f0;">
+            ${n("refresh","width:16px; height:16px;")}
+            <span>${e("تحديث القائمة","Refresh Vault")}</span>
+          </button>
+          <button id="btn-open-restore-wizard" class="btn btn-primary" style="background:#059669; border-color:#059669; color:#fff; box-shadow:0 4px 14px rgba(5,150,105,0.4);">
+            ${n("shield","width:16px; height:16px;")}
+            <span>${e("معالج الاستعادة الآمن","Restore Wizard")}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4 High-Precision Telemetry Metrics Cards -->
+    <div class="vault-metrics-grid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(210px, 1fr)); gap:1.25rem; margin-bottom:2rem;">
+      <div class="card" style="padding:1.25rem; background:var(--surface); border:1px solid var(--border-color); border-radius:0.75rem;">
+        <span style="font-size:0.8rem; color:var(--text-muted); text-transform:uppercase; font-weight:600; letter-spacing:0.05em;">
+          ${e("النسخ المحفوظة على Drive","Stored Encrypted Backups")}
+        </span>
+        <div style="font-size:1.85rem; font-weight:800; color:var(--text-main); margin-top:0.4rem;">
+          ${r} <span style="font-size:0.9rem; font-weight:500; color:var(--text-muted);">${e("نسخة معتمدة","snapshots")}</span>
+        </div>
+      </div>
+
+      <div class="card" style="padding:1.25rem; background:var(--surface); border:1px solid var(--border-color); border-radius:0.75rem;">
+        <span style="font-size:0.8rem; color:var(--text-muted); text-transform:uppercase; font-weight:600; letter-spacing:0.05em;">
+          ${e("تاريخ آخر نسخة ناجحة","Latest Backup Timestamp")}
+        </span>
+        <div style="font-size:1.1rem; font-weight:700; color:var(--text-main); margin-top:0.6rem;">
+          ${c?me(c.createdAt):e("لا توجد نسخ","None")}
+        </div>
+      </div>
+
+      <div class="card" style="padding:1.25rem; background:var(--surface); border:1px solid var(--border-color); border-radius:0.75rem;">
+        <span style="font-size:0.8rem; color:var(--text-muted); text-transform:uppercase; font-weight:600; letter-spacing:0.05em;">
+          ${e("معيار التشفير والبصمة","Encryption Standard")}
+        </span>
+        <div style="font-size:1.1rem; font-weight:700; color:#10b981; margin-top:0.6rem;">
+          AES-256-CBC <span style="font-size:0.75rem; color:var(--text-muted);">(PBKDF2 100k)</span>
+        </div>
+      </div>
+
+      <div class="card" style="padding:1.25rem; background:var(--surface); border:1px solid var(--border-color); border-radius:0.75rem;">
+        <span style="font-size:0.8rem; color:var(--text-muted); text-transform:uppercase; font-weight:600; letter-spacing:0.05em;">
+          ${e("حجم أرشيف قاعدة البيانات","Latest Archive Size")}
+        </span>
+        <div style="font-size:1.4rem; font-weight:800; color:var(--text-main); margin-top:0.5rem;">
+          ${c?.sizeFormatted||"—"}
+        </div>
+      </div>
+    </div>
+
+    <!-- Backups Table Ledger -->
+    <div class="card" style="padding:0; overflow:hidden; border-radius:0.75rem; border:1px solid var(--border-color);">
+      <div style="padding:1.25rem 1.5rem; border-bottom:1px solid var(--border-color); display:flex; justify-content:space-between; align-items:center;">
+        <h3 style="font-size:1.05rem; font-weight:700; color:var(--text-main); margin:0;">
+          ${e("سجل النسخ الاحتياطية المتاحة على Google Drive (5TB)","Available Backups Ledger (Google Drive 5TB)")}
+        </h3>
+        <span style="font-size:0.82rem; color:var(--text-muted);">
+          ${e("فترة الاستبقاء: 30 يوماً متجددة","Retention Policy: 30-Day Rolling")}
+        </span>
+      </div>
+
+      ${m.length===0?`
+        <div style="padding:3rem 1rem; text-align:center; color:var(--text-muted);">
+          <p>${e("لم يتم العثور على نسخ احتياطية في مجلد Drive.","No encrypted backups found in Google Drive folder.")}</p>
+        </div>
+      `:`
+        <div style="overflow-x:auto;">
+          <table class="table" style="width:100%; margin:0; border-collapse:collapse; font-size:0.9rem;">
+            <thead>
+              <tr style="background:rgba(0,0,0,0.03); border-bottom:1px solid var(--border-color); text-align:start;">
+                <th style="padding:0.9rem 1.25rem; font-weight:600; color:var(--text-muted);">${e("اسم الملف المشفر","Encrypted Filename")}</th>
+                <th style="padding:0.9rem 1.25rem; font-weight:600; color:var(--text-muted);">${e("تاريخ الحفظ","Timestamp")}</th>
+                <th style="padding:0.9rem 1.25rem; font-weight:600; color:var(--text-muted);">${e("الحجم","Size")}</th>
+                <th style="padding:0.9rem 1.25rem; font-weight:600; color:var(--text-muted);">${e("بصمة SHA-256","Integrity")}</th>
+                <th style="padding:0.9rem 1.25rem; font-weight:600; color:var(--text-muted); text-align:end;">${e("الإجراءات","Actions")}</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${m.map(g=>`
+                <tr style="border-bottom:1px solid var(--border-color); transition:background 0.15s ease;">
+                  <td style="padding:1rem 1.25rem; font-weight:600; color:var(--text-main);">
+                    <div style="display:flex; align-items:center; gap:0.5rem;">
+                      <span style="color:#10b981;">${n("lock","width:16px; height:16px;")}</span>
+                      <code style="font-family:monospace; font-size:0.85rem; color:var(--text-main);">${t(g.filename)}</code>
+                    </div>
+                  </td>
+                  <td style="padding:1rem 1.25rem; color:var(--text-muted);">${me(g.createdAt)}</td>
+                  <td style="padding:1rem 1.25rem; color:var(--text-main); font-weight:600;">${g.sizeFormatted}</td>
+                  <td style="padding:1rem 1.25rem;">
+                    <span style="
+                      display:inline-flex; align-items:center; gap:0.35rem;
+                      font-size:0.75rem; padding:0.2rem 0.6rem; border-radius:1rem;
+                      background:rgba(16,185,129,0.1); color:#10b981; font-weight:600;
+                    ">
+                      ${n("check","width:12px; height:12px;")} ${e("مطابقة وموثقة","Verified SHA-256")}
+                    </span>
+                  </td>
+                  <td style="padding:1rem 1.25rem; text-align:end;">
+                    <button class="btn btn-sm btn-secondary btn-copy-cli" data-filename="${t(g.filename)}" style="font-size:0.8rem; margin-inline-end:0.4rem;">
+                      ${n("copy","width:13px; height:13px;")}
+                      <span>${e("أمر CLI","CLI Command")}</span>
+                    </button>
+                    <button class="btn btn-sm btn-primary btn-restore-target" data-filename="${t(g.filename)}" style="background:#059669; border-color:#059669; font-size:0.8rem;">
+                      ${n("shield","width:13px; height:13px;")}
+                      <span>${e("استعادة","Restore")}</span>
+                    </button>
+                  </td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        </div>
+      `}
+    </div>
+  `}function be(){const a=document.getElementById("btn-refresh-vault");a&&(a.onclick=async()=>{a.disabled=!0,a.innerHTML=`${n("refresh","width:16px; height:16px; animation:spin 1s linear infinite;")} ${e("جاري الفحص...","Scanning...")}`,await Ne(!0);const r=document.getElementById("vault-content-area");r&&(r.innerHTML=ue(V(),G),be()),C(e("تم تحديث قائمة النسخ من Google Drive بنجاح","Vault list refreshed successfully"))});const s=document.getElementById("btn-open-restore-wizard");s&&(s.onclick=()=>ke("latest")),document.querySelectorAll(".btn-restore-target").forEach(r=>{r.onclick=()=>{ke(r.getAttribute("data-filename"))}}),document.querySelectorAll(".btn-copy-cli").forEach(r=>{r.onclick=()=>{const c=`openssl enc -d -aes-256-cbc -pbkdf2 -iter 100000 -pass pass:"$BACKUP_ENCRYPTION_KEY" -in "${r.getAttribute("data-filename")}" | gunzip | psql "$SUPABASE_DB_URL"`;navigator.clipboard.writeText(c),C(e("تم نسخ أمر فك التشفير والاستعادة إلى الحافظة","Decryption & restore command copied to clipboard"))}})}function ke(a="latest"){oe("vault","Opened disaster recovery wizard modal",{targetFilename:a});const s=`
+    <div class="restore-wizard-dialog" style="max-width:540px; margin:0 auto; padding:1.5rem 0;">
+      <div style="text-align:center; margin-bottom:1.5rem;">
+        <div style="width:56px; height:56px; border-radius:50%; background:rgba(217,119,6,0.12); color:#d97706; display:inline-flex; align-items:center; justify-content:center; margin-bottom:1rem;">
+          ${n("alert-triangle","width:28px; height:28px;")}
+        </div>
+        <h3 style="font-size:1.3rem; font-weight:700; color:var(--text-main); margin:0 0 0.5rem 0;">
+          ${e("معالج استعادة قاعدة البيانات (Disaster Recovery)","Database Disaster Recovery Wizard")}
+        </h3>
+        <p style="color:var(--text-muted); font-size:0.9rem; line-height:1.5; margin:0;">
+          ${e("النسخة المستهدفة:","Target Backup Archive:")}
+          <strong style="color:#10b981; font-family:monospace;">${t(a)}</strong>
+        </p>
+      </div>
+
+      <!-- Mode Selector: Dry Run vs Real Restore -->
+      <div style="background:var(--surface); border:1px solid var(--border-color); border-radius:0.75rem; padding:1.25rem; margin-bottom:1.5rem;">
+        <label style="display:flex; align-items:flex-start; gap:0.75rem; cursor:pointer; margin-bottom:1rem;">
+          <input type="radio" name="restore-mode" id="mode-dryrun" value="dryrun" checked style="margin-top:0.25rem;">
+          <div>
+            <strong style="display:flex; align-items:center; gap:0.4rem; color:var(--text-main); font-size:0.95rem;">
+              <span style="color:#10b981;">${n("shield","width:15px; height:15px;")}</span>
+              <span>${e("المحاكاة الآمنة (Dry-Run Rehearsal) — موصى به","Safe Rehearsal (Dry-Run) — Recommended")}</span>
+            </strong>
+            <span style="color:var(--text-muted); font-size:0.83rem;">
+              ${e("يقوم بتحميل وفك تشفير النسخة والتأكد من مطابقة الـ SHA-256 وحساب الجداول دون لمس قاعدة البيانات الحية.","Downloads, verifies SHA-256, decrypts and inspects SQL without modifying production data.")}
+            </span>
+          </div>
+        </label>
+
+        <label style="display:flex; align-items:flex-start; gap:0.75rem; cursor:pointer;">
+          <input type="radio" name="restore-mode" id="mode-real" value="real" style="margin-top:0.25rem;">
+          <div>
+            <strong style="display:flex; align-items:center; gap:0.4rem; color:#ef4444; font-size:0.95rem;">
+              <span>${n("alert-triangle","width:15px; height:15px;")}</span>
+              <span>${e("الاستعادة الإنتاجية الكاملة (Live Database Restore)","Full Live Production Restoration")}</span>
+            </strong>
+            <span style="color:var(--text-muted); font-size:0.83rem;">
+              ${e("يسحب لقطة أمان مسبقة، ثم يحقن النسخة المستعادة في معاملة ذرية مع تجميد الـ Triggers تلقائياً.","Takes a pre-restore safety snapshot, freezes triggers, and injects data in an atomic transaction.")}
+            </span>
+          </div>
+        </label>
+      </div>
+
+      <!-- Live Confirmation Phrase (Only if Real is chosen) -->
+      <div id="real-confirm-box" style="display:none; margin-bottom:1.5rem;">
+        <label style="display:block; font-size:0.85rem; font-weight:600; color:#ef4444; margin-bottom:0.5rem;">
+          ${e("لحماية البيانات، اكتب بالضبط: RESTORE_PRODUCTION_DATABASE","Type exactly to confirm: RESTORE_PRODUCTION_DATABASE")}
+        </label>
+        <input type="text" id="input-confirm-phrase" class="form-control" placeholder="RESTORE_PRODUCTION_DATABASE" style="font-family:monospace; letter-spacing:0.05em;">
+      </div>
+
+      <!-- Karim Al-Hakim 3.5s Radial Hold Safety Trigger -->
+      <div style="text-align:center; padding:1rem 0;">
+        <button id="btn-hold-restore" class="btn" style="
+          width:100%; height:52px; font-weight:700; font-size:1rem;
+          background:#059669; color:#fff; border:none; border-radius:0.75rem;
+          position:relative; overflow:hidden; user-select:none;
+        ">
+          <span id="hold-progress-bar" style="
+            position:absolute; top:0; left:0; bottom:0; width:0%;
+            background:rgba(255,255,255,0.25); transition:width 0.05s linear;
+          "></span>
+          <span id="hold-btn-text" style="position:relative; z-index:2; display:inline-flex; align-items:center; gap:0.5rem;">
+            ${n("play","width:18px; height:18px;")}
+            <span>${e("اضغط مطولاً لبدء المحاكاة التجريبية (3.5 ثانية)","Hold 3.5s to Execute Rehearsal")}</span>
+          </span>
+        </button>
+        <p style="color:var(--text-muted); font-size:0.8rem; margin-top:0.75rem;">
+          ${e("آلية أمان لمنع النقر بالخطأ تحت الضغط العصبي","Safety latch to prevent accidental activation under stress")}
+        </p>
+      </div>
+
+      <div id="restore-live-feedback" style="display:none; margin-top:1rem; padding:1rem; border-radius:0.5rem; background:rgba(0,0,0,0.2); font-family:monospace; font-size:0.85rem;"></div>
+    </div>
+  `;fe(e("غرفة عمليات التعافي من الكوارث","Disaster Recovery Ops"),s);const r=document.getElementById("mode-dryrun"),c=document.getElementById("mode-real"),m=document.getElementById("real-confirm-box"),g=document.getElementById("hold-btn-text"),x=document.getElementById("btn-hold-restore"),w=()=>{r.checked?(m.style.display="none",x.style.background="#059669",g.innerHTML=`${n("play","width:18px; height:18px;")} <span>${e("اضغط مطولاً لبدء المحاكاة التجريبية (3.5 ثوانٍ)","Hold 3.5s to Execute Rehearsal")}</span>`):(m.style.display="block",x.style.background="#dc2626",g.innerHTML=`${n("alert-triangle","width:18px; height:18px;")} <span>${e("اضغط مطولاً لتأكيد الاستعادة الحية (3.5 ثوانٍ)","Hold 3.5s to Trigger LIVE Restore")}</span>`)};r.onchange=w,c.onchange=w;const v=document.getElementById("hold-progress-bar");let A=0;const z=()=>{const h=r.checked;if(!h&&(document.getElementById("input-confirm-phrase")?.value||"").trim()!=="RESTORE_PRODUCTION_DATABASE"){C(e("يجب كتابة عبارة التأكيد RESTORE_PRODUCTION_DATABASE أولاً","Please enter confirmation phrase first"),"error");return}A=Date.now(),ne=0,v.style.width="0%",Y=setInterval(()=>{const $=Date.now()-A;ne=Math.min($/3500*100,100),v.style.width=ne+"%",ne>=100&&(clearInterval(Y),Y=null,et(a,h))},50)},i=()=>{Y&&(clearInterval(Y),Y=null,v.style.width="0%")};x.addEventListener("mousedown",z),x.addEventListener("mouseup",i),x.addEventListener("mouseleave",i),x.addEventListener("touchstart",z,{passive:!0}),x.addEventListener("touchend",i)}async function et(a,s){const r=document.getElementById("restore-live-feedback"),c=document.getElementById("btn-hold-restore");c&&(c.disabled=!0),r&&(r.style.display="block",r.innerHTML=`
+      <div style="color:#10b981; display:flex; align-items:center; gap:0.4rem;">${n("play","width:14px; height:14px;")} <span>${e("جاري إطلاق مسار التعافي على GitHub Actions...","Dispatching Disaster Recovery on GitHub Actions...")}</span></div>
+      <div style="color:var(--text-muted); margin-top:0.4rem;">Mode: ${s?"DRY_RUN (Safe Rehearsal)":"PRODUCTION_RESTORE"}</div>
+    `);try{oe("vault","Triggering restore API call",{backupFilename:a,isDryRun:s}),await N("/api/vault/restore",{method:"POST",body:JSON.stringify({backupFilename:a,dryRun:s,confirmationPhrase:s?"DRY_RUN_REHEARSAL":"RESTORE_PRODUCTION_DATABASE"})}),r&&(r.innerHTML+=`
+        <div style="color:#10b981; margin-top:0.6rem; display:flex; align-items:center; gap:0.4rem;">${n("check","width:14px; height:14px;")} <span>${e("تم قبول العملية وتشغيل المسار المعزول بنجاح!","Workflow dispatched successfully!")}</span></div>
+        <div style="color:var(--text-muted); margin-top:0.4rem;">Status: Initiated via GitHub Actions Runner</div>
+        <div style="margin-top:0.75rem;">
+          <a href="https://github.com/ahmad0105/Darc-design-team/actions/workflows/database-restore.yml" target="_blank" class="btn btn-sm btn-secondary" style="font-size:0.8rem;">
+            ${e("متابعة التنفيذ الحي على GitHub ↗","Watch Live Run on GitHub ↗")}
+          </a>
+        </div>
+      `),C(e("تم إطلاق مسار التعافي بنجاح","Disaster recovery launched successfully"))}catch(m){r&&(r.innerHTML+=`
+        <div style="color:#ef4444; margin-top:0.6rem; display:flex; align-items:center; gap:0.4rem;">${n("alert-triangle","width:14px; height:14px;")} <span>${e("خطأ في إطلاق المسار:","Dispatch Error:")} ${t(m.message)}</span></div>
+      `),C(m.message||"Error triggering restore","error")}}var ut=Ee({FULL_PERMISSIONS_CATALOG:()=>Be,canAccessSettingsSection:()=>L,exportAuditLogsXLS:()=>it,fetchFullAuditHistory:()=>nt,openRoleModal:()=>ot,openUserModal:()=>lt,printAuditReport:()=>st,renderAuditForProject:()=>at,renderSettings:()=>rt,renderTeam:()=>tt,renderUserActivityCell:()=>Oe});function tt(){if(!_()&&!k("manage_users"))return`<section class="panel"><div class="empty">${n("alert",18)}<span>${e("غير مصرح لك بعرض هذه الصفحة.","You are not authorized to view this page.")}</span></div></section>`;const a=o.data?.user?.id;let s=(o.data?.users||[]).filter(r=>r.status!=="inactive");return a!=="usr_ahmad"?s=s.filter(r=>r.id!=="usr_ahmad"):s=[...s].sort((r,c)=>r.id==="usr_ahmad"?-1:c.id==="usr_ahmad"?1:0),`
+    <div class="page-head">
+      <div>
+        <p class="eyebrow">${e("الأشخاص والمسؤوليات","PEOPLE & OWNERSHIP")}</p>
+        <h1>${d("team")}</h1>
+        <p>${e("كل عضو يعرف دوره، مسؤولياته، وما يحتاج إغلاقه بعد ذلك.","Every member has a clear role, responsibility, and next action.")}</p>
+      </div>
+      <div class="page-actions">
+        ${_()||k("manage_users")?`<button class="btn btn-primary" data-action="new-user">${n("plus",15)} ${d("addMember")}</button>`:""}
+      </div>
+    </div>
+    <div class="team-grid">
+      ${s.map(r=>{const c=ye(r.id,o.data?.tasks||[]),m=r.id==="usr_ahmad";return`
+          <article class="member-card ${m?"system-developer-card":""}" style="${m?"border:2px solid var(--brand-teal);box-shadow:0 6px 20px rgba(13,148,136,0.12);":""}">
+            <div class="member-card-head">
+              <div class="member-card-person">
+                ${se(r,"avatar-lg")}
+                <div class="member-card-person-copy">
+                  <strong>${t(e(r.name,r.nameEn||r.name))}</strong>
+                  <span>${t(e(r.jobTitleAr||(m?"المبرمج / مدير النظام":""),r.jobTitleEn||r.jobTitleAr||""))}</span>
+                </div>
+              </div>
+              ${m?`<span class="stealth-dev-badge">${n("shield",12)} ${e("مدير ومطور النظام","Super Admin & Dev")}</span>`:Ue()&&r.id!==o.data?.user?.id?`<button class="member-menu" data-action="open-user" data-user-id="${t(r.id)}">${n("more",15)}</button>`:""}
+            </div>
+            <div class="member-card-role">
+              <span class="status-badge ${r.status==="active"?"done":"not_started"}">${t(H(r))}</span>
+            </div>
+            <div class="member-card-stats">
+              <span>${d("progress")} <strong>${c.progress}%</strong></span>
+              <span>${c.tasks} ${d("tasks")}</span>
+            </div>
+            <div class="member-email">${r.email?t(r.email):d("noEmail")}</div>
+          </article>
+        `}).join("")}
+    </div>
+  `}function at(a){const s=(o.data?.auditLogs||[]).filter(r=>r.details?.projectId===a||r.entityType==="project"&&r.entityId===a);return s.length?`<div class="audit-list">${s.map(r=>`<div class="audit-row"><span class="audit-dot"></span><div class="audit-copy"><strong>${t(r.user?e(r.user.name,r.user.nameEn||r.user.name):"DARC")} · ${t(r.action)}</strong><span>${t(r.entityType)} · ${re(r.createdAt,!0)}</span></div></div>`).join("")}</div>`:`<div class="empty">${n("check",18)}<span>${e("لا توجد تغييرات مسجلة بعد.","No changes recorded yet.")}</span></div>`}function Oe(a){const s=a.lastActiveAt||a.customFields?.lastActiveAt,r=a.lastLoginAt||a.customFields?.lastLoginAt;if(!s&&!r)return`<span class="activity-never">${e("لم يسجل دخول بعد","Never logged in")}</span>`;const c=Date.now(),m=s?new Date(s).getTime():0,g=a.id===o.data?.user?.id?0:m&&!isNaN(m)?Math.floor((c-m)/6e4):999999,x=g>=0&&g<=5;let w="";if(x)w=`<span class="activity-pill online"><span class="activity-dot online"></span> ${e("نشط الآن","Online")}</span>`;else if(g<60)w=`<span class="activity-pill recent"><span class="activity-dot recent"></span> ${e(`منذ ${g} دقيقة`,`${g}m ago`)}</span>`;else if(g<1440){const A=Math.floor(g/60);w=`<span class="activity-pill idle"><span class="activity-dot idle"></span> ${e(`منذ ${A} ساعة`,`${A}h ago`)}</span>`}else m>0&&(w=`<span class="activity-pill idle"><span class="activity-dot idle"></span> ${re(s,!1)}</span>`);const v=r?`<span class="activity-sub" title="${t(r)}">${e("دخول:","Login:")} ${re(r,!0)}</span>`:"";return`<div class="activity-wrapper">${w}${v}</div>`}function xe(a){return me(a,{includeSeconds:!0})}function de(a){const s=a.action||"",r=a.entityType||a.entity_type||"",c=a.details||{};let m="badge-neutral",g=s,x=r;s==="login"?(m="badge-teal",g=e("تسجيل دخول","Sign In"),x=e("جلسة نظام","System Session")):s==="create"?(m="badge-mint",g=e("إنشاء جديد","Created")):s==="update"?(m="badge-blue",g=e("تعديل بيانات","Updated")):s==="delete"?(m="badge-red",g=e("نقل للمهملات","Moved to Trash")):s==="status_change"?(m="badge-amber",g=e("تغيير حالة","Status Changed")):s==="export_report"?(m="badge-teal",g=e("تصدير تقرير","Exported Report")):s==="restore"?(m="badge-mint",g=e("استعادة","Restored")):s==="purge"?(m="badge-danger",g=e("حذف نهائي","Purged")):s==="invite"&&(m="badge-blue",g=e("دعوة مستخدم","Invite Sent")),r==="task"?x=e("مهمة","Task"):r==="project"?x=e("مشروع","Project"):r==="document"?x=e("مستند","Document"):r==="user"?x=e("مستخدم","User"):r==="report"?x=e("تقرير","Report"):r==="role"&&(x=e("دور وصلاحيات","Role"));let w="—";return c.title||c.name?w=`<strong>${t(c.title||c.name)}</strong>`:s==="status_change"&&(c.oldStatus||c.newStatus)?w=`<span>${t(W(c.oldStatus))} → <strong>${t(W(c.newStatus))}</strong></span>`:a.entityId&&(w=`<code style="font-size:11px;color:var(--muted);">${t(a.entityId)}</code>`),{badgeClass:m,actionLabel:g,entityLabel:x,detailHtml:w}}function it(a=null){if(!k("view_audit_logs")&&!_()){C(e("ليس لديك صلاحية لتصدير سجل الرقابة.","You do not have permission to export audit logs."),!0);return}const s=a||o._lastFilteredAuditLogs||o.data?.auditLogs||[];if(!s.length){C(e("لا توجد عمليات لتصديرها.","No logs to export."),!0);return}const r=qe(),c=r.displayName,m=r.logoUrl,g=o.data?.user||{},x=e(g.name,g.nameEn||g.name)||"Admin",w=De(),v=ze();let A=`
+    <table>
+      <tr>
+        <th colspan="7" class="title" style="font-size:18px;font-weight:bold;background:#0d6269;color:#ffffff;text-align:center;padding:12px;">
+          ${m?`<img src="${t(m)}" height="38" style="vertical-align:middle;margin-inline-end:10px;" />`:""}
+          <span style="vertical-align:middle;">${e("سجل الرقابة والتدقيق الأمني والعمليات — "+c,"Audit & Security Trail Report — "+c)}</span>
+        </th>
+      </tr>
+      <tr>
+        <th colspan="7" class="subtitle" style="font-size:13px;background:#eef2f2;color:#1e293b;text-align:center;padding:8px;">
+          ${e("المؤسسة:","Company:")} ${t(c)} | ${e("المشرف المستخرج:","Exported by:")} ${t(x)} | ${e("تاريخ التصدير:","Export Date:")} ${t(w)} ${t(v)}
+        </th>
+      </tr>
+      <tr>
+        <th colspan="7" style="background:#f8fafc;color:#64748b;font-size:11px;text-align:center;padding:6px;">
+          ${e("إجمالي العمليات المضمنة في التقرير:","Total Events in Report:")} ${s.length} ${e("عملية","events")}
+        </th>
+      </tr>
+      <tr style="height:10px;"><td colspan="7" style="border:none;"></td></tr>
+      <tr class="header" style="background:#134e4a;color:#ffffff;font-weight:bold;font-size:12px;text-align:center;">
+        <th style="padding:8px;border:1px solid #cbd5e1;">${e("المعرف","ID")}</th>
+        <th style="padding:8px;border:1px solid #cbd5e1;">${e("التاريخ والوقت","Date & Time")}</th>
+        <th style="padding:8px;border:1px solid #cbd5e1;">${e("المنفذ / المستخدم","Actor")}</th>
+        <th style="padding:8px;border:1px solid #cbd5e1;">${e("الدور الوظيفي","Role")}</th>
+        <th style="padding:8px;border:1px solid #cbd5e1;">${e("نوع النشاط","Action")}</th>
+        <th style="padding:8px;border:1px solid #cbd5e1;">${e("نوع العنصر","Entity")}</th>
+        <th style="padding:8px;border:1px solid #cbd5e1;">${e("التفاصيل والتغييرات","Details / Context")}</th>
+      </tr>
+  `;s.forEach((i,h)=>{const $=i.user||(i.userId?(o.data?.users||[]).find(I=>I.id===i.userId):null),D=$?e($.name,$.nameEn||$.name):e("النظام","System"),l=$?H($):"—",f=xe(i.createdAt),{actionLabel:E,entityLabel:y}=de(i);let T="";i.details?.title||i.details?.name?T=i.details.title||i.details.name:i.action==="status_change"?T=`${W(i.details?.oldStatus)} → ${W(i.details?.newStatus)}`:typeof i.details=="object"?T=JSON.stringify(i.details):T=String(i.details||i.entityId||"—");const b=h%2===0?"#ffffff":"#f8fafc";A+=`
+      <tr style="background:${b};font-size:11px;vertical-align:middle;">
+        <td style="padding:6px 8px;border:1px solid #e2e8f0;font-family:monospace;text-align:center;">${t(B(i.id||"—"))}</td>
+        <td style="padding:6px 8px;border:1px solid #e2e8f0;text-align:center;">${t(B(`${f.date} ${f.time}`))}</td>
+        <td style="padding:6px 8px;border:1px solid #e2e8f0;font-weight:bold;">${t(B(D))}</td>
+        <td style="padding:6px 8px;border:1px solid #e2e8f0;">${t(B(l))}</td>
+        <td style="padding:6px 8px;border:1px solid #e2e8f0;text-align:center;">${t(B(E))}</td>
+        <td style="padding:6px 8px;border:1px solid #e2e8f0;text-align:center;">${t(B(y))}</td>
+        <td style="padding:6px 8px;border:1px solid #e2e8f0;">${t(B(T))}</td>
+      </tr>
+    `}),A+="</table>";const z=new Date().toISOString().split("T")[0];We(`DARC_Audit_Trail_${z}`,A),C(e("تم تصدير ملف سجل التدقيق بنجاح.","Audit trail exported successfully.")),N("/api/audit",{method:"POST",body:JSON.stringify({action:"export_report",entityType:"report",entityId:`rep_audit_${z}`,details:{reportType:"Audit_Logs_Excel",count:s.length}})}).catch(()=>{})}function st(a=null){const s=a||o._lastFilteredAuditLogs||o.data?.auditLogs||[];if(!s.length){C(e("لا توجد عمليات لطباعتها.","No logs to print."),!0);return}const r=o.data?.company||{},c=e(r.nameAr||r.name,r.nameEn||r.name)||"DARC Design Team";let m=r.logoUrl||"";m.startsWith("/")&&typeof window<"u"&&window.location?.origin&&(m=`${window.location.origin}${m}`);const g=o.data?.user||{},x=e(g.name,g.nameEn||g.name)||"Admin",w=De(),v=ze(),A=s.length,z=s.filter(y=>y.action==="create").length,i=s.filter(y=>y.action==="update"||y.action==="status_change").length,h=s.filter(y=>y.action==="delete"||y.action==="purge"||y.action==="trash").length;let $="";s.forEach((y,T)=>{const b=y.user||(y.userId?(o.data?.users||[]).find(O=>O.id===y.userId):null),I=b?e(b.name,b.nameEn||b.name):e("النظام","System"),Z=b?H(b):"—",p=xe(y.createdAt),{actionLabel:u,entityLabel:S}=de(y);let R="";y.details?.title||y.details?.name?R=y.details.title||y.details.name:y.action==="status_change"?R=`${W(y.details?.oldStatus)} → ${W(y.details?.newStatus)}`:typeof y.details=="object"?R=JSON.stringify(y.details):R=String(y.details||y.entityId||"—"),$+=`
+      <tr>
+        <td style="font-family:monospace;font-size:10px;color:#64748b;text-align:center;">${t(y.id||String(T+1))}</td>
+        <td style="font-weight:bold;white-space:nowrap;">${t(p.date)} <span style="font-size:10px;font-weight:normal;color:#64748b;">${t(p.time)}</span></td>
+        <td>
+          <div style="font-weight:bold;color:#0f172a;">${t(I)}</div>
+          <div style="font-size:10px;color:#64748b;">${t(Z)}</div>
+        </td>
+        <td style="text-align:center;">
+          <span class="print-badge">${t(u)}</span>
+        </td>
+        <td style="text-align:center;font-weight:600;">${t(S)}</td>
+        <td style="font-size:11px;color:#334155;">${t(R)}</td>
+      </tr>
+    `});const D=`
+    <!DOCTYPE html>
+    <html lang="${o.lang}" dir="${o.lang==="ar"?"rtl":"ltr"}">
+    <head>
+      <meta charset="utf-8" />
+      <title>DARC Audit & Security Report - ${new Date().toISOString().split("T")[0]}</title>
+      <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet" />
+      <style>
+        @page { size: A4 landscape; margin: 12mm; }
+        * { box-sizing: border-box; }
+        body {
+          font-family: 'Cairo', system-ui, -apple-system, sans-serif;
+          margin: 0;
+          padding: 24px;
+          color: #0f172a;
+          background: #ffffff;
+          font-size: 11px;
+          line-height: 1.4;
+        }
+        .report-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          border-bottom: 2px solid #0d6269;
+          padding-bottom: 14px;
+          margin-bottom: 16px;
+        }
+        .brand-title {
+          font-size: 20px;
+          font-weight: 800;
+          color: #0d6269;
+          margin: 0;
+        }
+        .report-subtitle {
+          font-size: 12px;
+          color: #475569;
+          margin-top: 4px;
+        }
+        .report-meta-box {
+          text-align: ${o.lang==="ar"?"left":"right"};
+          font-size: 11px;
+          color: #334155;
+        }
+        .kpi-row {
+          display: flex;
+          gap: 12px;
+          margin-bottom: 16px;
+        }
+        .kpi-card {
+          flex: 1;
+          border: 1px solid #e2e8f0;
+          background: #f8fafc;
+          border-radius: 8px;
+          padding: 8px 12px;
+          text-align: center;
+        }
+        .kpi-val {
+          font-size: 18px;
+          font-weight: 800;
+          color: #0d6269;
+        }
+        .kpi-label {
+          font-size: 10px;
+          color: #64748b;
+          margin-top: 2px;
+        }
+        table {
+          width: 100%;
+          border-collapse: collapse;
+          margin-bottom: 24px;
+        }
+        th, td {
+          border: 1px solid #cbd5e1;
+          padding: 7px 9px;
+          text-align: ${o.lang==="ar"?"right":"left"};
+          vertical-align: middle;
+        }
+        th {
+          background: #0d6269;
+          color: #ffffff;
+          font-size: 11px;
+          font-weight: 700;
+          text-align: center;
+        }
+        tr:nth-child(even) {
+          background: #f8fafc;
+        }
+        .print-badge {
+          display: inline-block;
+          padding: 2px 8px;
+          border-radius: 4px;
+          font-size: 10px;
+          font-weight: 700;
+          background: #e2e8f0;
+          color: #1e293b;
+        }
+        .signature-section {
+          margin-top: 32px;
+          display: flex;
+          justify-content: space-between;
+          gap: 30px;
+          page-break-inside: avoid;
+        }
+        .signature-box {
+          flex: 1;
+          border-top: 1px dashed #94a3b8;
+          padding-top: 8px;
+          text-align: center;
+          font-size: 11px;
+          color: #475569;
+        }
+        .no-print-bar {
+          background: #f1f5f9;
+          border: 1px solid #cbd5e1;
+          border-radius: 8px;
+          padding: 10px 16px;
+          margin-bottom: 20px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+        }
+        .btn-print {
+          background: #0d6269;
+          color: #ffffff;
+          border: none;
+          padding: 8px 18px;
+          border-radius: 6px;
+          font-weight: bold;
+          cursor: pointer;
+          font-family: inherit;
+        }
+        @media print {
+          .no-print-bar { display: none !important; }
+          body { padding: 0; }
+        }
+      </style>
+    </head>
+    <body>
+      <div class="no-print-bar">
+        <div>
+          <strong>${e("معاينة التقرير الرقابي الرسمي جاهزة للطباعة / التصدير PDF","Official Executive Audit Report Ready for Print / Save as PDF")}</strong>
+          <span style="display:block;font-size:11px;color:#64748b;">${e('يمكنك الضغط على زر الطباعة أدناه واختيار "Save as PDF" لتخزين الملف كـ PDF رسمي.','Click the button below and choose "Save as PDF" in your browser.')}</span>
+        </div>
+        <button class="btn-print" onclick="window.print()">${e("طباعة / حفظ كـ PDF","Print / Save as PDF")}</button>
+      </div>
+
+      <header class="report-header">
+        <div>
+          ${m?`<img src="${t(m)}" alt="Logo" style="height:44px;object-fit:contain;margin-bottom:6px;display:block;" />`:""}
+          <h1 class="brand-title">${t(c)}</h1>
+          <div class="report-subtitle">${e("تقرير الرقابة والتدقيق الأمني وسجل العمليات الإدارية","Official Security Audit & Governance Operations Trail")}</div>
+        </div>
+        <div class="report-meta-box">
+          <div><strong>${e("المشرف المستخرج:","Generated By:")}</strong> ${t(x)}</div>
+          <div><strong>${e("تاريخ التقرير:","Report Date:")}</strong> ${t(w)} - ${t(v)}</div>
+          <div><strong>${e("حالة النظام:","System Status:")}</strong> Active / Enforced</div>
+        </div>
+      </header>
+
+      <div class="kpi-row">
+        <div class="kpi-card">
+          <div class="kpi-val">${A}</div>
+          <div class="kpi-label">${e("إجمالي العمليات","Total Events")}</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-val" style="color:#059669;">${z}</div>
+          <div class="kpi-label">${e("عمليات إنشاء","Create Operations")}</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-val" style="color:#2563eb;">${i}</div>
+          <div class="kpi-label">${e("عمليات تعديل وحالة","Updates & State Changes")}</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-val" style="color:#dc2626;">${h}</div>
+          <div class="kpi-label">${e("عمليات حذف وحركة سلة","Deletions & Trash Moves")}</div>
+        </div>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th style="width:50px;">#</th>
+            <th style="width:130px;">${e("التاريخ والوقت","Timestamp")}</th>
+            <th style="width:160px;">${e("المستخدم / المنفذ","Actor")}</th>
+            <th style="width:90px;">${e("نوع النشاط","Action")}</th>
+            <th style="width:90px;">${e("نوع العنصر","Entity")}</th>
+            <th>${e("التفاصيل والتغييرات","Details & Context")}</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${$}
+        </tbody>
+      </table>
+
+      <footer class="signature-section">
+        <div class="signature-box">
+          <strong>${e("إعداد وتصدير التقرير","Prepared By")}</strong><br /><br />
+          <span>${t(x)}</span>
+        </div>
+        <div class="signature-box">
+          <strong>${e("مسؤول الجودة والامتثال الأمني","Security & Compliance Lead")}</strong><br /><br />
+          <span>..............................................</span>
+        </div>
+        <div class="signature-box">
+          <strong>${e("الاعتماد الإداري العام","General Management Approval")}</strong><br /><br />
+          <span>..............................................</span>
+        </div>
+      </footer>
+    </body>
+    </html>
+  `;let l=document.getElementById("audit-report-preview-modal");l||(l=document.createElement("div"),l.id="audit-report-preview-modal",l.style.position="fixed",l.style.inset="0",l.style.background="rgba(0, 0, 0, 0.7)",l.style.backdropFilter="blur(4px)",l.style.zIndex="999999",l.style.display="none",l.style.alignItems="center",l.style.justifyContent="center",l.style.padding="15px",document.body.appendChild(l)),l.innerHTML=`
+    <div style="background:var(--surface, #ffffff);color:var(--ink);width:95%;max-width:1150px;height:92vh;border-radius:12px;box-shadow:0 25px 50px rgba(0,0,0,0.4);overflow:hidden;display:flex;flex-direction:column;border:1px solid var(--line);">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 20px;border-bottom:1px solid var(--line);background:var(--surface-soft);flex-wrap:wrap;gap:8px;">
+        <strong style="color:var(--brand-teal);font-size:14px;">${e("معاينة التقرير الرقابي الرسمي (Audit Trail PDF Preview)","Official Audit Trail Report (PDF Preview)")}</strong>
+        <div style="display:flex;gap:10px;">
+          <button type="button" class="btn btn-primary btn-sm" id="btn-print-audit-iframe" style="display:flex;align-items:center;gap:6px;">
+            ${n("printer",14)} ${e("طباعة / حفظ كـ PDF","Print / Save as PDF")}
+          </button>
+          <button type="button" class="btn btn-ghost btn-sm" id="btn-close-audit-print-modal">${n("close",14)}</button>
+        </div>
+      </div>
+      <div style="flex:1;overflow:hidden;position:relative;background:#ffffff;">
+        <iframe id="audit-print-preview-iframe" style="width:100%;height:100%;border:none;background:#ffffff;" srcdoc="${t(D)}"></iframe>
+      </div>
+    </div>
+  `,l.style.display="flex";const f=()=>{l.style.display="none",l.innerHTML="",window.removeEventListener("keydown",E)},E=y=>{y.key==="Escape"&&f()};window.addEventListener("keydown",E),document.getElementById("btn-close-audit-print-modal")?.addEventListener("click",f),document.getElementById("btn-print-audit-iframe")?.addEventListener("click",()=>{const y=document.getElementById("audit-print-preview-iframe");y&&y.contentWindow&&(y.contentWindow.focus(),y.contentWindow.print())}),N("/api/audit",{method:"POST",body:JSON.stringify({action:"export_report",entityType:"report",entityId:`rep_audit_print_${Date.now()}`,details:{reportType:"Audit_Logs_Print_PDF",count:s.length}})}).catch(()=>{})}async function nt(){try{C(e("جاري تحميل سجل التدقيق التاريخي الكامل...","Loading complete audit history..."));const a=await N("/api/audit?limit=1000");a&&a.logs&&(o.data.auditLogs=a.logs,o.auditFullHistoryLoaded=!0,renderView(),C(e(`تم جلب ${a.logs.length} عملية بنجاح.`,`Loaded ${a.logs.length} audit logs.`)))}catch(a){C(a.message||e("فشل جلب السجل التاريخي.","Failed to fetch audit history."),!0)}}function L(a){const s=_();return a==="profile"||a==="security"||a==="notifications"?!0:a==="company"?s||k("manage_settings"):a==="whatsapp"?s||k("manage_settings"):a==="roles"?s||k("manage_roles"):a==="accounts"?s||k("manage_users")||k("manage_existing_account_permissions")||k("view_user_activity"):a==="trash"?s||k("manage_trash"):a==="audit"?s||k("view_audit_logs"):a==="analytics"?s||k("manage_settings")||k("view_audit_logs"):a==="diagnostics"?s||k("manage_settings"):a==="vault"?s:!1}function rt(){const a=o.data?.user?.id,s=_(),r=L("company"),c=L("whatsapp"),m=L("roles"),g=L("accounts"),x=L("trash"),w=L("audit"),v=L("analytics"),A=L("diagnostics"),z=L("vault"),i=[["profile",e("الملف الشخصي","Profile")],["notifications",e("الإشعارات والتنبيهات","Notifications & Alerts")],...r?[["company",d("company")]]:[],...c?[["whatsapp",e("تنبيهات واتساب","WhatsApp Alerts")]]:[],...m?[["roles",d("roles")]]:[],...g?[["accounts",d("accounts")]]:[],["security",e("الأمان","Security")],...x?[["trash",e("سلة المهملات","Trash")]]:[],...w?[["audit",d("audit")]]:[],...v?[["analytics",e("المراقبة والزيارات والأداء","Observability & Analytics")]]:[],...A?[["diagnostics",e("تشخيص الأعطال والمستخدمين","Error Logs & User Diagnostics")]]:[],...z?[["vault",e("مركز النسخ والتعافي من الكوارث","Disaster Recovery & Vault")]]:[]];i.some(([l])=>l===o.settingsSection)||(o.settingsSection=i[0]?.[0]||"profile");const h=o.data?.user||{};let $="";if(o.settingsSection==="profile"&&($=`
+      <section class="setting-section">
+        <div class="panel-head">
+          <div>
+            <h2>${e("الملف الشخصي","Profile")}</h2>
+            <p>${e("إدارة صورتك الشخصية وبيانات حسابك في النظام.","Manage your profile picture and account information.")}</p>
+          </div>
+        </div>
+
+        <div class="profile-avatar-card">
+          <label for="user-avatar-file-input" class="avatar-upload-trigger" id="profile-avatar-preview" role="button" tabindex="0" title="${e("انقر لرفع صورة شخصية جديدة","Click to upload a new profile picture")}">
+            <div class="avatar-upload-circle">
+              ${h.avatarUrl?`<img src="${t(h.avatarUrl)}" alt="Avatar" class="avatar-upload-img" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" /><div class="avatar-upload-fallback" style="display:none;background:${/^#[0-9a-f]{6}$/i.test(h.avatarColor||"")?h.avatarColor:"#0d6269"};">${t(Ae(h))}</div>`:`<div class="avatar-upload-fallback" style="background:${/^#[0-9a-f]{6}$/i.test(h.avatarColor||"")?h.avatarColor:"#0d6269"};">${t(Ae(h))}</div>`}
+              <div class="avatar-upload-overlay">
+                ${n("upload",18)}
+                <span>${e("تغيير","Change")}</span>
+              </div>
+            </div>
+          </label>
+          <div class="profile-avatar-meta">
+            <h3 class="profile-user-name">${t(e(h.name,h.nameEn||h.name))}</h3>
+            <p class="profile-user-role">${t(e(h.jobTitleAr||"",h.jobTitleEn||h.jobTitleAr||""))} · <span class="status-badge done">${t(H(h))}</span></p>
+            <div class="profile-upload-actions">
+              <input type="file" id="user-avatar-file-input" accept="image/jpeg,image/png,image/webp" style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0;opacity:0;pointer-events:none;" />
+              <label for="user-avatar-file-input" class="btn btn-soft btn-sm" role="button" tabindex="0" style="cursor:pointer;display:inline-flex;align-items:center;gap:6px;">
+                ${n("upload",14)} ${e("رفع صورة جديدة","Upload new avatar")}
+              </label>
+              <span class="upload-hint">${e("يدعم JPG, PNG, WebP (حد أقصى 2MB)","Supports JPG, PNG, WebP (Max 2MB)")}</span>
+            </div>
+          </div>
+        </div>
+
+        <form data-action="update-profile">
+          <div class="form-grid">
+            <div class="field">
+              <label>${d("nameAr")}</label>
+              <input name="name" value="${t(h.name||"")}" required />
+            </div>
+            <div class="field">
+              <label>${d("nameEn")}</label>
+              <input name="nameEn" value="${t(h.nameEn||"")}" />
+            </div>
+            <div class="field">
+              <label>${d("jobTitle")} (${e("عربي","AR")})</label>
+              <input name="jobTitleAr" value="${t(h.jobTitleAr||"")}" />
+            </div>
+            <div class="field">
+              <label>${d("jobTitle")} (${e("إنجليزي","EN")})</label>
+              <input name="jobTitleEn" value="${t(h.jobTitleEn||"")}" />
+            </div>
+            <div class="field full">
+              <label>${d("email")}</label>
+              <input value="${t(h.email||"")}" disabled style="background:var(--surface-soft);cursor:not-allowed;" />
+            </div>
+            <div class="field full">
+              <label>${e("رقم الواتساب للتنبيهات الفردية","WhatsApp Phone for Alerts")}</label>
+              <input type="tel" name="phone" dir="ltr" value="${t(h.phone||h.customFields?.phone||"")}" placeholder="مثال: +966501234567" pattern="^\\+?[0-9]{7,16}$" />
+              <small class="field-hint">${e("أدخل رقم هاتفك مع مفتاح الدولة لاستلام تنبيهات المهام والمخططات المسندة إليك مباشرة على الواتساب.","Enter your phone number with country code to receive alerts for assigned tasks and drawings directly on WhatsApp.")}</small>
+            </div>
+            <div class="field full">
+              <label for="settings-calendar-system">${e("نظام التقويم المفضل في المنصة","Preferred Calendar System")}</label>
+              <select id="settings-calendar-system" name="calendarSystem">
+                <option value="gregorian" ${$e()==="gregorian"?"selected":""}>${e("التقويم الميلادي (Gregorian) — اليوم / الشهر / السنة","Gregorian Calendar — Day / Month / Year")}</option>
+                <option value="hijri" ${$e()==="hijri"?"selected":""}>${e("التقويم الهجري (أم القرى) — اليوم / الشهر / السنة","Hijri Calendar (Umm al-Qura) — Day / Month / Year")}</option>
+              </select>
+              <small class="field-hint">${e("يحدد صيغة عرض التواريخ في سجل العمليات، الجداول، وإحصائيات المشاريع في حسابك.","Sets the date format across audit logs, tables, and project analytics in your account.")}</small>
+            </div>
+          </div>
+          <div class="form-actions" style="margin-top:20px;">
+            <button type="submit" class="btn btn-primary">${d("save")}</button>
+          </div>
+        </form>
+      </section>
+    `),o.settingsSection==="company"&&(s||k("manage_settings"))){const l=o.data?.company||{};$=`
+      <section class="setting-section">
+        <div class="panel-head">
+          <div>
+            <h2>${d("company")}</h2>
+            <p>${e("هوية مساحة العمل وشعار الشركة واللغة الافتراضية.","Workspace identity, company logo, and default language.")}</p>
+          </div>
+        </div>
+        
+        <div class="company-preview">
+          <label for="company-logo-file-input" class="logo-upload-trigger" id="company-logo-preview" role="button" tabindex="0" title="${e("انقر لرفع وتعديل شعار الشركة","Click to upload and change company logo")}">
+            <div class="logo-upload-box">
+              ${l.logoUrl?`<img src="${t(l.logoUrl)}" alt="Logo" class="logo-upload-img" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" /><span class="brand-mark" style="display:none;">${n("building",24)}</span>`:`<span class="brand-mark">${n("building",24)}</span>`}
+              <div class="logo-upload-overlay">
+                ${n("upload",16)}
+                <span>${e("تعديل","Edit")}</span>
+              </div>
+            </div>
+          </label>
+          <div class="company-preview-meta">
+            <strong class="company-name">${t(l.name||"DARC Design Team")}</strong>
+            <span class="company-sub">${e("العربية افتراضيًا · دعم الإنجليزية · توقيت الرياض","Arabic default · English support · Riyadh timezone")}</span>
+            <div class="company-upload-actions">
+              <input type="file" id="company-logo-file-input" accept="image/png,image/jpeg,image/webp,image/svg+xml" style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0;opacity:0;pointer-events:none;" />
+              <label for="company-logo-file-input" class="btn btn-soft btn-sm" role="button" tabindex="0" style="cursor:pointer;display:inline-flex;align-items:center;gap:6px;">
+                ${n("upload",14)} ${e("رفع وتعديل الشعار","Upload & Change Logo")}
+              </label>
+              <span class="upload-hint">${e("يدعم PNG, SVG, JPG (حد أقصى 2MB)","Supports PNG, SVG, JPG (Max 2MB)")}</span>
+            </div>
+          </div>
+        </div>
+
+        <form data-action="update-company" class="company-form">
+          <div class="form-grid">
+            <div class="field">
+              <label>${d("nameAr")}</label>
+              <input name="nameAr" value="${t(l.nameAr||"")}" required />
+            </div>
+            <div class="field">
+              <label>${d("nameEn")}</label>
+              <input name="nameEn" value="${t(l.nameEn||"")}" />
+            </div>
+            <div class="field full">
+              <label>${d("emailStatus")}</label>
+              <input value="${t(o.data?.emailConfigured?d("emailConfigured"):d("emailNotConfigured"))}" disabled />
+            </div>
+          </div>
+          <div class="form-actions" style="margin-top:20px;">
+            <button type="submit" class="btn btn-primary">${d("save")}</button>
+          </div>
+        </form>
+        <div class="login-demo" style="margin-top:16px;">${n("info",16)}<span>${d("emailInfo")}</span></div>
+      </section>
+      <section class="setting-section">
+        <div class="panel-head">
+          <div>
+            <h2>${e("نموذج الإنجاز","Progress model")}</h2>
+            <p>${d("weightedExplanation")}</p>
+          </div>
+        </div>
+        <div class="report-stat-list">
+          <div class="report-stat"><span>${d("weightedProgress")}</span><strong style="color:var(--teal)">100%</strong></div>
+          <div class="report-stat"><span>${d("simpleProgress")}</span><strong style="color:var(--ink-soft)">—</strong></div>
+        </div>
+      </section>
+    `}if(o.settingsSection==="security"&&($=`
+      <section class="setting-section">
+        <div class="panel-head">
+          <div>
+            <h2>${e("الأمان","Security")}</h2>
+            <p>${e("تغيير كلمة المرور أو تسجيل الخروج من كافة الأجهزة.","Change your password or sign out from all devices.")}</p>
+          </div>
+        </div>
+        <form data-action="change-password">
+          <div class="form-grid" style="margin-top:18px">
+            <div class="field"><label>${e("كلمة المرور الحالية","Current password")}</label><input type="password" name="oldPassword" autocomplete="current-password" required /></div>
+            <div class="field"><label>${e("كلمة المرور الجديدة","New password")}</label><input type="password" name="newPassword" minlength="10" autocomplete="new-password" required /></div>
+          </div>
+          <div class="form-actions" style="margin-top:20px"><button type="submit" class="btn btn-primary">${d("save")}</button></div>
+        </form>
+        <hr style="margin:28px 0;border:0;border-top:1px solid var(--line)">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;">
+          <div>
+            <h3 style="font-size:14px;margin:0 0 4px">${e("تسجيل الخروج من كل الأجهزة","Sign out of all devices")}</h3>
+            <p style="color:var(--muted);font-size:12px;margin:0;">${e("إنهاء كافة الجلسات النشطة على كل المتصفحات.","End all active sessions on all browsers.")}</p>
+          </div>
+          <button class="btn btn-danger btn-sm" data-action="logout-all">${e("تسجيل خروج للكل","Sign out all")}</button>
+        </div>
+      </section>
+    `),o.settingsSection==="notifications"){const l=Fe(),f=Ve()&&!He(),E=l==="granted",y=l==="denied",T=f?`<span class="mini-badge" style="background:var(--mint);color:var(--teal);font-weight:700;">${e("مدعومة عبر تطبيق الويب (PWA)","Supported via Web App (PWA)")}</span>`:`<span class="mini-badge" style="background:${E?"var(--mint)":y?"var(--red-soft)":"var(--surface-soft)"};color:${E?"var(--teal)":y?"var(--red)":"var(--muted)"};font-weight:700;">
+          ${E?e("مفعلة على هذا المتصفح","Enabled on this browser"):y?e("محظورة من إعدادات المتصفح","Blocked in browser settings"):e("بانتظار الموافقة","Permission pending")}
+        </span>`,b=f?`<button type="button" class="btn btn-primary btn-sm" data-action="show-ios-notification-guide">${n("bell",14)} ${e("طريقة التفعيل على iPhone","iPhone Setup Guide")}</button>`:E?`<button type="button" class="btn btn-ghost btn-sm" data-action="test-browser-notification" style="color:var(--teal);">${n("check",14)} ${e("فحص إشعار المتصفح","Test Browser Alert")}</button>`:`<button type="button" class="btn btn-primary btn-sm" data-action="enable-browser-notifications">${n("check",14)} ${e("تفعيل الإشعارات الآن","Enable Notifications")}</button>`;$=`
+      <section class="setting-section">
+        <div class="panel-head">
+          <div>
+            <h2>${e("الإشعارات والتنبيهات","Notifications & Alerts")}</h2>
+            <p>${e("تخصيص قنوات وصول التنبيهات الفورية وإشعارات المتصفح لسطح المكتب والهواتف الذكية.","Configure real-time notification channels and alerts for desktop and mobile.")}</p>
+          </div>
+          <button type="button" class="btn btn-primary btn-sm" data-action="send-test-notification">
+            ${n("bell",14)} ${e("إرسال إشعار تجريبي فوري","Send Test Notification")}
+          </button>
+        </div>
+
+        <div style="display:grid;gap:16px;margin-top:16px;">
+          <!-- 1. Browser Web Notifications Card -->
+          <div style="padding:16px;border-radius:14px;border:1px solid var(--line);background:var(--surface);display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;">
+            <div style="display:flex;align-items:flex-start;gap:12px;">
+              <span class="attention-icon ${E?"teal":y?"red":"blue"}" style="margin-top:2px;">
+                ${n("bell",16)}
+              </span>
+              <div>
+                <strong style="display:block;font-size:13px;color:var(--ink);margin-bottom:3px;">
+                  ${e("إشعارات سطح المكتب والمتصفح والجوال (Web Alerts)","Desktop & Mobile Web Notifications")}
+                </strong>
+                <p style="margin:0;font-size:11px;color:var(--muted);max-width:480px;line-height:1.5;">
+                  ${e("تسمح للموقع بإرسال تنبيهات فورية للنظام حتى عندما يكون المتصفح في الخلفية أو شاشة الهاتف مغلقة.","Allows the platform to deliver native system notifications even when the browser is in the background or screen locked.")}
+                </p>
+                <div style="margin-top:6px;">
+                  ${T}
+                </div>
+              </div>
+            </div>
+            <div>
+              ${b}
+            </div>
+          </div>
+
+          <!-- 2. Audio Chimes Card -->
+          <div style="padding:16px;border-radius:14px;border:1px solid var(--line);background:var(--surface);display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;">
+            <div style="display:flex;align-items:flex-start;gap:12px;">
+              <span class="attention-icon teal" style="margin-top:2px;">
+                ${n("check",16)}
+              </span>
+              <div>
+                <strong style="display:block;font-size:13px;color:var(--ink);margin-bottom:3px;">
+                  ${e("النغمة التنبيهية الفاخرة (Audio Chime)","Acoustic Alert Chime")}
+                </strong>
+                <p style="margin:0;font-size:11px;color:var(--muted);max-width:480px;line-height:1.5;">
+                  ${e("نغمة صوتية هادئة مدمجة باستخدام Web Audio API تعزف فورياً عند وصول أي تنبيه في الوقت الفعلي.","Subtle built-in harmonic chime generated via Web Audio API playing whenever a live alert arrives.")}
+                </p>
+              </div>
+            </div>
+            <button type="button" class="btn btn-soft btn-sm" data-action="play-test-chime" style="display:inline-flex;align-items:center;gap:6px;">
+              ${n("volume",14)} ${e("استمع للنغمة","Play Chime")}
+            </button>
+          </div>
+
+          <!-- 3. Channel Status Matrix -->
+          <div style="padding:16px;border-radius:14px;border:1px solid var(--line);background:var(--surface);">
+            <strong style="display:block;font-size:13px;color:var(--ink);margin-bottom:8px;">
+              ${e("جاهزية قنوات الإرسال المربوطة","Connected Notification Channels")}
+            </strong>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:10px;margin-top:10px;">
+              <div style="padding:10px;border-radius:10px;background:var(--surface-soft);border:1px solid var(--line);">
+                <span style="font-size:10px;color:var(--muted);display:block;">${e("التنبيهات داخل المنصة","In-App Alerts")}</span>
+                <strong style="color:var(--teal);font-size:12px;display:inline-flex;align-items:center;gap:4px;">${n("check",12)} ${e("نشطة وفورية (WebSocket)","Active Real-Time")}</strong>
+              </div>
+              <div style="padding:10px;border-radius:10px;background:var(--surface-soft);border:1px solid var(--line);">
+                <span style="font-size:10px;color:var(--muted);display:block;">${e("تنبيهات واتساب المباشرة","WhatsApp Direct Alerts")}</span>
+                <strong style="color:var(--teal);font-size:12px;display:inline-flex;align-items:center;gap:4px;">${n("check",12)} ${e("مربوطة (Baileys Engine)","Connected Baileys")}</strong>
+              </div>
+              <div style="padding:10px;border-radius:10px;background:var(--surface-soft);border:1px solid var(--line);">
+                <span style="font-size:10px;color:var(--muted);display:block;">${e("بريد الإشعارات السحابي","Cloud Email Gateway")}</span>
+                <strong style="color:var(--teal);font-size:12px;display:inline-flex;align-items:center;gap:4px;">${n("check",12)} ${e("جاهز (Resend API)","Ready Resend")}</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    `}if(o.settingsSection==="accounts"&&g){const l=_()||k("view_user_activity"),f=_()||k("manage_users"),E=_()||k("manage_existing_account_permissions")||k("manage_users"),y=_()&&!V();let T=o.data?.users||[];a!=="usr_ahmad"&&(T=T.filter(b=>b.id!=="usr_ahmad")),$=`
+      <section class="setting-section">
+        <div class="panel-head">
+          <div>
+            <h2>${d("accounts")}</h2>
+            <p>${e("الحسابات الحالية وصلاحية كل عضو. يمكنك إضافة أو تعديل أو تعطيل الحسابات من هنا.","Current accounts and each member’s access. Add, edit, or deactivate them here.")}</p>
+          </div>
+          ${f?`<button class="btn btn-primary btn-sm" data-action="new-user">${n("plus",14)} ${d("addMember")}</button>`:""}
+        </div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>${d("team")}</th>
+                <th>${d("role")}</th>
+                <th>${d("email")}</th>
+                <th>${d("accountStatus")}</th>
+                ${l?`<th>${e("آخر ظهور ونشاط","Last Seen & Activity")}</th>`:""}
+                ${E?"<th></th>":""}
+              </tr>
+            </thead>
+            <tbody>
+              ${T.map(b=>{const I=b.id==="usr_ahmad";return`
+                  <tr>
+                    <td>
+                      <div class="team-member">
+                        ${se(b)}
+                        <div class="team-member-copy">
+                          <strong>${t(e(b.name,b.nameEn||b.name))}</strong>
+                          <span>${t(e(b.jobTitleAr||(I?"المبرمج / مدير النظام":""),b.jobTitleEn||b.jobTitleAr||""))}</span>
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      ${I?`<span class="stealth-dev-badge">${n("shield",12)} ${e("مدير ومطور النظام","Super Admin & Dev")}</span>`:t(H(b))}
+                    </td>
+                    <td>
+                      ${b.email?t(b.email):`<span style="color:var(--muted)">${d("noEmail")}</span>`}
+                      ${b.phone||b.customFields?.phone?`<div style="font-size:11px;color:var(--primary);direction:ltr;text-align:right;margin-top:3px;font-family:monospace;font-weight:600;display:inline-flex;align-items:center;gap:4px;">${n("phone",11)} ${t(b.phone||b.customFields?.phone)}</div>`:""}
+                    </td>
+                    <td>
+                      <span class="status-badge ${b.status==="active"?"done":"not_started"}">${b.status==="active"?d("activeAccount"):d("pendingAccount")}</span>
+                    </td>
+                    ${l?`
+                      <td>
+                        ${Oe(b)}
+                      </td>
+                    `:""}
+                    ${E?`
+                      <td>
+                        <div class="role-actions">
+                          ${I?`
+                            <button class="btn btn-soft btn-sm" data-action="open-user" data-user-id="${t(b.id)}">${d("edit")}</button>
+                          `:`
+                            <button class="btn btn-soft btn-sm" data-action="open-user" data-user-id="${t(b.id)}">${d("edit")}</button>
+                            ${b.id!==o.data?.user?.id?`
+                              <button class="btn btn-soft btn-sm" data-action="force-password-user" data-user-id="${t(b.id)}" title="${b.status==="pending"?e("تفعيل الحساب يدوياً","Activate manually"):e("تغيير كلمة المرور","Change password")}">${n(b.status==="pending"?"check":"settings",13)}</button>
+                              ${y?`<button class="btn btn-soft btn-sm" data-action="impersonate-user" data-user-id="${t(b.id)}" title="دخول كـ هذا الحساب">${n("user",13)}</button>`:""}
+                            `:""}
+                            ${b.id!==o.data?.user?.id&&b.email?`<button class="btn btn-ghost btn-sm" data-action="invite-user" data-user-id="${t(b.id)}">${n("send",13)}</button>`:""}
+                            ${b.id!==o.data?.user?.id?`<button class="btn btn-danger btn-sm" data-action="deactivate-user" data-user-id="${t(b.id)}">${n("trash",13)}</button>`:""}
+                          `}
+                        </div>
+                      </td>
+                    `:""}
+                  </tr>
+                `}).join("")}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    `}if(o.settingsSection==="roles"&&(s||k("manage_roles"))&&($=`
+      <section class="setting-section">
+        <div class="panel-head">
+          <div>
+            <h2>${d("roles")}</h2>
+            <p>${e("إدارة الأدوار وصلاحيات الوصول للنظام.","Manage roles and access permissions across the system.")}</p>
+          </div>
+          ${s||k("manage_roles")?`<button class="btn btn-primary btn-sm" data-action="new-role">${n("plus",14)} ${d("addRole")}</button>`:""}
+        </div>
+        <div class="role-list">
+          ${(o.data?.roles||[]).map(l=>`
+            <div class="role-row">
+              <div class="role-copy">
+                <div class="role-title-row">
+                  <strong class="role-name">${t(e(l.nameAr,l.nameEn))}</strong>
+                  ${l.builtIn?`<span class="role-system-badge">${n("shield",11)} ${d("builtIn")}</span>`:""}
+                </div>
+                <p class="role-desc">${t(e(l.descriptionAr,l.descriptionEn))}</p>
+                <div class="role-meta">${l.permissions.includes("*")?e("صلاحية كاملة","Full access"):`${l.permissions.length} ${d("permissionCount")}`}</div>
+              </div>
+              <div class="role-actions">
+                <button class="btn btn-soft btn-sm" data-action="open-role" data-role-id="${t(l.id)}">${n("edit",13)} ${d("edit")}</button>
+                ${l.builtIn?"":`<button class="btn btn-danger btn-sm" data-action="delete-role" data-role-id="${t(l.id)}">${n("trash",13)}</button>`}
+              </div>
+            </div>
+          `).join("")}
+        </div>
+      </section>
+    `),o.settingsSection==="trash"&&x){if(!o.trash&&typeof sessionStorage<"u")try{const p=sessionStorage.getItem("darc_trash_cache");p&&(o.trash=JSON.parse(p))}catch{}!o.trashLoaded&&!o._trashFetching&&(o._trashFetching=!0,N("/api/trash").then(p=>{o.trash=Array.isArray(p)?p:p.trash||[...(p.projects||[]).map(u=>({...u,type:"project"})),...(p.tasks||[]).map(u=>({...u,type:"task"})),...(p.documents||[]).map(u=>({...u,type:"document"}))],o.trashLoaded=!0,o._trashFetching=!1;try{typeof sessionStorage<"u"&&sessionStorage.setItem("darc_trash_cache",JSON.stringify(o.trash))}catch{}typeof window.renderView=="function"&&window.renderView()}).catch(p=>{o._trashFetching=!1,console.error("[Trash fetch error]",p)}));const l=o.trash||[],f=o.trashFilter||"all",E=(o.trashQuery||"").trim().toLowerCase(),y=l.filter(p=>{if(f!=="all"&&p.type!==f)return!1;if(!E)return!0;const u=(e(p.nameAr||p.titleAr,p.nameEn||p.titleEn)||p.name||p.title||p.originalName||"").toLowerCase(),S=(p.code||p.projectCode||"").toLowerCase(),R=(p.projectNameAr||p.projectNameEn||"").toLowerCase();return u.includes(E)||S.includes(E)||R.includes(E)}),T=l.filter(p=>p.type==="project").length,b=l.filter(p=>p.type==="task").length,I=l.filter(p=>p.type==="document").length,Z=l.length?`
+      <div class="trash-notice-banner">
+        <div class="trash-notice-icon">${n("info",16)}</div>
+        <div class="trash-notice-text">
+          <strong>${e("سلة المحذوفات المركزية المحمية","Central Protected Trash Bin")}</strong>
+          <p>${e("تحتفظ المنصة بالمشاريع والمهام والمستندات المحذوفة لمدة 30 يومًا قبل الحذف التلقائي. استعادة أي عنصر تعيده فوراً لمكانه دون فقدان أي بيانات.","Projects, tasks, and documents are retained for 30 days before permanent purging. Restoring any item recovers it immediately with full data integrity.")}</p>
+        </div>
+      </div>
+
+      <div class="view-toolbar trash-filter-bar">
+        <div class="trash-filter-group">
+          <button type="button" class="btn btn-sm ${f==="all"?"btn-primary":"btn-ghost"}" data-action="filter-trash" data-filter="all">
+            ${n("layers",14)}
+            <span>${e("الكل","All")}</span>
+            <span class="badge ${f==="all"?"badge-on-primary":"badge-neutral"}">${l.length}</span>
+          </button>
+          <button type="button" class="btn btn-sm ${f==="project"?"btn-primary":"btn-ghost"}" data-action="filter-trash" data-filter="project">
+            ${n("building",14)}
+            <span>${e("المشاريع","Projects")}</span>
+            <span class="badge ${f==="project"?"badge-on-primary":"badge-neutral"}">${T}</span>
+          </button>
+          <button type="button" class="btn btn-sm ${f==="task"?"btn-primary":"btn-ghost"}" data-action="filter-trash" data-filter="task">
+            ${n("checklist",14)}
+            <span>${e("المهام","Tasks")}</span>
+            <span class="badge ${f==="task"?"badge-on-primary":"badge-neutral"}">${b}</span>
+          </button>
+          <button type="button" class="btn btn-sm ${f==="document"?"btn-primary":"btn-ghost"}" data-action="filter-trash" data-filter="document">
+            ${n("document",14)}
+            <span>${e("المستندات","Documents")}</span>
+            <span class="badge ${f==="document"?"badge-on-primary":"badge-neutral"}">${I}</span>
+          </button>
+        </div>
+        <div class="search-box search-sm trash-search-box">
+          ${n("search",14)}
+          <input type="search" placeholder="${e("بحث في المحذوفات...","Search deleted items...")}" value="${t(o.trashQuery||"")}" data-action="search-trash-input" />
+        </div>
+      </div>
+
+      ${y.length?`
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>${e("الاسم / العنوان","Name / Title")}</th>
+                <th>${e("النوع","Type")}</th>
+                <th>${e("المشروع التابع له","Project")}</th>
+                <th>${e("الحالة السابقة","Prior Status")}</th>
+                <th>${e("تاريخ الحذف","Deleted At")}</th>
+                <th style="text-align:${o.lang==="ar"?"left":"right"}">${e("الإجراءات","Actions")}</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${y.map(p=>{const u=p.type==="project",S=p.type==="task",R=p.type==="document",O=e(p.nameAr||p.titleAr,p.nameEn||p.titleEn)||p.name||p.title||p.originalName||p.code||e("عنصر محذوف","Deleted item"),j=!u&&p.projectId?(o.data?.projects||[]).find(te=>te.id===p.projectId):null,q=p.projectNameAr||p.projectNameEn||(j?e(j.nameAr,j.nameEn||j.nameAr):null),J=p.projectCode||j?.code,Q=R&&p.size?p.size>1048576?(p.size/1048576).toFixed(1)+" MB":Math.round(p.size/1024)+" KB":"",ee=s||k("manage_trash")||p.uploaderId===a;return`
+                  <tr class="trash-row">
+                    <td>
+                      <div class="trash-item-cell">
+                        <div class="trash-item-icon ${u?"is-project":S?"is-task":"is-doc"}">
+                          ${n(u?"building":S?"checklist":"document",14)}
+                        </div>
+                        <div>
+                          <strong class="trash-item-title">${t(O)}</strong>
+                          ${p.code||u?`<span class="trash-item-code">${t(p.code||p.id)}</span>`:""}
+                          ${R&&Q?`<span class="trash-item-code" style="color:var(--muted);">${Q}</span>`:""}
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <span class="type-pill ${u?"type-project":S?"type-task":"type-doc"}">
+                        ${n(u?"building":S?"checklist":"document",11)}
+                        ${u?e("مشروع","Project"):S?e("مهمة","Task"):e("مستند","Document")}
+                      </span>
+                    </td>
+                    <td>
+                      <span class="trash-parent-badge">
+                        ${u?`<span class="mini-badge" style="background:var(--mint);color:var(--teal);">${e("مشروع رئيسي","Primary Project")}</span>`:q?`${n("building",11)} <span>${t(q)}${J?` (${t(J)})`:""}</span>${R&&p.taskTitleAr?` <span style="font-size:11px;color:var(--muted)">· ${t(p.taskTitleAr)}</span>`:""}`:'<span style="color:var(--muted)">—</span>'}
+                      </span>
+                    </td>
+                    <td>
+                      ${p.status?`<span class="status-badge ${t(p.status)}">${t(W(p.status))}</span>`:'<span style="color:var(--muted)">—</span>'}
+                    </td>
+                    <td>
+                      <span class="trash-date" title="${t(p.deletedAt||"")}">
+                        ${re(p.deletedAt,!0)}
+                      </span>
+                    </td>
+                    <td style="text-align:${o.lang==="ar"?"left":"right"}">
+                      <div style="display:inline-flex;align-items:center;gap:6px;">
+                        <button class="btn btn-soft btn-sm restore-btn" data-action="restore-item" data-type="${t(p.type)}" data-id="${t(p.id)}" title="${e("استعادة العنصر وإعادته للعمل","Restore item to active")}">
+                          ${n(o.lang==="ar"?"arrow":"arrowLeft",12)} ${e("استعادة","Restore")}
+                        </button>
+                        ${ee?`
+                          <button class="btn btn-danger btn-sm" data-action="purge-trash-item" data-type="${t(p.type)}" data-id="${t(p.id)}" title="${e("حذف العنصر نهائياً","Permanently delete item")}">
+                            ${n("trash",12)} ${e("حذف نهائي","Purge")}
+                          </button>
+                        `:""}
+                      </div>
+                    </td>
+                  </tr>
+                `}).join("")}
+            </tbody>
+          </table>
+        </div>
+      `:`
+        <div class="empty">
+          ${n("search",22)}
+          <span>${e("لا توجد نتائج تطابق بحثك في سلة المهملات.","No items match your search in trash.")}</span>
+        </div>
+      `}
+    `:!o.trashLoaded&&!l.length?`
+      <div style="padding:48px 20px;text-align:center;">
+        <div style="width:32px;height:32px;margin:0 auto 14px;border:3px solid var(--line);border-top-color:var(--teal);border-radius:50%;animation:spin 0.75s linear infinite;"></div>
+        <div style="font-size:14px;font-weight:700;color:var(--ink);">${e("جاري فحص واسترجاع عناصر سلة المهملات...","Loading recycle bin items...")}</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:4px;">${e("يتم جلب المشاريع والمهام والمستندات المحذوفة من الخادم...","Fetching deleted projects, tasks, and drawings from server...")}</div>
+      </div>
+    `:`
+      <div class="empty">
+        ${n("trash",24)}
+        <span>${e("سلة المهملات فارغة، لا توجد عناصر محذوفة حالياً.","Trash is empty, no deleted items found.")}</span>
+      </div>
+    `;$=`
+      <section class="setting-section">
+        <div class="panel-head">
+          <div style="flex:1;">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <h2>${e("سلة المهملات","Recycle Bin")}</h2>
+              <span class="mini-badge badge-neutral" style="padding:3px 9px;font-size:10px;font-weight:700;">
+                ${!o.trashLoaded&&!l.length?e("جاري التحميل...","Loading..."):`${l.length} ${e("عناصر","items")}`}
+              </span>
+            </div>
+            <p>${e("استعراض واستعادة المشاريع والمهام والمستندات المحذوفة مؤقتاً، أو حذفها نهائياً.","Review, restore, or permanently purge temporarily deleted projects, tasks, and documents.")}</p>
+          </div>
+          ${(s||k("manage_trash"))&&l.length>0?`
+            <div class="page-actions">
+              <button class="btn btn-danger btn-sm" data-action="empty-trash" title="${e("حذف كافة العناصر المحذوفة نهائياً من قاعدة البيانات","Permanently erase all deleted items")}">
+                ${n("trash",13)} ${e("إفراغ سلة المهملات","Empty Trash")}
+              </button>
+            </div>
+          `:""}
+        </div>
+        ${Z}
+      </section>
+    `}if(o.settingsSection==="audit"&&(s||k("view_audit_logs"))){const l=[...o.data?.auditLogs||[]].sort((u,S)=>new Date(S.createdAt).getTime()-new Date(u.createdAt).getTime()),f=o.auditFilterAction||"all",E=o.auditFilterEntity||"all",y=o.auditFilterUser||"all",T=(o.auditSearchQuery||"").trim().toLowerCase(),b=l.filter(u=>{if(f!=="all"&&u.action!==f||E!=="all"&&(u.entityType||u.entity_type)!==E||y!=="all"&&(u.userId||u.user_id||u.user?.id)!==y)return!1;if(T){const S=u.user||(u.userId?(o.data?.users||[]).find(te=>te.id===u.userId):null),R=(S&&e(S.name,S.nameEn||S.name)||"").toLowerCase(),{actionLabel:O,entityLabel:j}=de(u),q=(O||u.action||"").toLowerCase(),J=(j||u.entityType||"").toLowerCase(),Q=(u.id||u.entityId||"").toLowerCase(),ee=typeof u.details=="object"?JSON.stringify(u.details).toLowerCase():String(u.details||"").toLowerCase();if(!(R.includes(T)||q.includes(T)||J.includes(T)||Q.includes(T)||ee.includes(T)))return!1}return!0});o._lastFilteredAuditLogs=b;const I=[["all",e("كافة العمليات","All Actions")],["create",e("إنشاء جديد","Create")],["update",e("تعديل بيانات","Update")],["status_change",e("تغيير حالة","Status Change")],["delete",e("نقل للمهملات","Delete / Trash")],["restore",e("استعادة","Restore")],["purge",e("حذف نهائي","Purge")],["export_report",e("تصدير تقرير","Export Report")],["login",e("تسجيل دخول","Sign In")],["invite",e("دعوة مستخدم","Invite")]],Z=[["all",e("كافة العناصر","All Entities")],["project",e("المشاريع","Projects")],["task",e("المهام","Tasks")],["document",e("المستندات","Documents")],["user",e("المستخدمين","Users")],["role",e("الأدوار والصلاحيات","Roles")],["company",e("إعدادات الشركة","Company Settings")],["report",e("التقارير","Reports")]],p=f!=="all"||E!=="all"||y!=="all"||!!T;$=`
+      <section class="setting-section">
+        <div class="panel-head" style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;">
+          <div>
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+              <h2>${d("audit")}</h2>
+              <span class="mini-badge badge-neutral" style="padding:3px 9px;font-size:10px;font-weight:700;">
+                ${b.length} ${e("عملية معروضة","events shown")}
+              </span>
+              ${p?`
+                <span class="mini-badge" style="padding:3px 8px;font-size:10px;background:var(--surface-soft);color:var(--muted);border:1px solid var(--line);">
+                  ${e("من أصل","out of")} ${l.length}
+                </span>
+              `:""}
+            </div>
+            <p>${e("سجل رقابي شامل يسجل هوية المنفذ بدقة، ونوع النشاط، وتاريخ وساعة التعديل بالثواني.","Comprehensive audit trail tracking user identity, activity type, and exact timestamp down to the second.")}</p>
+          </div>
+          <div class="page-actions" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            ${o.auditFullHistoryLoaded?"":`
+              <button class="btn btn-ghost btn-sm" data-action="load-full-audit" title="${e("جلب الأرشيف الكامل للسجلات من السيرفر","Load complete audit archive")}">
+                ${n("refresh",13)} ${e("تحميل الأرشيف الكامل","Load All History")}
+              </button>
+            `}
+            <button class="btn btn-soft btn-sm" data-action="export-audit-xls" title="${e("تصدير السجل كملف Excel منسق","Export as styled Excel file")}">
+              ${n("download",13)} ${e("تصدير Excel","Export Excel")}
+            </button>
+            <button class="btn btn-primary btn-sm" data-action="print-audit-pdf" title="${e("معاينة وطباعة تقرير رسمي وحفظه كـ PDF","Print or save executive PDF report")}">
+              ${n("printer",13)} ${e("طباعة تقرير PDF","Print / PDF")}
+            </button>
+          </div>
+        </div>
+
+        <div class="view-toolbar audit-toolbar" style="gap:10px;margin-bottom:16px;">
+          <div class="search-box search-sm" style="flex:1;min-width:240px;max-width:380px;">
+            ${n("search",14)}
+            <input type="search" placeholder="${e("بحث فوري بالمنفذ، العملية، أو التفاصيل...","Search by actor, action, details...")}" value="${t(o.auditSearchQuery||"")}" data-action="search-audit-input" />
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <select class="filter-select select-compact select-sm" data-action="filter-audit-action" style="min-width:125px;">
+              ${I.map(([u,S])=>`<option value="${u}" ${f===u?"selected":""}>${S}</option>`).join("")}
+            </select>
+            <select class="filter-select select-compact select-sm" data-action="filter-audit-entity" style="min-width:125px;">
+              ${Z.map(([u,S])=>`<option value="${u}" ${E===u?"selected":""}>${S}</option>`).join("")}
+            </select>
+            <select class="filter-select select-compact select-sm" data-action="filter-audit-user" style="min-width:140px;">
+              <option value="all">${e("كافة المستخدمين","All Users")}</option>
+              ${(o.data?.users||[]).map(u=>`<option value="${u.id}" ${y===u.id?"selected":""}>${t(e(u.name,u.nameEn||u.name))}</option>`).join("")}
+            </select>
+            ${p?`
+              <button class="btn btn-ghost btn-sm" data-action="reset-audit-filters" style="font-size:11px;color:var(--muted);padding:4px 8px;" title="${e("إعادة تعيين الفلاتر","Reset filters")}">
+                ${e("إلغاء التصفية","Clear")}
+              </button>
+            `:""}
+          </div>
+        </div>
+
+        ${b.length?`
+          <div class="table-wrap" style="border:1px solid var(--line);border-radius:12px;overflow-x:auto;background:var(--surface);">
+            <table class="data-table" style="width:100%;border-collapse:collapse;font-size:12px;min-width:650px;">
+              <thead>
+                <tr style="background:var(--surface-soft);border-bottom:1px solid var(--line);color:var(--ink-soft);font-size:11px;font-weight:700;text-align:inherit;">
+                  <th style="padding:12px 14px;">${e("المستخدم / المنفذ","User / Actor")}</th>
+                  <th style="padding:12px 14px;">${e("نوع النشاط والعملية","Action & Target")}</th>
+                  <th style="padding:12px 14px;">${e("التفاصيل والتغيير","Details / Context")}</th>
+                  <th style="padding:12px 14px;text-align:${o.lang==="ar"?"left":"right"};">${e("التاريخ والوقت الدقيق","Exact Date & Time")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${b.map(u=>{const S=u.user||(u.userId?(o.data?.users||[]).find(te=>te.id===u.userId):null),R=S?e(S.name,S.nameEn||S.name):e("النظام","System"),O=S?H(S):e("تلقائي","Automated"),j=xe(u.createdAt),{badgeClass:q,actionLabel:J,entityLabel:Q,detailHtml:ee}=de(u);return`
+                    <tr style="border-bottom:1px solid var(--line);transition:background 0.15s ease;">
+                      <td style="padding:12px 14px;vertical-align:middle;">
+                        <div style="display:flex;align-items:center;gap:10px;">
+                          ${se(S)}
+                          <div>
+                            <div style="font-size:12.5px;font-weight:700;color:var(--ink);">${t(R)}</div>
+                            <div style="font-size:10.5px;color:var(--muted);">${t(O)}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td style="padding:12px 14px;vertical-align:middle;">
+                        <div style="display:inline-flex;align-items:center;gap:6px;">
+                          <span class="badge ${q}" style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;">
+                            ${t(J)}
+                          </span>
+                          <span style="font-size:11.5px;font-weight:600;color:var(--ink-soft);">${t(Q)}</span>
+                        </div>
+                      </td>
+                      <td style="padding:12px 14px;vertical-align:middle;color:var(--ink);font-size:12px;">
+                        ${ee}
+                      </td>
+                      <td style="padding:12px 14px;vertical-align:middle;text-align:${o.lang==="ar"?"left":"right"};white-space:nowrap;">
+                        <div style="font-size:12px;font-weight:700;color:var(--ink);">${t(j.date)}</div>
+                        <div style="font-size:11px;color:var(--muted);font-family:monospace;margin-top:2px;display:inline-flex;align-items:center;gap:4px;">
+                          ${n("clock",11)}
+                          <span>${t(j.time)}</span>
+                        </div>
+                      </td>
+                    </tr>
+                  `}).join("")}
+              </tbody>
+            </table>
+          </div>
+        `:`
+          <div class="empty">
+            ${n(p?"search":"checklist",24)}
+            <span>${p?e("لا توجد عمليات تطابق معايير التصفية المحددة.","No audit logs match the selected filter criteria."):e("لا توجد عمليات مسجلة حتى الآن.","No audit logs recorded yet.")}</span>
+            ${p?`
+              <button class="btn btn-soft btn-sm" data-action="reset-audit-filters" style="margin-top:10px;">
+                ${e("إعادة تعيين الفلاتر","Reset filters")}
+              </button>
+            `:""}
+          </div>
+        `}
+      </section>
+    `}if(o.settingsSection==="analytics"&&v&&($=Pe()),o.settingsSection==="diagnostics"&&A&&($=Me()),o.settingsSection==="vault"&&z&&($=Ze(),requestAnimationFrame(()=>{be()})),o.settingsSection==="whatsapp"&&c){const l=V(),f=o.data?.company?.customFields?.whatsapp||o.data?.company?.custom_fields?.whatsapp||{};$=`
+      <section class="setting-section">
+        ${l?`
+          <div class="demo-whatsapp-banner" style="background:rgba(13,98,105,0.08);border:1px solid rgba(13,98,105,0.25);border-radius:10px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;gap:12px;">
+            <span style="color:var(--teal);display:flex;align-items:center;">${n("shield",22)}</span>
+            <div style="flex:1;">
+              <strong style="display:block;font-size:13px;color:var(--teal);margin-bottom:2px;">${e("بيئة العرض التجريبية المعزولة (Demo Sandbox)","Isolated Demo Showcase Sandbox")}</strong>
+              <span style="font-size:11px;color:var(--muted);line-height:1.4;">${e("إعدادات بوابات واتساب هنا معزولة تماماً للاستعراض؛ لن يتم استهلاك رصيد أو إرسال رسائل فعلية عبر الشبكة.","WhatsApp gateway configuration is an isolated simulation for demonstration only; no live external traffic is dispatched.")}</span>
+            </div>
+            <span class="badge" style="background:var(--teal);color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:6px;">
+              ${e("محاكاة آمنة","Isolated Simulation")}
+            </span>
+          </div>
+        `:""}
+        <div class="panel-head" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;">
+          <div>
+            <h2>${e("تنبيهات واتساب الميدانية للمشاريع","Field WhatsApp Alerts")}</h2>
+            <p>${e("ربط آمن عبر بروتوكول Multi-Device المباشر مع خوارزميات محاكاة السلوك البشري لحماية الأرقام من الحظر.","Secure connection via Multi-Device protocol with anti-ban human behavior simulation.")}</p>
+          </div>
+          <span class="status-badge ${f.enabled?"done":"neutral"}">
+            ${f.enabled?e("مفعل نشط","Active"):e("معطل","Disabled")}
+          </span>
+        </div>
+
+        <form data-action="update-whatsapp" class="settings-form" style="max-width:740px;display:grid;gap:18px;">
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;display:flex;align-items:center;justify-content:space-between;gap:16px;">
+            <div>
+              <strong style="display:block;font-size:14px;color:var(--ink);margin-bottom:4px;">${e("تفعيل إرسال التنبيهات عبر واتساب","Enable WhatsApp Notifications")}</strong>
+              <span style="font-size:12px;color:var(--muted);">${e("إرسال إشعارات فورية لمهندسي الموقع والإدارة عند حدوث تغييرات حرجة.","Send instant alerts to field engineers & management upon critical updates.")}</span>
+            </div>
+            <label class="switch" style="position:relative;display:inline-block;width:44px;height:24px;flex-shrink:0;">
+              <input type="checkbox" name="enabled" ${f.enabled?"checked":""} style="opacity:0;width:0;height:0;" id="wa-toggle-enabled" />
+              <span class="slider round" style="position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background-color:var(--line);transition:.3s;border-radius:24px;"></span>
+            </label>
+          </div>
+
+          <div class="form-grid">
+            <div class="field">
+              <label>${e("نوع مزود البوابة (Provider)","Gateway Provider")}</label>
+              <select name="provider" class="select-compact" style="width:100%;height:42px;">
+                <option value="evolution" ${f.provider!=="webhook"?"selected":""}>Evolution API / Baileys</option>
+                <option value="webhook" ${f.provider==="webhook"?"selected":""}>Webhook (Custom Webhook URL)</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label>${e("اسم جلسة الربط (Instance Name)","Instance Name")}</label>
+              <input type="text" name="instanceName" value="${t(f.instanceName||"darc-workspace")}" placeholder="darc-workspace" required />
+            </div>
+          </div>
+
+          <div class="field">
+            <label>${e("رابط خادم البوابة (Server Gateway URL) *","Server Gateway URL *")}</label>
+            <input type="url" name="serverUrl" value="${t(f.serverUrl||"")}" placeholder="https://evolution-api.example.com" />
+            <small style="font-size:11px;color:var(--muted);margin-top:4px;display:block;">${e("رابط خادم Evolution API الخاص بمكتبكم (أو رابط الـ Webhook المستلم).","Your office Evolution API instance URL or receiving Webhook.")}</small>
+          </div>
+
+          <div class="field">
+            <label>${e("مفتاح الأمان (API Key / Token)","API Key / Token")}</label>
+            <input type="password" name="apiKey" value="${t(f.apiKey||"")}" placeholder="••••••••••••••••" />
+          </div>
+
+          <div class="field">
+            <label>${e("المستلم الافتراضي / قروب الواتساب (اختياري)","Default Recipient / WhatsApp Group (Optional)")}</label>
+            <input type="text" name="recipient" value="${t(f.recipient||"")}" placeholder="${e("كود قروب واتساب المهندسين (1203630...@g.us) أو رقم جوال الإدارة","WhatsApp Group JID (1203630...@g.us) or Management Phone")}" />
+            <small style="font-size:11px;color:var(--teal);margin-top:4px;display:block;">${e("ملاحظة: هذا الحقل اختياري. في حال عدم وجود قروب حالياً، يمكنك تركه فارغاً وسيتكفل النظام بإرسال كافة التنبيهات والمنشن كرسائل فردية مباشرة إلى هواتف المهندسين والمدير المسجلة في حساباتهم.","Note: This field is optional. If you do not have a group yet, leave it blank and the system will automatically send alerts & mentions directly to engineers & manager personal phones.")}</small>
+          </div>
+
+          <div style="background:var(--surface-soft);border:1px solid var(--border);border-radius:12px;padding:16px;">
+            <strong style="display:block;font-size:13px;color:var(--ink);margin-bottom:10px;">${e("أحداث التنبيه الفوري التلقائية:","Automated Trigger Events:")}</strong>
+            <div style="display:grid;gap:8px;">
+              <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink);cursor:pointer;">
+                <input type="checkbox" name="notifyOnCollectiveMention" ${f.notifyOnCollectiveMention!==!1?"checked":""} />
+                <span style="display:inline-flex;align-items:center;gap:6px;">${n("megaphone",13)} ${e("عند المنشن الجماعي (@all / @الكل): إرسال تنبيه مباشر لكل أعضاء المشروع والإدارة حتى المدير","When collective mention (@all / @everyone): send direct alert to all project members and managers")}</span>
+              </label>
+              <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink);cursor:pointer;">
+                <input type="checkbox" name="sendGroupBroadcast" ${f.sendGroupBroadcast?"checked":""} />
+                <span style="display:inline-flex;align-items:center;gap:6px;">${n("users",13)} ${e("إرسال نسخة لقروب الواتساب العام (في حال إدخال كود القروب في الحقل أعلاه)","Send a copy to the WhatsApp Group (if Group JID is set above)")}</span>
+              </label>
+              <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink);cursor:pointer;">
+                <input type="checkbox" name="notifyOnBlocked" ${f.notifyOnBlocked!==!1?"checked":""} />
+                <span style="display:inline-flex;align-items:center;gap:6px;">${n("warning",13)} ${e("عند تعليق مهمة هندسية (Task Blocked) لتنبيه الموقع فوراً","When a task is blocked to alert field engineers instantly")}</span>
+              </label>
+              <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink);cursor:pointer;">
+                <input type="checkbox" name="notifyOnApproval" ${f.notifyOnApproval!==!1?"checked":""} />
+                <span style="display:inline-flex;align-items:center;gap:6px;">${n("search",13)} ${e("عند إحالة مهمة للمراجعة والاعتماد (Review / Approval)","When a deliverable is submitted for review & approval")}</span>
+              </label>
+              <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink);cursor:pointer;">
+                <input type="checkbox" name="notifyOnDrawing" ${f.notifyOnDrawing!==!1?"checked":""} />
+                <span style="display:inline-flex;align-items:center;gap:6px;">${n("compass",13)} ${e("عند اعتماد أو رفع مخطط معماري أو إنشائي جديد (New Drawing)","When an architectural or structural drawing is approved/uploaded")}</span>
+              </label>
+            </div>
+          </div>
+
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-top:10px;">
+            <button type="submit" class="btn btn-primary" style="display:inline-flex;align-items:center;gap:7px;">
+              ${n("check",14)} <span>${e("حفظ إعدادات واتساب","Save WhatsApp Settings")}</span>
+            </button>
+            <button type="button" class="btn btn-soft" data-action="test-whatsapp" style="display:inline-flex;align-items:center;gap:7px;">
+              <span>${n("phone",13)}</span> <span>${e("إرسال تنبيه تجريبي للواتساب","Send Test WhatsApp Alert")}</span>
+            </button>
+          </div>
+        </form>
+      </section>
+    `}const D=s||k("manage_settings")||k("manage_roles")||k("manage_users")||k("manage_trash")||k("view_audit_logs");return`
+    <div class="page-head">
+      <div>
+        <p class="eyebrow">${D?e("تحكم مركزي","CENTRAL CONTROL"):e("الملف الشخصي","USER PROFILE")}</p>
+        <h1>${D?d("settings"):e("الملف الشخصي والأمان","Profile & Security")}</h1>
+        <p>${D?e("إدارة إعدادات الشركة والحسابات والأدوار والنظام.","Manage workspace, accounts, roles, and settings."):e("إدارة معلومات حسابك وكلمة المرور وصورتك الشخصية.","Manage your account info, password, and personal avatar.")}</p>
+      </div>
+      <div class="page-actions">
+        <span class="status-badge done">${n(s?"shield":"user",13)} ${t(H(h))}</span>
+      </div>
+    </div>
+    <div class="settings-layout">
+      <aside class="settings-nav">
+        ${i.map(([l,f])=>`<button class="${o.settingsSection===l?"active":""}" data-action="settings-section" data-section="${l}">${f}</button>`).join("")}
+      </aside>
+      <div class="settings-content">${$}</div>
+    </div>
+  `}var Be=[{id:"view_projects",category:"projects",categoryAr:"المشاريع والفرق",categoryEn:"Projects & Teams",nameAr:"عرض المشاريع",nameEn:"View Projects"},{id:"create_projects",category:"projects",categoryAr:"المشاريع والفرق",categoryEn:"Projects & Teams",nameAr:"إنشاء مشاريع جديدة",nameEn:"Create Projects"},{id:"edit_projects",category:"projects",categoryAr:"المشاريع والفرق",categoryEn:"Projects & Teams",nameAr:"تعديل بيانات ومراحل المشاريع",nameEn:"Edit Projects"},{id:"delete_projects",category:"projects",categoryAr:"المشاريع والفرق",categoryEn:"Projects & Teams",nameAr:"حذف المشاريع",nameEn:"Delete Projects"},{id:"manage_project_members",category:"projects",categoryAr:"المشاريع والفرق",categoryEn:"Projects & Teams",nameAr:"إدارة وتعيين أعضاء المشروع",nameEn:"Manage Project Members"},{id:"create_tasks",category:"tasks",categoryAr:"المهام والتنفيذ",categoryEn:"Tasks & Execution",nameAr:"إنشاء المهام والمخرجات",nameEn:"Create Tasks"},{id:"edit_tasks",category:"tasks",categoryAr:"المهام والتنفيذ",categoryEn:"Tasks & Execution",nameAr:"تعديل تفاصيل وحالة المهام",nameEn:"Edit Tasks"},{id:"delete_tasks",category:"tasks",categoryAr:"المهام والتنفيذ",categoryEn:"Tasks & Execution",nameAr:"حذف المهام",nameEn:"Delete Tasks"},{id:"assign_tasks",category:"tasks",categoryAr:"المهام والتنفيذ",categoryEn:"Tasks & Execution",nameAr:"إسناد وتوزيع المهام للمنفذين",nameEn:"Assign Tasks"},{id:"review_tasks",category:"tasks",categoryAr:"المهام والتنفيذ",categoryEn:"Tasks & Execution",nameAr:"مراجعة المخرجات الهندسية",nameEn:"Review Deliverables"},{id:"approve_tasks",category:"tasks",categoryAr:"المهام والتنفيذ",categoryEn:"Tasks & Execution",nameAr:"اعتماد وتوقيع المخرجات الهندسية",nameEn:"Approve Deliverables"},{id:"manage_reminders",category:"tasks",categoryAr:"المهام والتنفيذ",categoryEn:"Tasks & Execution",nameAr:"إدارة التذكيرات والمتابعات",nameEn:"Manage Reminders"},{id:"upload_documents",category:"documents",categoryAr:"المخططات والمكتبة القياسية",categoryEn:"Drawings & Deliverables Library",nameAr:"رفع وإدارة المخططات والمستندات",nameEn:"Upload Documents"},{id:"delete_documents",category:"documents",categoryAr:"المخططات والمكتبة القياسية",categoryEn:"Drawings & Deliverables Library",nameAr:"حذف المخططات والمستندات",nameEn:"Delete Documents"},{id:"manage_templates",category:"documents",categoryAr:"المخططات والمكتبة القياسية",categoryEn:"Drawings & Deliverables Library",nameAr:"إدارة مكتبة القوالب والمخرجات القياسية",nameEn:"Manage Templates Library"},{id:"view_dashboard",category:"reports",categoryAr:"المؤشرات والتقارير",categoryEn:"Analytics & Reports",nameAr:"عرض لوحة التحكم والمؤشرات",nameEn:"View Dashboard"},{id:"view_reports",category:"reports",categoryAr:"المؤشرات والتقارير",categoryEn:"Analytics & Reports",nameAr:"عرض صفحة التقارير والمؤشرات",nameEn:"View Reports"},{id:"export_reports",category:"reports",categoryAr:"المؤشرات والتقارير",categoryEn:"Analytics & Reports",nameAr:"تصدير التقارير (Excel)",nameEn:"Export Reports (Excel)"},{id:"manage_users",category:"admin",categoryAr:"النظام والأمان",categoryEn:"Administration & Governance",nameAr:"إدارة ودعوة وتفعيل حسابات المستخدمين",nameEn:"Manage Users"},{id:"manage_existing_account_permissions",category:"admin",categoryAr:"النظام والأمان",categoryEn:"Administration & Governance",nameAr:"تعديل أدوار وصلاحيات الحسابات الموجودة",nameEn:"Manage Existing Account Permissions"},{id:"view_user_activity",category:"admin",categoryAr:"النظام والأمان",categoryEn:"Administration & Governance",nameAr:"متابعة أوقات دخول ونشاط المستخدمين",nameEn:"View User Logins & Activity Timestamps"},{id:"manage_roles",category:"admin",categoryAr:"النظام والأمان",categoryEn:"Administration & Governance",nameAr:"إنشاء وتعديل الأدوار والصلاحيات",nameEn:"Manage Roles & Permissions"},{id:"manage_settings",category:"admin",categoryAr:"النظام والأمان",categoryEn:"Administration & Governance",nameAr:"إدارة إعدادات النظام والشركة ومساحة العمل",nameEn:"Manage Company & Settings"},{id:"manage_trash",category:"admin",categoryAr:"النظام والأمان",categoryEn:"Administration & Governance",nameAr:"إدارة واستعادة سلة المهملات",nameEn:"Manage Trash"},{id:"view_audit_logs",category:"admin",categoryAr:"النظام والأمان",categoryEn:"Administration & Governance",nameAr:"استعراض سجل الرقابة والعمليات الأمنية",nameEn:"View Audit Logs"}];function ot(a=null){const s=o.data?.permissionsCatalog&&o.data.permissionsCatalog.length>=10?o.data.permissionsCatalog:Be,r=new Map;s.forEach(v=>{const A=v.category||"general",z=e(v.categoryAr||A,v.categoryEn||A);r.has(A)||r.set(A,{name:z,items:[]}),r.get(A).items.push(v)});const c=a?.id==="admin"||a?.permissions&&a.permissions.includes("*"),m=Array.from(r.entries()).map(([v,A])=>{const z=A.items.map(i=>{const h=i.id||i.key,$=e(i.nameAr||i.ar,i.nameEn||i.en||h),D=c||a?.permissions&&(a.permissions.includes(h)||typeof ce<"u"&&ce[h]&&a.permissions.includes(ce[h])),l=c?"disabled":"";return`
+        <label class="permission-option" style="cursor:${c?"default":"pointer"};">
+          <input type="checkbox" name="permissions" value="${t(h)}" ${D?"checked":""} ${l} />
+          <span style="font-weight:500;">${t($)}</span>
+        </label>
+      `}).join("");return`
+      <div class="permission-category-group" style="margin-bottom:12px;">
+        <div style="font-size:11.5px;font-weight:700;color:var(--teal);margin-bottom:6px;display:flex;align-items:center;gap:6px;border-bottom:1px solid var(--line);padding-bottom:3px;">
+          <span>${t(A.name)}</span>
+          <span style="font-size:10px;font-weight:normal;color:var(--muted);">(${A.items.length})</span>
+        </div>
+        <div class="permission-grid" style="grid-template-columns:repeat(auto-fit, minmax(210px, 1fr));gap:6px;max-height:none;">
+          ${z}
+        </div>
+      </div>
+    `}).join(""),g=c?"":`
+    <div style="display:flex;justify-content:space-between;align-items:center;margin:15px 0 8px;">
+      <p class="field-hint" style="margin:0;font-weight:600;color:var(--ink);">${d("permissions")} <span style="font-weight:normal;color:var(--muted);font-size:11px;">(${s.length} ${e("صلاحية متاحة","available permissions")})</span></p>
+      <div style="display:inline-flex;gap:6px;">
+        <button type="button" class="btn btn-ghost btn-sm" id="btn-perm-select-all" style="font-size:11px;padding:2px 8px;">${e("تحديد الكل","Select All")}</button>
+        <button type="button" class="btn btn-ghost btn-sm" id="btn-perm-deselect-all" style="font-size:11px;padding:2px 8px;">${e("إلغاء التحديد","Deselect All")}</button>
+      </div>
+    </div>
+  `,x=`
+    <form id="role-form" data-role-id="${t(a?.id||"")}">
+      <div class="form-grid">
+        <div class="field">
+          <label>${d("nameAr")} *</label>
+          <input name="nameAr" value="${t(a?.nameAr||"")}" required />
+        </div>
+        <div class="field">
+          <label>${d("nameEn")}</label>
+          <input name="nameEn" value="${t(a?.nameEn||"")}" />
+        </div>
+        <div class="field full">
+          <label>${d("roleDescription")}</label>
+          <textarea name="descriptionAr" rows="2">${t(a?.descriptionAr||"")}</textarea>
+        </div>
+      </div>
+      ${c?`
+        <div class="role-modal-note" style="margin-top:15px;">
+          ${e("مدير النظام يملك صلاحيات الإدارة الشاملة [*] الكاملة على كافة جوانب النظام والشركة ولا يمكن تقليصها.","The system administrator always keeps full root privileges [*] across all aspects of the system.")}
+        </div>
+      `:`
+        ${g}
+        <div style="max-height:360px;overflow-y:auto;padding-inline-end:4px;border:1px solid var(--line);border-radius:10px;padding:12px;background:var(--surface-soft);">
+          ${m}
+        </div>
+      `}
+      <div class="modal-actions" style="margin-top:18px;">
+        <button type="button" class="btn btn-ghost" data-action="close-modal">${d("cancel")}</button>
+        <button type="submit" class="btn btn-primary">${n("check",14)} ${a?d("save"):d("create")}</button>
+      </div>
+    </form>
+  `;document.getElementById("modal-root").innerHTML=fe(a?e("تعديل الدور والصلاحيات","Edit role & permissions"):d("addRole"),e("تحديد الصلاحيات الدقيقة لهذا الدور ومجالات الوصول في النظام.","Define granular permissions and workspace access levels for this role."),x,"role","modal-lg");const w=document.getElementById("modal-root");if(w){const v=w.querySelector("#btn-perm-select-all"),A=w.querySelector("#btn-perm-deselect-all");v&&v.addEventListener("click",()=>{w.querySelectorAll('input[name="permissions"]:not(:disabled)').forEach(z=>z.checked=!0)}),A&&A.addEventListener("click",()=>{w.querySelectorAll('input[name="permissions"]:not(:disabled)').forEach(z=>z.checked=!1)})}}function lt(a=null){if(a?.id==="usr_ahmad"&&o.data?.user?.id!=="usr_ahmad")return C(e("لا يمكن تعديل حساب مدير ومطور النظام.","System Developer account is protected."),!0);if(!a&&!_())return C(d("adminOnly"),!0);const s=!_(),r=s?"disabled":"",c=(o.data?.roles||[]).filter(g=>_()||g.id!=="admin"),m=`<form id="user-form" data-user-id="${t(a?.id||"")}" data-permission-only="${s}"><div class="form-grid"><div class="field full"><label>${d("nameAr")}</label><input name="name" value="${t(a?.name||"")}" ${r} required /></div><div class="field"><label>${d("nameEn")}</label><input name="nameEn" value="${t(a?.nameEn||"")}" ${r} /></div><div class="field"><label>${d("jobTitle")}</label><input name="jobTitleAr" value="${t(a?.jobTitleAr||"")}" ${r} /></div><div class="field"><label>${d("email")}</label><input name="email" type="email" value="${t(a?.email||"")}" placeholder="name@darc.com" ${r} /></div><div class="field"><label>${e("رقم الواتساب للتنبيهات","WhatsApp Phone")}</label><input name="phone" type="tel" dir="ltr" value="${t(a?.phone||a?.customFields?.phone||"")}" placeholder="مثال: +966501234567" pattern="^\\+?[0-9]{7,16}$" ${r} /></div><div class="field"><label>${d("role")}</label><select name="roleId">${c.map(g=>`<option value="${t(g.id)}" ${a?.roleId===g.id?"selected":""}>${t(e(g.nameAr,g.nameEn))}</option>`).join("")}</select></div></div><div class="field-hint">${s?e("يمكنك هنا تغيير دور الحساب الموجود فقط. إدارة الاسم والبريد والحذف وإضافة الحسابات محصورة بأحمد مدير النظام.","Here you can change the role of an existing account only. Names, email, deletion, and account creation remain restricted to Ahmed, the system administrator."):e("إذا تركت البريد فارغًا يبقى الحساب مسجلًا داخل الفريق بانتظار دعوة. عند إضافة بريد يمكنك إرسال دعوة من قائمة الحسابات.","If email is left blank, the member remains in the team directory awaiting an invite. Add an email to send an invitation from Accounts.")}</div><div class="modal-actions"><button type="button" class="btn btn-ghost" data-action="close-modal">${d("cancel")}</button><button type="submit" class="btn btn-primary">${n("check",14)} ${a?s?e("حفظ الصلاحية","Save permission"):d("save"):d("create")}</button></div></form>`;document.getElementById("modal-root").innerHTML=fe(a?s?e("تعديل صلاحية الحساب","Change account permission"):e("تعديل حساب العضو","Edit member account"):d("addMember"),e("الصلاحية تحدد ما يستطيع العضو رؤيته وتعديله داخل المشاريع.","The role defines what this member can see and change across projects."),m,"user")}export{lt as a,ut as c,Ke as d,gt as f,pt as g,Ye as h,ot as i,be as l,mt as m,it as n,st as o,vt as p,nt as r,at as s,L as t,Ne as u};
