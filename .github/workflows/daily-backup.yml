@@ -4,7 +4,7 @@ on:
   schedule:
     # Runs daily at 02:00 AM UTC (5:00 AM Riyadh / 6:00 AM Dubai)
     - cron: '0 2 * * *'
-  workflow_dispatch: # Allows manual trigger at any time from GitHub Actions UI
+  workflow_dispatch:
 
 concurrency:
   group: backup-daily
