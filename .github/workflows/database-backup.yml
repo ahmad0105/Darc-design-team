@@ -1,10 +1,10 @@
-name: Daily Encrypted Database Backup to Google Drive
+name: "Daily Encrypted Database Backup to Google Drive"
 
 on:
+  workflow_dispatch:
   schedule:
     # Runs daily at 02:00 AM UTC (5:00 AM Riyadh / 6:00 AM Dubai)
     - cron: '0 2 * * *'
-  workflow_dispatch:
 
 concurrency:
   group: backup-daily
@@ -76,7 +76,7 @@ jobs:
           retention-days: 30
           if-no-files-found: warn
 
-      - name: Upload Encrypted Artifacts to Google Drive (Dual Auth: 5TB Account / Service Account)
+      - name: "Upload Encrypted Artifacts to Google Drive (Dual Auth: 5TB Account / Service Account)"
         env:
           GDRIVE_CLIENT_ID: ${{ secrets.GDRIVE_CLIENT_ID }}
           GDRIVE_CLIENT_SECRET: ${{ secrets.GDRIVE_CLIENT_SECRET }}
