@@ -2,6 +2,7 @@
 // Dual-layer storage (IndexedDB + LocalStorage fallback) + Optimistic Local Simulation + Deduplicated Outbox Replay
 
 import { state } from './state.js';
+import { reportClientError, recordBreadcrumb } from './telemetry.js';
 
 const DB_NAME = 'darc_offline_db';
 const DB_VERSION = 1;
@@ -604,8 +605,9 @@ async function _internalSyncPendingMutations(apiFunction) {
       } catch (err) {
         console.error('[Offline Sync] Failed to replay mutation:', item.id, item.path, err.message);
         const hasHttpStatus = typeof err.status === 'number' && err.status > 0;
-        const isClientReject = hasHttpStatus && err.status >= 400 && err.status < 500;
-        const isNetError = !isClientReject && (
+        const isConflict = hasHttpStatus && (err.status === 412 || err.status === 409);
+        const isClientReject = hasHttpStatus && err.status >= 400 && err.status < 500 && !isConflict;
+        const isNetError = !isClientReject && !isConflict && (
           (typeof navigator !== 'undefined' && !navigator.onLine) ||
           (!hasHttpStatus && err.name === 'TypeError') ||
           (err.message && (err.message.includes('تعذر الاتصال') || err.message.includes('NetworkError')))
@@ -618,6 +620,19 @@ async function _internalSyncPendingMutations(apiFunction) {
           }
           stoppedDueToNetwork = true;
           break;
+        }
+        if (isConflict) {
+          recordBreadcrumb('offline.conflict', `تعارض في النسخ للمعاملة: ${item.path} (${err.status})`);
+          reportClientError(err, { source: 'syncPendingMutations.conflict', mutationId: item.id, path: item.path, severity: 'warning' });
+          if (typeof window !== 'undefined') {
+            const conflictEvent = new CustomEvent('darc:sync-conflict', {
+              detail: { item, error: err.message, status: err.status }
+            });
+            window.dispatchEvent(conflictEvent);
+            if (typeof window.showToast === 'function') {
+              window.showToast('تنبيه: حدث تعارض في مزامنة بيانات الميدان، تم حفظ التعديل محلياً للمراجعة', true);
+            }
+          }
         }
         // If 4xx client validation or server rejection, archive poison pill in dead-letter store and continue
         console.warn(`[Offline Sync] Poison pill archived in Dead-Letter Queue (HTTP ${err.status || 'Client Error'}):`, item.id, item.path);

@@ -2772,13 +2772,20 @@ body.is-ltr .toast-stack {
     font-size: 12px;
   }
   .board {
-    grid-template-columns: repeat(4, minmax(260px, 280px));
-    overflow-x: auto;
+    display: flex !important;
+    grid-template-columns: none !important;
+    min-width: 0 !important;
+    width: 100% !important;
+    overflow-x: auto !important;
     -webkit-overflow-scrolling: touch;
-    scroll-snap-type: x proximity;
+    scroll-snap-type: x mandatory;
+    gap: 12px;
     padding-bottom: 14px;
   }
   .board-column {
+    flex: 0 0 min(285px, 82vw) !important;
+    min-width: min(285px, 82vw) !important;
+    max-width: 82vw !important;
     scroll-snap-align: start;
   }
 
@@ -4753,6 +4760,31 @@ html, body {
     font-size: 0.95rem !important;
   }
 }
+
+/* ==========================================================================
+   Apple Human Interface Guidelines (HIG) — Ergonomic Touch Targets & Contrast
+   Enforces min 44px hit-target for all interactive elements on mobile/tablets
+   ========================================================================== */
+@media (pointer: coarse), (max-width: 768px) {
+  button:not(.btn-inline), 
+  .btn, 
+  input[type="button"], 
+  input[type="submit"], 
+  .action-btn, 
+  .tab-btn, 
+  .nav-item,
+  .btn-toolbar,
+  .segmented-control button {
+    min-height: 44px;
+    touch-action: manipulation;
+  }
+  
+  /* Refined iOS tap indicator */
+  * {
+    -webkit-tap-highlight-color: rgba(13, 98, 105, 0.12);
+  }
+}
+
 
 
 

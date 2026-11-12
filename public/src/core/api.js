@@ -194,8 +194,11 @@ export async function api(path, options = {}) {
     }
     
     recordBreadcrumb('api.error', `${options.method || 'GET'} ${path} (Status ${response.status}: ${payload.error || 'Failed'})`);
-    const err = new Error(payload.error || `Failed to fetch ${path}`);
+    const errorMessage = payload.error || (text && text.length < 200 && !text.includes('<!DOCTYPE') ? text : null) || choose(`فشل الطلب على المسار ${path} (رمز الحالة ${response.status})`, `Request failed for ${path} (Status ${response.status})`);
+    const err = new Error(errorMessage);
     err.status = response.status;
+    err.code = payload.code || `HTTP_${response.status}`;
+    err.rawResponse = text;
     throw err;
   }
 

@@ -9,7 +9,7 @@ vaultApp.use('*', async (c, next) => {
   const userId = c.get('userId');
   const roleId = c.get('roleId');
   const isAhmad = userId === 'usr_ahmad';
-  const isAdmin = roleId === 'admin' || isAhmad;
+  const isAdmin = roleId === 'admin' || roleId === 'owner' || roleId === 'superadmin' || isAhmad || c.get('isAdmin');
 
   if (!isDemo && !isAdmin) {
     return c.json({

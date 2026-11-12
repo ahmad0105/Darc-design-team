@@ -323,6 +323,7 @@ export function renderBoard(tasks, sortMode = getSavedTaskSort()) {
  */
 export function verifyBoardSymmetry() {
   if (typeof document === 'undefined') return;
+  if (typeof window !== 'undefined' && window.innerWidth <= 880) return;
   const board = document.querySelector('.board, .tasks-board');
   if (!board) return;
   const columns = Array.from(board.querySelectorAll('.board-column'));

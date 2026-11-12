@@ -1,4 +1,4 @@
-import{t as K}from"./rolldown-runtime-BQ-_32WO.js";import{$ as a,At as q,C as P,Dt as T,Mt as Q,Ot as E,Vt as g,X as M,Y as e,Z as B,ct as C,ft as s,lt as A,mt as G,q as z,tt as F,vt as j,w as H}from"./core-dragdrop-Sc3qVl0H.js";var te=K({openUploadDrawingModal:()=>Y,renderDocuments:()=>W});function W(){const $=g.data?.documents||[],x=g.data?.projects||[],b=g.data?.tasks||[],w=(g.searches?.documents||"").trim().toLowerCase(),m=g.docProjectFilter||"all",u=g.docDisciplineFilter||"all",t=g.docStatusFilter||"all",l=g.docSortOrder||"newest",r=g.docViewMode||"grid",o=g.data?.user?.id,f=G(),y=f||z("review_tasks")||z("approve_tasks")||z("edit_tasks"),d=z("upload_documents")||f,h=new Set(b.filter(i=>!i.deletedAt).map(i=>i.id)),k=new Set(x.filter(i=>!i.deletedAt).map(i=>i.id)),n=$.filter(i=>{if(i.deletedAt||i.projectId&&!k.has(i.projectId)||!i.projectId&&i.taskId&&!h.has(i.taskId)||m!=="all"&&i.projectId!==m||u!=="all"&&B(i)!==u||t!=="all"&&(i.status||"draft")!==t)return!1;if(w){const v=j(w),N=j(i.originalName||i.name||""),S=x.find(_=>_.id===i.projectId),U=j(S?.code||""),V=j(e(S?.nameAr,S?.nameEn||"")),R=j(F(i.originalName)||""),O=(A(i.originalName,i.mimeType).ext||"").toLowerCase();if(!(N.includes(v)||U.includes(v)||V.includes(v)||R.includes(v)||O.includes(v)))return!1}return!0});n.sort((i,v)=>l==="oldest"?new Date(i.createdAt||0)-new Date(v.createdAt||0):l==="name"?(i.originalName||"").localeCompare(v.originalName||""):l==="size"?(v.size||0)-(i.size||0):new Date(v.createdAt||0)-new Date(i.createdAt||0));const p=n.reduce((i,v)=>i+(v.size||0),0),c=p>1073741824?(p/1073741824).toFixed(1)+" GB":p>1048576?(p/1048576).toFixed(1)+" MB":Math.round(p/1024)+" KB",D=n.filter(i=>i.status==="approved").length,I=n.filter(i=>i.status==="review"||!i.status).length;return`
+import{t as K}from"./rolldown-runtime-BQ-_32WO.js";import{Ht as g,It as Q,Nt as P,O as T,Pt as E,Q as z,Rt as H,_t as s,et as e,it as a,k as q,mt as A,nt as B,ot as F,pt as M,tt as C,wt as j,yt as N}from"./core-dragdrop-DXlFjJR9.js";var te=K({openUploadDrawingModal:()=>J,renderDocuments:()=>W});function W(){const $=g.data?.documents||[],x=g.data?.projects||[],b=g.data?.tasks||[],w=(g.searches?.documents||"").trim().toLowerCase(),m=g.docProjectFilter||"all",u=g.docDisciplineFilter||"all",t=g.docStatusFilter||"all",l=g.docSortOrder||"newest",r=g.docViewMode||"grid",o=g.data?.user?.id,f=N(),y=f||z("review_tasks")||z("approve_tasks")||z("edit_tasks"),d=z("upload_documents")||f,h=new Set(b.filter(i=>!i.deletedAt).map(i=>i.id)),k=new Set(x.filter(i=>!i.deletedAt).map(i=>i.id)),n=$.filter(i=>{if(i.deletedAt||i.projectId&&!k.has(i.projectId)||!i.projectId&&i.taskId&&!h.has(i.taskId)||m!=="all"&&i.projectId!==m||u!=="all"&&B(i)!==u||t!=="all"&&(i.status||"draft")!==t)return!1;if(w){const v=j(w),L=j(i.originalName||i.name||""),S=x.find(O=>O.id===i.projectId),U=j(S?.code||""),R=j(e(S?.nameAr,S?.nameEn||"")),V=j(F(i.originalName)||""),_=(A(i.originalName,i.mimeType).ext||"").toLowerCase();if(!(L.includes(v)||U.includes(v)||R.includes(v)||V.includes(v)||_.includes(v)))return!1}return!0});n.sort((i,v)=>l==="oldest"?new Date(i.createdAt||0)-new Date(v.createdAt||0):l==="name"?(i.originalName||"").localeCompare(v.originalName||""):l==="size"?(v.size||0)-(i.size||0):new Date(v.createdAt||0)-new Date(i.createdAt||0));const p=n.reduce((i,v)=>i+(v.size||0),0),c=p>1073741824?(p/1073741824).toFixed(1)+" GB":p>1048576?(p/1048576).toFixed(1)+" MB":Math.round(p/1024)+" KB",D=n.filter(i=>i.status==="approved").length,I=n.filter(i=>i.status==="review"||!i.status).length;return`
     <!-- Header -->
     <div class="page-head">
       <div>
@@ -137,7 +137,7 @@ import{t as K}from"./rolldown-runtime-BQ-_32WO.js";import{$ as a,At as q,C as P,
     ${r==="grid"?Z(n,x,b,y,f,o):X(n,x,b,y,f,o)}
   `}function Z($,x,b,w,m,u){return $.length?`
     <div class="documents-grid" style="display:grid;grid-template-columns:repeat(auto-fill, minmax(295px, 1fr));gap:16px;margin-top:14px;">
-      ${$.map(t=>{const l=x.find(c=>c.id===t.projectId),r=b.find(c=>c.id===t.taskId),o=A(t.originalName,t.mimeType),f=F(t.originalName)||"V1",y=B(t),d=C(y),h=t.size>1048576?(t.size/1048576).toFixed(1)+" MB":Math.round((t.size||0)/1024)+" KB",k=m||z("delete_documents")||t.uploaderId===u,n=H(t),p=P(t);return`
+      ${$.map(t=>{const l=x.find(c=>c.id===t.projectId),r=b.find(c=>c.id===t.taskId),o=A(t.originalName,t.mimeType),f=F(t.originalName)||"V1",y=B(t),d=M(y),h=t.size>1048576?(t.size/1048576).toFixed(1)+" MB":Math.round((t.size||0)/1024)+" KB",k=m||z("delete_documents")||t.uploaderId===u,n=q(t),p=T(t);return`
           <div class="doc-blueprint-card" data-doc-id="${a(t.id)}" style="background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 4px 16px rgba(0,0,0,0.03);transition:transform 0.2s cubic-bezier(0.16,1,0.3,1),box-shadow 0.2s cubic-bezier(0.16,1,0.3,1),border-color 0.2s;">
             
             <!-- Blueprint Thumbnail Banner -->
@@ -199,7 +199,7 @@ import{t as K}from"./rolldown-runtime-BQ-_32WO.js";import{$ as a,At as q,C as P,
                 <div style="display:flex;align-items:center;gap:6px;margin-top:3px;font-size:11px;color:var(--muted);">
                   <span>${h}</span>
                   <span>•</span>
-                  <span>${M(t.createdAt,!0)}</span>
+                  <span>${C(t.createdAt,!0)}</span>
                 </div>
               </div>
 
@@ -248,7 +248,7 @@ import{t as K}from"./rolldown-runtime-BQ-_32WO.js";import{$ as a,At as q,C as P,
                   </select>
                 `:`
                   <span class="status-badge ${a(t.status||"draft")}" style="font-size:11px;display:inline-block;padding:3px 8px;border-radius:6px;">
-                    ${a(T(t.status||"draft"))}
+                    ${a(P(t.status||"draft"))}
                   </span>
                 `}
               </div>
@@ -313,7 +313,7 @@ import{t as K}from"./rolldown-runtime-BQ-_32WO.js";import{$ as a,At as q,C as P,
           </div>
         `}).join("")}
     </div>
-  `:L()}function X($,x,b,w,m,u){return $.length?`
+  `:G()}function X($,x,b,w,m,u){return $.length?`
     <div class="panel" style="margin-top:14px;">
       <div class="table-wrap">
         <table class="data-table documents-table">
@@ -331,7 +331,7 @@ import{t as K}from"./rolldown-runtime-BQ-_32WO.js";import{$ as a,At as q,C as P,
             </tr>
           </thead>
           <tbody>
-            ${$.map(t=>{const l=x.find(p=>p.id===t.projectId),r=b.find(p=>p.id===t.taskId),o=A(t.originalName,t.mimeType),f=F(t.originalName)||"V1",y=B(t),d=C(y),h=t.size>1048576?(t.size/1048576).toFixed(1)+" MB":Math.round((t.size||0)/1024)+" KB",k=m||z("delete_documents")||t.uploaderId===u,n=P(t);return`
+            ${$.map(t=>{const l=x.find(p=>p.id===t.projectId),r=b.find(p=>p.id===t.taskId),o=A(t.originalName,t.mimeType),f=F(t.originalName)||"V1",y=B(t),d=M(y),h=t.size>1048576?(t.size/1048576).toFixed(1)+" MB":Math.round((t.size||0)/1024)+" KB",k=m||z("delete_documents")||t.uploaderId===u,n=T(t);return`
                 <tr data-doc-id="${a(t.id)}" class="doc-row">
                   <td>
                     <div style="display:flex;align-items:center;gap:10px;cursor:pointer;" data-action="preview-doc" data-doc-id="${a(t.id)}">
@@ -373,13 +373,13 @@ import{t as K}from"./rolldown-runtime-BQ-_32WO.js";import{$ as a,At as q,C as P,
                         </select>
                       `:`
                         <span class="status-badge ${a(t.status||"draft")}" style="font-size:11px;">
-                          ${a(T(t.status||"draft"))}
+                          ${a(P(t.status||"draft"))}
                         </span>
                       `}
                     </div>
                   </td>
                   <td style="font-size:12px;color:var(--ink-soft);">${h}</td>
-                  <td style="font-size:12px;color:var(--ink-soft);">${M(t.createdAt,!0)}</td>
+                  <td style="font-size:12px;color:var(--ink-soft);">${C(t.createdAt,!0)}</td>
                   <td style="text-align:end;">
                     <div style="display:inline-flex;align-items:center;gap:4px;">
                       <button class="btn btn-ghost btn-sm" data-action="preview-doc" data-doc-id="${a(t.id)}" style="padding:5px;" title="${e("معاينة","Preview")}">
@@ -404,21 +404,21 @@ import{t as K}from"./rolldown-runtime-BQ-_32WO.js";import{$ as a,At as q,C as P,
         </table>
       </div>
     </div>
-  `:L()}function L(){return`
+  `:G()}function G(){return`
     <div class="empty" style="padding:60px 20px;background:var(--surface);border:1px dashed var(--line);border-radius:14px;margin-top:16px;text-align:center;">
       <div style="color:var(--teal);margin-bottom:12px;">${s("document",40)}</div>
       <h3 style="margin:0 0 6px;font-size:16px;font-weight:800;color:var(--ink);">${e("لا توجد مخططات أو ملفات مطابقة","No blueprints or documents found")}</h3>
       <p style="margin:0 0 16px;font-size:13px;color:var(--muted);max-width:440px;margin-inline:auto;">
         ${e("لم يتم العثور على أي ملفات تطابق معايير البحث والفلترة المحددة. يمكنك تعديل خيارات التصفية أو رفع مخرج هندسي جديد.","No deliverables match the specified filters. Try adjusting your search or upload a new engineering drawing.")}
       </p>
-      ${z("upload_documents")||G()?`
+      ${z("upload_documents")||N()?`
         <button class="btn btn-primary btn-sm" data-action="open-upload-drawing-modal" style="display:inline-flex;align-items:center;gap:6px;font-weight:700;">
           ${s("upload",14)}
           <span>${e("رفع مخطط جديد الآن","Upload New Drawing")}</span>
         </button>
       `:""}
     </div>
-  `}function Y($=null){const x=g.data?.projects||[],b=$||x[0]?.id||"",w=g.data?.tasks?.filter(t=>t.projectId===b&&!t.deletedAt)||[],m=`
+  `}function J($=null){const x=g.data?.projects||[],b=$||x[0]?.id||"",w=g.data?.tasks?.filter(t=>t.projectId===b&&!t.deletedAt)||[],m=`
     <form id="upload-drawing-form" style="padding:16px 20px 20px;display:grid;gap:16px;">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
         <div class="field">
@@ -479,7 +479,7 @@ import{t as K}from"./rolldown-runtime-BQ-_32WO.js";import{$ as a,At as q,C as P,
         </button>
       </div>
     </form>
-  `,u=document.getElementById("modal-root");if(u){u.innerHTML=Q(e("رفع مخطط أو مخرج هندسي جديد","Upload Architectural Deliverable / Drawing"),e("رفع ملفات CAD و BIM و PDF مع توثيق الإصدارات والتخصص الهندسي.","Upload CAD, BIM, and PDF files with revision numbering and discipline tagging."),m,"upload-drawing","modal-lg");const t=document.getElementById("drawing-upload-project"),l=document.getElementById("drawing-upload-task");t&&l&&t.addEventListener("change",()=>{const n=t.value,p=g.data?.tasks?.filter(c=>c.projectId===n&&!c.deletedAt)||[];l.innerHTML=`<option value="">${e("— مخطط عام لكامل المشروع —","— General Project Drawing —")}</option>`+p.map(c=>`<option value="${a(c.id)}">${a(e(c.titleAr,c.titleEn))}</option>`).join("")});const r=document.getElementById("drawing-dropzone"),o=document.getElementById("drawing-file-input"),f=document.getElementById("drawing-selected-files-list"),y=document.getElementById("start-drawing-upload-btn");let d=[];const h=()=>{if(!d.length){f.innerHTML="",y.disabled=!0;return}y.disabled=!1,f.innerHTML=d.map((n,p)=>{const c=A(n.name,n.type),D=n.size>1048576?(n.size/1048576).toFixed(1)+" MB":Math.round(n.size/1024)+" KB";return`
+  `,u=document.getElementById("modal-root");if(u){u.innerHTML=H(e("رفع مخطط أو مخرج هندسي جديد","Upload Architectural Deliverable / Drawing"),e("رفع ملفات CAD و BIM و PDF مع توثيق الإصدارات والتخصص الهندسي.","Upload CAD, BIM, and PDF files with revision numbering and discipline tagging."),m,"upload-drawing","modal-lg");const t=document.getElementById("drawing-upload-project"),l=document.getElementById("drawing-upload-task");t&&l&&t.addEventListener("change",()=>{const n=t.value,p=g.data?.tasks?.filter(c=>c.projectId===n&&!c.deletedAt)||[];l.innerHTML=`<option value="">${e("— مخطط عام لكامل المشروع —","— General Project Drawing —")}</option>`+p.map(c=>`<option value="${a(c.id)}">${a(e(c.titleAr,c.titleEn))}</option>`).join("")});const r=document.getElementById("drawing-dropzone"),o=document.getElementById("drawing-file-input"),f=document.getElementById("drawing-selected-files-list"),y=document.getElementById("start-drawing-upload-btn");let d=[];const h=()=>{if(!d.length){f.innerHTML="",y.disabled=!0;return}y.disabled=!1,f.innerHTML=d.map((n,p)=>{const c=A(n.name,n.type),D=n.size>1048576?(n.size/1048576).toFixed(1)+" MB":Math.round(n.size/1024)+" KB";return`
           <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--surface);border:1px solid var(--line);border-radius:8px;font-size:12px;">
             <div style="display:flex;align-items:center;gap:8px;min-width:0;">
               <span class="file-format-badge" style="background:${c.bg};color:${c.color};border:1px solid ${c.border};font-size:9px;font-weight:800;padding:2px 6px;border-radius:4px;">${c.ext}</span>
@@ -488,4 +488,4 @@ import{t as K}from"./rolldown-runtime-BQ-_32WO.js";import{$ as a,At as q,C as P,
             </div>
             <button type="button" data-file-remove="${p}" style="background:transparent;border:0;color:var(--red);cursor:pointer;font-size:16px;">&times;</button>
           </div>
-        `}).join(""),f.querySelectorAll("[data-file-remove]").forEach(n=>{n.addEventListener("click",()=>{const p=parseInt(n.dataset.fileRemove,10);d.splice(p,1),h()})})};r&&o&&(r.addEventListener("click",()=>o.click()),o.addEventListener("change",()=>{o.files?.length&&(d=Array.from(o.files),h())}),r.addEventListener("dragover",n=>{n.preventDefault(),r.style.borderColor="var(--teal)"}),r.addEventListener("dragleave",()=>{r.style.borderColor="var(--line)"}),r.addEventListener("drop",n=>{n.preventDefault(),r.style.borderColor="var(--line)",n.dataTransfer?.files?.length&&(d=Array.from(n.dataTransfer.files),h())}));const k=document.getElementById("upload-drawing-form");k&&k.addEventListener("submit",async n=>{if(n.preventDefault(),!d.length)return;const p=t.value,c=l.value||null,D=document.getElementById("drawing-upload-discipline")?.value||"architectural",I=document.getElementById("drawing-upload-status")?.value||"draft";q(),typeof window.uploadDirectFiles=="function"&&window.uploadDirectFiles({files:d,projectId:p,taskId:c,discipline:D,status:I})})}}export{Y as n,te as t};
+        `}).join(""),f.querySelectorAll("[data-file-remove]").forEach(n=>{n.addEventListener("click",()=>{const p=parseInt(n.dataset.fileRemove,10);d.splice(p,1),h()})})};r&&o&&(r.addEventListener("click",()=>o.click()),o.addEventListener("change",()=>{o.files?.length&&(d=Array.from(o.files),h())}),r.addEventListener("dragover",n=>{n.preventDefault(),r.style.borderColor="var(--teal)"}),r.addEventListener("dragleave",()=>{r.style.borderColor="var(--line)"}),r.addEventListener("drop",n=>{n.preventDefault(),r.style.borderColor="var(--line)",n.dataTransfer?.files?.length&&(d=Array.from(n.dataTransfer.files),h())}));const k=document.getElementById("upload-drawing-form");k&&k.addEventListener("submit",async n=>{if(n.preventDefault(),!d.length)return;const p=t.value,c=l.value||null,D=document.getElementById("drawing-upload-discipline")?.value||"architectural",I=document.getElementById("drawing-upload-status")?.value||"draft";Q(),typeof window.uploadDirectFiles=="function"&&window.uploadDirectFiles({files:d,projectId:p,taskId:c,discipline:D,status:I})})}}export{J as n,te as t};

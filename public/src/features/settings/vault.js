@@ -7,20 +7,24 @@ import { isDemoSession } from '../../core/realtime.js';
 
 let _cachedVault = null;
 let _isLoading = false;
+let _vaultError = null;
 let _activeHoldTimer = null;
 let _holdProgress = 0;
 
 export async function fetchVaultData(force = false) {
   if (_cachedVault && !force) return _cachedVault;
   _isLoading = true;
+  _vaultError = null;
   try {
     recordBreadcrumb('vault', 'Fetching vault backups from Google Drive API');
-    const res = await api('/api/vault/backups' + (force ? '?force=true' : ''), { silent: true });
+    const res = await api('/api/vault/backups' + (force ? '?force=true' : ''));
     if (res && res.backups) {
       _cachedVault = res;
+      _vaultError = null;
     }
   } catch (err) {
     console.warn('[Vault] Failed to fetch vault backups:', err);
+    _vaultError = err.message || choose('فشل في استرجاع النسخ الاحتياطية من الخزنة', 'Failed to retrieve backups from vault');
     recordBreadcrumb('vault', 'Fetch error: ' + (err.message || 'unknown'));
   } finally {
     _isLoading = false;
@@ -50,7 +54,27 @@ export function renderVaultSection() {
 }
 
 function renderVaultInner(isDemo, data) {
-  if (_isLoading && !data) {
+  if (!data && _vaultError) {
+    return `
+      <div class="vault-error-state card" style="text-align:center; padding:3.5rem 1.5rem; border:1px solid rgba(239, 68, 68, 0.3); background:rgba(239, 68, 68, 0.04); border-radius:1rem; margin-bottom:2rem;">
+        <div style="color:#ef4444; margin-bottom:1rem;">
+          ${icon('alert-triangle', 'width:36px; height:36px;')}
+        </div>
+        <h3 style="font-weight:700; color:var(--text-main); margin-bottom:0.5rem;">
+          ${choose('تعذر تحميل سجل النسخ الاحتياطية من Google Drive', 'Failed to Load Backups Ledger from Google Drive')}
+        </h3>
+        <p style="color:var(--text-muted); font-size:0.9rem; max-width:540px; margin:0 auto 1.5rem auto;">
+          ${esc(_vaultError)}
+        </p>
+        <button id="btn-retry-vault-fetch" class="btn btn-primary" style="display:inline-flex; align-items:center; gap:0.5rem; background:#059669; border-color:#059669; font-size:0.9rem;">
+          ${icon('refresh', 'width:15px; height:15px;')}
+          <span>${choose('إعادة المحاولة الآن', 'Retry Now')}</span>
+        </button>
+      </div>
+    `;
+  }
+
+  if (!data || _isLoading) {
     return `
       <div class="vault-loading-state" style="text-align:center; padding:4rem 1rem;">
         <div class="loading-spinner" style="margin: 0 auto 1.5rem auto;"></div>
@@ -238,6 +262,20 @@ function renderVaultInner(isDemo, data) {
 }
 
 export function attachVaultEvents() {
+  const retryBtn = document.getElementById('btn-retry-vault-fetch');
+  if (retryBtn) {
+    retryBtn.onclick = async () => {
+      retryBtn.disabled = true;
+      retryBtn.innerHTML = `${icon('refresh', 'width:15px; height:15px; animation:spin 1s linear infinite;')} <span>${choose('جاري الفحص...', 'Retrying...')}</span>`;
+      await fetchVaultData(true);
+      const container = document.getElementById('vault-content-area');
+      if (container) {
+        container.innerHTML = renderVaultInner(isDemoSession(), _cachedVault);
+        attachVaultEvents();
+      }
+    };
+  }
+
   const backupBtn = document.getElementById('btn-trigger-backup-now');
   if (backupBtn) {
     backupBtn.onclick = async () => {
@@ -507,5 +545,7 @@ async function triggerRestoreExecution(backupFilename, isDryRun) {
       `;
     }
     showToast(err.message || 'Error triggering restore', 'error');
+  } finally {
+    if (holdBtn) holdBtn.disabled = false;
   }
 }

@@ -8,6 +8,13 @@ let _backupsCache = null;
 let _backupsCacheTime = 0;
 const CACHE_TTL_MS = 180000; // 3 minutes
 
+function formatBytes(bytes) {
+  const b = Number(bytes || 0);
+  if (b >= 1024 * 1024 * 1024) return (b / (1024 * 1024 * 1024)).toFixed(2) + ' GB';
+  if (b >= 1024 * 1024) return (b / (1024 * 1024)).toFixed(2) + ' MB';
+  return (b / 1024).toFixed(2) + ' KB';
+}
+
 // Multi-Auth OAuth2 / Service Account resolver for Google Drive
 async function getGoogleDriveAccessToken(env) {
   const clean = val => (val || '').trim().replace(/^["']|["']$/g, '');
@@ -82,7 +89,7 @@ export async function fetchVaultBackups(env, force = false) {
       id: file.id,
       filename: file.name,
       sizeBytes: Number(file.size || 0),
-      sizeFormatted: (Number(file.size || 0) / 1024).toFixed(2) + ' KB',
+      sizeFormatted: formatBytes(file.size),
       createdAt: file.createdTime,
       hasSha256Checksum: shaFilesMap.has(expectedShaName),
       shaFileId: shaFilesMap.get(expectedShaName) || null,

@@ -3,7 +3,7 @@ import { state } from './state.js';
 import { api, API_BASE, invalidateBootstrapEtag } from './api.js';
 import { switchView, refreshView, renderView, renderApp, canAccessView, getFirstAllowedView, loadData } from './router.js';
 import { openOmnisearch, closeOmnisearch, openShortcutsCheatsheet } from '../features/dashboard/omnisearch.js';
-import { playSuccessChime, savePreferencesCookies, choose, esc, icon, t, can, isAdmin, avatar, roleName, statusText, initials, dateLabel, isNotificationRead, hasSessionIndicator, setSessionIndicator } from './utils.js';
+import { playSuccessChime, savePreferencesCookies, choose, esc, icon, t, can, isAdmin, avatar, roleName, statusText, initials, dateLabel, isNotificationRead, hasSessionIndicator, setSessionIndicator, isOverdue, isDueSoon, isTaskAssignedToUser } from './utils.js';
 import { showToast, modalShell, closeModal, renderLoading } from '../shared/ui.js';
 import { setSavedTaskSort, openDocumentPreviewModal, renderTaskDocuments, canUserUploadToTask, openTaskModal, renderTaskComments, drawTimelineArrows } from '../features/tasks/tasks.js';
 import { downloadDocument, handleCopyDocLink, getDocumentShareableLink } from '../features/documents/doc-viewer.js';
@@ -1261,6 +1261,11 @@ export async function handleClick(event) {
     requestAnimationFrame(() => renderView());
     return;
   }
+  if (action === 'toggle-timeline-scale') {
+    state.timelineScale = target.dataset.scale || 'month';
+    requestAnimationFrame(() => renderView());
+    return;
+  }
   if (action === 'prev-calendar-month') {
     const d = state.calendarDate ? new Date(state.calendarDate) : new Date();
     d.setMonth(d.getMonth() - 1);
@@ -1307,6 +1312,36 @@ export async function handleClick(event) {
   if (action === 'task-filter') {
     state.taskFilter = target.dataset.filter;
     target.closest('.segmented-control, .view-toolbar-start')?.querySelectorAll('.segmented-tab, .filter-tab').forEach(b => b.classList.toggle('active', b === target));
+    
+    // Surgical In-Place DOM Filtering: If board cards are present, toggle card visibility directly without full page innerHTML wipe
+    const board = document.querySelector('.board, .tasks-board, .board-columns');
+    if (board && (state.view === 'tasks' || state.view === 'project-detail')) {
+      const currentUid = state.data?.user?.id;
+      const cards = board.querySelectorAll('.task-card');
+      if (cards.length) {
+        cards.forEach(card => {
+          const taskId = card.dataset.taskId;
+          const task = (state.data?.tasks || []).find(t => t.id === taskId);
+          if (!task) return;
+          const matchesFilter = state.taskFilter === 'all' || 
+            (state.taskFilter === 'mine' && isTaskAssignedToUser(task, currentUid)) || 
+            (state.taskFilter === 'due_soon' && isDueSoon(task)) || 
+            (state.taskFilter === 'overdue' && isOverdue(task)) || 
+            (state.taskFilter === 'blocked' && task.status === 'blocked');
+          const matchesProject = !state.taskProjectFilter || state.taskProjectFilter === 'all' || task.projectId === state.taskProjectFilter;
+          const matchesPriority = !state.taskPriorityFilter || state.taskPriorityFilter === 'all' || task.priority === state.taskPriorityFilter;
+          card.style.display = (matchesFilter && matchesProject && matchesPriority) ? '' : 'none';
+        });
+        board.querySelectorAll('.board-column').forEach(col => {
+          const visibleCards = col.querySelectorAll('.task-card:not([style*="display: none"])');
+          const countEl = col.querySelector('.board-count');
+          if (countEl) countEl.textContent = String(visibleCards.length);
+          const emptyEl = col.querySelector('.empty');
+          if (emptyEl) emptyEl.style.display = visibleCards.length === 0 ? '' : 'none';
+        });
+        return;
+      }
+    }
     requestAnimationFrame(() => renderView());
     return;
   }
@@ -1848,6 +1883,15 @@ export function handleInput(event) {
 
   if (event.target.dataset.action === 'search-trash-input') {
     state.trashQuery = event.target.value;
+    const query = (event.target.value || '').trim().toLowerCase();
+    const items = document.querySelectorAll('.trash-card, .trash-item, .trash-row, .table-trash tbody tr');
+    if (items.length) {
+      items.forEach(item => {
+        const text = item.textContent.toLowerCase();
+        item.style.display = (!query || text.includes(query)) ? '' : 'none';
+      });
+      return;
+    }
     const cursor = event.target.selectionStart;
     clearTimeout(_searchDebounceTimer);
     _searchDebounceTimer = setTimeout(() => {
@@ -1863,6 +1907,15 @@ export function handleInput(event) {
 
   if (event.target.dataset.action === 'search-audit-input') {
     state.auditSearchQuery = event.target.value;
+    const query = (event.target.value || '').trim().toLowerCase();
+    const rows = document.querySelectorAll('.audit-row, .table-audit tbody tr');
+    if (rows.length) {
+      rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = (!query || text.includes(query)) ? '' : 'none';
+      });
+      return;
+    }
     const cursor = event.target.selectionStart;
     clearTimeout(_searchDebounceTimer);
     _searchDebounceTimer = setTimeout(() => {
