@@ -6,6 +6,7 @@ import { showToast, hideSplashScreen } from '../shared/ui.js';
 import { recordBreadcrumb } from './telemetry.js';
 import { renderNavbar, renderSyncIndicator, initSyncIndicatorListener, updateNavbarTitle } from '../shared/navbar.js';
 import { renderSidebar, renderSidebarBackdrop } from '../shared/sidebar.js';
+import { renderCache } from './render-cache.js';
 
 export function canAccessView(view) {
   if (!state.data) return true;
@@ -84,8 +85,7 @@ export function renderApp() {
       </section>
     </div>
     <div id="modal-root"></div><div id="toast-root" class="toast-stack"></div>`;
-  lastRenderedView = null;
-  lastRenderedHtml = '';
+  renderCache.invalidate();
   renderView(true);
 }
 
@@ -121,9 +121,6 @@ export async function ensureViewLoaded(view) {
   }
 }
 
-let lastRenderedView = null;
-let lastRenderedHtml = '';
-
 export function renderView(force = false) {
   if (!force && (window._isDraggingTask || window._isKeyboardDraggingTask || window._isTouchHoldingTask)) {
     window._pendingRenderAfterDrag = true;
@@ -135,12 +132,9 @@ export function renderView(force = false) {
     state.view = getFirstAllowedView();
   }
 
-  // Preserve scroll states across re-renders of the same view (prevents board jump to first column)
-  const isSameView = lastRenderedView === state.view;
-  const prevMainScrollTop = isSameView ? main.scrollTop : 0;
-  const prevMainScrollLeft = isSameView ? main.scrollLeft : 0;
-  const prevBoard = isSameView ? main.querySelector('.board, .tasks-board, .board-columns') : null;
-  const prevBoardScrollLeft = prevBoard ? prevBoard.scrollLeft : null;
+  // Preserve scroll states across re-renders of the same view
+  const isSameView = renderCache._lastView === state.view;
+  const scrollState = renderCache.captureScrollState(main, isSameView);
 
   let html = '';
   if (state.view === 'dashboard' && typeof window.renderDashboard === 'function') html = window.renderDashboard();
@@ -162,30 +156,16 @@ export function renderView(force = false) {
     }
   }
 
-  // Fast-path memoization: If view is unchanged, not forced, DOM is already populated, and HTML content is identical, avoid DOM tear-down and reflow
-  if (isSameView && !force && main.innerHTML !== '' && html === lastRenderedHtml) {
+  // Fast-path memoization: delegate to renderCache
+  if (renderCache.shouldSkipRender(state.view, html, main, force)) {
     return;
   }
 
-  lastRenderedView = state.view;
-  lastRenderedHtml = html;
+  renderCache.commit(state.view, html, force);
   main.innerHTML = html;
 
   // Restore scroll positions so user stays exactly where they were
-  if (prevMainScrollTop) main.scrollTop = prevMainScrollTop;
-  if (prevMainScrollLeft) main.scrollLeft = prevMainScrollLeft;
-  if (prevBoardScrollLeft !== null) {
-    const newBoard = main.querySelector('.board, .tasks-board, .board-columns');
-    if (newBoard) {
-      newBoard.style.scrollSnapType = 'none';
-      newBoard.scrollLeft = prevBoardScrollLeft;
-      requestAnimationFrame(() => {
-        if (newBoard && !window._isDraggingTask) {
-          newBoard.style.scrollSnapType = '';
-        }
-      });
-    }
-  }
+  renderCache.restoreScrollState(main, scrollState);
   
   if (state.view === 'tasks' || state.view === 'project-detail') {
     requestAnimationFrame(() => {
@@ -527,4 +507,5 @@ export async function loadData(silent = false) {
 if (typeof window !== 'undefined') {
   window.renderApp = renderApp;
   window.renderView = renderView;
+  window.renderCache = renderCache;
 }

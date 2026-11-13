@@ -1,5 +1,5 @@
 // DARC Design Team — Enterprise Resilient Service Worker & Offline PWA Engine
-const CACHE_NAME = 'darc-cache-v6.8.0';
+const CACHE_NAME = 'darc-cache-v6.8.3';
 const PRECACHE_ASSETS = [
   '/',
   '/index.html',
