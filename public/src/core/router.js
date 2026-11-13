@@ -84,7 +84,9 @@ export function renderApp() {
       </section>
     </div>
     <div id="modal-root"></div><div id="toast-root" class="toast-stack"></div>`;
-  renderView();
+  lastRenderedView = null;
+  lastRenderedHtml = '';
+  renderView(true);
 }
 
 let lastRenderedView = null;
@@ -119,8 +121,8 @@ export function renderView(force = false) {
   if (state.view === 'settings' && typeof window.renderSettings === 'function') html = window.renderSettings();
   if (state.view === 'project-detail' && typeof window.renderProjectDetail === 'function') html = window.renderProjectDetail();
 
-  // Fast-path memoization: If view is unchanged, not forced, and HTML content is identical, avoid DOM tear-down and reflow
-  if (isSameView && !force && html === lastRenderedHtml) {
+  // Fast-path memoization: If view is unchanged, not forced, DOM is already populated, and HTML content is identical, avoid DOM tear-down and reflow
+  if (isSameView && !force && main.innerHTML !== '' && html === lastRenderedHtml) {
     return;
   }
 
