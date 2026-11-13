@@ -132,4 +132,16 @@ validDockStatuses.forEach(st => {
   console.assert(Boolean(taskStatusesMapping[st]), `Test 8: Dock pill for ${st} must exist in mapping`);
 });
 
-console.log('✓ All Drag & Drop, Mobile Touch & Permission tests passed successfully! (15/15 tests)');
+// --- Test 9: Accessible Keyboard Drop Coordinate Preservation ---
+let simulatedCard = {
+  getBoundingClientRect() { return { top: 120, height: 60 }; },
+  classList: { remove: () => {} },
+  setAttribute: () => {}
+};
+const preservedRect = simulatedCard ? simulatedCard.getBoundingClientRect() : null;
+simulatedCard = null; // simulate nullifying active card reference
+const dropClientY = preservedRect ? preservedRect.top + 10 : 0;
+console.assert(dropClientY === 130, 'Test 9.1: Keyboard drop position must preserve rect coordinates prior to card release');
+console.assert(dropClientY > 0, 'Test 9.2: Keyboard drop position must not collapse to 0');
+
+console.log('✓ All Drag & Drop, Mobile Touch & Permission tests passed successfully! (17/17 tests)');

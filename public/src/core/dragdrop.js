@@ -1430,6 +1430,7 @@ document.addEventListener('keydown', async (e) => {
       e.preventDefault();
       const finalColumn = keyboardDraggedCard.closest('.board-column');
       const draggedId = keyboardDraggedTaskId;
+      const rect = keyboardDraggedCard ? keyboardDraggedCard.getBoundingClientRect() : null;
 
       keyboardDraggedCard.classList.remove('is-keyboard-grabbed');
       keyboardDraggedCard.setAttribute('aria-grabbed', 'false');
@@ -1438,7 +1439,6 @@ document.addEventListener('keydown', async (e) => {
       window._isKeyboardDraggingTask = false;
 
       if (finalColumn && draggedId) {
-        const rect = keyboardDraggedCard ? keyboardDraggedCard.getBoundingClientRect() : null;
         await handleTaskDrop(finalColumn, rect ? rect.top + 10 : 0, draggedId);
       }
       return;

@@ -25,7 +25,42 @@ export default [
       }
     },
     rules: {
-      'no-undef': 'error'
+      'no-undef': 'error',
+      'no-unused-vars': 'off',
+      'no-empty': ['error', { allowEmptyCatch: true }],
+      'no-unreachable': 'error',
+      'no-dupe-keys': 'error',
+      'no-dupe-args': 'error',
+      'no-duplicate-case': 'error',
+      'valid-typeof': 'error'
+    }
+  },
+  {
+    files: ['darc-cloud-backend/src/**/*.js'],
+    languageOptions: {
+      ecmaVersion: 'latest',
+      sourceType: 'module',
+      globals: {
+        ...globals.node,
+        ...globals.es2021,
+        crypto: 'readonly',
+        Buffer: 'readonly',
+        caches: 'readonly',
+        Response: 'readonly',
+        Request: 'readonly',
+        Headers: 'readonly',
+        fetch: 'readonly'
+      }
+    },
+    rules: {
+      'no-undef': 'error',
+      'no-unused-vars': 'off',
+      'no-empty': ['error', { allowEmptyCatch: true }],
+      'no-unreachable': 'error',
+      'no-dupe-keys': 'error',
+      'no-dupe-args': 'error',
+      'no-duplicate-case': 'error',
+      'valid-typeof': 'error'
     }
   }
 ];

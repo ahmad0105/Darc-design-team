@@ -107,8 +107,8 @@ app.use('*', cors({
   },
   credentials: true,
   allowMethods: ['GET', 'HEAD', 'PUT', 'POST', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowHeaders: ['Content-Type', 'Authorization', 'Cookie', 'Cache-Control', 'Pragma', 'If-None-Match', 'X-Silent', 'x-session-url', 'content-range', 'x-doc-meta', 'X-File-Name', 'X-Request-Id', 'X-Offline-Replay', 'X-Offline-Id', 'X-Idempotency-Key', 'X-Mutation-ID', 'x-mutation-id', 'Range'],
-  exposeHeaders: ['Set-Cookie', 'ETag', 'X-Request-Id', 'Range'],
+  allowHeaders: ['Content-Type', 'Authorization', 'Cookie', 'Cache-Control', 'Pragma', 'If-None-Match', 'X-Silent', 'x-session-url', 'content-range', 'x-doc-meta', 'X-File-Name', 'X-Request-Id', 'X-Offline-Replay', 'X-Offline-Id', 'X-Idempotency-Key', 'X-Mutation-ID', 'x-mutation-id', 'Range', 'x-darc-trace-id', 'X-Darc-Trace-Id'],
+  exposeHeaders: ['Set-Cookie', 'ETag', 'X-Request-Id', 'Range', 'x-darc-trace-id', 'X-Darc-Trace-Id'],
   maxAge: 86400
 }));
 

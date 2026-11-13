@@ -407,9 +407,35 @@ a { color: inherit; text-decoration: none; }
 .topbar-kicker { color: var(--muted); font-size: 10px; font-weight: 800; }
 .topbar-title { margin-top: 3px; font-size: 18px; font-weight: 900; letter-spacing: -.04em; }
 .topbar-divider { width: 1px; height: 25px; background: var(--line); }
-.icon-button { width: 37px; height: 37px; position: relative; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 11px; color: var(--ink-soft); background: #fff; }
-.icon-button:hover { color: var(--teal); border-color: #c9e1de; background: #f7fcfb; }
-.icon-button svg { width: 17px; height: 17px; }
+.icon-button,
+.topbar-action-btn {
+  width: 36px !important;
+  height: 36px !important;
+  min-width: 36px !important;
+  min-height: 36px !important;
+  position: relative;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border: 1px solid var(--line) !important;
+  border-radius: 10px !important;
+  color: var(--ink-soft) !important;
+  background: var(--surface) !important;
+  box-sizing: border-box !important;
+  padding: 0 !important;
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease, color 0.15s ease !important;
+}
+.icon-button:hover,
+.topbar-action-btn:hover {
+  color: var(--teal) !important;
+  border-color: var(--teal) !important;
+  background: var(--surface-soft) !important;
+  transform: translateY(-1.5px) !important;
+}
+.icon-button svg,
+.topbar-action-btn svg { width: 16px; height: 16px; display: block !important; margin: auto !important; }
+.mobile-menu { display: none !important; }
 .notification-dot { position: absolute; top: 7px; inset-inline-end: 7px; width: 6px; height: 6px; border-radius: 50%; background: var(--red); box-shadow: 0 0 0 2px #fff; }
 .profile-chip { display: flex; align-items: center; gap: 9px; padding-block: 4px; padding-inline: 10px 6px; border: 1px solid var(--line); border-radius: 13px; background: #fff; }
 .profile-chip-text strong, .profile-chip-text span { display: block; }
@@ -2599,6 +2625,18 @@ body.is-ltr .toast-stack {
   .metrics-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .project-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .team-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .content-grid, .report-grid { grid-template-columns: 1fr !important; gap: 20px !important; }
+  .template-layout, .settings-layout { grid-template-columns: 1fr !important; }
+  .project-row {
+    grid-template-columns: minmax(0, 1fr) 85px 28px !important;
+    gap: 10px !important;
+  }
+  .project-owner { display: none !important; }
+  .team-row {
+    grid-template-columns: minmax(0, 1fr) 52px 28px !important;
+    gap: 8px !important;
+  }
+  .team-progress { display: none !important; }
 }
 
 
@@ -2807,14 +2845,16 @@ body.is-ltr .toast-stack {
   }
   [dir="rtl"] .sidebar {
     inset: 0 0 0 auto;
-    transform: translateX(105%);
+    transform: translateX(105%) !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
   }
   .sidebar.open, [dir="rtl"] .sidebar.open {
-    transform: translateX(0);
-    visibility: visible;
-    pointer-events: auto;
+    transform: translateX(0) !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
   }
-  .mobile-menu { display: grid !important; }
+  .mobile-menu, .topbar .mobile-menu { display: inline-flex !important; }
   .content-grid, .report-grid { grid-template-columns: 1fr; }
   .template-layout, .settings-layout { grid-template-columns: 1fr; }
   .template-sidebar { position: static; display: flex; overflow-x: auto; }
@@ -3292,7 +3332,6 @@ body.is-ltr .toast-stack {
   }
 }
 
-.mobile-menu { display: none; }
 .modal.modal-lg { width: min(960px, 100%); }
 .mention-option:hover { background: var(--blue-soft); }
 .board-column.drag-over {
@@ -3919,9 +3958,12 @@ body.is-ltr .toast-stack {
 }
 
 /* --- Icon button hover --- */
-[data-theme="dark"] .icon-button:hover {
-  border-color: var(--line);
-  background: var(--surface-soft);
+[data-theme="dark"] .icon-button:hover,
+[data-theme="dark"] .topbar-action-btn:hover {
+  border-color: var(--teal) !important;
+  color: var(--teal) !important;
+  background: var(--surface-soft) !important;
+  transform: translateY(-1.5px) !important;
 }
 
 /* --- Sidebar brand mark --- */

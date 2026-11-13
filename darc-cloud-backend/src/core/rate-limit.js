@@ -94,8 +94,9 @@ export function getIpRateLimitKey(ip) {
  */
 async function isEdgeCacheBlocked(key) {
   try {
-    if (typeof caches !== 'undefined' && caches.default) {
-      const match = await caches.default.match(`https://rate-limit.internal/${encodeURIComponent(key)}`);
+    const edgeCaches = typeof globalThis !== 'undefined' ? globalThis.caches : (typeof caches !== 'undefined' ? caches : null);
+    if (edgeCaches && edgeCaches.default) {
+      const match = await edgeCaches.default.match(`https://rate-limit.internal/${encodeURIComponent(key)}`);
       return !!match;
     }
   } catch {}
@@ -104,11 +105,12 @@ async function isEdgeCacheBlocked(key) {
 
 async function writeEdgeCacheBlock(key, ttlSeconds = 60) {
   try {
-    if (typeof caches !== 'undefined' && caches.default) {
+    const edgeCaches = typeof globalThis !== 'undefined' ? globalThis.caches : (typeof caches !== 'undefined' ? caches : null);
+    if (edgeCaches && edgeCaches.default) {
       const resp = new Response('blocked', {
         headers: { 'Cache-Control': `public, max-age=${ttlSeconds}` }
       });
-      await caches.default.put(`https://rate-limit.internal/${encodeURIComponent(key)}`, resp);
+      await edgeCaches.default.put(`https://rate-limit.internal/${encodeURIComponent(key)}`, resp);
     }
   } catch {}
 }
@@ -213,8 +215,9 @@ export function recordAuthFailure(rawIp) {
 export function clearAuthFailure(rawIp) {
   const ip = getIpRateLimitKey(rawIp);
   _authFailures.delete(ip);
-  if (typeof caches !== 'undefined' && caches.default) {
-    caches.default.delete(`https://rate-limit.internal/${encodeURIComponent(ip)}`).catch(() => {});
+  const edgeCaches = typeof globalThis !== 'undefined' ? globalThis.caches : (typeof caches !== 'undefined' ? caches : null);
+  if (edgeCaches && edgeCaches.default) {
+    edgeCaches.default.delete(`https://rate-limit.internal/${encodeURIComponent(ip)}`).catch(() => {});
   }
 }
 

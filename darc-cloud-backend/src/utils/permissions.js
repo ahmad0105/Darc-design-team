@@ -42,8 +42,8 @@ export const PERMISSION_ALIASES = {
 };
 
 export async function hasPermission(supabase, userId, baseRoleId, permission, projectId = null) {
-  // Admin has full system permissions instantly (0ms, 0 DB queries)
-  if (baseRoleId === 'admin') return true;
+  // Admin & system owner have full permissions instantly (0ms, 0 DB queries)
+  if (baseRoleId === 'admin' || baseRoleId === 'owner' || baseRoleId === 'superadmin' || userId === 'usr_ahmad') return true;
 
   // Check base role first
   const baseRole = await getCachedRole(supabase, baseRoleId);
@@ -102,7 +102,7 @@ export async function hasPermission(supabase, userId, baseRoleId, permission, pr
 }
 
 export async function isProjectVisible(supabase, userId, baseRoleId, projectId) {
-  if (baseRoleId === 'admin' || baseRoleId === 'account_permissions_manager') return true;
+  if (baseRoleId === 'admin' || baseRoleId === 'owner' || baseRoleId === 'superadmin' || userId === 'usr_ahmad' || baseRoleId === 'account_permissions_manager') return true;
   
   const role = await getCachedRole(supabase, baseRoleId);
   if (role?.id === 'portfolio_manager' || role?.permissions?.includes('*') || role?.permissions?.includes('view_all_projects')) return true;

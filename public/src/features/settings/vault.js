@@ -44,6 +44,13 @@ export function renderVaultSection() {
         container.innerHTML = renderVaultInner(isDemo, state.cachedVault, state.vaultError, state.isLoading);
         attachVaultEvents();
       }
+    }).catch(err => {
+      const container = document.getElementById('vault-content-area');
+      if (container) {
+        const state = getVaultState();
+        container.innerHTML = renderVaultInner(isDemo, state.cachedVault, err?.message || state.vaultError, false);
+        attachVaultEvents();
+      }
     });
   }
 

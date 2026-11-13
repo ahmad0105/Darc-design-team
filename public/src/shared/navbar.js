@@ -63,12 +63,12 @@ export function renderNavbar(customTitle = null) {
           <span>${choose('بحث شامل...', 'Search...')}</span>
           <kbd class="shortcut-kbd">${typeof navigator !== 'undefined' && /Mac|iPod|iPhone|iPad/.test(navigator.platform) ? '⌘K' : 'Ctrl+K'}</kbd>
         </button>
-        <button class="icon-button" data-action="open-cheatsheet" title="${choose('دليل اختصارات لوحة المفاتيح (?)', 'Keyboard shortcuts guide (?)')}" style="color:var(--ink-soft);" aria-label="Shortcuts">
-          <kbd class="shortcut-kbd" style="font-size:12px;padding:2px 7px;font-weight:bold;">?</kbd>
+        <button class="icon-button topbar-action-btn" data-action="open-cheatsheet" title="${choose('دليل اختصارات لوحة المفاتيح (?)', 'Keyboard shortcuts guide (?)')}" aria-label="Shortcuts">
+          ${icon('help', 16)}
         </button>
-        <button class="btn btn-ghost btn-sm topbar-action-btn" data-action="toggle-theme" title="${choose('تبديل المظهر', 'Toggle Theme')}" aria-label="${choose('تبديل المظهر', 'Toggle Theme')}">${icon(state.theme === 'dark' ? 'sun' : 'moon', 16)}</button>
-        <button class="btn btn-ghost btn-sm topbar-action-btn" data-action="toggle-lang" title="${choose('تبديل اللغة', 'Toggle Language')}" aria-label="${choose('تبديل اللغة', 'Toggle Language')}"><span class="lang-text">${state.lang === 'ar' ? 'EN' : 'عربي'}</span> ${icon('globe', 14)}</button>
-        <button class="icon-button topbar-action-btn" data-action="show-notifications" aria-label="${t('notifications')}">${icon('bell', 17)}${unread ? '<span class="notification-dot"></span>' : ''}</button>
+        <button class="icon-button topbar-action-btn" data-action="toggle-theme" title="${choose('تبديل المظهر', 'Toggle Theme')}" aria-label="${choose('تبديل المظهر', 'Toggle Theme')}">${icon(state.theme === 'dark' ? 'sun' : 'moon', 16)}</button>
+        <button class="icon-button topbar-action-btn" data-action="toggle-lang" title="${choose('تبديل اللغة (English / العربية)', 'Toggle Language (Arabic / English)')}" aria-label="${choose('تبديل اللغة', 'Toggle Language')}">${icon('globe', 16)}</button>
+        <button class="icon-button topbar-action-btn" data-action="show-notifications" aria-label="${t('notifications')}">${icon('bell', 16)}${unread ? '<span class="notification-dot"></span>' : ''}</button>
         <div class="topbar-divider"></div>
         <div class="profile-chip" data-action="open-user-profile" title="${esc(choose(user.name, user.nameEn || user.name))}">
           ${avatar(user)}

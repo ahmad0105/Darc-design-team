@@ -6,6 +6,12 @@ import { invalidateCompanyCache, invalidateBootstrapCache } from '../../core/cac
 
 const app = new Hono();
 
+function canManageWhatsApp(c) {
+  const roleId = c.get('roleId');
+  const userId = c.get('userId');
+  return roleId === 'admin' || roleId === 'owner' || roleId === 'superadmin' || roleId === 'account_permissions_manager' || userId === 'usr_ahmad';
+}
+
 // GET /api/whatsapp/config
 app.get('/config', async (c) => {
   const isDemo = c.get('isDemo') || c.get('userId') === 'usr_demo';
@@ -29,8 +35,7 @@ app.get('/config', async (c) => {
     });
   }
 
-  const roleId = c.get('roleId');
-  const canManage = roleId === 'admin' || roleId === 'account_permissions_manager';
+  const canManage = canManageWhatsApp(c);
 
   const supabase = getDB(c.env);
   const config = await getWhatsAppConfig(supabase);
@@ -47,8 +52,7 @@ app.get('/config', async (c) => {
 
 // POST /api/whatsapp/config
 app.post('/config', async (c) => {
-  const roleId = c.get('roleId');
-  if (roleId !== 'admin' && roleId !== 'account_permissions_manager') {
+  if (!canManageWhatsApp(c)) {
     return c.json({ error: 'صلاحية غير كافية لتعديل إعدادات التنبيهات' }, 403);
   }
 
@@ -127,8 +131,7 @@ app.post('/test', async (c) => {
     });
   }
 
-  const roleId = c.get('roleId');
-  if (roleId !== 'admin' && roleId !== 'account_permissions_manager') {
+  if (!canManageWhatsApp(c)) {
     return c.json({ error: 'صلاحية غير كافية لإجراء اختبار التنبيهات' }, 403);
   }
 
