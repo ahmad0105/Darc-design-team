@@ -728,20 +728,21 @@ body.is-touch-dragging .dnd-edge-hotzone.is-active {
 .template-item { display: flex; align-items: center; gap: 11px; padding: 12px; border: 1px solid var(--line); border-radius: 13px; background: #fff; transition: .2s border-color, .2s background; }
 .template-item:hover { border-color: #cde4df; background: #fbfefd; }
 .template-number {
-  width: 30px;
-  height: 30px;
-  min-width: 30px;
-  min-height: 30px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex: none;
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  min-height: 32px;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-shrink: 0;
   border-radius: 9px;
-  color: var(--teal);
-  background: #eaf7f4;
-  font-size: 10px;
-  font-weight: 900;
-  line-height: 1;
+  color: var(--teal) !important;
+  background: var(--mint) !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  line-height: 1 !important;
+  text-align: center !important;
   box-sizing: border-box;
   padding: 0;
 }

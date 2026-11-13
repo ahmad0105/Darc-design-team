@@ -800,7 +800,8 @@ body.is-ltr .toast-stack {
   .project-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .team-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .content-grid, .report-grid { grid-template-columns: 1fr !important; gap: 20px !important; }
-  .template-layout, .settings-layout { grid-template-columns: 1fr !important; }
+  .template-layout { grid-template-columns: 215px minmax(0, 1fr) !important; gap: 14px !important; }
+  .settings-layout { grid-template-columns: 200px minmax(0, 1fr) !important; gap: 14px !important; }
   .project-row {
     grid-template-columns: minmax(0, 1fr) 85px 28px !important;
     gap: 10px !important;
@@ -851,7 +852,6 @@ body.is-ltr .toast-stack {
    Guarantees 100% horizontal & vertical mathematical centering inside any box/badge
    ========================================================================== */
 .category-icon,
-.template-number,
 .template-action,
 .project-symbol,
 .project-card-symbol,
@@ -880,7 +880,6 @@ body.is-ltr .toast-stack {
 }
 
 .category-icon svg,
-.template-number svg,
 .template-action svg,
 .project-symbol svg,
 .project-card-symbol svg,

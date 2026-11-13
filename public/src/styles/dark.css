@@ -493,7 +493,8 @@
 
 /* --- Templates --- */
 [data-theme="dark"] .template-number {
-  background: var(--mint);
+  background: var(--mint) !important;
+  color: var(--teal) !important;
 }
 [data-theme="dark"] .template-action {
   background: var(--surface-soft);
