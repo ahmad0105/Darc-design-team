@@ -547,7 +547,7 @@
 .permission-option input { margin-top: 2px; accent-color: var(--teal); }
 .permission-option:has(input:checked) { border-color: #bfe2db; background: #f0faf7; }
 .audit-list { display: grid; gap: 8px; }
-.audit-row { display: flex; align-items: flex-start; gap: 10px; padding: 10px; border-radius: 11px; background: #fafcfb; }
+.audit-row { display: flex; align-items: flex-start; gap: 10px; padding: 10px; border-radius: 11px; background: #fafcfb; content-visibility: auto; contain-intrinsic-size: auto 48px; }
 .audit-dot { width: 8px; height: 8px; margin-top: 5px; flex: none; border-radius: 50%; background: var(--teal); }
 .audit-copy { min-width: 0; }
 .audit-copy strong { display: block; font-size: 10px; }

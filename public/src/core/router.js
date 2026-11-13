@@ -88,6 +88,7 @@ export function renderApp() {
 }
 
 let lastRenderedView = null;
+let lastRenderedHtml = '';
 
 export function renderView(force = false) {
   if (!force && (window._isDraggingTask || window._isKeyboardDraggingTask || window._isTouchHoldingTask)) {
@@ -106,7 +107,6 @@ export function renderView(force = false) {
   const prevMainScrollLeft = isSameView ? main.scrollLeft : 0;
   const prevBoard = isSameView ? main.querySelector('.board, .tasks-board, .board-columns') : null;
   const prevBoardScrollLeft = prevBoard ? prevBoard.scrollLeft : null;
-  lastRenderedView = state.view;
 
   let html = '';
   if (state.view === 'dashboard' && typeof window.renderDashboard === 'function') html = window.renderDashboard();
@@ -118,6 +118,14 @@ export function renderView(force = false) {
   if (state.view === 'reports' && typeof window.renderReports === 'function') html = window.renderReports();
   if (state.view === 'settings' && typeof window.renderSettings === 'function') html = window.renderSettings();
   if (state.view === 'project-detail' && typeof window.renderProjectDetail === 'function') html = window.renderProjectDetail();
+
+  // Fast-path memoization: If view is unchanged, not forced, and HTML content is identical, avoid DOM tear-down and reflow
+  if (isSameView && !force && html === lastRenderedHtml) {
+    return;
+  }
+
+  lastRenderedView = state.view;
+  lastRenderedHtml = html;
   main.innerHTML = html;
 
   // Restore scroll positions so user stays exactly where they were
