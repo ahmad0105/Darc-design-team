@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
+import path from 'node:path';
 
 test('--- Enterprise Vault & Disaster Recovery Verification Suite ---', async (t) => {
   await t.test('1. Cryptographic AES-256-CBC & PBKDF2 100k rounds round-trip integrity', () => {
@@ -78,7 +79,10 @@ test('--- Enterprise Vault & Disaster Recovery Verification Suite ---', async (t
   });
 
   await t.test('5. Vault Responsive CSS hooks are present for desktop, tablet and mobile', () => {
-    const css = fs.readFileSync('public/styles.css', 'utf8');
+    const rawCss = fs.readFileSync('public/styles.css', 'utf8');
+    const css = rawCss.includes('@import')
+      ? rawCss.replace(/@import\s+['"]([^'"]+)['"];/g, (_, rel) => fs.readFileSync(path.resolve('public', rel), 'utf8'))
+      : rawCss;
     assert.ok(css.includes('.settings-vault-wrap'));
     assert.ok(css.includes('@media (max-width: 768px)'));
     assert.ok(css.includes('@media (max-width: 480px)'));

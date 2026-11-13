@@ -1,0 +1,27 @@
+:root {
+  --ink: #18343a;
+  --ink-soft: #5d7478;
+  --muted: #91a3a5;
+  --line: #e5ecea;
+  --paper: #fbfcfb;
+  --surface: #ffffff;
+  --surface-soft: #f4f8f7;
+  --teal: #0d6269;
+  --teal-dark: #084b51;
+  --mint: #dff4ef;
+  --mint-strong: #1b9d8f;
+  --amber: #c78334;
+  --amber-soft: #fff1dc;
+  --red: #c75a51;
+  --red-soft: #ffebea;
+  --blue: #4d78a8;
+  --blue-soft: #eaf1fb;
+  --purple: #7b67a9;
+  --shadow: 0 20px 55px rgba(27, 56, 59, 0.07);
+  --shadow-sm: 0 8px 24px rgba(27, 56, 59, 0.055);
+  --radius-xl: 28px;
+  --radius-lg: 20px;
+  --radius-md: 14px;
+  --radius-sm: 10px;
+  --font: "Tajawal", "Cairo", -apple-system, BlinkMacSystemFont, "Segoe UI", Tahoma, Arial, sans-serif;
+}

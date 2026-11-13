@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import path from 'node:path';
 
 // Setup browser globals simulation for Node environment
 if (typeof globalThis.localStorage === 'undefined') {
@@ -111,7 +112,10 @@ test('--- Phase 2: Enterprise Architecture, Scope Protection & HIG Standards Sui
   });
 
   await t.test('4. Apple Human Interface Guidelines: Mobile Touch Targets enforce min 44px', () => {
-    const css = fs.readFileSync('public/styles.css', 'utf8');
+    const rawCss = fs.readFileSync('public/styles.css', 'utf8');
+    const css = rawCss.includes('@import')
+      ? rawCss.replace(/@import\s+['"]([^'"]+)['"];/g, (_, rel) => fs.readFileSync(path.resolve('public', rel), 'utf8'))
+      : rawCss;
     assert.ok(css.includes('@media (pointer: coarse), (max-width: 768px)'), 'Pointer coarse & mobile media query must be present');
     assert.ok(css.includes('min-height: 44px;'), 'Min-height 44px touch target must be enforced');
     assert.ok(css.includes('touch-action: manipulation;'), 'touch-action: manipulation must be specified to prevent tap delay');
