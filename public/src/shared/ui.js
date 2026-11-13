@@ -9,9 +9,12 @@ export function hideSplashScreen() {
   _splashRemoved = true;
   const splash = document.getElementById('darc-splash-screen');
   if (!splash) return;
-  splash.style.transition = 'opacity 0.18s ease';
+  splash.style.transition = 'opacity 0.1s ease';
   splash.style.opacity = '0';
-  setTimeout(() => { splash.style.display = 'none'; }, 190);
+  setTimeout(() => {
+    splash.style.display = 'none';
+    splash.remove();
+  }, 110);
 }
 
 export function renderLoading() {
