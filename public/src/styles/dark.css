@@ -70,6 +70,7 @@
 [data-theme="dark"] .sidebar, 
 [data-theme="dark"] .panel,
 [data-theme="dark"] .icon-button,
+[data-theme="dark"] .topbar-action-btn,
 [data-theme="dark"] .profile-chip,
 [data-theme="dark"] .task-card,
 [data-theme="dark"] .member-card,
@@ -81,6 +82,17 @@
 [data-theme="dark"] .board-column {
   background: var(--surface) !important;
   border-color: var(--line) !important;
+}
+
+[data-theme="dark"] .icon-button,
+[data-theme="dark"] .topbar-action-btn {
+  color: var(--ink-soft) !important;
+}
+
+[data-theme="dark"] .icon-button svg,
+[data-theme="dark"] .topbar-action-btn svg {
+  color: var(--ink-soft) !important;
+  stroke: var(--ink-soft) !important;
 }
 
 [data-theme="dark"] .topbar {
@@ -491,26 +503,87 @@
   color: var(--mint-strong);
 }
 
-/* --- Templates --- */
+/* --- Templates in Dark Mode --- */
 [data-theme="dark"] .template-number {
-  background: var(--mint) !important;
-  color: var(--teal) !important;
+  background: rgba(74, 199, 209, 0.16) !important;
+  border: 1px solid rgba(74, 199, 209, 0.35) !important;
+  color: #4ac7d1 !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  line-height: 1 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
 }
 [data-theme="dark"] .template-action {
-  background: var(--surface-soft);
+  background: var(--surface-soft) !important;
+  border: 1px solid var(--line) !important;
+  color: var(--teal) !important;
+}
+[data-theme="dark"] .template-action svg {
+  color: var(--teal) !important;
+  stroke: var(--teal) !important;
 }
 [data-theme="dark"] .template-action:hover {
-  background: var(--mint);
+  background: rgba(74, 199, 209, 0.25) !important;
+  border-color: var(--teal) !important;
+  color: #ffffff !important;
+}
+[data-theme="dark"] .template-action:hover svg {
+  color: #ffffff !important;
+  stroke: #ffffff !important;
 }
 [data-theme="dark"] .template-item:hover {
-  border-color: var(--line);
-  background: var(--surface-soft);
+  border-color: var(--teal) !important;
+  background: var(--surface-soft) !important;
+}
+[data-theme="dark"] .template-category-tab {
+  color: var(--ink-soft) !important;
+}
+[data-theme="dark"] .template-category-tab .category-icon {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border: 1px solid var(--line) !important;
+  color: var(--ink-soft) !important;
+}
+[data-theme="dark"] .template-category-tab .category-icon svg {
+  color: var(--ink-soft) !important;
+  stroke: var(--ink-soft) !important;
 }
 [data-theme="dark"] .template-category-tab:hover {
-  background: var(--surface-soft);
+  background: var(--surface-soft) !important;
+  color: var(--teal) !important;
+}
+[data-theme="dark"] .template-category-tab:hover .category-icon {
+  background: rgba(74, 199, 209, 0.15) !important;
+  border-color: var(--teal) !important;
+  color: var(--teal) !important;
+}
+[data-theme="dark"] .template-category-tab:hover .category-icon svg {
+  color: var(--teal) !important;
+  stroke: var(--teal) !important;
+}
+[data-theme="dark"] .template-category-tab.active {
+  color: var(--teal) !important;
+  background: var(--mint) !important;
+}
+[data-theme="dark"] .template-category-tab.active .category-icon {
+  background: rgba(74, 199, 209, 0.22) !important;
+  border-color: rgba(74, 199, 209, 0.45) !important;
+  color: var(--teal) !important;
+}
+[data-theme="dark"] .template-category-tab.active .category-icon svg {
+  color: var(--teal) !important;
+  stroke: var(--teal) !important;
 }
 [data-theme="dark"] .template-section-head .category-icon {
-  background: var(--mint);
+  background: rgba(74, 199, 209, 0.16) !important;
+  border: 1px solid rgba(74, 199, 209, 0.3) !important;
+  color: var(--teal) !important;
+}
+[data-theme="dark"] .template-section-head .category-icon svg {
+  color: var(--teal) !important;
+  stroke: var(--teal) !important;
 }
 
 /* --- Team / Members --- */
@@ -609,6 +682,11 @@
   color: var(--teal) !important;
   background: var(--surface-soft) !important;
   transform: translateY(-1.5px) !important;
+}
+[data-theme="dark"] .icon-button:hover svg,
+[data-theme="dark"] .topbar-action-btn:hover svg {
+  color: var(--teal) !important;
+  stroke: var(--teal) !important;
 }
 
 /* --- Sidebar brand mark --- */
