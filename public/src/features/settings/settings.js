@@ -191,7 +191,7 @@ export function exportAuditLogsXLS(logs = null) {
     <table>
       <tr>
         <th colspan="7" class="title" style="font-size:18px;font-weight:bold;background:#0d6269;color:#ffffff;text-align:center;padding:12px;">
-          ${logoUrl ? `<img src="${esc(logoUrl)}" height="38" style="vertical-align:middle;margin-inline-end:10px;" />` : ''}
+          ${logoUrl ? `<img src="${esc(logoUrl)}" height="38" loading="lazy" decoding="async" style="vertical-align:middle;margin-inline-end:10px;" />` : ''}
           <span style="vertical-align:middle;">${choose('سجل الرقابة والتدقيق الأمني والعمليات — ' + companyName, 'Audit & Security Trail Report — ' + companyName)}</span>
         </th>
       </tr>
@@ -689,7 +689,7 @@ export function renderSettings() {
           <label for="user-avatar-file-input" class="avatar-upload-trigger" id="profile-avatar-preview" role="button" tabindex="0" title="${choose('انقر لرفع صورة شخصية جديدة', 'Click to upload a new profile picture')}">
             <div class="avatar-upload-circle">
               ${currentUser.avatarUrl
-        ? `<img src="${esc(currentUser.avatarUrl)}" alt="Avatar" class="avatar-upload-img" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" /><div class="avatar-upload-fallback" style="display:none;background:${/^#[0-9a-f]{6}$/i.test(currentUser.avatarColor || '') ? currentUser.avatarColor : '#0d6269'};">${esc(initials(currentUser))}</div>`
+        ? `<img src="${esc(currentUser.avatarUrl)}" alt="Avatar" loading="lazy" decoding="async" class="avatar-upload-img" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" /><div class="avatar-upload-fallback" style="display:none;background:${/^#[0-9a-f]{6}$/i.test(currentUser.avatarColor || '') ? currentUser.avatarColor : '#0d6269'};">${esc(initials(currentUser))}</div>`
         : `<div class="avatar-upload-fallback" style="background:${/^#[0-9a-f]{6}$/i.test(currentUser.avatarColor || '') ? currentUser.avatarColor : '#0d6269'};">${esc(initials(currentUser))}</div>`
       }
               <div class="avatar-upload-overlay">
@@ -771,7 +771,7 @@ export function renderSettings() {
           <label for="company-logo-file-input" class="logo-upload-trigger" id="company-logo-preview" role="button" tabindex="0" title="${choose('انقر لرفع وتعديل شعار الشركة', 'Click to upload and change company logo')}">
             <div class="logo-upload-box">
               ${comp.logoUrl
-        ? `<img src="${esc(comp.logoUrl)}" alt="Logo" class="logo-upload-img" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" /><span class="brand-mark" style="display:none;">${icon('building', 24)}</span>`
+        ? `<img src="${esc(comp.logoUrl)}" alt="Logo" loading="lazy" decoding="async" class="logo-upload-img" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" /><span class="brand-mark" style="display:none;">${icon('building', 24)}</span>`
         : `<span class="brand-mark">${icon('building', 24)}</span>`
       }
               <div class="logo-upload-overlay">

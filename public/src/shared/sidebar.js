@@ -19,7 +19,7 @@ export function renderSidebar() {
     <aside class="sidebar ${state.sidebarOpen ? 'open' : ''}">
       <div class="sidebar-brand">
         ${state.data?.company?.logoUrl 
-          ? `<img src="${esc(state.data?.company?.logoUrl)}" alt="Logo" style="width:32px;height:32px;object-fit:contain;border-radius:8px;background:var(--surface);flex-shrink:0;" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" /><span class="brand-mark" style="display:none;">${icon('building', 20)}</span>`
+          ? `<img src="${esc(state.data?.company?.logoUrl)}" alt="Logo" loading="lazy" decoding="async" style="width:32px;height:32px;object-fit:contain;border-radius:8px;background:var(--surface);flex-shrink:0;" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" /><span class="brand-mark" style="display:none;">${icon('building', 20)}</span>`
           : `<span class="brand-mark">${icon('building', 20)}</span>`
         }
         <div>

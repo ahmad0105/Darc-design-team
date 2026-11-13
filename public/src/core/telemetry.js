@@ -4,6 +4,15 @@ import { isDemoSession } from './realtime.js';
 
 let _sessionStartTime = Date.now();
 let _activeSeconds = 0;
+let _visibleStartTs = (typeof document !== 'undefined' && document.visibilityState === 'visible') ? Date.now() : 0;
+
+function flushActiveSeconds() {
+  if (_visibleStartTs > 0) {
+    const now = Date.now();
+    _activeSeconds += Math.max(0, Math.round((now - _visibleStartTs) / 1000));
+    _visibleStartTs = (typeof document !== 'undefined' && document.visibilityState === 'visible') ? now : 0;
+  }
+}
 let _errorCount = 0;
 let _longTaskCount = 0;
 let _heartbeatTimer = null;
@@ -68,13 +77,16 @@ export function getRecentBreadcrumbs() {
   return [..._breadcrumbs];
 }
 
-// Track active time only when the user is focused / tab is visible
+// Track active time event-driven without any periodic 1000ms CPU wakeups (preserves battery & CPU sleep states)
 if (typeof document !== 'undefined') {
-  setInterval(() => {
+  document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') {
-      _activeSeconds++;
+      _visibleStartTs = Date.now();
+    } else {
+      flushActiveSeconds();
+      _visibleStartTs = 0;
     }
-  }, 1000);
+  });
 }
 
 // Track runtime errors for anomaly detection & WebGL context loss recovery
@@ -373,6 +385,7 @@ export function initTelemetryEngine() {
 }
 
 export function getClientTelemetrySnapshot() {
+  flushActiveSeconds();
   return {
     totalSessionDurationSeconds: Math.round((Date.now() - _sessionStartTime) / 1000),
     activeDurationSeconds: _activeSeconds,

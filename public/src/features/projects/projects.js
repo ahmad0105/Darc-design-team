@@ -1199,7 +1199,7 @@ export function exportPortfolioXLS() {
 
   let table = '<table>';
   table += `<tr><td colspan="${colsCount}" class="title" style="background:#0d6269;color:#ffffff;font-size:18px;font-weight:bold;text-align:center;padding:14px;">
-    ${company.logoUrl ? `<img src="${esc(company.logoUrl)}" height="42" style="vertical-align:middle;margin-inline-end:12px;" />` : ''}
+    ${company.logoUrl ? `<img src="${esc(company.logoUrl)}" height="42" loading="lazy" decoding="async" style="vertical-align:middle;margin-inline-end:12px;" />` : ''}
     <span style="vertical-align:middle;">${esc(company.displayName)}</span>
   </td></tr>`;
   table += `<tr><td colspan="${colsCount}" class="subtitle">${choose('تقرير حالة مشاريع المحفظة الهندسية', 'Portfolio Projects Status Report')}</td></tr>`;
@@ -1275,7 +1275,7 @@ export function exportProjectXLS(projectId) {
 
   let table = '<table>';
   table += `<tr><td colspan="${colsCount}" class="title" style="background:#0d6269;color:#ffffff;font-size:18px;font-weight:bold;text-align:center;padding:14px;">
-    ${company.logoUrl ? `<img src="${esc(company.logoUrl)}" height="42" style="vertical-align:middle;margin-inline-end:12px;" />` : ''}
+    ${company.logoUrl ? `<img src="${esc(company.logoUrl)}" height="42" loading="lazy" decoding="async" style="vertical-align:middle;margin-inline-end:12px;" />` : ''}
     <span style="vertical-align:middle;">${esc(company.displayName)}</span>
   </td></tr>`;
   table += `<tr><td colspan="${colsCount}" class="subtitle">${choose('تقرير مهام ومخرجات المشروع:', 'Project Tasks & Deliverables Report:')} ${esc(choose(project.nameAr, project.nameEn))} (${esc(project.code)})</td></tr>`;

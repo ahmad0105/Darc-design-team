@@ -3234,9 +3234,13 @@ export async function init() {
       };
 
       const runPoll = async () => {
-        // Pause polling when browser tab is hidden to save battery and bandwidth
+        // Deep Hibernate: Pause polling completely when tab is hidden to save 100% battery & cellular data.
+        // Polling resumes immediately upon returning to the tab via visibilitychange.
         if (typeof document !== 'undefined' && document.hidden) {
-          scheduleNextPoll();
+          if (_pollTimer) {
+            clearTimeout(_pollTimer);
+            _pollTimer = null;
+          }
           return;
         }
         if (!state.data?.user || !state.view || state.view === 'login') {

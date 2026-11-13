@@ -472,6 +472,7 @@ function startWorkflowPolling() {
   if (_pollingInterval) clearInterval(_pollingInterval);
   let pollCount = 0;
   _pollingInterval = setInterval(async () => {
+    if (typeof document !== 'undefined' && document.hidden) return;
     pollCount++;
     const runs = await fetchVaultWorkflowRuns();
     _recentRuns = runs.slice(0, VAULT_CONFIG.MAX_RUNS_DISPLAY);
