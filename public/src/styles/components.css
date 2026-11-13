@@ -185,7 +185,12 @@
 }
 .icon-button svg,
 .topbar-action-btn svg { width: 16px; height: 16px; display: block !important; margin: auto !important; }
-.mobile-menu { display: none !important; }
+.mobile-menu,
+button.mobile-menu,
+.icon-button.mobile-menu,
+button[data-action="toggle-sidebar"] {
+  display: none !important;
+}
 .notification-dot { position: absolute; top: 7px; inset-inline-end: 7px; width: 6px; height: 6px; border-radius: 50%; background: var(--red); box-shadow: 0 0 0 2px #fff; }
 .profile-chip { display: flex; align-items: center; gap: 9px; padding-block: 4px; padding-inline: 10px 6px; border: 1px solid var(--line); border-radius: 13px; background: #fff; }
 .profile-chip-text strong, .profile-chip-text span { display: block; }

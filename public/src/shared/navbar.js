@@ -48,7 +48,7 @@ export function renderNavbar(customTitle = null) {
   return `
     <header class="topbar">
       <div class="topbar-left">
-        <button class="icon-button mobile-menu" data-action="toggle-sidebar" aria-label="Menu">
+        <button class="mobile-menu" data-action="toggle-sidebar" aria-label="Menu">
           ${icon('menu', 18)}
         </button>
         <div>

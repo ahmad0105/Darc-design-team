@@ -49,7 +49,7 @@ import{t as Ze}from"./rolldown-runtime-BQ-_32WO.js";function Bt(e){if(typeof doc
     </button>`}function Ei(){if(typeof window>"u"||window._darcSyncIndicatorBound)return;window._darcSyncIndicatorBound=!0;const e=()=>{const t=document.getElementById("sync-status-indicator");t&&(t.innerHTML=Cn())};window.addEventListener("darc:queue-change",e),window.addEventListener("online",e),window.addEventListener("offline",e)}function _i(e=null){const t=(s.data?.notifications||[]).filter(a=>!Ne(a)).length,n=s.data?.user||{},i=e||en();return`
     <header class="topbar">
       <div class="topbar-left">
-        <button class="icon-button mobile-menu" data-action="toggle-sidebar" aria-label="Menu">
+        <button class="mobile-menu" data-action="toggle-sidebar" aria-label="Menu">
           ${v("menu",18)}
         </button>
         <div>
