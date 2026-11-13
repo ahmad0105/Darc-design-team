@@ -786,7 +786,7 @@ app.use('/api/*', async (c, next) => {
             })
           }).then(async (res) => {
             if (!res.ok) {
-              console.warn(`[Realtime Broadcast Error] Status: ${res.status}`, await res.text().catch(() => ''));
+              console.warn('[Realtime Broadcast Error] Status:', res.status, await res.text().catch(() => ''));
             }
           }).catch((err) => {
             console.warn('[Realtime Broadcast Network Failure]', err?.message);

@@ -1,9 +1,11 @@
 // DARC Design Team — Enterprise Resilient Service Worker & Offline PWA Engine
-const CACHE_NAME = 'darc-cache-v6.8.4';
+const CACHE_NAME = 'darc-cache-v6.8.5';
 const PRECACHE_ASSETS = [
   '/',
   '/index.html',
-  '/manifest.json'
+  '/manifest.json',
+  '/fonts/tajawal/tajawal-v12-arabic-400.woff2',
+  '/fonts/tajawal/tajawal-v12-arabic-700.woff2'
 ];
 
 self.addEventListener('install', (event) => {

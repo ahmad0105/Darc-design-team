@@ -97,28 +97,41 @@ const _viewLoaders = {
 };
 
 const _loadedModules = new Set();
+const _loadingPromises = new Map();
 
 export async function ensureViewLoaded(view) {
+  if (_loadedModules.has(view)) return;
+  if (_loadingPromises.has(view)) return _loadingPromises.get(view);
+
   const loader = _viewLoaders[view];
-  if (!loader || _loadedModules.has(view)) return;
-  try {
-    const mod = await loader();
-    _loadedModules.add(view);
-    if (view === 'settings') _loadedModules.add('team');
-    if (view === 'team') _loadedModules.add('settings');
-    for (const [key, value] of Object.entries(mod)) {
-      if (!(key in window)) {
-        Object.defineProperty(window, key, {
-          value,
-          writable: true,
-          configurable: true,
-          enumerable: false
-        });
+  if (!loader) return;
+
+  const loadTask = (async () => {
+    try {
+      const mod = await loader();
+      _loadedModules.add(view);
+      if (view === 'settings') _loadedModules.add('team');
+      if (view === 'team') _loadedModules.add('settings');
+      for (const [key, value] of Object.entries(mod)) {
+        if (!(key in window) || window[key] === undefined) {
+          Object.defineProperty(window, key, {
+            value,
+            writable: true,
+            configurable: true,
+            enumerable: false
+          });
+        }
       }
+    } catch (err) {
+      console.error('[Router] Failed to load module for view:', view, err);
+      throw err;
+    } finally {
+      _loadingPromises.delete(view);
     }
-  } catch (err) {
-    console.error(`[Router] Failed to load module for view: ${view}`, err);
-  }
+  })();
+
+  _loadingPromises.set(view, loadTask);
+  return loadTask;
 }
 
 export function renderView(force = false) {
@@ -225,14 +238,7 @@ export function switchView(view, projectId = undefined) {
     }
   } catch (e) {}
 
-  if (_viewLoaders[view] && !_loadedModules.has(view)) {
-    ensureViewLoaded(view).then(() => {
-      renderView();
-    });
-  }
-
-  requestAnimationFrame(() => {
-    renderView();
+  const resetScroll = () => {
     const main = document.getElementById('main-content');
     if (main) {
       main.scrollTop = 0;
@@ -241,6 +247,38 @@ export function switchView(view, projectId = undefined) {
     if (typeof window !== 'undefined') {
       window.scrollTo(0, 0);
     }
+  };
+
+  if (_viewLoaders[view] && !_loadedModules.has(view)) {
+    requestAnimationFrame(() => {
+      renderView();
+      resetScroll();
+    });
+    ensureViewLoaded(view)
+      .then(() => {
+        renderView(true);
+      })
+      .catch(() => {
+        const main = document.getElementById('main-content');
+        if (main && state.view === view) {
+          main.innerHTML = `
+            <div class="empty" style="padding:48px 24px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:12px;">
+              <span>${icon('alert', 24)}</span>
+              <strong>${choose('تعذر تحميل الواجهة', 'Failed to load view')}</strong>
+              <span style="color:var(--ink-soft);font-size:13px;">${choose('يرجى التحقق من اتصالك بالإنترنت والمحاولة مرة أخرى.', 'Please check your connection and try again.')}</span>
+              <button class="btn btn-primary btn-sm" data-action="retry-view" data-view="${esc(view)}" style="margin-top:8px;">
+                ${choose('إعادة المحاولة', 'Retry')}
+              </button>
+            </div>
+          `;
+        }
+      });
+    return;
+  }
+
+  requestAnimationFrame(() => {
+    renderView();
+    resetScroll();
   });
 }
 

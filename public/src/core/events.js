@@ -488,6 +488,11 @@ export async function handleClick(event) {
     return;
   }
 
+  if (action === 'retry-view') {
+    switchView(target.dataset.view || state.view);
+    return;
+  }
+
   if (action === 'trigger-avatar-upload') {
     const input = document.getElementById('user-avatar-file-input');
     if (input) input.click();
