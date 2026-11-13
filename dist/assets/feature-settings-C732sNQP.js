@@ -1297,7 +1297,7 @@ import{t as je}from"./rolldown-runtime-BQ-_32WO.js";import{$ as Ke,Bt as D,Ct as
         <div class="company-preview">
           <label for="company-logo-file-input" class="logo-upload-trigger" id="company-logo-preview" role="button" tabindex="0" title="${e("انقر لرفع وتعديل شعار الشركة","Click to upload and change company logo")}">
             <div class="logo-upload-box">
-              ${d.logoUrl?`<img src="${a(d.logoUrl)}" alt="Logo" class="logo-upload-img" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" /><span class="brand-mark" style="display:none;">${n("building",24)}</span>`:`<span class="brand-mark">${n("building",24)}</span>`}
+              ${d.logoUrl?`<img src="${a(d.logoUrl)}" alt="Logo" loading="lazy" decoding="async" class="logo-upload-img" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" /><span class="brand-mark" style="display:none;">${n("building",24)}</span>`:`<span class="brand-mark">${n("building",24)}</span>`}
               <div class="logo-upload-overlay">
                 ${n("upload",16)}
                 <span>${e("تعديل","Edit")}</span>

@@ -1739,7 +1739,7 @@ export function exportProjectPDF(projectId, isClientFacing = false) {
       <header class="report-header">
         <div>
           ${company.logoUrl ? `
-            <img src="${esc(company.logoUrl)}" alt="Logo" class="brand-logo-img" />
+            <img src="${esc(company.logoUrl)}" alt="Logo" loading="lazy" decoding="async" class="brand-logo-img" />
           ` : `
             <div class="brand-logo-fallback">D</div>
           `}
@@ -2037,7 +2037,7 @@ export function exportPortfolioPDF() {
 
       <header class="report-header">
         <div>
-          ${company.logoUrl ? `<img src="${esc(company.logoUrl)}" alt="Logo" class="brand-logo-img" />` : ''}
+          ${company.logoUrl ? `<img src="${esc(company.logoUrl)}" alt="Logo" loading="lazy" decoding="async" class="brand-logo-img" />` : ''}
           <h1 class="brand-title">${esc(company.displayName)}</h1>
           <div style="font-size:11px;color:#64748b;">${choose('الإدارة الهندسية وضبط الجودة والمشاريع', 'Engineering Operations & Project Portfolio Readout')}</div>
         </div>
