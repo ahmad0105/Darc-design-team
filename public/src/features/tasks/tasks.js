@@ -318,43 +318,26 @@ export function renderBoard(tasks, sortMode = getSavedTaskSort()) {
 }
 
 /**
- * Self-healing layout auditor: verifies board columns are strictly symmetric
- * and auto-corrects any sub-pixel or browser layout drift.
+ * Self-healing layout auditor: Pure CSS Grid (@media min-width: 881px) and Flex Carousel
+ * (@media max-width: 880px) natively maintain 100% mathematical symmetry without forcing
+ * synchronous layout recalculations (Zero Reflow Thrashing).
  */
 export function verifyBoardSymmetry() {
   if (typeof document === 'undefined') return;
   const board = document.querySelector('.board, .tasks-board');
   if (!board) return;
-  const columns = Array.from(board.querySelectorAll('.board-column'));
-  if (columns.length < 2) return;
 
-  if (typeof window !== 'undefined' && window.innerWidth <= 880) {
-    // Clean up desktop inline overrides so CSS mobile carousel rules take over cleanly
+  // If inline styles were previously injected, reset them to let native CSS engine govern layout
+  if (board.style.display || board.style.gridTemplateColumns) {
     board.style.display = '';
     board.style.gridTemplateColumns = '';
     board.style.gridAutoColumns = '';
+    const columns = board.querySelectorAll('.board-column');
     columns.forEach(col => {
       col.style.width = '';
       col.style.minWidth = '';
       col.style.maxWidth = '';
       col.style.flex = '';
-    });
-    return;
-  }
-
-  const widths = columns.map(c => Math.round(c.getBoundingClientRect().width * 10) / 10);
-  const minW = Math.min(...widths);
-  const maxW = Math.max(...widths);
-
-  if (maxW - minW > 2.5) {
-    board.style.display = 'grid';
-    board.style.gridTemplateColumns = `repeat(${columns.length}, minmax(0, 1fr))`;
-    board.style.gridAutoColumns = '1fr';
-    columns.forEach(col => {
-      col.style.width = '100%';
-      col.style.minWidth = '0';
-      col.style.maxWidth = '100%';
-      col.style.flex = '1 1 0px';
     });
   }
 }
@@ -1387,9 +1370,6 @@ export function renderTaskDocuments(task) {
     </div>
   `).join('')}</div>`;
 }
-
-// Re-export Universal Document & Blueprint Viewer modules
-export { openDocumentPreviewModal, closeDocumentPreviewModal, downloadDocument, handleCopyDocLink, getDocumentShareableLink } from '../documents/doc-viewer.js';
 
 export function STATUS_OPTIONS() { return [['not_started', t('notStarted')], ['in_progress', t('inProgress')], ['review', t('review')], ['approval', t('approval')], ['done', t('done')], ['blocked', t('blocked')], ['canceled', t('canceled')]]; }
 

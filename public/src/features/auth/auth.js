@@ -382,7 +382,7 @@ export function renderLogin(errorMessage = '', mode = 'login', isSuccess = false
           </div>
           <div style="position:relative;display:flex;align-items:center;">
             <input id="login-password" name="password" type="password" autocomplete="current-password" placeholder="••••••••••" style="width:100%;padding-inline-end:40px;" required />
-            <button type="button" data-action="toggle-password-visibility" data-target="login-password" style="position:absolute;inset-inline-end:10px;background:none;border:none;color:var(--ink-soft);cursor:pointer;padding:4px;display:flex;align-items:center;justify-content:center;" title="${choose('إظهار/إخفاء كلمة المرور', 'Show/Hide password')}">
+            <button type="button" data-action="toggle-password-visibility" data-target="login-password" style="position:absolute;inset-inline-end:10px;background:none;border:none;color:var(--ink-soft);cursor:pointer;padding:4px;display:flex;align-items:center;justify-content:center;" title="${choose('إظهار/إخفاء كلمة المرور', 'Show/Hide password')}" aria-label="${choose('إظهار/إخفاء كلمة المرور', 'Show/Hide password')}">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
             </button>
           </div>
@@ -420,7 +420,7 @@ export function renderLogin(errorMessage = '', mode = 'login', isSuccess = false
   } else if (mode === 'forgot') {
     formContent = `
       <form id="forgot-form">
-        <div class="field"><label for="login-email">${t('emailAddress')}</label><input id="login-email" name="email" type="email" placeholder="name@darc.com" value="${esc(savedEmail)}" required /></div>
+        <div class="field"><label for="forgot-email">${t('emailAddress')}</label><input id="forgot-email" name="email" type="email" placeholder="name@darc.com" value="${esc(savedEmail)}" required /></div>
         ${messageHtml}
         <button class="btn btn-primary btn-block" type="submit">${choose('إرسال رابط الاستعادة', 'Send reset link')}</button>
         <div style="text-align:center;margin-top:15px"><a href="#" data-action="goto-login" style="font-size:13px;color:var(--ink-soft)">${choose('العودة لتسجيل الدخول', 'Back to login')}</a></div>
@@ -449,8 +449,8 @@ export function renderLogin(errorMessage = '', mode = 'login', isSuccess = false
             <div class="page-head" style="align-items:flex-start;margin-bottom:0">
               <div><p class="eyebrow">${mode === 'login' ? choose('مرحبًا بعودتك', 'WELCOME BACK') : choose('استعادة الحساب', 'ACCOUNT RECOVERY')}</p><h2>${mode === 'login' ? t('login') : choose('نسيت كلمة المرور', 'Forgot Password')}</h2><p class="intro">${mode === 'login' ? t('loginIntro') : choose('أدخل بريدك الإلكتروني لاستلام رابط استعادة كلمة المرور.', 'Enter your email to receive a reset link.')}</p></div>
               <div style="display:flex;align-items:center;gap:6px;">
-                <button class="btn btn-ghost btn-sm" type="button" data-action="toggle-theme" title="${state.theme === 'dark' ? 'الوضع النهاري' : 'الوضع الليلي'}">${icon(state.theme === 'dark' ? 'sun' : 'moon', 16)}</button>
-                <button class="btn btn-ghost btn-sm" type="button" data-action="toggle-lang">${state.lang === 'ar' ? 'EN' : 'عربي'}</button>
+                <button class="btn btn-ghost btn-sm" type="button" data-action="toggle-theme" title="${state.theme === 'dark' ? 'الوضع النهاري' : 'الوضع الليلي'}" aria-label="${state.theme === 'dark' ? choose('التبديل إلى الوضع النهاري', 'Switch to light theme') : choose('التبديل إلى الوضع الليلي', 'Switch to dark theme')}">${icon(state.theme === 'dark' ? 'sun' : 'moon', 16)}</button>
+                <button class="btn btn-ghost btn-sm" type="button" data-action="toggle-lang" aria-label="${state.lang === 'ar' ? 'Switch interface language to English' : 'التحويل إلى اللغة العربية'}">${state.lang === 'ar' ? 'EN' : 'عربي'}</button>
               </div>
             </div>
             ${formContent}
@@ -491,7 +491,7 @@ export function renderLogin(errorMessage = '', mode = 'login', isSuccess = false
     showLoginError('');
 
     button.disabled = true;
-    button.innerHTML = `<span>⏳ ${choose('جاري التحقق وتسجيل الدخول...', 'Verifying & signing in...')}</span>`;
+    button.innerHTML = `<span style="display:inline-flex;align-items:center;gap:6px;">${icon('clock', 15)} ${choose('جاري التحقق وتسجيل الدخول...', 'Verifying & signing in...')}</span>`;
 
     const isDemo = email.trim().toLowerCase() === 'demo@darc-design.bond' || email.trim().toLowerCase() === 'demo@darc.local';
     let turnstileToken = 'bypass_dev';

@@ -5,7 +5,12 @@ import { choose, esc, icon, avatar, statusText, t, can, isAdmin, roleName, sanit
 import { showToast, modalShell, closeModal } from '../../shared/ui.js';
 import { refreshView } from '../../core/router.js';
 import { renderTaskSortSelect, getSavedTaskSort, renderTimeline, renderBoard } from '../tasks/tasks.js';
-import { renderAuditForProject } from '../settings/settings.js';
+
+export function renderAuditForProject(projectId) {
+  const logs = (state.data?.auditLogs || []).filter((log) => log.details?.projectId === projectId || (log.entityType === 'project' && log.entityId === projectId));
+  if (!logs.length) return `<div class="empty">${icon('check', 18)}<span>${choose('لا توجد تغييرات مسجلة بعد.', 'No changes recorded yet.')}</span></div>`;
+  return `<div class="audit-list">${logs.map((log) => `<div class="audit-row"><span class="audit-dot"></span><div class="audit-copy"><strong>${esc(log.user ? choose(log.user.name, log.user.nameEn || log.user.name) : 'DARC')} · ${esc(log.action)}</strong><span>${esc(log.entityType)} · ${dateLabel(log.createdAt, true)}</span></div></div>`).join('')}</div>`;
+}
 
 export function getDaysLeftBadge(dueDate) {
   if (!dueDate) return '';

@@ -728,23 +728,30 @@ body.is-touch-dragging .dnd-edge-hotzone.is-active {
 .template-item { display: flex; align-items: center; gap: 11px; padding: 12px; border: 1px solid var(--line); border-radius: 13px; background: #fff; transition: .2s border-color, .2s background; }
 .template-item:hover { border-color: #cde4df; background: #fbfefd; }
 .template-number {
-  width: 32px;
-  height: 32px;
-  min-width: 32px;
-  min-height: 32px;
-  display: inline-flex !important;
-  align-items: center !important;
+  width: 32px !important;
+  height: 32px !important;
+  min-width: 32px !important;
+  min-height: 32px !important;
+  display: inline-grid !important;
+  place-items: center !important;
   justify-content: center !important;
-  flex-shrink: 0;
-  border-radius: 9px;
+  align-content: center !important;
+  flex-shrink: 0 !important;
+  border-radius: 9px !important;
+  border: 1px solid rgba(13, 98, 105, 0.15) !important;
   color: var(--teal) !important;
   background: var(--mint) !important;
-  font-size: 11px !important;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif !important;
+  font-size: 11.5px !important;
   font-weight: 800 !important;
+  font-variant-numeric: tabular-nums lining-nums !important;
   line-height: 1 !important;
   text-align: center !important;
-  box-sizing: border-box;
-  padding: 0;
+  direction: ltr !important;
+  unicode-bidi: isolate !important;
+  box-sizing: border-box !important;
+  padding: 0 !important;
+  margin: 0 !important;
 }
 .template-copy { min-width: 0; flex: 1; }
 .template-copy strong, .template-copy span:not(.badge):not(.mini-badge):not(.role-badge):not(.role-system-badge):not(.stealth-dev-badge):not(.type-pill) { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

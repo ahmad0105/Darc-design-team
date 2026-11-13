@@ -1,6 +1,6 @@
 
 import { state } from '../../core/state.js';
-import { getTimeBasedGreeting, can, isAdmin, esc, icon, t, choose, avatar, isOverdue, dueLabel, parseEndOfDay, isTaskAssignedToUser } from '../../core/utils.js';
+import { getTimeBasedGreeting, can, isAdmin, esc, icon, t, choose, avatar, isOverdue, dueLabel, parseEndOfDay, isTaskAssignedToUser, teamMetrics } from '../../core/utils.js';
 
 export function metricCard(label, value, note, type, iconName, noteClass = '') {
   return `<article class="metric-card ${type}"><div class="metric-top"><span class="metric-label">${esc(label)}</span><span class="metric-icon">${icon(iconName, 15)}</span></div><div class="metric-value">${esc(value)}</div><span class="metric-note ${noteClass}">${esc(note)}</span></article>`;
@@ -22,12 +22,7 @@ export function attentionItem(task) {
   return `<button type="button" class="attention-item" data-action="open-task" data-task-id="${esc(task.id)}" title="${esc(taskTitle)}"><span class="attention-icon ${type}">${icon(isOverdue(task) || task.status === 'blocked' ? 'alert' : 'clock', 14)}</span><span class="attention-copy"><strong style="color:var(--${type})">${esc(taskTitle)}</strong><span>${esc(title)} · ${esc(dueLabel(task.dueDate))}</span></span></button>`;
 }
 
-export function teamMetrics(userId, tasks) {
-  const mine = tasks.filter((task) => isTaskAssignedToUser(task, userId));
-  const weight = mine.reduce((sum, task) => sum + Number(task.weight || 1), 0);
-  const progress = weight ? Math.round(mine.reduce((sum, task) => sum + task.progress * Number(task.weight || 1), 0) / weight) : 0;
-  return { tasks: mine.length, progress, overdue: mine.filter(isOverdue).length };
-}
+export { teamMetrics } from '../../core/utils.js';
 
 export function teamRow(user, tasks) {
   const metrics = teamMetrics(user.id, tasks);

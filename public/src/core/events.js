@@ -3,23 +3,25 @@ import { state } from './state.js';
 import { api, API_BASE, invalidateBootstrapEtag } from './api.js';
 import { switchView, refreshView, renderView, renderApp, canAccessView, getFirstAllowedView, loadData } from './router.js';
 import { openOmnisearch, closeOmnisearch, openShortcutsCheatsheet } from '../features/dashboard/omnisearch.js';
-import { playSuccessChime, savePreferencesCookies, choose, esc, icon, t, can, isAdmin, avatar, roleName, statusText, initials, dateLabel, isNotificationRead, hasSessionIndicator, setSessionIndicator, isOverdue, isDueSoon, isTaskAssignedToUser } from './utils.js';
+import { playSuccessChime, savePreferencesCookies, choose, esc, icon, t, can, isAdmin, avatar, roleName, statusText, initials, dateLabel, isNotificationRead, hasSessionIndicator, setSessionIndicator, isOverdue, isDueSoon, isTaskAssignedToUser, canAccessSettingsSection } from './utils.js';
 import { showToast, modalShell, closeModal, renderLoading } from '../shared/ui.js';
-import { setSavedTaskSort, openDocumentPreviewModal, renderTaskDocuments, canUserUploadToTask, openTaskModal, renderTaskComments, drawTimelineArrows } from '../features/tasks/tasks.js';
-import { downloadDocument, handleCopyDocLink, getDocumentShareableLink } from '../features/documents/doc-viewer.js';
-import { openUploadDrawingModal } from '../features/documents/documents.js';
+import { setSavedTaskSort, renderTaskDocuments, canUserUploadToTask, openTaskModal, renderTaskComments, drawTimelineArrows } from '../features/tasks/tasks.js';
 import { getPendingMutations, syncPendingMutations, getOfflineBootstrap, clearOfflineBootstrap, saveOfflineBootstrap } from './offline.js';
 import { exportPortfolioXLS, exportProjectXLS, exportProjectPDF, exportPortfolioPDF, openProjectModal, openCloneModal } from '../features/projects/projects.js';
-import { exportAuditLogsXLS, printAuditReport, fetchFullAuditHistory, canAccessSettingsSection, openUserModal, openRoleModal } from '../features/settings/settings.js';
-import { fetchAnalyticsData } from '../features/settings/analytics.js';
-import { fetchDiagnosticsData, setDiagnosticsUserFilter, setDiagnosticsSeverityFilter, setDiagnosticsStatusFilter } from '../features/settings/diagnostics.js';
-import { fetchVaultData, attachVaultEvents } from '../features/settings/vault.js';
 import { renderActivation, renderLogin, renderResetPassword, openForcePasswordModal } from '../features/auth/auth.js';
 import { playNotificationChime, isDemoSession } from './realtime.js';
 import { openTemplateModal, getNextAvailableTemplateCode, isTemplateCodeReserved } from '../features/templates/templates.js';
-import { exportDisciplinesExcel, exportTeamWorkloadExcel, exportRisksExcel, exportDrawingsExcel } from '../features/reports/reports.js';
 import { showNotifications } from '../features/notifications/notifications.js';
 import { requestUniversalNotificationPermission, dispatchUniversalNotification, showIOSNotificationGuide } from '../features/notifications/notification-manager.js';
+
+// On-demand dynamic module loaders (Zero initial bundle drag)
+const getSettings = () => import('../features/settings/settings.js');
+const getAnalytics = () => import('../features/settings/analytics.js');
+const getDiagnostics = () => import('../features/settings/diagnostics.js');
+const getVault = () => import('../features/settings/vault.js');
+const getReports = () => import('../features/reports/reports.js');
+const getDocViewer = () => import('../features/documents/doc-viewer.js');
+const getDocuments = () => import('../features/documents/documents.js');
 
 export async function handleSubmit(event) {
   const form = event.target;
@@ -867,6 +869,7 @@ export async function handleClick(event) {
 
     // A. إذا كان الإشعار يشير لمستند/مخطط محدد
     if (docId) {
+      const { openDocumentPreviewModal } = await import('../features/documents/doc-viewer.js');
       openDocumentPreviewModal(docId);
       return;
     }
@@ -939,6 +942,7 @@ export async function handleClick(event) {
   if (action === 'preview-doc') {
     const docId = target.dataset.docId || target.closest('[data-doc-id]')?.dataset.docId;
     if (docId) {
+      const { openDocumentPreviewModal } = await import('../features/documents/doc-viewer.js');
       openDocumentPreviewModal(docId);
     }
     return;
@@ -948,6 +952,7 @@ export async function handleClick(event) {
     const doc = state.data?.documents?.find(d => d.id === docId);
     if (doc) {
       const btn = target.closest('button') || target;
+      const { handleCopyDocLink } = await import('../features/documents/doc-viewer.js');
       await handleCopyDocLink(doc, btn);
     }
     return;
@@ -955,6 +960,7 @@ export async function handleClick(event) {
   if (action === 'download-doc') {
     const docId = target.dataset.docId || target.closest('[data-doc-id]')?.dataset.docId;
     if (docId) {
+      const { downloadDocument } = await import('../features/documents/doc-viewer.js');
       await downloadDocument(docId);
     }
     return;
@@ -968,11 +974,8 @@ export async function handleClick(event) {
     return;
   }
   if (action === 'open-upload-drawing-modal') {
-    if (typeof openUploadDrawingModal === 'function') {
-      openUploadDrawingModal(target.dataset.projectId || null);
-    } else if (typeof window.openUploadDrawingModal === 'function') {
-      window.openUploadDrawingModal(target.dataset.projectId || null);
-    }
+    const { openUploadDrawingModal } = await import('../features/documents/documents.js');
+    openUploadDrawingModal(target.dataset.projectId || null);
     return;
   }
   if (action === 'new-project') {
@@ -1171,6 +1174,7 @@ export async function handleClick(event) {
       showToast(choose('غير مصرح لك بإضافة مستخدمين جدد.', 'Permission denied to create new users.'), true);
       return;
     }
+    const { openUserModal } = await import('../features/settings/settings.js');
     openUserModal();
     return;
   }
@@ -1179,6 +1183,7 @@ export async function handleClick(event) {
       showToast(choose('غير مصرح لك بإنشاء أدوار جديدة.', 'Permission denied to create new roles.'), true);
       return;
     }
+    const { openRoleModal } = await import('../features/settings/settings.js');
     openRoleModal();
     return;
   }
@@ -1362,7 +1367,10 @@ export async function handleClick(event) {
       return;
     }
     const user = state.data.users.find((item) => item.id === target.dataset.userId);
-    if (user) openUserModal(user);
+    if (user) {
+      const { openUserModal } = await import('../features/settings/settings.js');
+      openUserModal(user);
+    }
     return;
   }
   if (action === 'impersonate-user') {
@@ -1465,16 +1473,20 @@ export async function handleClick(event) {
     resetScroll();
 
     if (state.settingsSection === 'analytics') {
-      fetchAnalyticsData(true).then(() => {
-        renderView();
-        resetScroll();
+      getAnalytics().then(({ fetchAnalyticsData }) => {
+        fetchAnalyticsData(true).then(() => {
+          renderView();
+          resetScroll();
+        }).catch(() => {});
       }).catch(() => {});
     }
     if (state.settingsSection === 'vault') {
-      fetchVaultData(true).then(() => {
-        renderView();
-        resetScroll();
-        attachVaultEvents();
+      getVault().then(({ fetchVaultData, attachVaultEvents }) => {
+        fetchVaultData(true).then(() => {
+          renderView();
+          resetScroll();
+          attachVaultEvents();
+        }).catch(() => {});
       }).catch(() => {});
     }
     if (state.settingsSection === 'trash' && !state.trashLoaded) {
@@ -1502,6 +1514,7 @@ export async function handleClick(event) {
       return;
     }
     try {
+      const { fetchAnalyticsData } = await getAnalytics();
       await fetchAnalyticsData(true);
       renderView();
       showToast(choose('تم تحديث مؤشرات التحليلات والمراقبة الحية بنجاح.', 'Live observability and analytics refreshed successfully.'));
@@ -1517,6 +1530,7 @@ export async function handleClick(event) {
     }
     try {
       const res = await api('/api/telemetry/test-anomaly', { method: 'POST' });
+      const { fetchAnalyticsData } = await getAnalytics();
       await fetchAnalyticsData(true);
       await loadData(true);
       renderApp();
@@ -1544,6 +1558,7 @@ export async function handleClick(event) {
       return;
     }
     try {
+      const { fetchDiagnosticsData } = await getDiagnostics();
       await fetchDiagnosticsData(true);
       renderView();
       showToast(choose('تم تحديث سجل الأخطاء وتشخيصات المستخدمين بنجاح.', 'Diagnostics and incidents refreshed successfully.'));
@@ -1559,6 +1574,7 @@ export async function handleClick(event) {
     }
     try {
       const res = await api('/api/telemetry/test-error', { method: 'POST' });
+      const { fetchDiagnosticsData } = await getDiagnostics();
       await fetchDiagnosticsData(true);
       await loadData(true);
       renderView();
@@ -1583,11 +1599,13 @@ export async function handleClick(event) {
   }
   if (action === 'filter-diagnostics-user') {
     const userId = target.dataset.userId || 'all';
+    const { setDiagnosticsUserFilter } = await getDiagnostics();
     setDiagnosticsUserFilter(userId);
     renderView();
     return;
   }
   if (action === 'clear-diagnostics-user-filter') {
+    const { setDiagnosticsUserFilter } = await getDiagnostics();
     setDiagnosticsUserFilter('all');
     renderView();
     return;
@@ -1601,6 +1619,7 @@ export async function handleClick(event) {
     if (incId) {
       try {
         await api(`/api/telemetry/incidents/${incId}/resolve`, { method: 'PATCH' });
+        const { fetchDiagnosticsData } = await getDiagnostics();
         await fetchDiagnosticsData(true);
         renderView();
         showToast(choose('تم تحديد المشكلة كمعالجة بنجاح', 'Incident marked as resolved'));
@@ -1687,7 +1706,10 @@ export async function handleClick(event) {
       return;
     }
     const role = state.data.roles.find((item) => item.id === target.dataset.roleId);
-    if (role) openRoleModal(role);
+    if (role) {
+      const { openRoleModal } = await import('../features/settings/settings.js');
+      openRoleModal(role);
+    }
     return;
   }
   if (action === 'delete-role') { 
@@ -1735,6 +1757,7 @@ export async function handleClick(event) {
       showToast(choose('ليس لديك صلاحية لتصدير التقارير.', 'You do not have permission to export reports.'), true);
       return;
     }
+    const { exportDisciplinesExcel } = await getReports();
     exportDisciplinesExcel();
     return;
   }
@@ -1743,6 +1766,7 @@ export async function handleClick(event) {
       showToast(choose('ليس لديك صلاحية لتصدير التقارير.', 'You do not have permission to export reports.'), true);
       return;
     }
+    const { exportTeamWorkloadExcel } = await getReports();
     exportTeamWorkloadExcel();
     return;
   }
@@ -1751,6 +1775,7 @@ export async function handleClick(event) {
       showToast(choose('ليس لديك صلاحية لتصدير التقارير.', 'You do not have permission to export reports.'), true);
       return;
     }
+    const { exportRisksExcel } = await getReports();
     exportRisksExcel();
     return;
   }
@@ -1759,6 +1784,7 @@ export async function handleClick(event) {
       showToast(choose('ليس لديك صلاحية لتصدير التقارير.', 'You do not have permission to export reports.'), true);
       return;
     }
+    const { exportDrawingsExcel } = await getReports();
     exportDrawingsExcel();
     return;
   }
@@ -1791,6 +1817,7 @@ export async function handleClick(event) {
       showToast(choose('ليس لديك صلاحية لتصدير سجل الرقابة.', 'You do not have permission to export audit logs.'), true);
       return;
     }
+    const { exportAuditLogsXLS } = await getSettings();
     exportAuditLogsXLS();
     return;
   }
@@ -1799,6 +1826,7 @@ export async function handleClick(event) {
       showToast(choose('ليس لديك صلاحية لطباعة سجل الرقابة.', 'You do not have permission to print audit logs.'), true);
       return;
     }
+    const { printAuditReport } = await getSettings();
     printAuditReport();
     return;
   }
@@ -1807,6 +1835,7 @@ export async function handleClick(event) {
       showToast(choose('غير مصرح لك باستعراض سجل التدقيق الكامل.', 'Permission denied to view full audit logs.'), true);
       return;
     }
+    const { fetchFullAuditHistory } = await getSettings();
     fetchFullAuditHistory();
     return;
   }
@@ -2012,11 +2041,13 @@ export function handleInput(event) {
 
 export async function handleChange(event) {
   if (event.target.dataset.action === 'filter-diagnostics-severity') {
+    const { setDiagnosticsSeverityFilter } = await getDiagnostics();
     setDiagnosticsSeverityFilter(event.target.value);
     renderView();
     return;
   }
   if (event.target.dataset.action === 'filter-diagnostics-status') {
+    const { setDiagnosticsStatusFilter } = await getDiagnostics();
     setDiagnosticsStatusFilter(event.target.value);
     renderView();
     return;

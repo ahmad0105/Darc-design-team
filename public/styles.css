@@ -4,6 +4,7 @@
    Documents, Reports, Settings, Dark Mode & Responsive Breakpoints)
    ========================================================================== */
 
+@import './src/styles/fonts.css';
 @import './src/styles/tokens.css';
 @import './src/styles/base.css';
 @import './src/styles/auth.css';

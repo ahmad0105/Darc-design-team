@@ -89,6 +89,38 @@ export function renderApp() {
   renderView(true);
 }
 
+const _viewLoaders = {
+  reports: () => import('../features/reports/reports.js'),
+  settings: () => import('../features/settings/settings.js'),
+  team: () => import('../features/settings/settings.js'),
+  documents: () => import('../features/documents/documents.js'),
+};
+
+const _loadedModules = new Set();
+
+export async function ensureViewLoaded(view) {
+  const loader = _viewLoaders[view];
+  if (!loader || _loadedModules.has(view)) return;
+  try {
+    const mod = await loader();
+    _loadedModules.add(view);
+    if (view === 'settings') _loadedModules.add('team');
+    if (view === 'team') _loadedModules.add('settings');
+    for (const [key, value] of Object.entries(mod)) {
+      if (!(key in window)) {
+        Object.defineProperty(window, key, {
+          value,
+          writable: true,
+          configurable: true,
+          enumerable: false
+        });
+      }
+    }
+  } catch (err) {
+    console.error(`[Router] Failed to load module for view: ${view}`, err);
+  }
+}
+
 let lastRenderedView = null;
 let lastRenderedHtml = '';
 
@@ -120,6 +152,15 @@ export function renderView(force = false) {
   if (state.view === 'reports' && typeof window.renderReports === 'function') html = window.renderReports();
   if (state.view === 'settings' && typeof window.renderSettings === 'function') html = window.renderSettings();
   if (state.view === 'project-detail' && typeof window.renderProjectDetail === 'function') html = window.renderProjectDetail();
+
+  if (_viewLoaders[state.view] && !_loadedModules.has(state.view)) {
+    ensureViewLoaded(state.view).then(() => {
+      renderView(true);
+    });
+    if (!html) {
+      html = `<div class="loading-state" style="display:flex;justify-content:center;align-items:center;min-height:300px;"><div class="spinner"></div></div>`;
+    }
+  }
 
   // Fast-path memoization: If view is unchanged, not forced, DOM is already populated, and HTML content is identical, avoid DOM tear-down and reflow
   if (isSameView && !force && main.innerHTML !== '' && html === lastRenderedHtml) {
@@ -203,6 +244,12 @@ export function switchView(view, projectId = undefined) {
       }));
     }
   } catch (e) {}
+
+  if (_viewLoaders[view] && !_loadedModules.has(view)) {
+    ensureViewLoaded(view).then(() => {
+      renderView();
+    });
+  }
 
   requestAnimationFrame(() => {
     renderView();

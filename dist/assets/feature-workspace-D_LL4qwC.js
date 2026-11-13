@@ -1,14 +1,14 @@
-import{t as ge}from"./rolldown-runtime-BQ-_32WO.js";import{Bt as T,Dt as U,Ht as g,It as fe,Nt as D,Ot as k,Pt as x,Q as A,Rt as te,St as me,T as ve,Tt as G,U as xe,Z as S,_t as v,at as X,ct as H,dt as F,et as e,it as a,lt as ae,n as L,tt as _,w as ue,wt as ee,x as be,y as ye,yt as N}from"./core-dragdrop-B2Hvc4N4.js";import{s as he}from"./feature-settings-DorB4_hv.js";var Ce=ge({buildProjectMemberChipsHtml:()=>J,checkProjectCodeStatus:()=>Y,exportPortfolioPDF:()=>Ee,exportPortfolioXLS:()=>Pe,exportProjectPDF:()=>ze,exportProjectXLS:()=>De,exportXLS:()=>X,getCompanyBranding:()=>F,getDaysLeftBadge:()=>W,getNextAvailableProjectCode:()=>q,getProjectTeam:()=>$e,getProjectTeamData:()=>R,openCloneModal:()=>je,openProjectModal:()=>ke,projectCard:()=>oe,renderInPagePrintModal:()=>K,renderProjectCardTeamAvatars:()=>se,renderProjectDetail:()=>we,renderProjectOverviewTab:()=>re,renderProjectTeamAvatars:()=>ie,renderProjectTimelineBar:()=>ne,renderProjects:()=>le});function W(t){if(!t)return"";const i=G(t);if(!i||isNaN(i.getTime()))return"";const o=Math.ceil((i-new Date)/864e5);if(isNaN(o))return"";let n="var(--mint-strong)",r="var(--mint)",s="";return o<0?(n="var(--red)",r="var(--red-soft)",s=e(`متأخر ${Math.abs(o)} يوم`,`${Math.abs(o)}d overdue`)):o===0?(n="var(--red)",r="var(--red-soft)",s=e("يستحق اليوم","Due today")):o<=2?(n="var(--red)",r="var(--red-soft)",s=e(`باقي ${o} يوم`,`${o}d left`)):o<=7?(n="var(--amber)",r="var(--amber-soft)",s=e(`باقي ${o} أيام`,`${o}d left`)):(n="var(--mint-strong)",r="var(--mint)",s=e(`باقي ${o} يوم`,`${o}d left`)),`<span class="days-left-badge" style="display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:700;color:${n};background:${r};border:1px solid currentColor;">${v("clock",11)} ${s}</span>`}function q(t=null){const i=t?String(t).replace(/\D/g,""):"",o=i.length>=2?i.slice(-2):String(new Date().getFullYear()).slice(-2),n=g.data?.projects||[],r=Array.isArray(g.trash)?g.trash.filter(l=>l.type==="project"||l.code):[],s=[...n,...r];let m=0,d=3;for(const l of s){if(!l.code)continue;const h=String(l.code).trim().match(/^DARC-(\d{2})-(\d+)$/i);if(h&&h[1]===o){const f=h[2];f.length>d&&(d=f.length);const b=parseInt(f,10);!isNaN(b)&&b>m&&(m=b)}}return`DARC-${o}-${String(m+1).padStart(d,"0")}`}function Y(t,i=null){if(!t||!String(t).trim())return{valid:!1,message:e("كود المشروع مطلوب.","Project code is required."),status:"error"};const o=String(t).trim().toUpperCase(),n=(g.data?.projects||[]).filter(s=>!s.deletedAt&&!s.deleted_at).find(s=>s.code&&s.code.toUpperCase()===o&&s.id!==i);if(n)return{valid:!1,status:"error",message:e(`الكود مستخدم بالفعل لمشروع: "${e(n.nameAr,n.nameEn)}"`,`Code is already used by: "${e(n.nameAr,n.nameEn)}"`)};const r=(Array.isArray(g.trash)?g.trash.filter(s=>(s.type==="project"||s.code)&&s.id!==i):[]).find(s=>s.code&&s.code.toUpperCase()===o);return r?{valid:!1,status:"warning",message:e(`محجوز لمشروع في سلة المحذوفات (فترة الـ 30 يوماً): "${e(r.nameAr,r.nameEn)}"`,`Reserved for a project in trash (30-day window): "${e(r.nameAr,r.nameEn)}"`)}:{valid:!0,status:"success",message:e("كود مميز ومتاح للاستخدام","Unique and available")}}function R(t){if(!t)return{internalMembers:[],externalMembers:[]};const i=g.data?.users||[],o=(g.data?.tasks||[]).filter(s=>s.projectId===t.id&&!s.deletedAt&&!s.deleted_at),n=new Set,r=new Set;return t.managerId&&n.add(t.managerId),Array.isArray(t.memberIds)&&t.memberIds.forEach(s=>s&&n.add(s)),Array.isArray(t.members)&&t.members.forEach(s=>{const m=typeof s=="string"?s:s.userId||s.id||s.user_id;m&&n.add(m)}),o.forEach(s=>{s.assigneeId&&n.add(s.assigneeId),(s.customFields?.additionalAssignees||s.customFields?.additional_assignees||[]).forEach(m=>n.add(m)),(s.customFields?.externalAssignees||s.customFields?.external_assignees||[]).forEach(m=>{m&&typeof m=="string"&&m.trim()&&r.add(m.trim())})}),{internalMembers:Array.from(n).map(s=>i.find(m=>m.id===s)).filter(Boolean),externalMembers:Array.from(r)}}function $e(t){return R(t).internalMembers}function ie(t,i=4,o=!0,n=[]){if((!t||!t.length)&&(!n||!n.length))return`<span style="font-size:11px;color:var(--muted);">${e("لا يوجد فريق محدد","No team assigned")}</span>`;const r=(t||[]).slice(0,i),s=(t||[]).length-i,m=(t||[]).map(l=>e(l.name,l.nameEn||l.name)).join("، ");let d='<div class="project-team-stack" style="display:inline-flex;align-items:center;flex-wrap:wrap;gap:6px;position:relative;vertical-align:middle;">';return r.forEach(l=>{const h=e(l.name,l.nameEn||l.name),f=o?`data-action="filter-by-member" data-member-id="${a(l.id)}" style="cursor:pointer;display:inline-flex;align-items:center;gap:5px;background:var(--surface-soft);padding:2px 8px 2px 3px;border-radius:999px;border:1px solid var(--line);transition:all .15s ease;" onmouseover="this.style.borderColor='var(--brand-teal)';this.style.background='var(--mint)'" onmouseout="this.style.borderColor='var(--line)';this.style.background='var(--surface-soft)'"`:'style="display:inline-flex;align-items:center;gap:5px;background:var(--surface-soft);padding:2px 8px 2px 3px;border-radius:999px;border:1px solid var(--line);"';d+=`
+import{t as fe}from"./rolldown-runtime-BQ-_32WO.js";import{At as D,Bt as g,It as te,J as E,Pt as me,Q as I,R as ve,Rt as T,St as G,T as xe,Tt as k,Z as e,at as H,ct as F,gt as N,jt as x,mt as v,n as L,nt as X,ot as ae,q as S,tt as a,w as ue,wt as U,x as be,xt as ee,y as ye,yt as he}from"./core-dragdrop-CjSMdOSc.js";var Se=fe({buildProjectMemberChipsHtml:()=>Y,checkProjectCodeStatus:()=>J,exportPortfolioPDF:()=>Ae,exportPortfolioXLS:()=>Pe,exportProjectPDF:()=>ze,exportProjectXLS:()=>De,exportXLS:()=>X,getCompanyBranding:()=>F,getDaysLeftBadge:()=>W,getNextAvailableProjectCode:()=>q,getProjectTeam:()=>$e,getProjectTeamData:()=>R,openCloneModal:()=>je,openProjectModal:()=>ke,projectCard:()=>re,renderAuditForProject:()=>ie,renderInPagePrintModal:()=>K,renderProjectCardTeamAvatars:()=>oe,renderProjectDetail:()=>we,renderProjectOverviewTab:()=>le,renderProjectTeamAvatars:()=>ne,renderProjectTimelineBar:()=>se,renderProjects:()=>de});function ie(t){const i=(g.data?.auditLogs||[]).filter(n=>n.details?.projectId===t||n.entityType==="project"&&n.entityId===t);return i.length?`<div class="audit-list">${i.map(n=>`<div class="audit-row"><span class="audit-dot"></span><div class="audit-copy"><strong>${a(n.user?e(n.user.name,n.user.nameEn||n.user.name):"DARC")} · ${a(n.action)}</strong><span>${a(n.entityType)} · ${I(n.createdAt,!0)}</span></div></div>`).join("")}</div>`:`<div class="empty">${v("check",18)}<span>${e("لا توجد تغييرات مسجلة بعد.","No changes recorded yet.")}</span></div>`}function W(t){if(!t)return"";const i=G(t);if(!i||isNaN(i.getTime()))return"";const n=Math.ceil((i-new Date)/864e5);if(isNaN(n))return"";let s="var(--mint-strong)",r="var(--mint)",o="";return n<0?(s="var(--red)",r="var(--red-soft)",o=e(`متأخر ${Math.abs(n)} يوم`,`${Math.abs(n)}d overdue`)):n===0?(s="var(--red)",r="var(--red-soft)",o=e("يستحق اليوم","Due today")):n<=2?(s="var(--red)",r="var(--red-soft)",o=e(`باقي ${n} يوم`,`${n}d left`)):n<=7?(s="var(--amber)",r="var(--amber-soft)",o=e(`باقي ${n} أيام`,`${n}d left`)):(s="var(--mint-strong)",r="var(--mint)",o=e(`باقي ${n} يوم`,`${n}d left`)),`<span class="days-left-badge" style="display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:700;color:${s};background:${r};border:1px solid currentColor;">${v("clock",11)} ${o}</span>`}function q(t=null){const i=t?String(t).replace(/\D/g,""):"",n=i.length>=2?i.slice(-2):String(new Date().getFullYear()).slice(-2),s=g.data?.projects||[],r=Array.isArray(g.trash)?g.trash.filter(l=>l.type==="project"||l.code):[],o=[...s,...r];let m=0,d=3;for(const l of o){if(!l.code)continue;const h=String(l.code).trim().match(/^DARC-(\d{2})-(\d+)$/i);if(h&&h[1]===n){const f=h[2];f.length>d&&(d=f.length);const b=parseInt(f,10);!isNaN(b)&&b>m&&(m=b)}}return`DARC-${n}-${String(m+1).padStart(d,"0")}`}function J(t,i=null){if(!t||!String(t).trim())return{valid:!1,message:e("كود المشروع مطلوب.","Project code is required."),status:"error"};const n=String(t).trim().toUpperCase(),s=(g.data?.projects||[]).filter(o=>!o.deletedAt&&!o.deleted_at).find(o=>o.code&&o.code.toUpperCase()===n&&o.id!==i);if(s)return{valid:!1,status:"error",message:e(`الكود مستخدم بالفعل لمشروع: "${e(s.nameAr,s.nameEn)}"`,`Code is already used by: "${e(s.nameAr,s.nameEn)}"`)};const r=(Array.isArray(g.trash)?g.trash.filter(o=>(o.type==="project"||o.code)&&o.id!==i):[]).find(o=>o.code&&o.code.toUpperCase()===n);return r?{valid:!1,status:"warning",message:e(`محجوز لمشروع في سلة المحذوفات (فترة الـ 30 يوماً): "${e(r.nameAr,r.nameEn)}"`,`Reserved for a project in trash (30-day window): "${e(r.nameAr,r.nameEn)}"`)}:{valid:!0,status:"success",message:e("كود مميز ومتاح للاستخدام","Unique and available")}}function R(t){if(!t)return{internalMembers:[],externalMembers:[]};const i=g.data?.users||[],n=(g.data?.tasks||[]).filter(o=>o.projectId===t.id&&!o.deletedAt&&!o.deleted_at),s=new Set,r=new Set;return t.managerId&&s.add(t.managerId),Array.isArray(t.memberIds)&&t.memberIds.forEach(o=>o&&s.add(o)),Array.isArray(t.members)&&t.members.forEach(o=>{const m=typeof o=="string"?o:o.userId||o.id||o.user_id;m&&s.add(m)}),n.forEach(o=>{o.assigneeId&&s.add(o.assigneeId),(o.customFields?.additionalAssignees||o.customFields?.additional_assignees||[]).forEach(m=>s.add(m)),(o.customFields?.externalAssignees||o.customFields?.external_assignees||[]).forEach(m=>{m&&typeof m=="string"&&m.trim()&&r.add(m.trim())})}),{internalMembers:Array.from(s).map(o=>i.find(m=>m.id===o)).filter(Boolean),externalMembers:Array.from(r)}}function $e(t){return R(t).internalMembers}function ne(t,i=4,n=!0,s=[]){if((!t||!t.length)&&(!s||!s.length))return`<span style="font-size:11px;color:var(--muted);">${e("لا يوجد فريق محدد","No team assigned")}</span>`;const r=(t||[]).slice(0,i),o=(t||[]).length-i,m=(t||[]).map(l=>e(l.name,l.nameEn||l.name)).join("، ");let d='<div class="project-team-stack" style="display:inline-flex;align-items:center;flex-wrap:wrap;gap:6px;position:relative;vertical-align:middle;">';return r.forEach(l=>{const h=e(l.name,l.nameEn||l.name),f=n?`data-action="filter-by-member" data-member-id="${a(l.id)}" style="cursor:pointer;display:inline-flex;align-items:center;gap:5px;background:var(--surface-soft);padding:2px 8px 2px 3px;border-radius:999px;border:1px solid var(--line);transition:all .15s ease;" onmouseover="this.style.borderColor='var(--brand-teal)';this.style.background='var(--mint)'" onmouseout="this.style.borderColor='var(--line)';this.style.background='var(--surface-soft)'"`:'style="display:inline-flex;align-items:center;gap:5px;background:var(--surface-soft);padding:2px 8px 2px 3px;border-radius:999px;border:1px solid var(--line);"';d+=`
       <span class="team-member-chip" ${f} title="${a(h)} (${a(U(l))})">
         ${S(l,"mini-avatar")}
         <span style="font-size:11px;font-weight:600;color:var(--ink);">${a(h)}</span>
       </span>
-    `}),s>0&&(d+=`<span class="team-count-chip" style="background:var(--surface-soft);border:1px solid var(--line);border-radius:999px;padding:2px 7px;display:inline-flex;align-items:center;font-size:10.5px;font-weight:700;color:var(--ink-soft);box-shadow:var(--shadow-sm);" title="${a(m)}">+${s} ${e("آخرين","more")}</span>`),n&&n.length>0&&(d+=`<span class="mini-badge" style="font-size:10px;padding:2px 6px;background:var(--surface-soft);color:var(--teal);border:1px solid var(--line);border-radius:999px;display:inline-flex;align-items:center;gap:3px;" title="${a(n.join("، "))}">${v("globe",11)} +${n.length} ${e("خارجي","ext")}</span>`),d+=`<div class="team-hover-tooltip" style="display:none;position:absolute;top:calc(100% + 4px);inset-inline-start:0;background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,0.14);padding:10px 14px;z-index:90;width:330px;max-width:330px;pointer-events:auto;">
+    `}),o>0&&(d+=`<span class="team-count-chip" style="background:var(--surface-soft);border:1px solid var(--line);border-radius:999px;padding:2px 7px;display:inline-flex;align-items:center;font-size:10.5px;font-weight:700;color:var(--ink-soft);box-shadow:var(--shadow-sm);" title="${a(m)}">+${o} ${e("آخرين","more")}</span>`),s&&s.length>0&&(d+=`<span class="mini-badge" style="font-size:10px;padding:2px 6px;background:var(--surface-soft);color:var(--teal);border:1px solid var(--line);border-radius:999px;display:inline-flex;align-items:center;gap:3px;" title="${a(s.join("، "))}">${v("globe",11)} +${s.length} ${e("خارجي","ext")}</span>`),d+=`<div class="team-hover-tooltip" style="display:none;position:absolute;top:calc(100% + 4px);inset-inline-start:0;background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,0.14);padding:10px 14px;z-index:90;width:330px;max-width:330px;pointer-events:auto;">
     <strong style="display:block;font-size:12px;color:var(--ink);margin-bottom:8px;border-bottom:1px solid var(--line);padding-bottom:4px;">${e("فريق العمل الداخلي","Internal Team")} (${(t||[]).length})</strong>
     <div style="display:flex;flex-wrap:nowrap;align-items:center;gap:8px;overflow-x:auto;padding-bottom:6px;scrollbar-width:thin;">
 
       ${(t||[]).map(l=>`
-        <div ${o?`data-action="filter-by-member" data-member-id="${a(l.id)}" title="${a(e("فلترة مهام "+(l.name||""),"Filter tasks of "+(l.nameEn||l.name||"")))}"`:""} style="display:flex;align-items:center;gap:6px;background:var(--surface-soft);border:1px solid var(--line);border-radius:8px;padding:4px 8px;flex-shrink:0;${o?"cursor:pointer;transition:all 0.15s;":""}" ${o?`onmouseover="this.style.borderColor='var(--teal)';this.style.background='var(--teal-subtle)'" onmouseout="this.style.borderColor='var(--line)';this.style.background='var(--surface-soft)'"`:""}>
+        <div ${n?`data-action="filter-by-member" data-member-id="${a(l.id)}" title="${a(e("فلترة مهام "+(l.name||""),"Filter tasks of "+(l.nameEn||l.name||"")))}"`:""} style="display:flex;align-items:center;gap:6px;background:var(--surface-soft);border:1px solid var(--line);border-radius:8px;padding:4px 8px;flex-shrink:0;${n?"cursor:pointer;transition:all 0.15s;":""}" ${n?`onmouseover="this.style.borderColor='var(--teal)';this.style.background='var(--teal-subtle)'" onmouseout="this.style.borderColor='var(--line)';this.style.background='var(--surface-soft)'"`:""}>
           ${S(l,"micro-avatar")}
           <div style="display:flex;flex-direction:column;line-height:1.1;white-space:nowrap;">
             <span style="font-size:11px;color:var(--ink);font-weight:600;">${a(e(l.name,l.nameEn||l.name))}</span>
@@ -18,11 +18,11 @@ import{t as ge}from"./rolldown-runtime-BQ-_32WO.js";import{Bt as T,Dt as U,Ht as
       `).join("")}
     </div>
     
-    ${n&&n.length>0?`
+    ${s&&s.length>0?`
       <hr style="border:0;border-top:1px dashed var(--line);margin:8px 0 6px;" />
-      <strong style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--teal);margin-bottom:6px;">${v("globe",12)} ${e("الشركاء والمتعاونون الخارجيون","External Partners")} (${n.length})</strong>
+      <strong style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--teal);margin-bottom:6px;">${v("globe",12)} ${e("الشركاء والمتعاونون الخارجيون","External Partners")} (${s.length})</strong>
       <div style="display:flex;flex-wrap:nowrap;align-items:center;gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:thin;">
-        ${n.map(l=>`
+        ${s.map(l=>`
           <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--ink);background:var(--surface-soft);border:1px solid var(--line);border-radius:8px;padding:4px 8px;flex-shrink:0;white-space:nowrap;">
             <span style="display:inline-flex;align-items:center;color:var(--teal);">${v("globe",11)}</span>
             <span style="font-weight:500;">${a(l)}</span>
@@ -31,34 +31,34 @@ import{t as ge}from"./rolldown-runtime-BQ-_32WO.js";import{Bt as T,Dt as U,Ht as
       </div>
     `:""}
 
-    ${o?`<div style="margin-top:6px;padding-top:4px;border-top:1px dashed var(--line);font-size:9px;color:var(--teal);display:flex;align-items:center;gap:4px;">${v("bulb",11)} <span>${e("اضغط على أي عضو لفلترة مهامه","Click member to filter tasks")}</span></div>`:""}
-  </div>`,d+="</div>",d}function ne(t){if(!t.dueDate)return"";const i=G(t.dueDate);if(!i||isNaN(i.getTime()))return"";const o=new Date(t.startDate||t.createdAt||Date.now()-2592e6),n=new Date,r=i.getTime()-o.getTime();let s=0;r>0&&!isNaN(r)&&(s=Math.min(100,Math.max(0,Math.round((n.getTime()-o.getTime())/r*100))));const m=n>i,d=m?"var(--red)":s>=80&&!m?"var(--amber)":"var(--blue)";return`
+    ${n?`<div style="margin-top:6px;padding-top:4px;border-top:1px dashed var(--line);font-size:9px;color:var(--teal);display:flex;align-items:center;gap:4px;">${v("bulb",11)} <span>${e("اضغط على أي عضو لفلترة مهامه","Click member to filter tasks")}</span></div>`:""}
+  </div>`,d+="</div>",d}function se(t){if(!t.dueDate)return"";const i=G(t.dueDate);if(!i||isNaN(i.getTime()))return"";const n=new Date(t.startDate||t.createdAt||Date.now()-2592e6),s=new Date,r=i.getTime()-n.getTime();let o=0;r>0&&!isNaN(r)&&(o=Math.min(100,Math.max(0,Math.round((s.getTime()-n.getTime())/r*100))));const m=s>i,d=m?"var(--red)":o>=80&&!m?"var(--amber)":"var(--blue)";return`
     <div class="project-timeline-indicator" style="background:var(--surface-soft);border:1px solid var(--line);border-radius:12px;padding:12px 16px;margin:14px 0;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;font-size:11px;flex-wrap:wrap;gap:6px;">
         <span style="color:var(--ink-soft);display:flex;align-items:center;gap:4px;">
           ${v("clock",12)}
           <strong>${e("المؤشر الزمني للمشروع","Project Schedule Elapsed")}</strong>: 
-          <span style="color:${d};font-weight:bold;">${m?e("انتهى موعد التسليم!","Deadline passed!"):e(`مضى ${s}% من الوقت`,`${s}% time elapsed`)}</span>
+          <span style="color:${d};font-weight:bold;">${m?e("انتهى موعد التسليم!","Deadline passed!"):e(`مضى ${o}% من الوقت`,`${o}% time elapsed`)}</span>
         </span>
-        <span style="color:var(--muted);font-size:10px;display:inline-flex;align-items:center;gap:4px;">${_(t.startDate)} <span style="opacity:0.6;">→</span> ${_(t.dueDate)}</span>
+        <span style="color:var(--muted);font-size:10px;display:inline-flex;align-items:center;gap:4px;">${I(t.startDate)} <span style="opacity:0.6;">→</span> ${I(t.dueDate)}</span>
       </div>
       <div class="progress-track" style="height:6px;background:var(--line);border-radius:6px;overflow:hidden;position:relative;">
-        <div class="progress-fill" style="width:${s}%;background:${d};height:100%;border-radius:6px;transition:width 0.4s ease;"></div>
+        <div class="progress-fill" style="width:${o}%;background:${d};height:100%;border-radius:6px;transition:width 0.4s ease;"></div>
       </div>
     </div>
-  `}function se(t=[],i=[],o=3){const n=t.length+i.length;if(n===0)return'<span style="font-size:11px;color:var(--muted);">—</span>';const r=t.slice(0,o),s=n-r.length;[...t.map(d=>e(d.name,d.nameEn||d.name)),...i].join("، ");let m=`<div class="project-card-team-stack" tabindex="0" role="button" aria-haspopup="true" aria-label="${e("عرض فريق العمل","View Team")}">`;return m+='<div class="project-card-avatar-stack" style="display:inline-flex;align-items:center;">',r.forEach((d,l)=>{m+=`
+  `}function oe(t=[],i=[],n=3){const s=t.length+i.length;if(s===0)return'<span style="font-size:11px;color:var(--muted);">—</span>';const r=t.slice(0,n),o=s-r.length;[...t.map(d=>e(d.name,d.nameEn||d.name)),...i].join("، ");let m=`<div class="project-card-team-stack" tabindex="0" role="button" aria-haspopup="true" aria-label="${e("عرض فريق العمل","View Team")}">`;return m+='<div class="project-card-avatar-stack" style="display:inline-flex;align-items:center;">',r.forEach((d,l)=>{m+=`
       <div style="margin-inline-start:${l===0?"0":"-8px"};position:relative;z-index:${10-l};border:2px solid var(--surface);border-radius:50%;overflow:hidden;flex-shrink:0;">
         ${S(d,"mini-avatar")}
       </div>
-    `}),s>0&&(m+=`
+    `}),o>0&&(m+=`
       <div style="margin-inline-start:-8px;position:relative;z-index:0;width:24px;height:24px;border-radius:50%;background:var(--surface-soft);border:2px solid var(--surface);display:flex;align-items:center;justify-content:center;font-size:9.5px;font-weight:700;color:var(--ink-soft);flex-shrink:0;">
-        +${s}
+        +${o}
       </div>
-    `),i&&i.length>0&&s<=0&&(m+=`<span style="margin-inline-start:4px;font-size:9.5px;color:var(--teal);background:var(--mint);padding:1px 5px;border-radius:999px;font-weight:700;display:inline-flex;align-items:center;">${v("globe",10)}</span>`),m+="</div>",m+=`
+    `),i&&i.length>0&&o<=0&&(m+=`<span style="margin-inline-start:4px;font-size:9.5px;color:var(--teal);background:var(--mint);padding:1px 5px;border-radius:999px;font-weight:700;display:inline-flex;align-items:center;">${v("globe",10)}</span>`),m+="</div>",m+=`
     <div class="project-card-team-popup" onclick="event.stopPropagation();">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;padding-bottom:5px;border-bottom:1px solid var(--line);">
         <strong style="font-size:11px;color:var(--ink);">${e("فريق العمل","Team Members")}</strong>
-        <span class="mini-badge" style="font-size:9.5px;padding:1px 6px;">${n}</span>
+        <span class="mini-badge" style="font-size:9.5px;padding:1px 6px;">${s}</span>
       </div>
       <div style="display:flex;flex-direction:column;gap:6px;">
         ${t.map(d=>`
@@ -84,7 +84,7 @@ import{t as ge}from"./rolldown-runtime-BQ-_32WO.js";import{Bt as T,Dt as U,Ht as
         </div>
       `:""}
     </div>
-  `,m+="</div>",m}function oe(t){const{internalMembers:i,externalMembers:o}=R(t),n=t.manager||(g.data?.users||[]).find(m=>m.id===t.managerId),r=W(t.dueDate),s=e(t.descriptionAr||t.clientAr,t.descriptionEn||t.clientEn);return`<article class="project-card">
+  `,m+="</div>",m}function re(t){const{internalMembers:i,externalMembers:n}=R(t),s=t.manager||(g.data?.users||[]).find(m=>m.id===t.managerId),r=W(t.dueDate),o=e(t.descriptionAr||t.clientAr,t.descriptionEn||t.clientEn);return`<article class="project-card">
     <div class="project-card-top">
       <div style="display:flex;align-items:center;gap:10px;min-width:0;flex:1;cursor:pointer;" data-action="open-project" data-project-id="${a(t.id)}">
         <span class="project-card-symbol">${v("building",19)}</span>
@@ -99,21 +99,21 @@ import{t as ge}from"./rolldown-runtime-BQ-_32WO.js";import{Bt as T,Dt as U,Ht as
       </div>
     </div>
     
-    <p class="project-card-desc" title="${a(s||"")}">
-      ${s?a(s):`<span style="color:var(--muted);font-style:italic;">${e("لا يوجد وصف مسجل لهذا المشروع","No description registered")}</span>`}
+    <p class="project-card-desc" title="${a(o||"")}">
+      ${o?a(o):`<span style="color:var(--muted);font-style:italic;">${e("لا يوجد وصف مسجل لهذا المشروع","No description registered")}</span>`}
     </p>
     
     <div class="project-card-meta-row">
       <div class="project-card-manager" style="display:flex;align-items:center;gap:6px;min-width:0;flex:1;">
-        ${S(n,"mini-avatar")}
+        ${S(s,"mini-avatar")}
         <div style="display:flex;flex-direction:column;line-height:1.2;min-width:0;">
           <span style="font-size:9px;color:var(--muted);">${x("manager")}</span>
-          <strong style="font-size:11px;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${a(n?e(n.name,n.nameEn||n.name):"—")}</strong>
+          <strong style="font-size:11px;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${a(s?e(s.name,s.nameEn||s.name):"—")}</strong>
         </div>
       </div>
       <div class="project-card-team" style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.2;flex-shrink:0;">
-        <span style="font-size:9px;color:var(--muted);margin-bottom:3px;">${x("team")} (${i.length+o.length})</span>
-        ${se(i,o,3)}
+        <span style="font-size:9px;color:var(--muted);margin-bottom:3px;">${x("team")} (${i.length+n.length})</span>
+        ${oe(i,n,3)}
       </div>
     </div>
 
@@ -121,7 +121,7 @@ import{t as ge}from"./rolldown-runtime-BQ-_32WO.js";import{Bt as T,Dt as U,Ht as
       <div class="project-card-date">
         <span style="display:block;margin-bottom:3px;">${x("deadline")}</span>
         <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-          <strong>${t.dueDate?_(t.dueDate,!0):"—"}</strong>
+          <strong>${t.dueDate?I(t.dueDate,!0):"—"}</strong>
           ${r}
         </div>
       </div>
@@ -134,14 +134,14 @@ import{t as ge}from"./rolldown-runtime-BQ-_32WO.js";import{Bt as T,Dt as U,Ht as
     <button class="btn btn-soft btn-sm" style="width:100%;" data-action="open-project" data-project-id="${a(t.id)}">
       ${x("viewDetails")} ${v(g.lang==="ar"?"arrowLeft":"arrow",13)}
     </button>
-  </article>`}function re(t,i,o,n=[]){const r=t.manager||(g.data?.users||[]).find(l=>l.id===t.managerId),s=i.filter(l=>l.status==="done").length,m=i.filter(l=>l.status==="in_progress").length,d=i.filter(me).length;return`
+  </article>`}function le(t,i,n,s=[]){const r=t.manager||(g.data?.users||[]).find(l=>l.id===t.managerId),o=i.filter(l=>l.status==="done").length,m=i.filter(l=>l.status==="in_progress").length,d=i.filter(he).length;return`
     <div class="project-overview-panel" style="display:flex;flex-direction:column;gap:20px;">
       <!-- Stats Row -->
       <div class="metrics-grid">
         <div class="metric-card teal" style="padding:14px 18px;">
           <span class="metric-label">${e("إجمالي المهام","Total Tasks")}</span>
           <div class="metric-value">${i.length}</div>
-          <span class="metric-note up">${s} ${x("done")}</span>
+          <span class="metric-note up">${o} ${x("done")}</span>
         </div>
         <div class="metric-card blue" style="padding:14px 18px;">
           <span class="metric-label">${e("قيد التنفيذ","In Progress")}</span>
@@ -155,13 +155,13 @@ import{t as ge}from"./rolldown-runtime-BQ-_32WO.js";import{Bt as T,Dt as U,Ht as
         </div>
         <div class="metric-card amber" style="padding:14px 18px;">
           <span class="metric-label">${e("فريق العمل","Team Size")}</span>
-          <div class="metric-value">${o.length+(n?.length||0)}</div>
+          <div class="metric-value">${n.length+(s?.length||0)}</div>
           <span class="metric-note">${e("أعضاء مساهمون","Active contributors")}</span>
         </div>
       </div>
 
       <!-- Schedule Timeline Bar -->
-      ${ne(t)}
+      ${se(t)}
 
       <!-- Details Grid -->
       <div class="project-details-grid" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(min(100%, 280px), 1fr));gap:16px;">
@@ -186,11 +186,11 @@ import{t as ge}from"./rolldown-runtime-BQ-_32WO.js";import{Bt as T,Dt as U,Ht as
             </div>
             <div>
               <span style="font-size:10px;color:var(--muted);display:block;">${x("startDate")}</span>
-              <strong style="font-size:12px;color:var(--ink);">${_(t.startDate,!0)}</strong>
+              <strong style="font-size:12px;color:var(--ink);">${I(t.startDate,!0)}</strong>
             </div>
             <div>
               <span style="font-size:10px;color:var(--muted);display:block;">${x("dueDate")}</span>
-              <strong style="font-size:12px;color:var(--ink);">${_(t.dueDate,!0)}</strong>
+              <strong style="font-size:12px;color:var(--ink);">${I(t.dueDate,!0)}</strong>
             </div>
           </div>
         </div>
@@ -215,7 +215,7 @@ import{t as ge}from"./rolldown-runtime-BQ-_32WO.js";import{Bt as T,Dt as U,Ht as
           <!-- Members list -->
           <span style="font-size:11px;color:var(--muted);margin-bottom:8px;display:block;">${e("أعضاء الفريق الداخلي:","Internal Team Members:")}</span>
           <div style="display:flex;flex-direction:column;gap:8px;max-height:220px;overflow-y:auto;">
-            ${o.map(l=>{const h=i.filter(f=>f.assigneeId===l.id).length;return`
+            ${n.map(l=>{const h=i.filter(f=>f.assigneeId===l.id).length;return`
                 <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:var(--surface-soft);border-radius:8px;font-size:12px;">
                   <div style="display:flex;align-items:center;gap:8px;">
                     ${S(l,"mini-avatar")}
@@ -229,13 +229,13 @@ import{t as ge}from"./rolldown-runtime-BQ-_32WO.js";import{Bt as T,Dt as U,Ht as
               `}).join("")}
           </div>
 
-          ${n&&n.length>0?`
+          ${s&&s.length>0?`
             <hr style="border:0;border-top:1px dashed var(--line);margin:14px 0 10px;" />
             <span style="font-size:11px;color:var(--teal);font-weight:bold;margin-bottom:8px;display:flex;align-items:center;gap:6px;">
               ${v("globe",13)} ${e("الشركاء والمتعاونون الخارجيون:","External Partners & Collaborators:")}
             </span>
             <div style="display:flex;flex-direction:column;gap:8px;max-height:180px;overflow-y:auto;">
-              ${n.map(l=>{const h=i.filter(f=>(f.customFields?.externalAssignees||f.customFields?.external_assignees||[]).includes(l)).length;return`
+              ${s.map(l=>{const h=i.filter(f=>(f.customFields?.externalAssignees||f.customFields?.external_assignees||[]).includes(l)).length;return`
                   <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:var(--surface-soft);border-radius:8px;font-size:12px;">
                     <div style="display:flex;align-items:center;gap:8px;">
                       <span style="color:var(--teal);display:inline-flex;align-items:center;">${v("globe",14)}</span>
@@ -252,22 +252,22 @@ import{t as ge}from"./rolldown-runtime-BQ-_32WO.js";import{Bt as T,Dt as U,Ht as
         </div>
       </div>
     </div>
-  `}function le(){const t=ee(g.searches?.projects||"");let i=(g.data?.projects||[]).filter(n=>!n.deletedAt&&!n.deleted_at).filter(n=>!t||ee(`${n.nameAr||""} ${n.nameEn||""} ${n.code||""} ${n.clientAr||""} ${n.clientEn||""}`).includes(t));const o=g.projectSort||"default";return o==="alpha-asc"?i.sort((n,r)=>(e(n.nameAr,n.nameEn)||"").localeCompare(e(r.nameAr,r.nameEn)||"",g.lang==="ar"?"ar":"en")):o==="alpha-desc"?i.sort((n,r)=>(e(r.nameAr,r.nameEn)||"").localeCompare(e(n.nameAr,n.nameEn)||"",g.lang==="ar"?"ar":"en")):o==="progress-asc"?i.sort((n,r)=>(Number(n.progress)||0)-(Number(r.progress)||0)):o==="progress-desc"&&i.sort((n,r)=>(Number(r.progress)||0)-(Number(n.progress)||0)),`<div class="page-head"><div><p class="eyebrow">${e("المحفظة","PORTFOLIO")}</p><h1>${x("projects")}</h1><p>${e("كل مشروع في صورة واحدة: الحالة، الإنجاز، الفريق، والموعد التالي.","One view for every project: health, progress, team, and next deadline.")}</p></div><div class="page-actions">${A("create_projects")?`<button class="btn btn-primary" data-action="new-project">${v("plus",15)} ${x("addProject")}</button>`:""}</div></div><div class="view-toolbar"><div class="view-toolbar-start"><div class="search-box">${v("search",15)}<input data-search="projects" value="${a(g.searches.projects)}" placeholder="${x("search")}" /></div><div class="sort-box"><span>${e("الترتيب:","Sort:")}</span><select id="sort-projects" class="select-compact" data-action="sort-projects"><option value="default" ${o==="default"?"selected":""}>${e("الافتراضي","Default")}</option><option value="alpha-asc" ${o==="alpha-asc"?"selected":""}>${e("أبجدياً (أ - ي)","Alphabetical (A - Z)")}</option><option value="alpha-desc" ${o==="alpha-desc"?"selected":""}>${e("أبجدياً (ي - أ)","Alphabetical (Z - A)")}</option><option value="progress-asc" ${o==="progress-asc"?"selected":""}>${e("نسبة الإنجاز (تصاعدي 0% ← 100%)","Progress (Low to High)")}</option><option value="progress-desc" ${o==="progress-desc"?"selected":""}>${e("نسبة الإنجاز (تنازلي 100% ← 0%)","Progress (High to Low)")}</option></select></div></div><div class="view-toolbar-end"><span class="mini-badge" style="padding:8px 10px;color:var(--ink-soft);background:var(--surface-soft)">${i.length} ${e("مشاريع","projects")}</span></div></div>${i.length?`<div class="project-cards">${i.map(oe).join("")}</div>`:`<section class="panel"><div class="empty">${v("building",18)}<span>${x("noProjects")}</span></div></section>`}`}function we(){const t=g.data?.projects?.find(b=>b.id===g.activeProjectId&&!b.deletedAt&&!b.deleted_at);if(!t)return g.view="projects",le();const i=(g.data?.tasks||[]).filter(b=>b.projectId===t.id),{internalMembers:o,externalMembers:n}=R(t),r=g.projectTab||"tasks",s=g.projectMemberFilter||null,m=s?i.filter(b=>b.assigneeId===s||(b.customFields?.additionalAssignees||b.customFields?.additional_assignees||[]).includes(s)):i,d=s?g.data?.users?.find(b=>b.id===s):null;let l="";if(r==="overview")l=re(t,i,o,n);else if(r==="tasks"){const b=g.projectTaskSort||ye();l=`
+  `}function de(){const t=ee(g.searches?.projects||"");let i=(g.data?.projects||[]).filter(s=>!s.deletedAt&&!s.deleted_at).filter(s=>!t||ee(`${s.nameAr||""} ${s.nameEn||""} ${s.code||""} ${s.clientAr||""} ${s.clientEn||""}`).includes(t));const n=g.projectSort||"default";return n==="alpha-asc"?i.sort((s,r)=>(e(s.nameAr,s.nameEn)||"").localeCompare(e(r.nameAr,r.nameEn)||"",g.lang==="ar"?"ar":"en")):n==="alpha-desc"?i.sort((s,r)=>(e(r.nameAr,r.nameEn)||"").localeCompare(e(s.nameAr,s.nameEn)||"",g.lang==="ar"?"ar":"en")):n==="progress-asc"?i.sort((s,r)=>(Number(s.progress)||0)-(Number(r.progress)||0)):n==="progress-desc"&&i.sort((s,r)=>(Number(r.progress)||0)-(Number(s.progress)||0)),`<div class="page-head"><div><p class="eyebrow">${e("المحفظة","PORTFOLIO")}</p><h1>${x("projects")}</h1><p>${e("كل مشروع في صورة واحدة: الحالة، الإنجاز، الفريق، والموعد التالي.","One view for every project: health, progress, team, and next deadline.")}</p></div><div class="page-actions">${E("create_projects")?`<button class="btn btn-primary" data-action="new-project">${v("plus",15)} ${x("addProject")}</button>`:""}</div></div><div class="view-toolbar"><div class="view-toolbar-start"><div class="search-box">${v("search",15)}<input data-search="projects" value="${a(g.searches.projects)}" placeholder="${x("search")}" /></div><div class="sort-box"><span>${e("الترتيب:","Sort:")}</span><select id="sort-projects" class="select-compact" data-action="sort-projects"><option value="default" ${n==="default"?"selected":""}>${e("الافتراضي","Default")}</option><option value="alpha-asc" ${n==="alpha-asc"?"selected":""}>${e("أبجدياً (أ - ي)","Alphabetical (A - Z)")}</option><option value="alpha-desc" ${n==="alpha-desc"?"selected":""}>${e("أبجدياً (ي - أ)","Alphabetical (Z - A)")}</option><option value="progress-asc" ${n==="progress-asc"?"selected":""}>${e("نسبة الإنجاز (تصاعدي 0% ← 100%)","Progress (Low to High)")}</option><option value="progress-desc" ${n==="progress-desc"?"selected":""}>${e("نسبة الإنجاز (تنازلي 100% ← 0%)","Progress (High to Low)")}</option></select></div></div><div class="view-toolbar-end"><span class="mini-badge" style="padding:8px 10px;color:var(--ink-soft);background:var(--surface-soft)">${i.length} ${e("مشاريع","projects")}</span></div></div>${i.length?`<div class="project-cards">${i.map(re).join("")}</div>`:`<section class="panel"><div class="empty">${v("building",18)}<span>${x("noProjects")}</span></div></section>`}`}function we(){const t=g.data?.projects?.find(b=>b.id===g.activeProjectId&&!b.deletedAt&&!b.deleted_at);if(!t)return g.view="projects",de();const i=(g.data?.tasks||[]).filter(b=>b.projectId===t.id),{internalMembers:n,externalMembers:s}=R(t),r=g.projectTab||"tasks",o=g.projectMemberFilter||null,m=o?i.filter(b=>b.assigneeId===o||(b.customFields?.additionalAssignees||b.customFields?.additional_assignees||[]).includes(o)):i,d=o?g.data?.users?.find(b=>b.id===o):null;let l="";if(r==="overview")l=le(t,i,n,s);else if(r==="tasks"){const b=g.projectTaskSort||ye();l=`
       <div class="panel">
         <div class="panel-head">
           <div>
-            <h2 class="panel-title">${x("projectTasks")} ${s?`<span style="font-size:12px;color:var(--teal);font-weight:normal;">(${e("مهام","Tasks of")}: ${a(e(d?.name,d?.nameEn||d?.name))})</span>`:""}</h2>
+            <h2 class="panel-title">${x("projectTasks")} ${o?`<span style="font-size:12px;color:var(--teal);font-weight:normal;">(${e("مهام","Tasks of")}: ${a(e(d?.name,d?.nameEn||d?.name))})</span>`:""}</h2>
             <p class="panel-subtitle">${e("توزيع المهام حسب دورة العمل الحالية مرتبة تلقائياً بحسب تفضيل الترتيب.","Tasks grouped by current workflow state, automatically sorted.")}</p>
           </div>
           <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
             ${ue(b,"sort-project-tasks")}
-            ${s?`<button class="btn btn-ghost btn-sm" data-action="clear-member-filter" style="font-size:11px;">${v("close",12)} ${e("إلغاء الفلترة","Clear filter")}</button>`:""}
-            ${A("create_tasks")?`<button class="btn btn-soft btn-sm" data-action="new-task" data-project-id="${a(t.id)}" title="${e("اضغط N للإضافة السريعة","Press N to add quickly")}">${v("plus",14)} ${x("addTask")} <kbd class="shortcut-kbd" style="margin-inline-start:4px;">N</kbd></button>`:""}
+            ${o?`<button class="btn btn-ghost btn-sm" data-action="clear-member-filter" style="font-size:11px;">${v("close",12)} ${e("إلغاء الفلترة","Clear filter")}</button>`:""}
+            ${E("create_tasks")?`<button class="btn btn-soft btn-sm" data-action="new-task" data-project-id="${a(t.id)}" title="${e("اضغط N للإضافة السريعة","Press N to add quickly")}">${v("plus",14)} ${x("addTask")} <kbd class="shortcut-kbd" style="margin-inline-start:4px;">N</kbd></button>`:""}
           </div>
         </div>
         ${be(m,b)}
       </div>
-    `}else if(r==="timeline"){const{renderTimelinePanel:b}=window.__timelineExports||{};l=b?b(m,t):`<div class="panel"><div class="panel-head"><div><h2 class="panel-title">${e("المخطط الزمني والتقويم","Timeline & Calendar")}</h2></div></div>${ve(m)}</div>`}else if(r==="drawings"){const b=(g.data?.documents||[]).filter(c=>c.projectId===t.id&&!c.deletedAt),$=i.filter(c=>c.typeAr==="مخطط"||c.typeEn==="Drawing"||c.templateId),y=g.docTaskFilter||"all",P=y==="all"?b:b.filter(c=>c.taskId===y);l=`
+    `}else if(r==="timeline"){const{renderTimelinePanel:b}=window.__timelineExports||{};l=b?b(m,t):`<div class="panel"><div class="panel-head"><div><h2 class="panel-title">${e("المخطط الزمني والتقويم","Timeline & Calendar")}</h2></div></div>${xe(m)}</div>`}else if(r==="drawings"){const b=(g.data?.documents||[]).filter(c=>c.projectId===t.id&&!c.deletedAt),$=i.filter(c=>c.typeAr==="مخطط"||c.typeEn==="Drawing"||c.templateId),y=g.docTaskFilter||"all",P=y==="all"?b:b.filter(c=>c.taskId===y);l=`
       <div class="panel">
         <div class="panel-head" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
           <div>
@@ -283,7 +283,7 @@ import{t as ge}from"./rolldown-runtime-BQ-_32WO.js";import{Bt as T,Dt as U,Ht as
                 ${i.map(c=>`<option value="${a(c.id)}" ${y===c.id?"selected":""}>${a(e(c.titleAr,c.titleEn))}</option>`).join("")}
               </select>
             </div>
-            ${A("create_tasks")?`
+            ${E("create_tasks")?`
               <button class="btn btn-soft btn-sm" data-action="new-task" data-project-id="${a(t.id)}">
                 ${v("plus",12)} ${e("إضافة مخرج / مخطط","Add Deliverable / Drawing")}
               </button>
@@ -309,7 +309,7 @@ import{t as ge}from"./rolldown-runtime-BQ-_32WO.js";import{Bt as T,Dt as U,Ht as
                 </tr>
               </thead>
               <tbody>
-                ${P.length>0?P.map(c=>{const z=i.find(C=>C.id===c.taskId),I=c.size>1048576?(c.size/1048576).toFixed(1)+" MB":Math.round((c.size||0)/1024)+" KB";return`
+                ${P.length>0?P.map(c=>{const z=i.find(C=>C.id===c.taskId),_=c.size>1048576?(c.size/1048576).toFixed(1)+" MB":Math.round((c.size||0)/1024)+" KB";return`
                     <tr data-doc-id="${a(c.id)}">
                       <td>
                         <div style="display:flex;align-items:center;gap:10px;cursor:pointer;" data-action="preview-doc" data-doc-id="${a(c.id)}">
@@ -332,8 +332,8 @@ import{t as ge}from"./rolldown-runtime-BQ-_32WO.js";import{Bt as T,Dt as U,Ht as
                           ${a(D(c.status||"draft"))}
                         </span>
                       </td>
-                      <td style="font-size:12px;color:var(--ink-soft);">${I}</td>
-                      <td style="font-size:12px;color:var(--ink-soft);">${_(c.createdAt,!0)}</td>
+                      <td style="font-size:12px;color:var(--ink-soft);">${_}</td>
+                      <td style="font-size:12px;color:var(--ink-soft);">${I(c.createdAt,!0)}</td>
                       <td style="text-align:end;">
                         <div style="display:inline-flex;align-items:center;gap:4px;">
                           <button class="btn btn-ghost btn-sm" data-action="preview-doc" data-doc-id="${a(c.id)}" style="padding:5px;" title="${e("معاينة المخطط","Preview")}">
@@ -401,7 +401,7 @@ import{t as ge}from"./rolldown-runtime-BQ-_32WO.js";import{Bt as T,Dt as U,Ht as
           </div>
         </div>
       </div>
-    `}else r==="activity"&&(l=`<div class="panel"><div class="panel-head"><div><h2 class="panel-title">${x("activity")}</h2><p class="panel-subtitle">${e("كل تغيير مهم يبقى قابلًا للمراجعة.","Every important change remains reviewable.")}</p></div></div>${he(t.id)}</div>`);const h=t.manager||(g.data?.users||[]).find(b=>b.id===t.managerId),f=W(t.dueDate);return`
+    `}else r==="activity"&&(l=`<div class="panel"><div class="panel-head"><div><h2 class="panel-title">${x("activity")}</h2><p class="panel-subtitle">${e("كل تغيير مهم يبقى قابلًا للمراجعة.","Every important change remains reviewable.")}</p></div></div>${ie(t.id)}</div>`);const h=t.manager||(g.data?.users||[]).find(b=>b.id===t.managerId),f=W(t.dueDate);return`
     <div class="project-hero">
       <div class="project-hero-copy">
         <button class="back-button" data-action="back-to-projects">${v(g.lang==="ar"?"arrow":"arrowLeft",15)}</button>
@@ -417,14 +417,14 @@ import{t as ge}from"./rolldown-runtime-BQ-_32WO.js";import{Bt as T,Dt as U,Ht as
             </span>
             ${t.dueDate?`
               <span class="meta-chip" style="display:inline-flex;align-items:center;gap:6px;">
-                ${v("calendar",12)} ${_(t.dueDate,!0)}
+                ${v("calendar",12)} ${I(t.dueDate,!0)}
                 ${f}
               </span>
             `:""}
             <span class="meta-chip" style="display:inline-flex;align-items:center;gap:6px;position:relative;">
               ${v("users",12)}
               <span style="font-size:11px;">${x("team")}:</span>
-              ${ie(o,4,!0,n)}
+              ${ne(n,4,!0,s)}
             </span>
             <span class="status-badge ${a(t.health)}">${a(D(t.health))}</span>
           </div>
@@ -433,13 +433,13 @@ import{t as ge}from"./rolldown-runtime-BQ-_32WO.js";import{Bt as T,Dt as U,Ht as
       <div class="project-hero-score">
         <strong>${t.progress}%</strong>
         <span>${x("weightedProgress")}</span>
-        ${A("edit_projects")||A("create_projects")||A("delete_projects")||A("view_reports")||N()?`
+        ${E("edit_projects")||E("create_projects")||E("delete_projects")||E("view_reports")||N()?`
           <div style="position:relative;margin-top:11px;width:100%">
             <button class="btn btn-soft btn-sm" data-action="toggle-project-menu" style="width:100%">${v("more",15)} ${e("خيارات","Options")}</button>
             <div id="project-menu" class="dropdown-menu" style="display:none;position:absolute;top:100%;${g.lang==="ar"?"right:0;left:auto;":"left:0;right:auto;"};background:var(--surface);border:1px solid var(--line);border-radius:8px;box-shadow:0 10px 30px rgba(0,0,0,0.1);z-index:100;min-width:220px;max-width:min(280px,calc(100vw - 36px));padding:5px;margin-top:5px;text-align:start">
-              ${A("edit_projects")||N()?`<button class="menu-item" data-action="edit-project" data-project-id="${a(t.id)}" style="display:flex;align-items:center;gap:8px;width:100%;padding:8px 12px;border:0;background:0;cursor:pointer;font-size:13px">${v("edit",14)} ${x("edit")}</button>`:""}
-              ${A("create_projects")||N()?`<button class="menu-item" data-action="clone-project" data-project-id="${a(t.id)}" style="display:flex;align-items:center;gap:8px;width:100%;padding:8px 12px;border:0;background:0;cursor:pointer;font-size:13px">${v("document",14)} ${e("استنساخ المشروع","Clone Project")}</button>`:""}
-              ${A("export_reports")||N()?`
+              ${E("edit_projects")||N()?`<button class="menu-item" data-action="edit-project" data-project-id="${a(t.id)}" style="display:flex;align-items:center;gap:8px;width:100%;padding:8px 12px;border:0;background:0;cursor:pointer;font-size:13px">${v("edit",14)} ${x("edit")}</button>`:""}
+              ${E("create_projects")||N()?`<button class="menu-item" data-action="clone-project" data-project-id="${a(t.id)}" style="display:flex;align-items:center;gap:8px;width:100%;padding:8px 12px;border:0;background:0;cursor:pointer;font-size:13px">${v("document",14)} ${e("استنساخ المشروع","Clone Project")}</button>`:""}
+              ${E("export_reports")||N()?`
                 <button class="menu-item" data-action="export-project-pdf" data-project-id="${a(t.id)}" style="display:flex;align-items:center;gap:8px;width:100%;padding:8px 12px;border:0;background:0;cursor:pointer;font-size:13px;color:var(--brand-teal);font-weight:600;">
                   ${v("printer",14)} ${e("تقرير تنفيذي معتمد (PDF)","Executive Report (PDF)")}
                 </button>
@@ -450,7 +450,7 @@ import{t as ge}from"./rolldown-runtime-BQ-_32WO.js";import{Bt as T,Dt as U,Ht as
                   ${v("document",14)} ${e("تصدير بيانات المهام (Excel)","Export Tasks (Excel)")}
                 </button>
               `:""}
-              ${A("delete_projects")||N()?`<button class="menu-item" data-action="delete-project" data-project-id="${a(t.id)}" style="display:flex;align-items:center;gap:8px;width:100%;padding:8px 12px;border:0;background:0;cursor:pointer;font-size:13px;color:var(--red)">${v("trash",14)} ${e("حذف المشروع","Delete Project")}</button>`:""}
+              ${E("delete_projects")||N()?`<button class="menu-item" data-action="delete-project" data-project-id="${a(t.id)}" style="display:flex;align-items:center;gap:8px;width:100%;padding:8px 12px;border:0;background:0;cursor:pointer;font-size:13px;color:var(--red)">${v("trash",14)} ${e("حذف المشروع","Delete Project")}</button>`:""}
             </div>
           </div>
         `:""}
@@ -467,15 +467,15 @@ import{t as ge}from"./rolldown-runtime-BQ-_32WO.js";import{Bt as T,Dt as U,Ht as
     </div>
     
     ${l}
-  `}function J(t=[]){const i=g.data?.users||[];return t.map(o=>{const n=i.find(r=>r.id===o)||{name:o,id:o};return`
-      <span class="chip-item" data-uid="${a(o)}" style="display:inline-flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:3px 10px 3px 6px;font-size:12px;color:var(--ink);">
-        ${S(n,"mini-avatar")}
-        <span style="font-weight:500;">${a(e(n.name,n.nameEn||n.name))}</span>
-        <button type="button" class="btn-remove-project-member" data-uid="${a(o)}" style="border:none;background:none;cursor:pointer;color:var(--muted);padding:0 2px;font-size:14px;line-height:1;margin-inline-start:4px;" title="${e("إزالة","Remove")}">×</button>
+  `}function Y(t=[]){const i=g.data?.users||[];return t.map(n=>{const s=i.find(r=>r.id===n)||{name:n,id:n};return`
+      <span class="chip-item" data-uid="${a(n)}" style="display:inline-flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:3px 10px 3px 6px;font-size:12px;color:var(--ink);">
+        ${S(s,"mini-avatar")}
+        <span style="font-weight:500;">${a(e(s.name,s.nameEn||s.name))}</span>
+        <button type="button" class="btn-remove-project-member" data-uid="${a(n)}" style="border:none;background:none;cursor:pointer;color:var(--muted);padding:0 2px;font-size:14px;line-height:1;margin-inline-start:4px;" title="${e("إزالة","Remove")}">×</button>
       </span>
-    `}).join("")}function ke(t=null){!g.trashLoaded&&typeof window<"u"&&L("/api/trash",{silent:!0}).then(d=>{d&&(g.trash=Array.isArray(d)?d:d.trash||[...(d.projects||[]).map(l=>({...l,type:"project"})),...(d.tasks||[]).map(l=>({...l,type:"task"})),...(d.documents||[]).map(l=>({...l,type:"document"}))],g.trashLoaded=!0)}).catch(()=>{});const i=t?.code||q(),o=t?R(t).internalMembers.map(d=>d.id):[],n=o.length>0?o:[g.data?.user?.id].filter(Boolean),r=Y(i,t?.id),s=r.status==="success"?"var(--mint-strong)":r.status==="warning"?"var(--amber-strong)":"var(--red)",m=`
+    `}).join("")}function ke(t=null){!g.trashLoaded&&typeof window<"u"&&L("/api/trash",{silent:!0}).then(d=>{d&&(g.trash=Array.isArray(d)?d:d.trash||[...(d.projects||[]).map(l=>({...l,type:"project"})),...(d.tasks||[]).map(l=>({...l,type:"task"})),...(d.documents||[]).map(l=>({...l,type:"document"}))],g.trashLoaded=!0)}).catch(()=>{});const i=t?.code||q(),n=t?R(t).internalMembers.map(d=>d.id):[],s=n.length>0?n:[g.data?.user?.id].filter(Boolean),r=J(i,t?.id),o=r.status==="success"?"var(--mint-strong)":r.status==="warning"?"var(--amber-strong)":"var(--red)",m=`
     <form id="project-form" data-project-id="${a(t?.id||"")}">
-      <input type="hidden" name="memberIds" id="project-members-input" value="${a(JSON.stringify(n))}" />
+      <input type="hidden" name="memberIds" id="project-members-input" value="${a(JSON.stringify(s))}" />
 
       <div class="form-grid">
         <!-- Section 1: Core Project Information -->
@@ -499,7 +499,7 @@ import{t as ge}from"./rolldown-runtime-BQ-_32WO.js";import{Bt as T,Dt as U,Ht as
             </button>
           </div>
           <input name="code" id="project-code-input" value="${a(i)}" placeholder="DARC-26-001" autocomplete="off" required style="font-family:monospace;font-weight:700;text-transform:uppercase;" />
-          <div id="project-code-feedback" style="font-size:11px;margin-top:4px;color:${s};display:flex;align-items:center;gap:4px;">
+          <div id="project-code-feedback" style="font-size:11px;margin-top:4px;color:${o};display:flex;align-items:center;gap:4px;">
             ${a(r.message)}
           </div>
         </div>
@@ -558,8 +558,8 @@ import{t as ge}from"./rolldown-runtime-BQ-_32WO.js";import{Bt as T,Dt as U,Ht as
 
         <div class="field full" style="position:relative;">
           <!-- الشارات المحددة حالياً (Pre-rendered for zero layout shift) -->
-          <div id="project-members-chips-container" style="display:${n.length?"flex":"none"};flex-wrap:wrap;gap:6px;min-height:36px;padding:6px;background:var(--surface-soft);border:1px solid var(--line);border-radius:8px;margin-bottom:6px;align-items:center;">
-            ${J(n)}
+          <div id="project-members-chips-container" style="display:${s.length?"flex":"none"};flex-wrap:wrap;gap:6px;min-height:36px;padding:6px;background:var(--surface-soft);border:1px solid var(--line);border-radius:8px;margin-bottom:6px;align-items:center;">
+            ${Y(s)}
           </div>
 
           <!-- حقل البحث والإضافة السريعة -->
@@ -585,7 +585,7 @@ import{t as ge}from"./rolldown-runtime-BQ-_32WO.js";import{Bt as T,Dt as U,Ht as
 
       <div class="modal-actions" style="display:flex;align-items:center;justify-content:space-between;width:100%;flex-wrap:wrap;gap:10px;margin-top:20px;">
         <div>
-          ${t&&(A("delete_projects")||N())?`
+          ${t&&(E("delete_projects")||N())?`
             <button type="button" class="btn btn-ghost" data-action="delete-project" data-project-id="${a(t.id)}" style="color:var(--red);display:inline-flex;align-items:center;gap:6px;" title="${e("حذف المشروع ونقله لسلة المهملات","Delete project and move to trash")}">
               ${v("trash",14)} ${e("حذف المشروع","Delete Project")}
             </button>
@@ -597,7 +597,7 @@ import{t as ge}from"./rolldown-runtime-BQ-_32WO.js";import{Bt as T,Dt as U,Ht as
         </div>
       </div>
     </form>
-  `;document.getElementById("modal-root").innerHTML=te(t?e("تعديل بيانات المشروع","Edit Project"):x("addProject"),e("إدارة البيانات الأساسية وحالة متابعة المشروع والجدول الزمني.","Manage project details, schedule, and workflow health."),m,"project"),setTimeout(()=>{const d=document.getElementById("project-member-search"),l=document.getElementById("project-member-dropdown"),h=document.getElementById("project-members-chips-container"),f=document.getElementById("project-members-input"),b=document.getElementById("project-manager-select");if(!d||!l||!h||!f)return;let $=[...n];function y(){h.innerHTML=J($),h.style.display=$.length?"flex":"none",f.value=JSON.stringify($),h.querySelectorAll(".btn-remove-project-member").forEach(w=>{w.addEventListener("click",j=>{j.stopPropagation();const p=w.dataset.uid;$=$.filter(u=>u!==p),y()})})}b&&b.addEventListener("change",()=>{const w=b.value;w&&!$.includes(w)&&($.push(w),y())});function P(w=""){const j=w.toLowerCase().trim(),p=(g.data?.users||[]).filter(u=>!$.includes(u.id)&&(!j||u.name&&u.name.toLowerCase().includes(j)||u.nameEn&&u.nameEn.toLowerCase().includes(j)||u.email&&u.email.toLowerCase().includes(j)));p.length?(l.innerHTML=p.map(u=>`
+  `;document.getElementById("modal-root").innerHTML=te(t?e("تعديل بيانات المشروع","Edit Project"):x("addProject"),e("إدارة البيانات الأساسية وحالة متابعة المشروع والجدول الزمني.","Manage project details, schedule, and workflow health."),m,"project"),setTimeout(()=>{const d=document.getElementById("project-member-search"),l=document.getElementById("project-member-dropdown"),h=document.getElementById("project-members-chips-container"),f=document.getElementById("project-members-input"),b=document.getElementById("project-manager-select");if(!d||!l||!h||!f)return;let $=[...s];function y(){h.innerHTML=Y($),h.style.display=$.length?"flex":"none",f.value=JSON.stringify($),h.querySelectorAll(".btn-remove-project-member").forEach(w=>{w.addEventListener("click",j=>{j.stopPropagation();const p=w.dataset.uid;$=$.filter(u=>u!==p),y()})})}b&&b.addEventListener("change",()=>{const w=b.value;w&&!$.includes(w)&&($.push(w),y())});function P(w=""){const j=w.toLowerCase().trim(),p=(g.data?.users||[]).filter(u=>!$.includes(u.id)&&(!j||u.name&&u.name.toLowerCase().includes(j)||u.nameEn&&u.nameEn.toLowerCase().includes(j)||u.email&&u.email.toLowerCase().includes(j)));p.length?(l.innerHTML=p.map(u=>`
           <div class="project-member-opt" data-uid="${a(u.id)}" style="display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:6px;cursor:pointer;font-size:12px;">
             ${S(u,"mini-avatar")}
             <div style="flex:1;">
@@ -606,7 +606,7 @@ import{t as ge}from"./rolldown-runtime-BQ-_32WO.js";import{Bt as T,Dt as U,Ht as
             </div>
             <span style="font-size:11px;color:var(--teal);display:inline-flex;align-items:center;gap:3px;">${v("plus",11)} ${e("إضافة","Add")}</span>
           </div>
-        `).join(""),l.querySelectorAll(".project-member-opt").forEach(u=>{u.addEventListener("mouseenter",()=>u.style.background="var(--surface-soft)"),u.addEventListener("mouseleave",()=>u.style.background="transparent"),u.addEventListener("click",()=>{const E=u.dataset.uid;E&&!$.includes(E)&&($.push(E),y(),d.value="",l.style.display="none")})})):l.innerHTML=`<div style="padding:8px 12px;font-size:12px;color:var(--muted);">${e("لا يوجد أعضاء مطابقون","No matching members")}</div>`,l.style.display="block"}d.addEventListener("focus",()=>P(d.value)),d.addEventListener("input",()=>P(d.value)),document.addEventListener("click",w=>{!d.contains(w.target)&&!l.contains(w.target)&&(l.style.display="none")});const c=document.getElementById("project-code-input"),z=document.getElementById("project-code-feedback"),I=document.getElementById("btn-regenerate-code"),C=document.querySelector('#project-form button[type="submit"]');function M(){if(!c||!z)return;const w=c.value.trim().toUpperCase();c.value=w;const j=Y(w,t?.id);z.textContent=j.message,z.style.color=j.status==="success"?"var(--mint-strong)":j.status==="warning"?"var(--amber-strong)":"var(--red)",C&&(C.disabled=!j.valid)}c&&(c.addEventListener("input",M),c.addEventListener("blur",M)),I&&I.addEventListener("click",w=>{w.preventDefault(),c&&(c.value=q(),M())}),y()},50)}function je(t){const i=`
+        `).join(""),l.querySelectorAll(".project-member-opt").forEach(u=>{u.addEventListener("mouseenter",()=>u.style.background="var(--surface-soft)"),u.addEventListener("mouseleave",()=>u.style.background="transparent"),u.addEventListener("click",()=>{const A=u.dataset.uid;A&&!$.includes(A)&&($.push(A),y(),d.value="",l.style.display="none")})})):l.innerHTML=`<div style="padding:8px 12px;font-size:12px;color:var(--muted);">${e("لا يوجد أعضاء مطابقون","No matching members")}</div>`,l.style.display="block"}d.addEventListener("focus",()=>P(d.value)),d.addEventListener("input",()=>P(d.value)),document.addEventListener("click",w=>{!d.contains(w.target)&&!l.contains(w.target)&&(l.style.display="none")});const c=document.getElementById("project-code-input"),z=document.getElementById("project-code-feedback"),_=document.getElementById("btn-regenerate-code"),C=document.querySelector('#project-form button[type="submit"]');function M(){if(!c||!z)return;const w=c.value.trim().toUpperCase();c.value=w;const j=J(w,t?.id);z.textContent=j.message,z.style.color=j.status==="success"?"var(--mint-strong)":j.status==="warning"?"var(--amber-strong)":"var(--red)",C&&(C.disabled=!j.valid)}c&&(c.addEventListener("input",M),c.addEventListener("blur",M)),_&&_.addEventListener("click",w=>{w.preventDefault(),c&&(c.value=q(),M())}),y()},50)}function je(t){const i=`
     <form id="clone-form" data-project-id="${t.id}">
       <p style="margin-top:0;margin-bottom:20px;color:var(--ink-soft);font-size:13px">${e("أنت على وشك استنساخ المشروع:","You are about to clone the project:")} <strong style="color:var(--ink)">${a(e(t.nameAr,t.nameEn))}</strong></p>
       <div class="form-grid">
@@ -653,10 +653,10 @@ import{t as ge}from"./rolldown-runtime-BQ-_32WO.js";import{Bt as T,Dt as U,Ht as
         <button type="submit" class="btn btn-primary">${v("document",14)} ${e("استنساخ المشروع","Clone Project")}</button>
       </div>
     </form>
-  `;document.getElementById("modal-root").innerHTML=te(e("استنساخ المشروع","Clone Project"),e("أداة إنشاء قوالب المشاريع السريعة","Rapid project templating tool"),i,"clone");const o=document.getElementById("clone-form"),n=o.querySelector('input[name="cloneTasks"]'),r=o.querySelector('input[name="keepAssignees"]');n.addEventListener("change",s=>{r.disabled=!s.target.checked,s.target.checked||(r.checked=!1)}),o.addEventListener("submit",async s=>{s.preventDefault();const m=o.querySelector('button[type="submit"]');m.disabled=!0;try{const d={nameAr:o.nameAr.value,nameEn:o.nameEn.value,dueDate:o.dueDate.value,cloneTasks:o.cloneTasks.checked,keepAssignees:o.keepAssignees.checked,cloneMembers:o.cloneMembers.checked},l=await L(`/api/projects/${t.id}/clone`,{method:"POST",body:JSON.stringify(d)});fe(),g.view="project-detail",g.activeProjectId=l.project.id,await xe(),T(e("تم استنساخ المشروع بنجاح.","Project cloned successfully."))}catch(d){T(d.message,!0),m.disabled=!1}})}function Pe(){const t=(g.data?.projects||[]).filter(s=>!s.deletedAt&&!s.deleted_at);if(!t||!t.length){T(e("لا توجد بيانات لتصديرها.","No data to export."),!0);return}const i=F(),o=H(),n=11;let r="<table>";r+=`<tr><td colspan="${n}" class="title" style="background:#0d6269;color:#ffffff;font-size:18px;font-weight:bold;text-align:center;padding:14px;">
+  `;document.getElementById("modal-root").innerHTML=te(e("استنساخ المشروع","Clone Project"),e("أداة إنشاء قوالب المشاريع السريعة","Rapid project templating tool"),i,"clone");const n=document.getElementById("clone-form"),s=n.querySelector('input[name="cloneTasks"]'),r=n.querySelector('input[name="keepAssignees"]');s.addEventListener("change",o=>{r.disabled=!o.target.checked,o.target.checked||(r.checked=!1)}),n.addEventListener("submit",async o=>{o.preventDefault();const m=n.querySelector('button[type="submit"]');m.disabled=!0;try{const d={nameAr:n.nameAr.value,nameEn:n.nameEn.value,dueDate:n.dueDate.value,cloneTasks:n.cloneTasks.checked,keepAssignees:n.keepAssignees.checked,cloneMembers:n.cloneMembers.checked},l=await L(`/api/projects/${t.id}/clone`,{method:"POST",body:JSON.stringify(d)});me(),g.view="project-detail",g.activeProjectId=l.project.id,await ve(),T(e("تم استنساخ المشروع بنجاح.","Project cloned successfully."))}catch(d){T(d.message,!0),m.disabled=!1}})}function Pe(){const t=(g.data?.projects||[]).filter(o=>!o.deletedAt&&!o.deleted_at);if(!t||!t.length){T(e("لا توجد بيانات لتصديرها.","No data to export."),!0);return}const i=F(),n=H(),s=11;let r="<table>";r+=`<tr><td colspan="${s}" class="title" style="background:#0d6269;color:#ffffff;font-size:18px;font-weight:bold;text-align:center;padding:14px;">
     ${i.logoUrl?`<img src="${a(i.logoUrl)}" height="42" loading="lazy" decoding="async" style="vertical-align:middle;margin-inline-end:12px;" />`:""}
     <span style="vertical-align:middle;">${a(i.displayName)}</span>
-  </td></tr>`,r+=`<tr><td colspan="${n}" class="subtitle">${e("تقرير حالة مشاريع المحفظة الهندسية","Portfolio Projects Status Report")}</td></tr>`,r+=`<tr><td colspan="${n}" class="meta">${e("تاريخ الإصدار:","Generated on:")} ${o}</td></tr>`,r+=`<tr><td colspan="${n}" style="border:none;"></td></tr>`,r+=`<tr class="header">
+  </td></tr>`,r+=`<tr><td colspan="${s}" class="subtitle">${e("تقرير حالة مشاريع المحفظة الهندسية","Portfolio Projects Status Report")}</td></tr>`,r+=`<tr><td colspan="${s}" class="meta">${e("تاريخ الإصدار:","Generated on:")} ${n}</td></tr>`,r+=`<tr><td colspan="${s}" style="border:none;"></td></tr>`,r+=`<tr class="header">
     <td>${e("كود المشروع","Code")}</td>
     <td>${e("اسم المشروع (عربي)","Project Name (Ar)")}</td>
     <td>${e("اسم المشروع (إنجليزي)","Project Name (En)")}</td>
@@ -668,21 +668,21 @@ import{t as ge}from"./rolldown-runtime-BQ-_32WO.js";import{Bt as T,Dt as U,Ht as
     <td>${e("تاريخ التسليم","Due Date")}</td>
     <td>${e("نسبة الإنجاز","Progress %")}</td>
     <td>${e("عدد أعضاء الفريق","Team Size")}</td>
-  </tr>`,t.forEach(s=>{const m=s.manager?e(s.manager.name,s.manager.nameEn||s.manager.name):"";r+=`<tr>
-      <td>${a(k(s.code))}</td>
-      <td>${a(k(s.nameAr))}</td>
-      <td>${a(k(s.nameEn))}</td>
-      <td>${a(k(e(s.clientAr,s.clientEn)))}</td>
+  </tr>`,t.forEach(o=>{const m=o.manager?e(o.manager.name,o.manager.nameEn||o.manager.name):"";r+=`<tr>
+      <td>${a(k(o.code))}</td>
+      <td>${a(k(o.nameAr))}</td>
+      <td>${a(k(o.nameEn))}</td>
+      <td>${a(k(e(o.clientAr,o.clientEn)))}</td>
       <td>${a(k(m))}</td>
-      <td>${a(k(D(s.lifecycle)))}</td>
-      <td>${a(k(D(s.health)))}</td>
-      <td>${a(k(s.startDate||""))}</td>
-      <td>${a(k(s.dueDate||""))}</td>
-      <td>${s.progress||0}%</td>
-      <td>${s.memberCount||0}</td>
-    </tr>`}),r+="</table>",X(`DARC_Portfolio_Report_${new Date().toISOString().split("T")[0]}`,r),T(e("تم بدء تحميل تقرير المحفظة.","Portfolio report download started.")),L("/api/audit",{method:"POST",body:JSON.stringify({action:"export_report",entityType:"report",details:{title:e("تقرير حالة مشاريع المحفظة (Excel)","Portfolio Projects Report (Excel)"),count:t.length}})}).catch(()=>{})}function De(t){const i=(g.data?.projects||[]).find(f=>f.id===t&&!f.deletedAt&&!f.deleted_at);if(!i)return;const o=(g.data?.tasks||[]).filter(f=>f.projectId===t&&!f.deletedAt&&!f.deleted_at);if(!o.length){T(e("لا توجد مهام لهذا المشروع لتصديرها.","No tasks to export."),!0);return}const n=F(),r=g.data?.users||[],s=new Map(r.map(f=>[f.id,f]));function m(f){if(!f)return"—";const b=s.get(f);return b?e(b.name,b.nameEn||b.name):f}const d=H(),l=11;let h="<table>";h+=`<tr><td colspan="${l}" class="title" style="background:#0d6269;color:#ffffff;font-size:18px;font-weight:bold;text-align:center;padding:14px;">
-    ${n.logoUrl?`<img src="${a(n.logoUrl)}" height="42" loading="lazy" decoding="async" style="vertical-align:middle;margin-inline-end:12px;" />`:""}
-    <span style="vertical-align:middle;">${a(n.displayName)}</span>
+      <td>${a(k(D(o.lifecycle)))}</td>
+      <td>${a(k(D(o.health)))}</td>
+      <td>${a(k(o.startDate||""))}</td>
+      <td>${a(k(o.dueDate||""))}</td>
+      <td>${o.progress||0}%</td>
+      <td>${o.memberCount||0}</td>
+    </tr>`}),r+="</table>",X(`DARC_Portfolio_Report_${new Date().toISOString().split("T")[0]}`,r),T(e("تم بدء تحميل تقرير المحفظة.","Portfolio report download started.")),L("/api/audit",{method:"POST",body:JSON.stringify({action:"export_report",entityType:"report",details:{title:e("تقرير حالة مشاريع المحفظة (Excel)","Portfolio Projects Report (Excel)"),count:t.length}})}).catch(()=>{})}function De(t){const i=(g.data?.projects||[]).find(f=>f.id===t&&!f.deletedAt&&!f.deleted_at);if(!i)return;const n=(g.data?.tasks||[]).filter(f=>f.projectId===t&&!f.deletedAt&&!f.deleted_at);if(!n.length){T(e("لا توجد مهام لهذا المشروع لتصديرها.","No tasks to export."),!0);return}const s=F(),r=g.data?.users||[],o=new Map(r.map(f=>[f.id,f]));function m(f){if(!f)return"—";const b=o.get(f);return b?e(b.name,b.nameEn||b.name):f}const d=H(),l=11;let h="<table>";h+=`<tr><td colspan="${l}" class="title" style="background:#0d6269;color:#ffffff;font-size:18px;font-weight:bold;text-align:center;padding:14px;">
+    ${s.logoUrl?`<img src="${a(s.logoUrl)}" height="42" loading="lazy" decoding="async" style="vertical-align:middle;margin-inline-end:12px;" />`:""}
+    <span style="vertical-align:middle;">${a(s.displayName)}</span>
   </td></tr>`,h+=`<tr><td colspan="${l}" class="subtitle">${e("تقرير مهام ومخرجات المشروع:","Project Tasks & Deliverables Report:")} ${a(e(i.nameAr,i.nameEn))} (${a(i.code)})</td></tr>`,h+=`<tr><td colspan="${l}" class="meta">${e("العميل / المالك:","Client:")} ${a(e(i.clientAr,i.clientEn))||"—"} | ${e("تاريخ الإصدار:","Generated on:")} ${d}</td></tr>`,h+=`<tr><td colspan="${l}" style="border:none;"></td></tr>`,h+=`<tr class="header">
     <td>${e("كود المخرج","Code")}</td>
     <td>${e("المهمة (عربي)","Task (Ar)")}</td>
@@ -695,7 +695,7 @@ import{t as ge}from"./rolldown-runtime-BQ-_32WO.js";import{Bt as T,Dt as U,Ht as
     <td>${e("تاريخ البدء","Start Date")}</td>
     <td>${e("تاريخ التسليم","Due Date")}</td>
     <td>${e("الإنجاز","Progress %")}</td>
-  </tr>`,o.forEach((f,b)=>{const $=f.templateId?f.templateId.replace("tpl-","#"):f.id?`#${f.id.slice(-6)}`:`#${b+1}`,y=m(f.assigneeId||f.assignee_id),P=m(f.reviewerId||f.reviewer_id),c=m(f.approverId||f.approver_id);h+=`<tr>
+  </tr>`,n.forEach((f,b)=>{const $=f.templateId?f.templateId.replace("tpl-","#"):f.id?`#${f.id.slice(-6)}`:`#${b+1}`,y=m(f.assigneeId||f.assignee_id),P=m(f.reviewerId||f.reviewer_id),c=m(f.approverId||f.approver_id);h+=`<tr>
       <td style="text-align:center;font-weight:bold;">${a(k($))}</td>
       <td>${a(k(f.titleAr))}</td>
       <td>${a(k(f.titleEn))}</td>
@@ -707,25 +707,25 @@ import{t as ge}from"./rolldown-runtime-BQ-_32WO.js";import{Bt as T,Dt as U,Ht as
       <td>${a(k(f.startDate||""))}</td>
       <td>${a(k(f.dueDate||""))}</td>
       <td style="font-weight:bold;">${f.progress||0}%</td>
-    </tr>`}),h+="</table>",X(`DARC_Project_${i.code}_${new Date().toISOString().split("T")[0]}`,h),T(e("تم بدء تحميل تقرير المهام.","Report download started.")),L("/api/audit",{method:"POST",body:JSON.stringify({action:"export_report",entityType:"project",entityId:t,details:{title:e(`تقرير مهام مشروع: ${i.nameAr}`,`Project Tasks Report: ${i.nameEn||i.nameAr}`),taskCount:o.length}})}).catch(()=>{})}function ze(t,i=!1){const o=(g.data?.projects||[]).find(p=>p.id===t&&!p.deletedAt&&!p.deleted_at);if(!o)return;const n=(g.data?.tasks||[]).filter(p=>p.projectId===t&&!p.deletedAt&&!p.deleted_at);if(!n.length){T(e("لا توجد مهام لهذا المشروع لطباعة التقرير.","No tasks to print report."),!0);return}const r=F(),s=g.data?.users||[],m=new Map(s.map(p=>[p.id,p]));function d(p){if(!p)return"—";const u=m.get(p);return u?e(u.name,u.nameEn||u.name):p}function l(p){if(!p?.dueDate||["done","completed","canceled"].includes(p.status))return!1;const u=G(p.dueDate);return u?u<new Date:!1}const h=n.length,f=n.filter(p=>["done","completed"].includes(p.status)).length,b=n.filter(p=>["review","approval"].includes(p.status)).length;n.filter(p=>p.status==="in_progress").length;const $=n.filter(p=>l(p)).length,y=new Date,P=H(y),c=ae(y),z=new Map;n.forEach(p=>{const u=e(p.categoryAr,p.categoryEn)||e(p.typeAr,p.typeEn)||e("عام","General"),E=z.get(u)||{total:0,completed:0,weight:0,progressSum:0},O=Number(p.weight||1);E.total++,["done","completed"].includes(p.status)&&E.completed++,E.weight+=O,E.progressSum+=(p.progress||0)*O,z.set(u,E)});const I=Array.from(z.entries()).map(([p,u])=>({name:p,percent:u.weight?Math.round(u.progressSum/u.weight):0,completed:u.completed,total:u.total})),C=i?e("تقرير تسليمات ومخرجات المشروع للمالك والعميل","Client Deliverables & Milestone Brief"):e("تقرير الإنجاز التنفيذي والمخرجات والاعتمادات الهندسية","Official Executive Engineering & Deliverables Audit");i?e("ملخص رسمي لمخرجات ومخططات المشروع المعتمدة وتواريخ التسليم التعاقدية.","Official summary of approved architectural drawings, milestones, and deliverables."):e("بيان تفصيلي بمسار التنفيذ ومسؤوليات المراجعة والاعتماد لكافة مخرجات المشروع.","Detailed execution readout with review and approval sign-offs for all project assets.");const M=n.map((p,u)=>{const E=p.templateId?p.templateId.replace("tpl-","#"):p.id?`#${p.id.slice(-6)}`:`#${u+1}`,O=e(p.titleAr,p.titleEn),V=e(p.categoryAr,p.categoryEn)||e(p.typeAr,p.typeEn)||"—",Z=D(p.status),B=p.progress||0,Q=p.dueDate||"—";if(i)return`
+    </tr>`}),h+="</table>",X(`DARC_Project_${i.code}_${new Date().toISOString().split("T")[0]}`,h),T(e("تم بدء تحميل تقرير المهام.","Report download started.")),L("/api/audit",{method:"POST",body:JSON.stringify({action:"export_report",entityType:"project",entityId:t,details:{title:e(`تقرير مهام مشروع: ${i.nameAr}`,`Project Tasks Report: ${i.nameEn||i.nameAr}`),taskCount:n.length}})}).catch(()=>{})}function ze(t,i=!1){const n=(g.data?.projects||[]).find(p=>p.id===t&&!p.deletedAt&&!p.deleted_at);if(!n)return;const s=(g.data?.tasks||[]).filter(p=>p.projectId===t&&!p.deletedAt&&!p.deleted_at);if(!s.length){T(e("لا توجد مهام لهذا المشروع لطباعة التقرير.","No tasks to print report."),!0);return}const r=F(),o=g.data?.users||[],m=new Map(o.map(p=>[p.id,p]));function d(p){if(!p)return"—";const u=m.get(p);return u?e(u.name,u.nameEn||u.name):p}function l(p){if(!p?.dueDate||["done","completed","canceled"].includes(p.status))return!1;const u=G(p.dueDate);return u?u<new Date:!1}const h=s.length,f=s.filter(p=>["done","completed"].includes(p.status)).length,b=s.filter(p=>["review","approval"].includes(p.status)).length;s.filter(p=>p.status==="in_progress").length;const $=s.filter(p=>l(p)).length,y=new Date,P=H(y),c=ae(y),z=new Map;s.forEach(p=>{const u=e(p.categoryAr,p.categoryEn)||e(p.typeAr,p.typeEn)||e("عام","General"),A=z.get(u)||{total:0,completed:0,weight:0,progressSum:0},O=Number(p.weight||1);A.total++,["done","completed"].includes(p.status)&&A.completed++,A.weight+=O,A.progressSum+=(p.progress||0)*O,z.set(u,A)});const _=Array.from(z.entries()).map(([p,u])=>({name:p,percent:u.weight?Math.round(u.progressSum/u.weight):0,completed:u.completed,total:u.total})),C=i?e("تقرير تسليمات ومخرجات المشروع للمالك والعميل","Client Deliverables & Milestone Brief"):e("تقرير الإنجاز التنفيذي والمخرجات والاعتمادات الهندسية","Official Executive Engineering & Deliverables Audit");i?e("ملخص رسمي لمخرجات ومخططات المشروع المعتمدة وتواريخ التسليم التعاقدية.","Official summary of approved architectural drawings, milestones, and deliverables."):e("بيان تفصيلي بمسار التنفيذ ومسؤوليات المراجعة والاعتماد لكافة مخرجات المشروع.","Detailed execution readout with review and approval sign-offs for all project assets.");const M=s.map((p,u)=>{const A=p.templateId?p.templateId.replace("tpl-","#"):p.id?`#${p.id.slice(-6)}`:`#${u+1}`,O=e(p.titleAr,p.titleEn),V=e(p.categoryAr,p.categoryEn)||e(p.typeAr,p.typeEn)||"—",Z=D(p.status),B=p.progress||0,Q=p.dueDate||"—";if(i)return`
         <tr>
           <td style="text-align:center;font-weight:bold;color:#475569;">${u+1}</td>
-          <td style="text-align:center;font-weight:600;color:#0d6269;">${a(E)}</td>
+          <td style="text-align:center;font-weight:600;color:#0d6269;">${a(A)}</td>
           <td style="font-weight:600;">${a(O)}</td>
           <td style="text-align:center;">${a(V)}</td>
           <td style="text-align:center;"><span class="badge ${a(p.status)}">${a(Z)}</span></td>
           <td style="text-align:center;direction:ltr;">${a(Q)}</td>
           <td style="text-align:center;font-weight:bold;color:${B===100?"#0d6269":"#1e293b"};">${B}%</td>
         </tr>
-      `;const de=d(p.assigneeId||p.assignee_id),pe=d(p.reviewerId||p.reviewer_id),ce=d(p.approverId||p.approver_id);return`
+      `;const pe=d(p.assigneeId||p.assignee_id),ce=d(p.reviewerId||p.reviewer_id),ge=d(p.approverId||p.approver_id);return`
       <tr>
         <td style="text-align:center;font-weight:bold;color:#475569;">${u+1}</td>
-        <td style="text-align:center;font-weight:600;color:#0d6269;">${a(E)}</td>
+        <td style="text-align:center;font-weight:600;color:#0d6269;">${a(A)}</td>
         <td style="font-weight:600;">${a(O)}</td>
         <td style="text-align:center;">${a(V)}</td>
-        <td>${a(de)}</td>
-        <td style="color:#0369a1;font-weight:600;">${a(pe)}</td>
-        <td style="color:#047857;font-weight:600;">${a(ce)}</td>
+        <td>${a(pe)}</td>
+        <td style="color:#0369a1;font-weight:600;">${a(ce)}</td>
+        <td style="color:#047857;font-weight:600;">${a(ge)}</td>
         <td style="text-align:center;"><span class="badge ${a(p.status)}">${a(Z)}</span></td>
         <td style="text-align:center;direction:ltr;">${a(Q)}</td>
         <td style="text-align:center;font-weight:bold;color:${B===100?"#0d6269":"#1e293b"};">${B}%</td>
@@ -735,7 +735,7 @@ import{t as ge}from"./rolldown-runtime-BQ-_32WO.js";import{Bt as T,Dt as U,Ht as
     <html lang="${g.lang}" dir="${g.lang==="ar"?"rtl":"ltr"}">
     <head>
       <meta charset="utf-8" />
-      <title>${a(r.displayName)} - ${a(o.code)} - ${i?"Client_Report":"Executive_Report"}</title>
+      <title>${a(r.displayName)} - ${a(n.code)} - ${i?"Client_Report":"Executive_Report"}</title>
       <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet" />
       <style>
         @page { size: A4 portrait; margin: 12mm 14mm 15mm 14mm; }
@@ -1041,34 +1041,34 @@ import{t as ge}from"./rolldown-runtime-BQ-_32WO.js";import{Bt as T,Dt as U,Ht as
         </div>
         <div class="report-meta-box">
           <div class="report-type-badge">${a(C)}</div>
-          <div><strong>${e("كود المشروع:","Project Code:")}</strong> ${a(o.code)}</div>
+          <div><strong>${e("كود المشروع:","Project Code:")}</strong> ${a(n.code)}</div>
           <div><strong>${e("تاريخ التقرير:","Report Date:")}</strong> ${a(P)} - ${a(c)}</div>
-          <div><strong>${e("حالة المشروع:","Project Status:")}</strong> ${a(D(o.lifecycle))} (${a(D(o.health))})</div>
+          <div><strong>${e("حالة المشروع:","Project Status:")}</strong> ${a(D(n.lifecycle))} (${a(D(n.health))})</div>
         </div>
       </header>
 
       <div class="info-strip">
         <div class="info-cell">
           <strong>${e("اسم المشروع","Project Name")}</strong>
-          <span>${a(e(o.nameAr,o.nameEn))}</span>
+          <span>${a(e(n.nameAr,n.nameEn))}</span>
         </div>
         <div class="info-cell">
           <strong>${e("العميل / المالك","Client / Owner")}</strong>
-          <span>${a(e(o.clientAr,o.clientEn))||"—"}</span>
+          <span>${a(e(n.clientAr,n.clientEn))||"—"}</span>
         </div>
         <div class="info-cell">
           <strong>${e("الجدول الزمني","Schedule Timeline")}</strong>
-          <span>${a(o.startDate||"—")} → ${a(o.dueDate||"—")}</span>
+          <span>${a(n.startDate||"—")} → ${a(n.dueDate||"—")}</span>
         </div>
         <div class="info-cell">
           <strong>${e("مدير المشروع المسؤول","Project Manager")}</strong>
-          <span>${a(d(o.managerId))}</span>
+          <span>${a(d(n.managerId))}</span>
         </div>
       </div>
 
       <div class="kpi-row">
         <div class="kpi-card">
-          <div class="kpi-val">${o.progress||0}%</div>
+          <div class="kpi-val">${n.progress||0}%</div>
           <div class="kpi-label">${e("نسبة الإنجاز الإجمالية","Overall Progress")}</div>
         </div>
         <div class="kpi-card">
@@ -1085,11 +1085,11 @@ import{t as ge}from"./rolldown-runtime-BQ-_32WO.js";import{Bt as T,Dt as U,Ht as
         </div>
       </div>
 
-      ${I.length?`
+      ${_.length?`
         <div class="disc-section">
           <strong style="font-size:11px;color:#334155;">${e("مؤشرات الإنجاز بحسب التخصص الهندسي:","Engineering Discipline Progress Breakdown:")}</strong>
           <div class="disc-grid">
-            ${I.map(p=>`
+            ${_.map(p=>`
               <div class="disc-item">
                 <div style="display:flex;justify-content:space-between;font-weight:600;">
                   <span>${a(p.name)}</span>
@@ -1132,7 +1132,7 @@ import{t as ge}from"./rolldown-runtime-BQ-_32WO.js";import{Bt as T,Dt as U,Ht as
         </div>
         <div class="signature-box">
           <div class="signature-title">${e("مهندس ومدير المشروع","Project Manager")}</div>
-          <div style="font-weight:600;font-size:11px;color:#334155;margin-top:6px;">${a(d(o.managerId))}</div>
+          <div style="font-weight:600;font-size:11px;color:#334155;margin-top:6px;">${a(d(n.managerId))}</div>
           <div class="signature-line">${e("التوقيع والمصادقة","Sign & Date")}</div>
         </div>
         <div class="signature-box">
@@ -1149,7 +1149,7 @@ import{t as ge}from"./rolldown-runtime-BQ-_32WO.js";import{Bt as T,Dt as U,Ht as
       </footer>
     </body>
     </html>
-  `,j=window.open("","_blank","width=1100,height=900");j?(j.document.open(),j.document.write(w),j.document.close()):K(w),T(e("تم تجهيز التقرير الرسمي للطباعة والتصدير PDF.","Executive report ready for Print / PDF export.")),L("/api/audit",{method:"POST",body:JSON.stringify({action:"export_report",entityType:"project",entityId:t,details:{title:a(C),type:i?"client_pdf":"executive_pdf",taskCount:h}})}).catch(()=>{})}function Ee(){const t=(g.data?.projects||[]).filter(y=>!y.deletedAt&&!y.deleted_at);if(!t||!t.length){T(e("لا توجد مشاريع لتصدير التقرير.","No projects to export."),!0);return}const i=F(),o=new Date,n=H(o),r=ae(o),s=t.length,m=t.filter(y=>y.health==="on_track").length,d=t.filter(y=>y.health==="at_risk").length,l=t.filter(y=>y.health==="off_track").length,h=t.map((y,P)=>{const c=y.manager?e(y.manager.name,y.manager.nameEn||y.manager.name):"—";return`
+  `,j=window.open("","_blank","width=1100,height=900");j?(j.document.open(),j.document.write(w),j.document.close()):K(w),T(e("تم تجهيز التقرير الرسمي للطباعة والتصدير PDF.","Executive report ready for Print / PDF export.")),L("/api/audit",{method:"POST",body:JSON.stringify({action:"export_report",entityType:"project",entityId:t,details:{title:a(C),type:i?"client_pdf":"executive_pdf",taskCount:h}})}).catch(()=>{})}function Ae(){const t=(g.data?.projects||[]).filter(y=>!y.deletedAt&&!y.deleted_at);if(!t||!t.length){T(e("لا توجد مشاريع لتصدير التقرير.","No projects to export."),!0);return}const i=F(),n=new Date,s=H(n),r=ae(n),o=t.length,m=t.filter(y=>y.health==="on_track").length,d=t.filter(y=>y.health==="at_risk").length,l=t.filter(y=>y.health==="off_track").length,h=t.map((y,P)=>{const c=y.manager?e(y.manager.name,y.manager.nameEn||y.manager.name):"—";return`
       <tr>
         <td style="text-align:center;font-weight:bold;color:#475569;">${P+1}</td>
         <td style="text-align:center;font-weight:700;color:#0d6269;">${a(y.code)}</td>
@@ -1287,14 +1287,14 @@ import{t as ge}from"./rolldown-runtime-BQ-_32WO.js";import{Bt as T,Dt as U,Ht as
         </div>
         <div style="text-align:${g.lang==="ar"?"left":"right"};font-size:11px;color:#334155;line-height:1.6;">
           <div style="display:inline-block;background:#e6f4f5;color:#0d6269;font-weight:800;padding:3px 10px;border-radius:4px;font-size:11px;border:1px solid #bce1e4;margin-bottom:4px;">${e("تقرير حالة المحفظة","Portfolio Status Report")}</div>
-          <div><strong>${e("تاريخ التقرير:","Report Date:")}</strong> ${a(n)} - ${a(r)}</div>
-          <div><strong>${e("إجمالي المشاريع:","Total Projects:")}</strong> ${s}</div>
+          <div><strong>${e("تاريخ التقرير:","Report Date:")}</strong> ${a(s)} - ${a(r)}</div>
+          <div><strong>${e("إجمالي المشاريع:","Total Projects:")}</strong> ${o}</div>
         </div>
       </header>
 
       <div class="kpi-row">
         <div class="kpi-card">
-          <div class="kpi-val">${s}</div>
+          <div class="kpi-val">${o}</div>
           <div class="kpi-label">${e("إجمالي مشاريع المحفظة","Total Projects")}</div>
         </div>
         <div class="kpi-card">
@@ -1346,11 +1346,11 @@ import{t as ge}from"./rolldown-runtime-BQ-_32WO.js";import{Bt as T,Dt as U,Ht as
       <footer class="report-footer">
         <div>${a(i.displayName)} — ${e("تقرير إداري معتمد لمحفظة المشاريع","Official Portfolio Readout")}</div>
         <div>${e("صفحة 1 من 1","Page 1 of 1")}</div>
-        <div>${a(n)}</div>
+        <div>${a(s)}</div>
       </footer>
     </body>
     </html>
-  `,$=window.open("","_blank","width=1200,height=900");$?($.document.open(),$.document.write(b),$.document.close()):K(b),T(e("تم تجهيز تقرير المحفظة للطباعة والتصدير PDF.","Portfolio report ready for Print / PDF export.")),L("/api/audit",{method:"POST",body:JSON.stringify({action:"export_report",entityType:"report",details:{title:a(f),type:"portfolio_pdf",count:s}})}).catch(()=>{})}function K(t){let i=document.getElementById("print-modal-overlay");i||(i=document.createElement("div"),i.id="print-modal-overlay",i.style.position="fixed",i.style.inset="0",i.style.zIndex="1400",i.style.background="rgba(0, 0, 0, 0.75)",i.style.backdropFilter="blur(4px)",i.style.display="flex",i.style.flexDirection="column",i.style.alignItems="center",i.style.justifyContent="center",i.style.padding="15px",document.body.appendChild(i)),i.innerHTML=`
+  `,$=window.open("","_blank","width=1200,height=900");$?($.document.open(),$.document.write(b),$.document.close()):K(b),T(e("تم تجهيز تقرير المحفظة للطباعة والتصدير PDF.","Portfolio report ready for Print / PDF export.")),L("/api/audit",{method:"POST",body:JSON.stringify({action:"export_report",entityType:"report",details:{title:a(f),type:"portfolio_pdf",count:o}})}).catch(()=>{})}function K(t){let i=document.getElementById("print-modal-overlay");i||(i=document.createElement("div"),i.id="print-modal-overlay",i.style.position="fixed",i.style.inset="0",i.style.zIndex="1400",i.style.background="rgba(0, 0, 0, 0.75)",i.style.backdropFilter="blur(4px)",i.style.display="flex",i.style.flexDirection="column",i.style.alignItems="center",i.style.justifyContent="center",i.style.padding="15px",document.body.appendChild(i)),i.innerHTML=`
     <div style="background:var(--surface, #ffffff);color:var(--ink);width:95%;max-width:1150px;height:92vh;border-radius:12px;box-shadow:0 25px 50px rgba(0,0,0,0.4);overflow:hidden;display:flex;flex-direction:column;border:1px solid var(--line);">
       <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 20px;border-bottom:1px solid var(--line);background:var(--surface-soft);flex-wrap:wrap;gap:8px;">
         <strong style="color:var(--brand-teal);font-size:14px;">${e("معاينة التقرير الرسمي المعتمد (PDF Preview)","Official Approved Report (PDF Preview)")}</strong>
@@ -1365,4 +1365,4 @@ import{t as ge}from"./rolldown-runtime-BQ-_32WO.js";import{Bt as T,Dt as U,Ht as
         <iframe id="print-preview-iframe" style="width:100%;height:100%;border:none;background:#ffffff;" srcdoc="${a(t)}"></iframe>
       </div>
     </div>
-  `,i.style.display="flex";const o=()=>{i.style.display="none",i.innerHTML="",window.removeEventListener("keydown",n)},n=r=>{r.key==="Escape"&&o()};window.addEventListener("keydown",n),document.getElementById("btn-close-print-modal")?.addEventListener("click",o),document.getElementById("btn-print-iframe")?.addEventListener("click",()=>{const r=document.getElementById("print-preview-iframe");r&&r.contentWindow&&(r.contentWindow.focus(),r.contentWindow.print())})}export{je as a,De as i,Pe as n,ke as o,ze as r,Ce as s,Ee as t};
+  `,i.style.display="flex";const n=()=>{i.style.display="none",i.innerHTML="",window.removeEventListener("keydown",s)},s=r=>{r.key==="Escape"&&n()};window.addEventListener("keydown",s),document.getElementById("btn-close-print-modal")?.addEventListener("click",n),document.getElementById("btn-print-iframe")?.addEventListener("click",()=>{const r=document.getElementById("print-preview-iframe");r&&r.contentWindow&&(r.contentWindow.focus(),r.contentWindow.print())})}export{je as a,De as i,Pe as n,ke as o,ze as r,Se as s,Ae as t};

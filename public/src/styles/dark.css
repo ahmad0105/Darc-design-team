@@ -508,13 +508,18 @@
   background: rgba(74, 199, 209, 0.16) !important;
   border: 1px solid rgba(74, 199, 209, 0.35) !important;
   color: #4ac7d1 !important;
-  font-size: 11px !important;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif !important;
+  font-size: 11.5px !important;
   font-weight: 800 !important;
+  font-variant-numeric: tabular-nums lining-nums !important;
   line-height: 1 !important;
-  display: inline-flex !important;
-  align-items: center !important;
+  display: inline-grid !important;
+  place-items: center !important;
   justify-content: center !important;
+  align-content: center !important;
   text-align: center !important;
+  direction: ltr !important;
+  unicode-bidi: isolate !important;
 }
 [data-theme="dark"] .template-action {
   background: var(--surface-soft) !important;

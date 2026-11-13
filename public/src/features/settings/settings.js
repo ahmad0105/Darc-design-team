@@ -1,12 +1,12 @@
 import { state } from '../../core/state.js';
 import { api } from '../../core/api.js';
-import { getActiveCalendarSystem, esc, sanitizeForSpreadsheet, choose, icon, statusDot, t, can, isAdmin, avatar, roleName, initials, statusText, formatDateTime, formatReportDate, formatReportTime, getCompanyBranding, exportXLS, PERMISSION_ALIASES, canManageAccountPermissions, dateLabel } from '../../core/utils.js';
+import { getActiveCalendarSystem, esc, sanitizeForSpreadsheet, choose, icon, statusDot, t, can, isAdmin, avatar, roleName, initials, statusText, formatDateTime, formatReportDate, formatReportTime, getCompanyBranding, exportXLS, PERMISSION_ALIASES, canManageAccountPermissions, dateLabel, canAccessSettingsSection } from '../../core/utils.js';
 import { showToast, modalShell, closeModal } from '../../shared/ui.js';
 import { isDemoSession } from '../../core/realtime.js';
 import { renderAnalyticsSection, fetchAnalyticsData } from './analytics.js';
 import { renderDiagnosticsSection, fetchDiagnosticsData } from './diagnostics.js';
 import { renderVaultSection, fetchVaultData, attachVaultEvents } from './vault.js';
-import { teamMetrics } from '../dashboard/dashboard.js';
+import { teamMetrics } from '../../core/utils.js';
 import { getNotificationPermission, isIOSDevice, isStandalonePWA } from '../notifications/notification-manager.js';
 
 export function renderTeam() {
@@ -67,12 +67,6 @@ export function renderTeam() {
   }).join('')}
     </div>
   `;
-}
-
-export function renderAuditForProject(projectId) {
-  const logs = (state.data?.auditLogs || []).filter((log) => log.details?.projectId === projectId || (log.entityType === 'project' && log.entityId === projectId));
-  if (!logs.length) return `<div class="empty">${icon('check', 18)}<span>${choose('لا توجد تغييرات مسجلة بعد.', 'No changes recorded yet.')}</span></div>`;
-  return `<div class="audit-list">${logs.map((log) => `<div class="audit-row"><span class="audit-dot"></span><div class="audit-copy"><strong>${esc(log.user ? choose(log.user.name, log.user.nameEn || log.user.name) : 'DARC')} · ${esc(log.action)}</strong><span>${esc(log.entityType)} · ${dateLabel(log.createdAt, true)}</span></div></div>`).join('')}</div>`;
 }
 
 export function renderUserActivityCell(user) {
@@ -623,20 +617,7 @@ export async function fetchFullAuditHistory() {
   }
 }
 
-export function canAccessSettingsSection(sectionKey) {
-  const userIsAdmin = isAdmin();
-  if (sectionKey === 'profile' || sectionKey === 'security' || sectionKey === 'notifications') return true;
-  if (sectionKey === 'company') return userIsAdmin || can('manage_settings');
-  if (sectionKey === 'whatsapp') return userIsAdmin || can('manage_settings');
-  if (sectionKey === 'roles') return userIsAdmin || can('manage_roles');
-  if (sectionKey === 'accounts') return userIsAdmin || can('manage_users') || can('manage_existing_account_permissions') || can('view_user_activity');
-  if (sectionKey === 'trash') return userIsAdmin || can('manage_trash');
-  if (sectionKey === 'audit') return userIsAdmin || can('view_audit_logs');
-  if (sectionKey === 'analytics') return userIsAdmin || can('manage_settings') || can('view_audit_logs');
-  if (sectionKey === 'diagnostics') return userIsAdmin || can('manage_settings');
-  if (sectionKey === 'vault') return userIsAdmin;
-  return false;
-}
+export { canAccessSettingsSection };
 
 export function renderSettings() {
   const currentUserId = state.data?.user?.id;

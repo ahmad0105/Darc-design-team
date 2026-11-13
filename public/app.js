@@ -30,9 +30,6 @@ import * as Projects from './src/features/projects/projects.js';
 import * as Tasks from './src/features/tasks/tasks.js';
 import { drawTimelineArrows } from './src/features/tasks/tasks.js';
 import * as Templates from './src/features/templates/templates.js';
-import * as Documents from './src/features/documents/documents.js';
-import * as Settings from './src/features/settings/settings.js';
-import * as Reports from './src/features/reports/reports.js';
 import * as Notifications from './src/features/notifications/notifications.js';
 import * as Router from './src/core/router.js';
 import * as Events from './src/core/events.js';
@@ -43,7 +40,7 @@ import { setupGlobalShortcuts } from './src/features/dashboard/omnisearch.js';
 // Enterprise Modular Registry: cleanly encapsulate all sub-modules
 export const DarcApp = Object.freeze({
   UI, Navbar, Sidebar, Auth, Dashboard, Projects, Tasks,
-  Templates, Documents, Settings, Reports, Notifications,
+  Templates, Notifications,
   Router, Events, Utils, state, api
 });
 
@@ -59,7 +56,7 @@ Object.defineProperty(window, '__darc', {
 // while eliminating global enumerable pollution and third-party extension harvesting.
 const _legacyBridge = {
   ...UI, ...Navbar, ...Sidebar, ...Auth, ...Dashboard, ...Projects, ...Tasks,
-  ...Templates, ...Documents, ...Settings, ...Reports, ...Notifications,
+  ...Templates, ...Notifications,
   ...Router, ...Events, ...Utils
 };
 
@@ -183,3 +180,33 @@ if ('serviceWorker' in navigator && window.location.protocol.startsWith('http'))
 initRealtimeConnection();
 initTelemetryEngine();
 init();
+
+// Background prefetch secondary views during idle time to guarantee instant 0ms subsequent tab navigation
+if (typeof window !== 'undefined') {
+  const prefetchSecondary = () => {
+    Promise.all([
+      import('./src/features/settings/settings.js'),
+      import('./src/features/reports/reports.js'),
+      import('./src/features/documents/documents.js')
+    ]).then(([settingsMod, reportsMod, docsMod]) => {
+      [settingsMod, reportsMod, docsMod].forEach((mod) => {
+        for (const [key, value] of Object.entries(mod)) {
+          if (!(key in window)) {
+            Object.defineProperty(window, key, {
+              value,
+              writable: true,
+              configurable: true,
+              enumerable: false
+            });
+          }
+        }
+      });
+    }).catch(() => {});
+  };
+
+  if ('requestIdleCallback' in window) {
+    window.requestIdleCallback(prefetchSecondary, { timeout: 3500 });
+  } else {
+    setTimeout(prefetchSecondary, 2000);
+  }
+}

@@ -749,8 +749,30 @@ export function isTaskAssignedToUser(task, userId) {
   return false;
 }
 
+export function teamMetrics(userId, tasks) {
+  const mine = (tasks || []).filter((task) => isTaskAssignedToUser(task, userId));
+  const weight = mine.reduce((sum, task) => sum + Number(task.weight || 1), 0);
+  const progress = weight ? Math.round(mine.reduce((sum, task) => sum + task.progress * Number(task.weight || 1), 0) / weight) : 0;
+  return { tasks: mine.length, progress, overdue: mine.filter(isOverdue).length };
+}
+
 export function canManageAccountPermissions() {
   return isAdmin() || state.data?.user?.roleId === 'account_permissions_manager' || state.data?.role?.permissions?.includes('manage_existing_account_permissions');
+}
+
+export function canAccessSettingsSection(sectionKey) {
+  const userIsAdmin = isAdmin();
+  if (sectionKey === 'profile' || sectionKey === 'security' || sectionKey === 'notifications') return true;
+  if (sectionKey === 'company') return userIsAdmin || can('manage_settings');
+  if (sectionKey === 'whatsapp') return userIsAdmin || can('manage_settings');
+  if (sectionKey === 'roles') return userIsAdmin || can('manage_roles');
+  if (sectionKey === 'accounts') return userIsAdmin || can('manage_users') || can('manage_existing_account_permissions') || can('view_user_activity');
+  if (sectionKey === 'trash') return userIsAdmin || can('manage_trash');
+  if (sectionKey === 'audit') return userIsAdmin || can('view_audit_logs');
+  if (sectionKey === 'analytics') return userIsAdmin || can('manage_settings') || can('view_audit_logs');
+  if (sectionKey === 'diagnostics') return userIsAdmin || can('manage_settings');
+  if (sectionKey === 'vault') return userIsAdmin;
+  return false;
 }
 
 export function currentViewTitle() {
